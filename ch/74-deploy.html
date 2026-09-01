@@ -45,7 +45,7 @@ npm run start     # 그 결과물로 서버 실행 (개발 서버와 다릅니�
 <table>
 <thead><tr><th>빌드가 하는 일 (47장)</th></tr></thead>
 <tbody>
-<tr><td><span <span class="term" data-term="class">class</span>="term" data-term="typescript">TypeScript</span>·<span class="term" data-term="jsx">JSX</span>를 <span class="term" data-term="browser">브라우저</span>가 이해하는 <span class="term" data-term="javascript">JavaScript</span>로 변환</td></tr>
+<tr><td><span class="term" data-term="typescript">TypeScript</span>·<span class="term" data-term="jsx">JSX</span>를 <span class="term" data-term="browser">브라우저</span>가 이해하는 <span class="term" data-term="javascript">JavaScript</span>로 변환</td></tr>
 <tr><td>모듈을 묶고 <b>안 쓰는 코드 제거</b>(<span class="term" data-term="tree-shaking">트리 셰이킹</span>)</td></tr>
 <tr><td><span class="term" data-term="minify">압축</span>하고 <b>내용 기반 해시</b>를 붙여 캐시 문제 해결</td></tr>
 <tr><td>정적 페이지를 미리 생성(<span class="term" data-term="ssg">SSG</span>·<span class="term" data-term="isr">ISR</span>, 70장)</td></tr>
@@ -135,8 +135,8 @@ export const env = schema.parse(process.env);
 <table>
 <thead><tr><th>종류</th><th>적합한 경우</th></tr></thead>
 <tbody>
-<tr><td><b>정적 호스팅</b><br>(<span class="term" data-term="github"><span class="term" data-term="git">Git</span>Hub</span> Pages, Cloudflare Pages 등)</td><td>순수 정적 사이트(3장). 무료이거나 매우 저렴합니다. <b>이 책 같은 결과물</b>에 적합</td></tr>
-<tr><td><b><span class="term" data-term="frontend">프론트엔드</span> 플랫폼</b><br>(Vercel, Netlify 등)</td><td><span class="term" data-term="nextjs">Next.js</span>·<span class="term" data-term="react">React</span> 앱. Git 연동, 미리보기 배포, <span class="term" data-term="cdn">CDN</span>, 서버리스 함수가 통합되어 있습니다</td></tr>
+<tr><td><b>정적 호스팅</b><br>(<span class="term" data-term="github">GitHub</span> Pages, Cloudflare Pages 등)</td><td>순수 정적 사이트(3장). 무료이거나 매우 저렴합니다. <b>이 책 같은 결과물</b>에 적합</td></tr>
+<tr><td><b><span class="term" data-term="frontend">프론트엔드</span> 플랫폼</b><br>(Vercel, Netlify 등)</td><td><span class="term" data-term="nextjs">Next.js</span>·<span class="term" data-term="react">React</span> 앱. <span class="term" data-term="git">Git</span> 연동, 미리보기 배포, <span class="term" data-term="cdn">CDN</span>, 서버리스 함수가 통합되어 있습니다</td></tr>
 <tr><td><b>클라우드 서버</b><br>(AWS, GCP 등)</td><td>세밀한 제어가 필요하거나 이미 그 환경을 쓰는 경우. 설정할 것이 많습니다</td></tr>
 <tr><td><b>컨테이너</b><br>(Docker + 오케스트레이션)</td><td>여러 서비스를 함께 운영하는 큰 조직</td></tr>
 </tbody>
@@ -214,7 +214,7 @@ CI는 <b>모든 PR에서 반드시 실행</b>되고, 실패하면 <span class="t
 </ol>
 <p style="margin-bottom:0"><b>"배포했으니 끝"이 아닙니다.</b>
 개발 환경과 운영 환경은 <b>항상 다릅니다.</b>
-캐시, 환경 변수, <span class="term" data-term="https"><span class="term" data-term="http">HTTP</span>S</span>, <span class="term" data-term="domain">도메인</span>, CDN — 로컬에는 없던 것들이 전부 개입합니다.</p>
+캐시, 환경 변수, <span class="term" data-term="https">HTTPS</span>, <span class="term" data-term="domain">도메인</span>, CDN — 로컬에는 없던 것들이 전부 개입합니다.</p>
 </div>
 
 <h2 id="rollback">문제가 생기면</h2>
@@ -242,7 +242,7 @@ CI는 <b>모든 PR에서 반드시 실행</b>되고, 실패하면 <span class="t
 <div class="box warn">
 <p class="box-title"><span class="box-ico">🔐</span> 배포 관련 보안 기본</p>
 <ul style="margin-bottom:0">
-<li><b>HTTPS는 필수</b>입니다. 요즘은 대부분 자동으로 설정됩니다(4장)</li>
+<li><b><span class="term" data-term="http">HTTP</span>S는 필수</b>입니다. 요즘은 대부분 자동으로 설정됩니다(4장)</li>
 <li><b><span class="term" data-term="source-map">소스맵</span>을 공개 배포에 포함할지</b> 결정하세요(47장)</li>
 <li><b>오류 화면에 서버 내부 정보를 노출하지</b> 마세요(33장)</li>
 <li><b>보안 헤더</b>(<span class="term" data-term="csp">CSP</span> 등)를 설정하세요(78장)</li>

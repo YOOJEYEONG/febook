@@ -68,7 +68,7 @@ import React from "/node_modules/react/index.js";   // ✅ 이렇게 바꿔 줘�
 <tbody>
 <tr><td><b>Vite</b></td><td><b>현재 사실상 표준.</b> 개발 서버가 매우 빠르고 설정이 간단합니다</td></tr>
 <tr><td><b>webpack</b></td><td>오래된 강자. 기존 프로젝트에 많고, 설정이 복잡한 대신 유연합니다</td></tr>
-<tr><td><b>Turbopack</b></td><td><span <span class="term" data-term="class">class</span>="term" data-term="nextjs">Next.js</span>에 통합된 번들러. Rust로 작성되어 빠릅니다</td></tr>
+<tr><td><b>Turbopack</b></td><td><span class="term" data-term="nextjs">Next.js</span>에 통합된 번들러. Rust로 작성되어 빠릅니다</td></tr>
 <tr><td><b>esbuild / SWC / Rolldown</b></td><td>Go·Rust로 만든 <b>초고속 변환·번들 엔진</b>. 위 도구들의 내부에서 쓰입니다</td></tr>
 <tr><td><b>Babel</b></td><td>번들러가 아니라 <b>트랜스파일러</b>. 최신 문법을 구형 문법으로 바꿉니다</td></tr>
 </tbody>
@@ -170,7 +170,7 @@ const AdminPage = lazy(() =&gt; import("./AdminPage"));</code></pre>
 style.7e2d81f0.css</code></pre>
 </div>
 <p>파일 내용이 바뀌면 <b>이름도 바뀝니다.</b>
-그러면 브라우저와 <span class="term" data-term="cdn"><span class="term" data-term="cd">CD</span>N</span>이 <b>"새 파일"로 인식해 반드시 새로 받습니다</b>(3장 캐시 문제).
+그러면 브라우저와 <span class="term" data-term="cdn">CDN</span>이 <b>"새 파일"로 인식해 반드시 새로 받습니다</b>(3장 캐시 문제).
 반대로 내용이 그대로면 이름도 그대로라 <b>캐시를 계속 씁니다.</b>
 "배포했는데 옛 화면이 보여요"를 구조적으로 해결하는 방법입니다.</p>
 

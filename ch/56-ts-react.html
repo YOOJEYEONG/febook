@@ -54,7 +54,7 @@
 <div class="codeblock">
 <pre><code data-lang="bash">npm install -D @types/react @types/react-dom</code></pre>
 </div>
-<p><span <span class="term" data-term="class">class</span>="term" data-term="javascript">JavaScript</span>로 작성된 라이브러리에는 타입 정보가 없습니다.
+<p><span class="term" data-term="javascript">JavaScript</span>로 작성된 라이브러리에는 타입 정보가 없습니다.
 <b><code>@types/</code>로 시작하는 패키지</b>는 커뮤니티가 만든 <b>타입 정의 파일</b>(<code>.d.ts</code>) 모음입니다.
 요즘 새로 나오는 라이브러리는 대개 타입을 <b>자체 포함</b>하므로 별도 설치가 필요 없습니다.
 <code>npm install</code> 후 타입 오류가 나면 <code>@types/패키지명</code>이 있는지 확인해 보세요.</p>
@@ -166,7 +166,7 @@ function handleKey(event: React.KeyboardEvent&lt;HTMLInputElement&gt;) {
 <h2 id="hooks">훅의 타입</h2>
 
 <div class="codeblock">
-<span class="cb-label"><span class="term" data-term="use<span class="term" data-term="state">state</span>">useState</span></span>
+<span class="cb-label"><span class="term" data-term="usestate">useState</span></span>
 <pre><code data-lang="tsx">// 초기값에서 추론됩니다 — 대부분 이것으로 충분합니다
 const [count, setCount] = useState(0);            // number
 const [name, setName] = useState("");             // string

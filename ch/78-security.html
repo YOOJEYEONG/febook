@@ -36,7 +36,7 @@
 <p class="box-title"><span class="box-ico">🛡️</span> 이 챕터의 전제</p>
 <p style="margin-bottom:0">여기서 다루는 것은 <b>여러분이 만드는 서비스를 지키는 방법</b>입니다.
 공격 기법은 <b>왜 그 방어가 필요한지 이해하기 위해</b>서만 설명합니다.<br>
-그리고 <b>보안의 대부분은 서버의 책임</b>입니다. 하지만 <span <span class="term" data-term="class">class</span>="term" data-term="frontend">프론트엔드</span>만이 막을 수 있는 것들이 있고,
+그리고 <b>보안의 대부분은 서버의 책임</b>입니다. 하지만 <span class="term" data-term="frontend">프론트엔드</span>만이 막을 수 있는 것들이 있고,
 프론트엔드의 실수로 서버의 방어가 무력화되기도 합니다.</p>
 </div>
 
@@ -98,11 +98,18 @@ element.textContent = userInput;</code></pre>
 <pre><code data-lang="jsx">&lt;div&gt;{userInput}&lt;/div&gt;
 // React가 자동으로 이스케이프합니다. &lt;script&gt;는 글자로 표시될 뿐입니다.
 
-// ⚠️ 이것만 위험합니다 — 이름부터 경고입니다
-&lt;div dangerouslySetInnerHTML={{ __html: userInput }} /&gt;</code></pre>
+// ⚠️ 가장 대표적인 예외 — 이름부터 경고입니다
+&lt;div dangerouslySetInnerHTML={{ __html: userInput }} /&gt;
+
+// ⚠️ 자동 이스케이프가 막아 주지 못하는 곳도 있습니다
+&lt;a href={userUrl}&gt;링크&lt;/a&gt;   // javascript: 스킴 (아래에서 다룹니다)</code></pre>
 </div>
-<p style="margin-bottom:0">6장에서 배운 <b><span class="term" data-term="entity">문자 엔티티</span></b>가 여기서 의미를 갖습니다.
+<p>6장에서 배운 <b><span class="term" data-term="entity">문자 엔티티</span></b>가 여기서 의미를 갖습니다.
 React가 <code>&lt;</code>를 <code>&amp;lt;</code>로 바꿔 주기 때문에 안전한 것입니다.</p>
+<p style="margin-bottom:0">다만 <b>"React를 쓰면 XSS가 없다"는 말은 사실이 아닙니다.</b>
+자동 이스케이프는 <b>본문 텍스트</b>에만 적용됩니다.
+<code>href</code>·<code>src</code>에 사용자 값을 그대로 넣거나
+<code>dangerouslySetInnerHTML</code>을 쓰면 <span class="term" data-term="framework">프레임워크</span>와 무관하게 위험합니다.</p>
 </div>
 
 <div class="codeblock">
@@ -336,7 +343,7 @@ npm audit fix</code></pre>
 <li><a href="https://owasp.org/www-project-top-ten/" target="_blank" rel="noopener">OWASP Top 10</a> — 가장 널리 <span class="term" data-term="reference">참조</span>되는 웹 취약점 목록</li>
 <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — XSS 방어 치트시트</a></li>
 <li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Guides/CSP" target="_blank" rel="noopener">MDN — 콘텐츠 보안 정책(CSP)</a></li>
-<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Headers/Set-Cookie/SameSite" target="_blank" rel="noopener">MDN — SameSite 쿠키</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Headers/Set-Cookie" target="_blank" rel="noopener">MDN — Set-Cookie 헤더(SameSite 포함)</a></li>
 <li><a href="https://github.com/cure53/DOMPurify" target="_blank" rel="noopener">DOMPurify</a></li>
 </ul>
 
@@ -358,12 +365,12 @@ FB_QUIZ([
     q: "React에서 <code>&lt;div&gt;{userInput}&lt;/div&gt;</code> 가 XSS로부터 안전한 이유는?",
     o: [
       "React가 서버에서 검증하기 때문",
-      "React가 값을 자동으로 이스케이프해 텍스트로만 렌더링하기 때문. 위험한 것은 <code>dangerouslySetInnerHTML</code>뿐이다",
+      "React가 값을 자동으로 이스케이프해 텍스트로만 렌더링하기 때문. 다만 이 보호는 본문 텍스트에만 적용된다",
       "React는 HTML을 사용하지 않기 때문",
       "TypeScript가 막아 주기 때문"
     ],
     a: 1,
-    e: "React는 중괄호로 넣은 값의 <code>&lt;</code>·<code>&amp;</code> 등을 <b>문자 엔티티로 변환</b>합니다(6장). 그래서 <code>&lt;script&gt;</code>가 들어와도 글자로 표시될 뿐입니다. 이름이 길고 위험해 보이는 <code>dangerouslySetInnerHTML</code>은 <b>일부러 그렇게 지은 것</b>입니다."
+    e: "React는 중괄호로 넣은 값의 <code>&lt;</code>·<code>&amp;</code> 등을 <b>문자 엔티티로 변환</b>합니다(6장). 그래서 <code>&lt;script&gt;</code>가 들어와도 글자로 표시될 뿐입니다. 이름이 길고 위험해 보이는 <code>dangerouslySetInnerHTML</code>은 <b>일부러 그렇게 지은 것</b>입니다. 다만 자동 이스케이프는 <b>본문 텍스트에만</b> 적용됩니다. <code>&lt;a href={userUrl}&gt;</code>에 <code>javascript:</code> 스킴이 들어오는 경우처럼, React를 써도 막히지 않는 XSS가 있습니다."
   },
   {
     q: "CSRF 공격이 CORS로 막히지 않는 이유는?",

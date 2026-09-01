@@ -71,18 +71,35 @@ for (const chapter of FLAT) {
     }
     if (depth > 0 || !part.trim()) continue;
 
-    let text = part;
+    /* 원본 텍스트에서 '위치만' 모은 뒤 한 번에 조립한다.
+       순차 치환을 하면 방금 넣은 <span class="term" …> 마크업의 속성 글자를
+       다음 용어가 다시 매칭해 태그가 깨진다. (예: class 라는 용어) */
+    const text = part;
+    const hits = [];
     for (const cand of candidates) {
       if (usedKeys.has(cand.key)) continue;
       if (cand.ch === chapter.id) continue;          /* 자기 챕터에서는 표시 안 함 */
-      const re = new RegExp(escapeRe(cand.name));
-      if (!re.test(text)) continue;
-      text = text.replace(re,
-        '<span class="term" data-term="' + cand.key + '">' + cand.name + "</span>");
+      const idx = text.search(new RegExp(escapeRe(cand.name)));
+      if (idx < 0) continue;
+      const end = idx + cand.name.length;
+      /* 이미 잡힌 구간과 겹치면 건너뛴다 (긴 이름이 먼저 잡는다) */
+      if (hits.some(h => idx < h.end && end > h.start)) continue;
+      hits.push({ start: idx, end, cand });
       usedKeys.add(cand.key);
-      marked++;
     }
-    parts[i] = text;
+    if (hits.length) {
+      hits.sort((a, b) => a.start - b.start);
+      let out = "", pos = 0;
+      for (const h of hits) {
+        out += text.slice(pos, h.start) +
+          '<span class="term" data-term="' + h.cand.key + '">' + h.cand.name + "</span>";
+        pos = h.end;
+        marked++;
+      }
+      parts[i] = out + text.slice(pos);
+    } else {
+      parts[i] = text;
+    }
   }
 
   if (marked > 0) {

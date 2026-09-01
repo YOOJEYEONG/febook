@@ -247,7 +247,7 @@
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — z-index 문제 진단 순서</p>
 <ol>
 <li>대상 요소에 <code>position</code>이 있는가? (없으면 z-index는 무시됩니다)</li>
-<li><span <span class="term" data-term="class">class</span>="term" data-term="devtools">개발자 도구</span>에서 <b>조상을 하나씩 거슬러 올라가며</b> <code>opacity</code>·<code>transform</code>·<code>filter</code>·<code>z-index</code>가 걸린 요소를 찾습니다. 그것이 범인입니다.</li>
+<li><span class="term" data-term="devtools">개발자 도구</span>에서 <b>조상을 하나씩 거슬러 올라가며</b> <code>opacity</code>·<code>transform</code>·<code>filter</code>·<code>z-index</code>가 걸린 요소를 찾습니다. 그것이 범인입니다.</li>
 <li>해결책은 <b>z-index를 더 올리는 것이 아니라</b>, 그 요소를 <b>다른 부모 밑으로 옮기는 것</b>입니다.</li>
 </ol>
 <p style="margin-bottom:0"><b>팀 규칙으로 z-index 단계를 미리 정해 두면</b> 이 싸움의 절반이 사라집니다.

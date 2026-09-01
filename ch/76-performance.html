@@ -69,7 +69,7 @@
 <table>
 <thead><tr><th></th><th>실험실 (Lab)</th><th>실제 사용자 (Field)</th></tr></thead>
 <tbody>
-<tr><td>도구</td><td><span <span class="term" data-term="class">class</span>="term" data-term="lighthouse">Lighthouse</span>, <span class="term" data-term="devtools">DevTools</span>(49장)</td><td>CrUX, <code>web-vitals</code> 라이브러리</td></tr>
+<tr><td>도구</td><td><span class="term" data-term="lighthouse">Lighthouse</span>, <span class="term" data-term="devtools">DevTools</span>(49장)</td><td>CrUX, <code>web-vitals</code> 라이브러리</td></tr>
 <tr><td>환경</td><td>내 컴퓨터, 통제된 조건</td><td><b>진짜 사용자의 기기·네트워크</b></td></tr>
 <tr><td>장점</td><td>재현 가능, 개선 항목 제시</td><td><b>진실</b></td></tr>
 <tr><td>한계</td><td><b>INP를 제대로 못 잽니다</b>(실제 상호작용이 없으므로)</td><td>원인 파악이 어렵습니다</td></tr>
@@ -109,7 +109,7 @@ LCP는 네 단계로 나뉘고, 어디가 느린지 알아야 고칠 수 있습�
 <table>
 <thead><tr><th>원인</th><th>대응</th></tr></thead>
 <tbody>
-<tr><td>서버 응답이 느림 (①)</td><td>캐싱, <b><span class="term" data-term="ssg">SSG</span>·<span class="term" data-term="isr">ISR</span></b>(70장), <span class="term" data-term="cdn"><span class="term" data-term="cd">CD</span>N</span>(3장), DB 쿼리 개선</td></tr>
+<tr><td>서버 응답이 느림 (①)</td><td>캐싱, <b><span class="term" data-term="ssg">SSG</span>·<span class="term" data-term="isr">ISR</span></b>(70장), <span class="term" data-term="cdn">CDN</span>(3장), DB 쿼리 개선</td></tr>
 <tr><td>이미지 발견이 늦음 (②)</td><td><b><code>priority</code>·<code>preload</code></b>(73장). JS로 삽입되는 이미지는 발견이 늦습니다</td></tr>
 <tr><td>이미지가 큼 (③)</td><td><b>WebP·AVIF</b>, 적절한 크기, <code>srcset</code>(8장)</td></tr>
 <tr><td><b>첫 화면 이미지에 <code>lazy</code></b></td><td>붙이면 안 됩니다(8·73장). <b>매우 흔한 실수</b></td></tr>
@@ -131,7 +131,7 @@ LCP는 네 단계로 나뉘고, 어디가 느린지 알아야 고칠 수 있습�
 <tr><td><b>긴 작업</b> (50ms 초과)</td><td>쪼개기, <b>Web Worker</b>(40장), 알고리즘 개선</td></tr>
 <tr><td>무거운 렌더링</td><td><b><code>useTransition</code></b>(69장), 가상 스크롤, 구조 개선(64장)</td></tr>
 <tr><td>과도한 JS 실행</td><td>번들 줄이기, <b><span class="term" data-term="code-splitting">코드 분할</span></b>(47·68장)</td></tr>
-<tr><td><span class="term" data-term="hydration">하이드레이션</span>이 오래 걸림</td><td><b><span class="term" data-term="rsc">서버 <span class="term" data-term="component">컴포넌트</span></span></b>로 <span class="term" data-term="client">클라이언트</span> 코드 줄이기(69·71장)</td></tr>
+<tr><td><span class="term" data-term="hydration">하이드레이션</span>이 오래 걸림</td><td><b><span class="term" data-term="rsc">서버 컴포넌트</span></b>로 <span class="term" data-term="client">클라이언트</span> 코드 줄이기(69·71장)</td></tr>
 <tr><td><b>서드파티 스크립트</b></td><td><span class="term" data-term="lazy-loading">지연 로딩</span>(73장). <b>범인인 경우가 매우 많습니다</b></td></tr>
 <tr><td>이벤트 핸들러가 무거움</td><td><span class="term" data-term="debounce">디바운스</span>·<span class="term" data-term="throttle">스로틀</span>(31장), <code>passive: true</code>(38장)</td></tr>
 </tbody>
@@ -193,7 +193,7 @@ npx vite-bundle-visualizer       # 무엇이 큰지 시각화</code></pre>
 <tr><td><b>필요한 것만 import</b></td><td><code>import * as _</code> 금지(47장)</td></tr>
 <tr><td><b>무거운 라이브러리 교체</b></td><td>날짜 표시는 <code>Intl</code>로 충분한 경우가 많습니다(43장)</td></tr>
 <tr><td><b>서드파티 재검토</b></td><td>정말 필요한지 다시 묻기(73장)</td></tr>
-<tr><td><b>서버 컴포넌트</b></td><td>해당 코드가 <b>번들에 아예 없습니다</b>(69장)</td></tr>
+<tr><td><b>서버 <span class="term" data-term="component">컴포넌트</span></b></td><td>해당 코드가 <b>번들에 아예 없습니다</b>(69장)</td></tr>
 </tbody>
 </table>
 </div>
@@ -212,7 +212,7 @@ npx vite-bundle-visualizer       # 무엇이 큰지 시각화</code></pre>
 <li><b>WebP·AVIF</b>로 변환</li>
 <li>첫 화면 밖은 <b><code>loading="lazy"</code></b>, 첫 화면은 <b><code>priority</code></b></li>
 <li><b>정적 자원은 길게 캐시</b> — 해시 파일명이 있으면 1년도 안전합니다(3·47장)</li>
-<li><b>CDN</b>으로 거리 지연 줄이기(3장)</li>
+<li><b><span class="term" data-term="cd">CD</span>N</b>으로 거리 지연 줄이기(3장)</li>
 </ul>
 
 <h2 id="budget">성능 예산</h2>

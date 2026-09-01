@@ -24,7 +24,7 @@
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
 <ul>
-  <li><span <span class="term" data-term="class">class</span>="term" data-term="rsc">서버 <span class="term" data-term="component">컴포넌트</span></span>에서 데이터 가져오기</li>
+  <li><span class="term" data-term="rsc">서버 컴포넌트</span>에서 데이터 가져오기</li>
   <li><b>캐싱과 재검증</b> — 무엇을 얼마나 저장할지</li>
   <li><b>Server Actions</b> — <span class="term" data-term="api">API</span> 없이 데이터 변경하기</li>
   <li><b>스트리밍</b>으로 느린 부분만 나중에 보내기</li>
@@ -81,7 +81,7 @@ export default async function ProductPage({ params }) {
 <tbody>
 <tr><td><b>데이터 캐시</b></td><td><code>fetch</code>·DB 조회 결과</td><td>같은 데이터를 반복 조회하지 않기</td></tr>
 <tr><td><b>전체 라우트 캐시</b></td><td>렌더링된 <span class="term" data-term="html">HTML</span></td><td>정적 페이지를 즉시 응답(<span class="term" data-term="ssg">SSG</span>·<span class="term" data-term="isr">ISR</span>, 70장)</td></tr>
-<tr><td><b>요청 <span class="term" data-term="<span class="term" data-term="m<span class="term" data-term="em">em</span>o">memo</span>ization">메모이제이션</span></b></td><td>같은 요청 중의 동일 호출</td><td>한 렌더링 안에서 <b>중복 호출 제거</b></td></tr>
+<tr><td><b>요청 <span class="term" data-term="memoization">메모이제이션</span></b></td><td>같은 요청 중의 동일 호출</td><td>한 렌더링 안에서 <b>중복 호출 제거</b></td></tr>
 <tr><td><b>라우터 캐시</b></td><td>방문한 페이지</td><td>뒤로 가기를 즉시 표시</td></tr>
 </tbody>
 </table>
@@ -97,7 +97,7 @@ async function Sidebar() { const user = await getUser(); /* … */ }
 async function Profile() { const user = await getUser(); /* … */ }</code></pre>
 </div>
 <p style="margin-bottom:0">그래서 <b>데이터를 <span class="term" data-term="props">props</span>로 계속 내려보낼 필요가 없습니다.</b>
-필요한 컴포넌트가 <b>각자 가져오면</b> 됩니다.
+필요한 <span class="term" data-term="component">컴포넌트</span>가 <b>각자 가져오면</b> 됩니다.
 63장의 props drilling 문제가 서버 컴포넌트에서는 다른 방식으로 해결됩니다.</p>
 </div>
 
@@ -311,7 +311,7 @@ async function Child({ userId }) {
 <ul>
 <li><a href="https://nextjs.org/docs/app/getting-started/fetching-data" target="_blank" rel="noopener">Next.js — 데이터 가져오기</a></li>
 <li><a href="https://nextjs.org/docs/app/getting-started/caching-and-revalidating" target="_blank" rel="noopener">Next.js — 캐싱과 재검증</a></li>
-<li><a href="https://nextjs.org/docs/app/getting-started/updating-data" target="_blank" rel="noopener">Next.js — Server Actions로 데이터 변경</a></li>
+<li><a href="https://nextjs.org/docs/app/getting-started/mutating-data" target="_blank" rel="noopener">Next.js — 데이터 변경(Server Actions)</a></li>
 <li><a href="https://nextjs.org/docs/app/api-reference/file-conventions/loading" target="_blank" rel="noopener">Next.js — 스트리밍과 loading</a></li>
 </ul>
 

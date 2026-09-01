@@ -105,7 +105,7 @@ console.log(typeOf(/regex/));   // "RegExp"
 
 <div class="box myth">
 <p class="box-title"><span class="box-ico">🐛</span> <code>typeof null === "object"</code>는 <b>고칠 수 없는 버그</b></p>
-<span class="mythline"><span <span class="term" data-term="class">class</span>="term" data-term="javascript">JavaScript</span> 최초 구현에서 값의 타입을 하위 비트로 표시했는데,
+<span class="mythline"><span class="term" data-term="javascript">JavaScript</span> 최초 구현에서 값의 타입을 하위 비트로 표시했는데,
 객체는 <code>000</code>으로 시작했고 <code>null</code>은 <b>전부 0</b>인 포인터였습니다.
 그래서 <code>null</code>이 객체로 판정됩니다.</span>
 <span class="mythline">고치자는 제안이 있었지만 <b>기존 웹의 수많은 코드가 깨지기 때문에</b> 거부되었습니다.

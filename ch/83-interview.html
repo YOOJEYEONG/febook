@@ -48,11 +48,11 @@
 <thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
 <tbody>
 <tr><td><b>주소창에 주소를 입력하면 무슨 일이 일어나나요?</b></td><td><span class="term" data-term="dns">DNS</span> → <span class="term" data-term="tcp">TCP</span>·<span class="term" data-term="tls">TLS</span> → <span class="term" data-term="http">HTTP</span> 요청 → 응답 → 파싱 → 렌더링. <b>어느 단계든 깊게 물을 수 있습니다</b></td><td>2·3·4·5</td></tr>
-<tr><td>HTTP <span <span class="term" data-term="class">class</span>="term" data-term="status-code">상태 코드</span> 중 아는 것을 말해 보세요</td><td>첫 자리로 분류. <b>401과 403의 차이</b>는 단골</td><td>4</td></tr>
-<tr><td>GET과 POST의 차이는?</td><td>데이터 위치, <b>안전·<span class="term" data-term="id<span class="term" data-term="em">em</span>potent">멱등</span></b>, 캐시 가능 여부</td><td>4</td></tr>
-<tr><td><span class="term" data-term="cors">CORS</span> 오류는 왜 나고 어떻게 해결하나요?</td><td><span class="term" data-term="same-origin-policy">동일 <span class="term" data-term="origin">출처</span> 정책</span>, <b>서버가 헤더로 허용</b>. 프론트에서 못 고침</td><td>3·37</td></tr>
+<tr><td>HTTP <span class="term" data-term="status-code">상태 코드</span> 중 아는 것을 말해 보세요</td><td>첫 자리로 분류. <b>401과 403의 차이</b>는 단골</td><td>4</td></tr>
+<tr><td>GET과 POST의 차이는?</td><td>데이터 위치, <b>안전·<span class="term" data-term="idempotent">멱등</span></b>, 캐시 가능 여부</td><td>4</td></tr>
+<tr><td><span class="term" data-term="cors">CORS</span> 오류는 왜 나고 어떻게 해결하나요?</td><td><span class="term" data-term="same-origin-policy">동일 출처 정책</span>, <b>서버가 헤더로 허용</b>. 프론트에서 못 고침</td><td>3·37</td></tr>
 <tr><td><span class="term" data-term="cookie">쿠키</span>·<span class="term" data-term="localstorage">localStorage</span>·<span class="term" data-term="sessionstorage">sessionStorage</span>의 차이는?</td><td>수명·범위·용량·<b>자동 전송 여부</b></td><td>39</td></tr>
-<tr><td><span class="term" data-term="browser">브라우저</span> 렌더링 과정을 설명해 보세요</td><td><span class="term" data-term="dom">DOM</span>·<span class="term" data-term="cssom"><span class="term" data-term="css">CSS</span>OM</span> → 렌더 트리 → 레이아웃 → 페인트 → 합성</td><td>5</td></tr>
+<tr><td><span class="term" data-term="browser">브라우저</span> 렌더링 과정을 설명해 보세요</td><td><span class="term" data-term="dom">DOM</span>·<span class="term" data-term="cssom">CSSOM</span> → 렌더 트리 → 레이아웃 → 페인트 → 합성</td><td>5</td></tr>
 </tbody>
 </table>
 </div>
@@ -64,7 +64,7 @@
 <thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
 <tbody>
 <tr><td><span class="term" data-term="semantic">시맨틱</span> 태그를 왜 쓰나요?</td><td><b><span class="term" data-term="a11y">접근성</span>·<span class="term" data-term="seo">SEO</span>·유지보수.</b> 구체적 예를 들 것</td><td>7·11</td></tr>
-<tr><td>CSS <span class="term" data-term="specificity">명시도</span>를 설명해 보세요</td><td>세 자리를 <b>각각</b> 비교. 자릿수 합산이 아님</td><td>12</td></tr>
+<tr><td><span class="term" data-term="css">CSS</span> <span class="term" data-term="specificity">명시도</span>를 설명해 보세요</td><td>세 자리를 <b>각각</b> 비교. 자릿수 합산이 아님</td><td>12</td></tr>
 <tr><td><code>display: none</code>과 <code>visibility: hidden</code>의 차이</td><td>렌더 트리 포함 여부, 공간 차지 여부</td><td>5·13</td></tr>
 <tr><td><span class="term" data-term="flexbox">Flexbox</span>와 <span class="term" data-term="grid">Grid</span>를 언제 쓰나요?</td><td>한 방향 vs 두 방향. <b>실제로 함께 씀</b></td><td>15·16</td></tr>
 <tr><td><code>position</code> 값들을 설명해 보세요</td><td>기준이 무엇인지. <b><code>sticky</code>가 안 되는 이유</b>도 자주 묻습니다</td><td>17</td></tr>
@@ -130,7 +130,7 @@ console.log(0.1 + 0.2 === 0.3);
 <tr><td><b>Effect가 필요 없는 경우는?</b></td><td>계산 가능한 값, 이벤트 핸들러로 충분한 것</td><td>61</td></tr>
 <tr><td><code>useMemo</code>·<code>useCallback</code>을 언제 쓰나요?</td><td><b>"측정 후에"</b>가 핵심. 남용은 손해</td><td>64</td></tr>
 <tr><td>상태를 어디에 두어야 하나요?</td><td>가장 가까운 공통 부모, <b><span class="term" data-term="server-state">서버 상태</span>와 분리</b></td><td>59·65</td></tr>
-<tr><td>제어 vs <span class="term" data-term="uncontrolled-component">비<span class="term" data-term="controlled-component">제어 <span class="term" data-term="component">컴포넌트</span></span></span></td><td>값의 출처, 각각의 장단</td><td>62</td></tr>
+<tr><td>제어 vs <span class="term" data-term="uncontrolled-component">비제어 컴포넌트</span></td><td>값의 <span class="term" data-term="origin">출처</span>, 각각의 장단</td><td>62</td></tr>
 <tr><td><span class="term" data-term="immutability">불변성</span>을 왜 지켜야 하나요?</td><td>참조 비교로 변경을 감지하기 때문</td><td>25·59</td></tr>
 <tr><td><span class="term" data-term="rsc">서버 컴포넌트</span>란?</td><td>번들에 포함되지 않음. <b><span class="term" data-term="ssr">SSR</span>과 다름</b></td><td>69·71</td></tr>
 </tbody>
@@ -147,7 +147,7 @@ console.log(0.1 + 0.2 === 0.3);
 <tr><td>성능을 어떻게 개선하나요?</td><td><b>측정 → 큰 것부터 → 재측정.</b> 구체적 경험이 있으면 최고</td><td>76</td></tr>
 <tr><td>번들 크기를 어떻게 줄이나요?</td><td><span class="term" data-term="code-splitting">코드 분할</span>, <span class="term" data-term="tree-shaking">트리 셰이킹</span>, 라이브러리 재검토</td><td>47</td></tr>
 <tr><td><b><span class="term" data-term="xss">XSS</span>를 어떻게 막나요?</b></td><td>출력 이스케이프, <code>textContent</code>, DOMPurify, <span class="term" data-term="csp">CSP</span></td><td>78</td></tr>
-<tr><td><span class="term" data-term="csrf"><span class="term" data-term="csr">CSR</span>F</span>는?</td><td>쿠키 자동 전송이 원인. <code>SameSite</code> + 토큰</td><td>78</td></tr>
+<tr><td><span class="term" data-term="csrf">CSRF</span>는?</td><td>쿠키 자동 전송이 원인. <code>SameSite</code> + 토큰</td><td>78</td></tr>
 <tr><td>토큰을 어디에 저장하나요?</td><td><b>정답이 하나가 아님.</b> 위협 모델로 답하면 좋습니다</td><td>39·78</td></tr>
 <tr><td>접근성을 위해 무엇을 하나요?</td><td>시맨틱, 키보드, <code>alt</code>, 대비. <b>실제로 해 본 것</b>을</td><td>11·77</td></tr>
 </tbody>

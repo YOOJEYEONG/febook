@@ -24,7 +24,7 @@
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
 <ul>
-  <li><span <span class="term" data-term="class">class</span>="term" data-term="nodejs">Node.js</span>와 npm의 관계, 버전 관리 도구로 설치하기</li>
+  <li><span class="term" data-term="nodejs">Node.js</span>와 npm의 관계, 버전 관리 도구로 설치하기</li>
   <li><code>package.json</code>의 모든 항목</li>
   <li><b>s<span class="term" data-term="em">em</span>ver</b> — <code>^</code>와 <code>~</code>가 무슨 뜻인지</li>
   <li><b>lock 파일</b>이 왜 중요한지</li>
@@ -47,7 +47,7 @@
 <div class="codeblock" style="margin-bottom:0">
 <pre><code data-lang="bash"># fnm (빠르고 가볍습니다) 또는 nvm 을 설치한 뒤
 fnm install --lts        # 최신 LTS 설치
-fnm use 20               # 특정 버전 사용
+fnm use 24               # 특정 버전 사용 (2026년 기준 최신 LTS)
 node --version
 npm --version</code></pre>
 </div>
@@ -55,8 +55,11 @@ npm --version</code></pre>
 
 <div class="box warn">
 <p class="box-title"><span class="box-ico">🏷️</span> LTS 버전을 쓰세요</p>
-<p style="margin-bottom:0"><b>LTS</b>(Long Term Support)는 <b>장기 지원 버전</b>으로, 짝수 번호가 붙습니다.
-홀수 버전은 실험적 기능이 들어간 단기 버전이라 실무에 적합하지 않습니다.
+<p><b>LTS</b>(Long Term Support)는 <b>장기 지원 버전</b>입니다.
+Node.js는 <b>짝수 번호 버전만</b> 나중에 LTS가 되고, 홀수 번호는 새 기능을 먼저 시험해 보는 단기 버전이라 실무에 적합하지 않습니다.</p>
+<p style="margin-bottom:0"><b>버전 번호는 계속 바뀝니다.</b> 위 예시의 <code>24</code>는 2026년 기준이고,
+지금 무엇이 LTS인지는 <a href="https://nodejs.org/en/about/previous-releases" target="_blank" rel="noopener">Node.js 릴리스 일정</a>에서
+확인하세요. <code>fnm install --lts</code>를 쓰면 항상 최신 LTS가 설치됩니다.
 프로젝트에는 <code>.nvmrc</code>나 <code>package.json</code>의 <code>engines</code> 필드로
 <b>팀이 쓸 버전을 명시</b>해 두는 것이 좋습니다.</p>
 </div>

@@ -169,7 +169,7 @@ Promise.resolve()
 <b>"이만큼 뒤에 실행하라"</b>가 아닙니다.</span>
 <span class="mythline">큐에 들어간 뒤에도 <b>콜 스택이 비고 마이크로태스크가 다 처리될 때까지</b> 기다립니다.
 앞에 무거운 동기 코드가 있으면 <code>setTimeout(fn, 0)</code>이 <b>몇 초 뒤에</b> 실행될 수도 있습니다.</span>
-<span class="mythline">게다가 HTML 명세상 <b>타이머가 5단계 이상 중첩되면 최소 4ms</b>로 제한됩니다.
+<span class="mythline">게다가 HTML 명세상 <b>타이머 중첩이 5단계를 넘으면(6단계부터) 최소 4ms</b>로 제한됩니다.
 정확한 시간이 필요한 애니메이션에 <code>setTimeout</code>을 쓰면 안 되는 이유입니다.</span>
 </div>
 

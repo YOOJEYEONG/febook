@@ -73,7 +73,7 @@ ISR   빌드할 때 미리 + 주기적으로 갱신 → SSG인데 낡으면 다�
 
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🔍</span> 검색엔진과 CSR</p>
-<p style="margin-bottom:0">구글 크롤러는 <b><span <span class="term" data-term="class">class</span>="term" data-term="javascript">JavaScript</span>를 실행할 수 있습니다.</b> 그래서 CSR 페이지도 색인될 수 있습니다.
+<p style="margin-bottom:0">구글 크롤러는 <b><span class="term" data-term="javascript">JavaScript</span>를 실행할 수 있습니다.</b> 그래서 CSR 페이지도 색인될 수 있습니다.
 다만 <b>JS 실행은 별도 큐에서 나중에</b> 처리되어 색인이 늦어질 수 있고,
 <b>다른 검색엔진과 SNS 미리보기 크롤러는 대개 JS를 실행하지 않습니다.</b>
 카카오톡에 링크를 붙였을 때 미리보기가 안 나오는 이유가 이것입니다(10장).</p>
@@ -132,7 +132,7 @@ useEffect(() =&gt; { setTime(new Date().toLocaleTimeString()); }, []);</code></p
 <p style="margin-bottom:0">화면은 빨리 보이는데 <b>JS 로딩과 하이드레이션이 끝날 때까지 버튼이 안 눌립니다.</b>
 사용자는 <b>다 됐다고 생각하고 클릭했다가 반응이 없어</b> 혼란스러워합니다.
 이 지표를 <b><span class="term" data-term="inp">INP</span></b>(상호작용 반응성)로 측정합니다(76장).<br>
-이 문제를 줄이려는 것이 <b><span class="term" data-term="rsc">서버 <span class="term" data-term="component">컴포넌트</span></span></b>(69장)와 <b>부분 하이드레이션</b> 계열의 기술입니다.
+이 문제를 줄이려는 것이 <b><span class="term" data-term="rsc">서버 컴포넌트</span></b>(69장)와 <b>부분 하이드레이션</b> 계열의 기술입니다.
 하이드레이션할 코드 자체를 줄이는 방향입니다.</p>
 </div>
 
@@ -147,7 +147,7 @@ useEffect(() =&gt; { setTime(new Date().toLocaleTimeString()); }, []);</code></p
 <table>
 <thead><tr><th>장점</th><th>단점</th></tr></thead>
 <tbody>
-<tr><td><b>가장 빠릅니다</b> (<span class="term" data-term="cdn"><span class="term" data-term="cd">CD</span>N</span>에서 즉시)<br><b>가장 쌉니다</b> (서버 계산 없음)<br>서버가 죽어도 페이지는 살아 있습니다<br>SEO 완벽</td><td>내용이 바뀌면 <b>다시 빌드</b>해야 합니다<br>페이지가 많으면 <b>빌드가 오래</b> 걸립니다<br>사용자별 개인화 불가</td></tr>
+<tr><td><b>가장 빠릅니다</b> (<span class="term" data-term="cdn">CDN</span>에서 즉시)<br><b>가장 쌉니다</b> (서버 계산 없음)<br>서버가 죽어도 페이지는 살아 있습니다<br>SEO 완벽</td><td>내용이 바뀌면 <b>다시 빌드</b>해야 합니다<br>페이지가 많으면 <b>빌드가 오래</b> 걸립니다<br>사용자별 개인화 불가</td></tr>
 </tbody>
 </table>
 </div>
