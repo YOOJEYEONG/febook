@@ -1,0 +1,364 @@
+<!--desc: transition과 @keyframes 애니메이션, transform 함수, 부드러운 60fps를 만드는 속성 선택, 이징 곡선과 접근성 배려까지 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>transition</code>으로 상태 변화를 부드럽게</li>
+  <li><code>transform</code>의 네 가지 기본 함수</li>
+  <li><code>@keyframes</code>로 복잡한 동작 만들기</li>
+  <li><b>버벅이지 않는 애니메이션</b>을 만드는 속성 선택 기준</li>
+  <li>이징 곡선을 고르는 실무 감각</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분</p>
+
+<h2 id="transition">transition — 상태가 바뀔 때 부드럽게</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">.button {
+  background: #1f5f4f;
+  transition: background 200ms ease, transform 200ms ease;
+}
+.button:hover {
+  background: #2f8f77;
+  transform: translateY(-2px);
+}</code></pre>
+</div>
+
+<p><code>transition</code>은 <b>값이 바뀌는 순간</b>에 개입해 중간 과정을 만들어 줍니다.
+네 부분으로 이루어집니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>부분</th><th>예</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><code>transition-property</code></td><td><code>opacity</code>, <code>all</code></td><td>어떤 속성을. <b><code>all</code>은 피하세요</b> — 예상 못 한 속성까지 애니메이션되어 성능을 갉아먹습니다</td></tr>
+<tr><td><code>transition-duration</code></td><td><code>200ms</code></td><td>얼마 동안</td></tr>
+<tr><td><code>transition-timing-function</code></td><td><code>ease-out</code></td><td>어떤 속도 곡선으로</td></tr>
+<tr><td><code>transition-delay</code></td><td><code>100ms</code></td><td>얼마 뒤에 시작</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📍</span> transition은 <b>기본 상태</b>에 씁니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="css">/* ✅ 들어갈 때도 나올 때도 부드럽다 */
+.btn { transition: background 200ms; }
+.btn:hover { background: red; }
+
+/* ❌ 마우스를 올릴 때만 부드럽고, 뗄 때는 뚝 끊긴다 */
+.btn:hover { background: red; transition: background 200ms; }</code></pre>
+</div>
+</div>
+
+<h3 id="animatable">애니메이션 되는 것과 안 되는 것</h3>
+<p>연속적인 숫자로 표현되는 값만 중간 단계를 만들 수 있습니다.</p>
+<ul>
+<li><b>됩니다</b> — <code>opacity</code>, <code>color</code>, <code>background-color</code>, <code>width</code>, <code>height</code>, <code>margin</code>, <code>transform</code>, <code>box-shadow</code>, <code>filter</code></li>
+<li><b>안 됩니다</b> — <code>display</code>, <code>font-family</code>, <code>position</code> 같은 <b>불연속적인</b> 값</li>
+</ul>
+<p>그래서 <code>display: none</code>에서 <code>block</code>으로 바꾸며 서서히 나타나게 하려는 시도가 실패합니다.
+전통적으로는 <code>opacity</code>와 <code>visibility</code>를 조합해 우회했습니다.
+최근에는 <code>transition-behavior: allow-discrete</code>와 <code>@starting-style</code>로
+<b><code>display</code>를 포함한 전환</b>이 가능해졌지만(Chrome 117+, Safari 17.4+, Firefox 129+),
+아직 지원 범위 확인이 필요합니다.</p>
+
+<h2 id="transform">transform</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>함수</th><th>예</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>translate</code></td><td><code>translateX(20px)</code>, <code>translate(10px, 20px)</code></td><td>이동. <b><code>%</code>는 자기 크기 기준</b></td></tr>
+<tr><td><code>scale</code></td><td><code>scale(1.05)</code></td><td>확대·축소</td></tr>
+<tr><td><code>rotate</code></td><td><code>rotate(45deg)</code></td><td>회전</td></tr>
+<tr><td><code>skew</code></td><td><code>skewX(10deg)</code></td><td>기울이기</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="css">/* 여러 개는 공백으로 나열 — 오른쪽부터 적용됩니다 */
+transform: translateX(20px) rotate(45deg) scale(1.2);
+
+/* 회전·확대의 기준점 */
+transform-origin: center;      /* 기본값 */
+transform-origin: top left;</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 완벽한 중앙 정렬의 고전 기법</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="css">.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);   /* 자기 크기의 절반만큼 되돌린다 */
+}</code></pre>
+</div>
+<p style="margin-bottom:0"><code>top: 50%</code>는 <b>요소의 위쪽 모서리</b>를 화면 중앙에 둡니다.
+<code>translate(-50%, -50%)</code>의 <code>%</code>는 <b>자기 자신의 크기</b> 기준이라
+크기를 몰라도 정확히 가운데로 옵니다. 지금은 Flex·Grid가 더 간단하지만
+<code>position: fixed</code>와 함께 쓸 때는 여전히 유용합니다.</p>
+</div>
+
+<h2 id="keyframes">@keyframes — 복잡한 동작</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 중간 지점도 지정할 수 있습니다 */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-20px); }
+}
+
+.card {
+  animation: fadeInUp 400ms ease-out;
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">animation 축약형의 순서</span>
+<pre><code data-lang="css">animation: fadeInUp 400ms ease-out 100ms 1 normal forwards;
+/*         이름     시간   이징     지연  횟수 방향  종료후 */
+
+animation-iteration-count: infinite;   /* 무한 반복 */
+animation-direction: alternate;        /* 갔다 되돌아오기 */
+animation-fill-mode: forwards;         /* 끝난 뒤 마지막 상태 유지 */
+animation-play-state: paused;          /* 일시 정지 */</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔚</span> <code>animation-fill-mode: forwards</code>가 없으면</p>
+<p style="margin-bottom:0">애니메이션이 끝나는 순간 <b>원래 상태로 되돌아갑니다.</b>
+"페이드인이 끝나자마자 다시 사라져요"의 원인입니다.
+마지막 프레임을 유지하려면 <code>forwards</code>가 필요합니다.</p>
+</div>
+
+<h2 id="easing">이징 — 속도의 곡선</h2>
+
+<p>현실의 물체는 <b>일정한 속도로 움직이지 않습니다.</b> 서서히 출발해 서서히 멈춥니다.
+이징이 없으면(<code>linear</code>) 기계적이고 어색해 보입니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>값</th><th>느낌</th><th>어울리는 곳</th></tr></thead>
+<tbody>
+<tr><td><code>linear</code></td><td>일정한 속도</td><td>로딩 스피너 회전 정도</td></tr>
+<tr><td><code>ease</code> (기본)</td><td>빠르게 시작해 천천히 끝</td><td>무난한 기본값</td></tr>
+<tr><td><code>ease-out</code></td><td>빠르게 시작해 <b>부드럽게 정지</b></td><td><b>등장·열기.</b> 가장 자주 씁니다</td></tr>
+<tr><td><code>ease-in</code></td><td>천천히 시작해 빠르게 끝</td><td>퇴장·닫기</td></tr>
+<tr><td><code>ease-in-out</code></td><td>양쪽 모두 부드럽게</td><td>위치 이동</td></tr>
+<tr><td><code>cubic-bezier(…)</code></td><td>직접 곡선 정의</td><td>튕기는 효과 등</td></tr>
+<tr><td><code>steps(n)</code></td><td>뚝뚝 끊어서</td><td>스프라이트 애니메이션, 타이핑 효과</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⏱️</span> 시간 감각</p>
+<ul style="margin-bottom:0">
+<li><b>100~200ms</b> — 호버, 버튼 눌림 같은 작은 반응. <b>즉각적으로 느껴집니다</b></li>
+<li><b>200~400ms</b> — 드롭다운, 모달 등장</li>
+<li><b>400~600ms</b> — 화면 전환처럼 큰 움직임</li>
+<li><b>600ms 이상</b> — <b>대부분 너무 깁니다.</b> 사용자는 기다림으로 느낍니다</li>
+</ul>
+</div>
+
+<div class="runner" data-lang="html" data-title="이징 비교" data-note="버튼을 눌러 네 가지가 동시에 움직이는 것을 비교해 보세요. duration 값도 바꿔 보세요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 12px; }
+  .track { background: #eee; border-radius: 6px; margin-bottom: 8px;
+           height: 34px; position: relative; }
+  .ball {
+    position: absolute; top: 4px; left: 4px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #1f5f4f; color: white;
+    display: grid; place-items: center; font-size: 9px;
+  }
+  .track.go .ball { transform: translateX(calc(100% * 0 + 240px)); }
+
+  .b1 { transition: transform 800ms linear; }
+  .b2 { transition: transform 800ms ease; }
+  .b3 { transition: transform 800ms ease-out; }
+  .b4 { transition: transform 800ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+  button { margin-top: 8px; padding: 8px 16px; font-size: 13px;
+           background: #1f5f4f; color: white; border: 0;
+           border-radius: 6px; cursor: pointer; }
+  .label { color: #666; margin-bottom: 2px; }
+</style>
+
+<div class="label">linear</div>
+<div class="track"><div class="ball b1"></div></div>
+<div class="label">ease</div>
+<div class="track"><div class="ball b2"></div></div>
+<div class="label">ease-out</div>
+<div class="track"><div class="ball b3"></div></div>
+<div class="label">cubic-bezier — 살짝 튕김</div>
+<div class="track"><div class="ball b4"></div></div>
+
+<button id="go">움직이기</button>
+
+<script>
+  let moved = false;
+  document.getElementById("go").addEventListener("click", function () {
+    moved = !moved;
+    document.querySelectorAll(".track").forEach(function (t) {
+      t.classList.toggle("go", moved);
+    });
+  });
+</script>
+</textarea>
+</div>
+
+<h2 id="performance">부드러운 애니메이션의 조건</h2>
+
+<p>5장에서 본 렌더링 파이프라인을 떠올려 보세요.
+<b>어떤 속성을 바꾸느냐에 따라 다시 해야 하는 단계가 다릅니다.</b></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>바꾸는 속성</th><th>다시 하는 단계</th><th>비용</th></tr></thead>
+<tbody>
+<tr><td><code>width</code>, <code>height</code>, <code>top</code>, <code>left</code>, <code>margin</code>, <code>padding</code></td><td><b>레이아웃</b> → 페인트 → 합성</td><td>매우 비쌈</td></tr>
+<tr><td><code>background-color</code>, <code>color</code>, <code>box-shadow</code>, <code>border-radius</code></td><td>페인트 → 합성</td><td>중간</td></tr>
+<tr><td><b><code>transform</code>, <code>opacity</code></b></td><td><b>합성만</b></td><td><b>가장 쌈</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 실무 규칙 세 줄</p>
+<ol style="margin-bottom:0">
+<li><b>움직임은 <code>transform</code>, 사라짐은 <code>opacity</code>.</b> 이 둘만으로 대부분의 UI 애니메이션이 됩니다.</li>
+<li><code>left</code>·<code>top</code>·<code>width</code>·<code>height</code>를 애니메이션하지 마세요. 매 프레임 레이아웃을 다시 계산합니다.</li>
+<li><code>transition: all</code>을 쓰지 마세요. 무엇이 애니메이션될지 통제할 수 없습니다.</li>
+</ol>
+</div>
+
+<h3 id="will-change">will-change</h3>
+<div class="codeblock">
+<pre><code data-lang="css">.card { will-change: transform; }</code></pre>
+</div>
+<p>"이 속성이 곧 바뀔 예정"이라고 브라우저에 미리 알려 최적화를 준비시킵니다.
+다만 <b>메모리를 먼저 잡아먹고 쌓임 맥락도 만들기 때문에</b>(17장) 남용하면 오히려 느려집니다.
+<b>실제로 버벅임을 측정한 뒤</b>, 곧 애니메이션될 요소에만 잠깐 붙이는 것이 원칙입니다.</p>
+
+<h2 id="a11y">접근성 — 반드시 지킬 것</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🌀</span> 취향이 아니라 건강 문제입니다</p>
+<p style="margin-bottom:0">18장에서도 언급했지만 다시 강조합니다.
+큰 화면 이동, 확대·축소, 패럴랙스는 전정기관 장애가 있는 사람에게 <b>실제 어지럼증</b>을 유발합니다.
+그리고 <b>1초에 3회 이상 번쩍이는 효과는 광과민성 발작을 일으킬 수 있어</b>
+WCAG에서 명시적으로 금지합니다. 위 코드 블록은 모든 프로젝트에 넣으세요.</p>
+</div>
+
+<h2 id="view-transitions">한 걸음 더: View Transitions</h2>
+<p>페이지나 화면 상태가 바뀔 때 <b>브라우저가 알아서 전환 애니메이션을 만들어 주는</b> 새 기능입니다.</p>
+<div class="codeblock">
+<pre><code data-lang="js">document.startViewTransition(() =&gt; {
+  // 여기서 DOM을 바꾸면 그 변화가 부드럽게 전환됩니다
+  updateTheList();
+});</code></pre>
+</div>
+<p>Chrome 111+, Safari 18+에서 지원되며 Firefox는 아직입니다.
+지원하지 않는 브라우저에서는 <b>애니메이션 없이 즉시 바뀔 뿐</b> 기능은 정상 동작하므로,
+점진적 향상(progressive enhancement)의 좋은 예입니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>transition</code>은 <b>기본 상태</b>에 쓴다. <code>:hover</code>에만 쓰면 되돌아올 때 끊긴다.</li>
+<li><code>transition: all</code>은 피한다.</li>
+<li><code>transform</code>의 <code>%</code>는 <b>자기 크기</b> 기준이다.</li>
+<li><code>animation-fill-mode: forwards</code>가 없으면 끝난 뒤 원상 복귀한다.</li>
+<li>이징 기본 선택: <b>등장은 <code>ease-out</code>, 퇴장은 <code>ease-in</code></b>. 시간은 100~400ms.</li>
+<li><b>움직임은 <code>transform</code>, 사라짐은 <code>opacity</code></b> — 합성 단계만 쓰므로 가장 싸다.</li>
+<li><code>will-change</code>는 측정 후 필요한 곳에만.</li>
+<li><b><code>prefers-reduced-motion</code> 대응은 필수</b>. 초당 3회 이상 번쩍임은 금지.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_transitions/Using_CSS_transitions" target="_blank" rel="noopener">MDN — CSS 트랜지션 사용하기</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_animations/Using_CSS_animations" target="_blank" rel="noopener">MDN — CSS 애니메이션 사용하기</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function" target="_blank" rel="noopener">MDN — transform 함수</a></li>
+<li><a href="https://web.dev/articles/animations-guide" target="_blank" rel="noopener">web.dev — 고성능 애니메이션</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API" target="_blank" rel="noopener">MDN — View Transition API</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "마우스를 올릴 때는 부드럽게 변하는데 뗄 때는 뚝 끊깁니다. 원인은?",
+    o: [
+      "transition 시간이 너무 짧아서",
+      "<code>transition</code>을 <code>:hover</code> 상태에만 선언했기 때문. 기본 상태에 선언해야 양방향 모두 적용된다",
+      "transform을 함께 써야 하기 때문",
+      "브라우저 버그이다"
+    ],
+    a: 1,
+    e: "<code>transition</code>은 <b>그 상태에 있는 동안</b> 값 변화를 감시합니다. <code>:hover</code>에만 있으면 호버가 풀리는 순간 그 선언도 사라져 즉시 원래 값으로 점프합니다. 기본 선택자에 선언하는 것이 정석입니다."
+  },
+  {
+    q: "요소를 오른쪽으로 이동시키는 애니메이션에서 <code>left</code>보다 <code>transform: translateX()</code>가 권장되는 이유는?",
+    o: [
+      "left는 최신 브라우저에서 지원되지 않아서",
+      "left 변경은 레이아웃 재계산을 유발하지만 transform은 합성 단계만으로 처리될 수 있어 프레임당 비용이 훨씬 작아서",
+      "transform이 코드가 짧아서",
+      "left는 애니메이션 대상 속성이 아니라서"
+    ],
+    a: 1,
+    e: "한 프레임 예산은 약 16.7ms입니다. <code>left</code>를 바꾸면 <b>레이아웃 → 페인트 → 합성</b>을 모두 다시 해야 하지만, <code>transform</code>과 <code>opacity</code>는 <b>합성 단계만</b>으로 처리될 수 있어 훨씬 부드럽습니다."
+  },
+  {
+    q: "페이드인 애니메이션이 끝나자마자 요소가 다시 투명해집니다. 필요한 설정은?",
+    o: [
+      "<code>animation-iteration-count: infinite</code>",
+      "<code>animation-fill-mode: forwards</code>",
+      "<code>animation-direction: alternate</code>",
+      "<code>animation-play-state: paused</code>"
+    ],
+    a: 1,
+    e: "애니메이션은 기본적으로 끝나면 <b>원래 CSS 값으로 되돌아갑니다</b>. <code>forwards</code>는 마지막 키프레임 상태를 유지하게 합니다. (또는 애니메이션이 끝난 뒤 클래스를 붙여 최종 상태를 CSS로 고정하는 방법도 씁니다.)"
+  },
+  {
+    q: "요소를 <b>등장</b>시키는 애니메이션에 가장 무난한 이징은?",
+    o: ["<code>linear</code>", "<code>ease-in</code>", "<code>ease-out</code>", "<code>steps(5)</code>"],
+    a: 2,
+    e: "<code>ease-out</code>은 빠르게 출발해 <b>부드럽게 멈춥니다</b>. 사용자 눈에는 즉각 반응하면서도 안정적으로 정착하는 느낌을 주어 등장·열기 동작에 가장 잘 맞습니다. 퇴장에는 반대로 <code>ease-in</code>이 어울립니다."
+  },
+  {
+    q: "<code>prefers-reduced-motion</code>에 대응하지 않으면 생기는 실제 문제는?",
+    o: [
+      "구형 브라우저에서 애니메이션이 끊긴다",
+      "전정기관 장애가 있는 사용자에게 실제 어지럼증·메스꺼움을 유발할 수 있고, 접근성 기준 위반이다",
+      "애니메이션이 아예 표시되지 않는다",
+      "CSS 파일 크기가 커진다"
+    ],
+    a: 1,
+    e: "큰 화면 이동·확대·패럴랙스는 일부 사용자에게 <b>신체 증상</b>을 일으킵니다. 또한 초당 3회 이상 번쩍이는 효과는 광과민성 발작 위험이 있어 WCAG가 명시적으로 금지합니다. 취향의 문제가 아닙니다."
+  }
+]);
+</script>

@@ -1,0 +1,301 @@
+<!--desc: 브라우저 개발자 도구의 Elements·Console·Network·Sources·Application·Performance·Lighthouse 패널을 실무 기준으로 활용하는 법을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>패널별로 <b>무엇을 볼 수 있는지</b></li>
+  <li>Network 탭으로 <b>API 문제 진단</b>하기</li>
+  <li>중단점(breakpoint)으로 <b><code>console.log</code> 없이</b> 디버깅하기</li>
+  <li>Lighthouse로 성능·접근성 점수 받기</li>
+  <li>모바일 기기 <b>원격 디버깅</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 실무 생산성을 가장 크게 바꾸는 챕터입니다</p>
+
+<h2 id="open">열기</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>동작</th><th>단축키</th></tr></thead>
+<tbody>
+<tr><td>개발자 도구 열기</td><td><b>F12</b> / <b>⌘⌥I</b> (macOS)</td></tr>
+<tr><td>요소 검사 모드</td><td><b>⌘⇧C</b> / <b>Ctrl+Shift+C</b></td></tr>
+<tr><td>콘솔 바로 열기</td><td><b>⌘⌥J</b> / <b>Ctrl+Shift+J</b></td></tr>
+<tr><td><b>명령 메뉴</b> (모든 기능 검색)</td><td><b>⌘⇧P</b> / <b>Ctrl+Shift+P</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⌨️</span> 명령 메뉴 하나만 기억해도 됩니다</p>
+<p style="margin-bottom:0"><b>⌘⇧P</b>를 누르고 검색하면 개발자 도구의 <b>거의 모든 기능</b>을 찾을 수 있습니다.
+"screenshot", "coverage", "rendering", "dark" 같은 단어를 쳐 보세요.
+메뉴 위치를 외울 필요가 없습니다.</p>
+</div>
+
+<h2 id="elements">Elements — DOM과 CSS</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>기능</th><th>쓰임</th></tr></thead>
+<tbody>
+<tr><td><b>DOM 트리</b></td><td>5장에서 말한 <b>실제 DOM</b>을 봅니다. HTML 원본과 다를 수 있습니다</td></tr>
+<tr><td><b>Styles 패널</b></td><td>적용된 규칙 전부. <b>취소선</b>이 그어진 것은 밀린 규칙(12장)</td></tr>
+<tr><td><b>Computed 탭</b></td><td>최종 계산된 값. "결국 몇 px인가"를 확인</td></tr>
+<tr><td><b>박스 모델 그림</b></td><td>margin·border·padding·content 크기를 시각적으로(13장)</td></tr>
+<tr><td><b>:hov 버튼</b></td><td><code>:hover</code>·<code>:focus</code> 상태를 <b>고정</b>해서 스타일 확인</td></tr>
+<tr><td><b>flex / grid 배지</b></td><td>누르면 <b>격자선과 정렬선을 화면에 표시</b>(15·16장)</td></tr>
+<tr><td><b>색상 값 클릭</b></td><td>색 선택기 + <b>명도 대비 비율</b>과 기준 통과 여부(11장)</td></tr>
+<tr><td><b>Accessibility 탭</b></td><td>이 요소가 보조기술에 <b>어떤 이름·역할</b>로 전달되는지</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎨</span> 실시간 편집이 가장 큰 가치입니다</p>
+<p style="margin-bottom:0">Styles 패널에서 값을 <b>화살표 키로 올리고 내리며</b> 즉시 결과를 봅니다.
+(<code>Shift</code>+화살표는 10씩, <code>Alt</code>+화살표는 0.1씩)
+코드를 고치고 저장하고 새로고침하는 것보다 훨씬 빠릅니다.
+<b>여기서 값을 확정한 뒤 코드에 옮기는 것</b>이 CSS 작업의 정석입니다.</p>
+</div>
+
+<h2 id="console">Console</h2>
+
+<div class="codeblock">
+<span class="cb-label">알아 두면 좋은 기능들</span>
+<pre><code data-lang="js">$0                    // 지금 Elements에서 선택한 요소
+$1, $2                // 이전에 선택했던 요소들
+$("selector")         // document.querySelector 축약
+$$("selector")        // querySelectorAll 축약 (진짜 배열로 반환)
+copy(obj)             // 값을 클립보드로 복사
+console.table(arr)    // 배열·객체를 표로
+console.dir(el)       // DOM 요소를 객체 구조로
+monitorEvents($0)     // 이 요소에 발생하는 모든 이벤트 출력 (Chrome)
+</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 콘솔 필터를 쓰세요</p>
+<p style="margin-bottom:0">로그가 쏟아질 때는 콘솔 상단의 필터 입력창에 검색어를 넣으면 됩니다.
+레벨(Errors만 보기)로도 거를 수 있고, <b>정규식</b>도 됩니다.
+또 <b>Preserve log</b>를 켜면 페이지가 이동해도 로그가 지워지지 않아
+로그인 리다이렉트 같은 흐름을 추적할 수 있습니다.</p>
+</div>
+
+<h2 id="network">Network — API 문제의 진단소</h2>
+
+<p>"데이터가 안 나와요"라는 문제의 <b>90%는 이 탭에서 답이 나옵니다.</b></p>
+
+<div class="codeblock">
+<span class="cb-label">확인 순서</span>
+<pre><code data-lang="text">① 요청이 나갔는가?
+   → 목록에 없다 = JS가 호출을 안 했다. 코드 흐름을 확인
+
+② 상태 코드는? (4장)
+   → 4xx = 요청이 잘못됨 (주소, 파라미터, 토큰)
+   → 5xx = 서버 문제. 백엔드에 전달
+   → CORS 오류 = 서버가 허용 헤더를 안 줌 (37장)
+
+③ 요청 내용이 맞는가?
+   → Headers 탭: 주소, 메서드, Authorization 헤더
+   → Payload 탭: 실제로 보낸 본문
+
+④ 응답이 맞는가?
+   → Response 탭: 서버가 준 원본
+   → Preview 탭: JSON을 보기 좋게
+
+⑤ 왜 느린가?
+   → Timing 탭: 어느 구간에서 시간이 걸렸는지</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>유용한 기능</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>Fetch/XHR 필터</b></td><td>이미지·CSS를 빼고 <b>API 요청만</b> 봅니다</td></tr>
+<tr><td><b>Disable cache</b></td><td>캐시를 무시하고 항상 새로 받습니다. 개발 중에는 켜 두세요</td></tr>
+<tr><td><b>네트워크 속도 제한</b></td><td><b>Slow 4G</b>로 바꿔 느린 환경을 재현합니다. <b>반드시 해 보세요</b></td></tr>
+<tr><td><b>Copy as fetch / cURL</b></td><td>요청을 그대로 복사해 재현하거나 백엔드에 전달</td></tr>
+<tr><td><b>Waterfall</b></td><td>무엇이 무엇을 기다리는지 시각적으로 확인</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🐌</span> 느린 네트워크를 반드시 테스트하세요</p>
+<p style="margin-bottom:0">개발자의 컴퓨터는 빠르고, 서버는 옆에 있고, 캐시는 따뜻합니다.
+<b>실제 사용자의 환경은 전혀 다릅니다.</b>
+Slow 4G로 바꾸면 <b>로딩 상태를 안 만든 화면</b>, <b>깜빡이는 레이아웃</b>,
+<b>두 번 눌리는 버튼</b> 같은 문제가 즉시 드러납니다.</p>
+</div>
+
+<h2 id="sources">Sources — 중단점 디버깅</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🛑</span> <code>console.log</code>보다 강력합니다</p>
+<p style="margin-bottom:0"><code>console.log</code>는 <b>미리 정한 값만</b> 볼 수 있고, 고칠 때마다 새로고침해야 합니다.
+중단점은 <b>그 순간 멈춰서 모든 변수를 살펴보고 코드를 직접 실행</b>해 볼 수 있습니다.
+한 번 익히면 되돌아가지 않게 됩니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">쓰는 법</span>
+<pre><code data-lang="text">1. Sources 탭에서 파일을 열고 줄 번호를 클릭 → 중단점 설정
+2. 그 코드가 실행되면 화면이 멈춥니다
+3. 오른쪽 패널에서
+   - Scope: 지금 이 시점의 모든 변수 값
+   - Call Stack: 여기까지 어떻게 왔는지 (35장)
+   - Watch: 특정 식을 계속 감시
+4. 콘솔에서 그 시점의 변수를 직접 조작해 볼 수 있습니다
+5. 실행 제어
+   - ▶ 계속        F8
+   - ⤼ 다음 줄     F10  (함수 안으로 안 들어감)
+   - ↓ 안으로      F11  (함수 안으로 들어감)
+   - ↑ 밖으로      Shift+F11</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>고급 중단점</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>조건부 중단점</b></td><td>줄 번호 우클릭 → 조건 입력. <code>id === 42</code>일 때만 멈춥니다. <b>반복문 디버깅의 핵심</b></td></tr>
+<tr><td><b>로그포인트</b></td><td>멈추지 않고 <b>로그만</b> 출력. 코드를 수정하지 않고 <code>console.log</code>를 넣는 효과</td></tr>
+<tr><td><b>DOM 중단점</b></td><td>Elements에서 요소 우클릭 → "이 요소가 바뀔 때 멈춤". <b>누가 이걸 바꿨는지</b> 찾을 때</td></tr>
+<tr><td><b>이벤트 중단점</b></td><td>특정 이벤트가 발생할 때 멈춤</td></tr>
+<tr><td><b><code>debugger</code> 문</b></td><td>코드에 <code>debugger;</code>를 쓰면 그 지점에서 멈춥니다. <b>커밋 전에 지우세요</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="application">Application — 저장소와 캐시</h2>
+<ul>
+<li><b>Local/Session Storage</b> — 저장된 값 확인·수정·삭제 (39장)</li>
+<li><b>Cookies</b> — <code>HttpOnly</code>·<code>Secure</code>·<code>SameSite</code> 플래그 확인 (4장)</li>
+<li><b>IndexedDB</b> — 저장된 객체 탐색</li>
+<li><b>Clear site data</b> — 저장소를 전부 비우고 <b>처음 방문한 사용자</b> 상태를 재현</li>
+</ul>
+
+<h2 id="perf">Performance와 Lighthouse</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구</th><th>쓰임</th></tr></thead>
+<tbody>
+<tr><td><b>Lighthouse</b></td><td>성능·접근성·SEO·모범 사례를 <b>점수와 개선 목록</b>으로. 가장 쉽게 시작하는 방법</td></tr>
+<tr><td><b>Performance</b></td><td>녹화 후 <b>어느 함수가 얼마나 걸렸는지</b>, 프레임이 어디서 끊겼는지(35장)</td></tr>
+<tr><td><b>Coverage</b></td><td>실제로 <b>실행되지 않은 코드 비율</b>. 불필요한 번들을 찾습니다(47장)</td></tr>
+<tr><td><b>Rendering 패널</b></td><td>"Paint flashing"으로 <b>다시 그려지는 영역</b>을 시각화. 불필요한 리페인트 발견</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📊</span> Lighthouse 점수를 맹신하지 마세요</p>
+<p style="margin-bottom:0">Lighthouse는 <b>여러분의 컴퓨터에서 한 번 측정한 결과</b>입니다.
+실제 사용자는 더 느린 기기와 네트워크를 씁니다.
+점수 100점이 "빠르다"의 증명은 아니며, <b>접근성 항목은 자동으로 검사 가능한 것만</b> 봅니다(11장).
+그럼에도 <b>개선 목록은 실질적으로 유용</b>하니 출발점으로 삼기에 좋습니다.
+진짜 판단은 <b>실제 사용자 데이터</b>(76장)로 합니다.</p>
+</div>
+
+<h2 id="mobile">모바일 디버깅</h2>
+<ul>
+<li><b>기기 툴바</b>(⌘⇧M) — 화면 크기·터치 시뮬레이션. <b>완벽하지 않습니다.</b> 실제 기기와 스크롤·폰트가 다릅니다.</li>
+<li><b>Android 실기기</b> — USB 연결 후 Chrome에서 <code>chrome://inspect</code>. <b>진짜 기기의 콘솔을 봅니다.</b></li>
+<li><b>iOS 실기기</b> — 설정에서 웹 검사 활성화 후 macOS Safari의 개발자 메뉴에서 연결.</li>
+</ul>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 디버깅 순서</p>
+<ol style="margin-bottom:0">
+<li><b>Console</b>에 빨간 오류가 있는가? 있다면 그것부터.</li>
+<li><b>Network</b>에서 요청이 나갔는가, 상태 코드는? (데이터 문제의 대부분)</li>
+<li><b>Elements</b>에서 실제 DOM이 예상과 같은가?</li>
+<li><b>Sources</b>에서 중단점으로 값이 어디서부터 잘못됐는지 추적.</li>
+<li>여전히 모르겠다면 <b>재현 조건을 최소화</b>하세요. 코드를 지워 가며 문제가 사라지는 지점을 찾습니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>가장 흔한 실수는 "코드를 노려보는 것"</b>입니다.
+도구는 <b>실제로 무슨 일이 일어났는지</b>를 보여 줍니다. 추측보다 관찰이 항상 빠릅니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>명령 메뉴(⌘⇧P)</b> 하나로 모든 기능을 찾을 수 있다.</li>
+<li>Elements의 <b>취소선</b>이 CSS가 안 먹는 이유를 알려 준다.</li>
+<li><b>Network 탭이 API 문제의 90%를 설명</b>한다. 요청 유무 → 상태 코드 → 내용 순으로 확인.</li>
+<li><b>Slow 4G로 반드시 테스트</b>한다.</li>
+<li><b>중단점</b>은 <code>console.log</code>보다 강력하다. 조건부 중단점과 로그포인트를 익혀 두자.</li>
+<li>Lighthouse는 <b>출발점</b>이지 최종 판단이 아니다.</li>
+<li>모바일은 시뮬레이터가 아니라 <b>실기기 원격 디버깅</b>으로 확인한다.</li>
+<li><b>추측하지 말고 관찰한다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.chrome.com/docs/devtools?hl=ko" target="_blank" rel="noopener">Chrome DevTools 공식 문서 (한국어)</a></li>
+<li><a href="https://developer.chrome.com/docs/devtools/javascript?hl=ko" target="_blank" rel="noopener">Chrome — JavaScript 디버깅 시작하기</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Tools" target="_blank" rel="noopener">Firefox 개발자 도구</a></li>
+<li><a href="https://developer.chrome.com/docs/lighthouse/overview?hl=ko" target="_blank" rel="noopener">Lighthouse 개요</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "\"API 데이터가 화면에 안 나와요\"라는 문제에서 가장 먼저 확인할 패널은?",
+    o: [
+      "Elements",
+      "Network — 요청이 실제로 나갔는지, 상태 코드가 무엇인지, 응답 본문이 어떤지 확인한다",
+      "Performance",
+      "Application"
+    ],
+    a: 1,
+    e: "요청 자체가 안 나갔는지(코드 흐름 문제), 4xx인지(요청이 잘못됨), 5xx인지(서버 문제), 응답 형태가 예상과 다른지를 <b>Network 탭이 한 번에</b> 보여 줍니다. 데이터 문제의 대부분이 여기서 원인이 드러납니다."
+  },
+  {
+    q: "Elements의 Styles 패널에서 어떤 CSS 선언에 <b>취소선</b>이 그어져 있습니다. 무슨 뜻인가요?",
+    o: [
+      "문법 오류가 있다",
+      "다른 규칙에 밀려 적용되지 않았다는 뜻이며, 어느 규칙이 이겼는지도 함께 확인할 수 있다",
+      "브라우저가 지원하지 않는다",
+      "주석 처리되어 있다"
+    ],
+    a: 1,
+    e: "취소선은 <b>캐시케이드에서 밀렸다</b>는 표시입니다(12장). 명시도가 더 높은 규칙이 있거나 나중에 선언된 같은 명시도의 규칙이 이긴 경우입니다. \"스타일이 안 먹어요\" 문제를 가장 빠르게 진단하는 단서입니다."
+  },
+  {
+    q: "반복문이 1000번 도는데 특정 조건에서만 멈춰서 확인하고 싶습니다. 무엇을 쓰나요?",
+    o: [
+      "console.log를 1000번 출력한다",
+      "조건부 중단점 — 줄 번호를 우클릭해 <code>id === 42</code> 같은 조건을 걸면 그때만 멈춘다",
+      "코드를 주석 처리한다",
+      "Performance 녹화"
+    ],
+    a: 1,
+    e: "<b>조건부 중단점</b>은 반복문·리스트 렌더링 디버깅의 핵심 기능입니다. 멈추지 않고 값만 보고 싶다면 <b>로그포인트</b>를 쓰면 코드를 수정하지 않고도 <code>console.log</code> 효과를 얻습니다."
+  },
+  {
+    q: "개발 중 네트워크 속도를 Slow 4G로 제한해 테스트해야 하는 이유는?",
+    o: [
+      "서버 부하를 줄이기 위해",
+      "개발자 환경은 빠르고 캐시가 따뜻해서, 로딩 상태 누락·레이아웃 깜빡임·중복 클릭 같은 실제 문제가 드러나지 않기 때문",
+      "브라우저 캐시를 비우기 위해",
+      "Lighthouse 점수를 올리기 위해"
+    ],
+    a: 1,
+    e: "빠른 환경에서는 로딩이 순식간이라 <b>로딩 UI가 없어도 티가 나지 않습니다</b>. 실제 사용자는 느린 네트워크와 저사양 기기를 씁니다. 속도를 제한하면 이런 문제가 즉시 보입니다."
+  },
+  {
+    q: "Lighthouse 접근성 점수가 100점입니다. 올바른 해석은?",
+    o: [
+      "접근성이 완벽하다",
+      "자동으로 검사 가능한 항목만 통과했다는 뜻이며, alt 텍스트의 적절성이나 키보드 흐름 같은 것은 사람이 확인해야 한다",
+      "스크린 리더 테스트가 완료되었다",
+      "WCAG AA를 완전히 만족한다"
+    ],
+    a: 1,
+    e: "자동 도구는 <b>\"alt가 있는가\"</b>는 검사하지만 <b>\"alt 내용이 적절한가\"</b>는 판단하지 못합니다. 키보드만으로 전체 기능을 쓸 수 있는지, 포커스 순서가 논리적인지도 사람이 확인해야 합니다(11·77장). 점수는 출발점일 뿐입니다."
+  }
+]);
+</script>

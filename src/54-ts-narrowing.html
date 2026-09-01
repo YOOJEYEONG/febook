@@ -1,0 +1,373 @@
+<!--desc: typeof·instanceof·in·판별 유니온으로 타입을 좁히는 법, 사용자 정의 타입 가드, 타입 단언의 위험, 런타임 검증까지 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>타입 좁히기</b> — 넓은 타입을 안전하게 다루는 법</li>
+  <li><code>typeof</code>·<code>instanceof</code>·<code>in</code>·진리값 검사</li>
+  <li><b>사용자 정의 타입 가드</b>와 <code>satisfies</code></li>
+  <li><b>타입 단언(<code>as</code>)의 위험</b>과 대안</li>
+  <li>외부 데이터의 <b>런타임 검증</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · TypeScript를 실제로 쓰는 방법입니다</p>
+
+<h2 id="why">좁히기란</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">function print(value: string | number) {
+  // value.toUpperCase();   ❌ number일 수도 있으므로 불가
+
+  if (typeof value === "string") {
+    value.toUpperCase();    // ✅ 여기서는 string 임이 확실합니다
+  } else {
+    value.toFixed(2);       // ✅ 여기서는 number
+  }
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔬</span> 제어 흐름 분석</p>
+<p style="margin-bottom:0">TypeScript는 <b>코드의 흐름을 따라가며</b> 각 지점에서 변수의 타입을 다시 계산합니다.
+<code>if</code>를 통과했으면 그 조건이 참인 상태라는 것을 <b>알고 있습니다.</b>
+그래서 특별한 문법 없이 <b>평범한 JavaScript 조건문만으로</b> 타입이 좁혀집니다.
+이것이 TypeScript가 다른 타입 언어보다 자연스럽게 느껴지는 이유입니다.</p>
+</div>
+
+<h2 id="ways">좁히는 방법들</h2>
+
+<div class="codeblock">
+<span class="cb-label">① typeof — 원시 타입</span>
+<pre><code data-lang="ts">function f(x: string | number | boolean | undefined) {
+  if (typeof x === "string") { /* string */ }
+  else if (typeof x === "number") { /* number */ }
+  else if (typeof x === "boolean") { /* boolean */ }
+  else { /* undefined */ }
+}
+
+// ⚠️ typeof null === "object" (25장)이므로 null은 이 방법으로 못 거릅니다</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">② 진리값 검사 — null·undefined 거르기</span>
+<pre><code data-lang="ts">function f(user: User | null) {
+  if (!user) return;        // 이른 반환 (26장)
+  user.name;                // ✅ 여기서는 User
+}
+
+// ⚠️ 주의: 0과 빈 문자열도 falsy 입니다 (25장)
+function g(count: number | undefined) {
+  if (!count) { /* count가 0일 때도 여기 옵니다 */ }
+  if (count === undefined) { /* ✅ 정확합니다 */ }
+  if (count != null) { /* ✅ null과 undefined 모두 거릅니다 */ }
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">③ instanceof — 클래스</span>
+<pre><code data-lang="ts">function handle(error: unknown) {
+  if (error instanceof ValidationError) {
+    error.field;            // ✅ (33장의 커스텀 에러)
+  } else if (error instanceof Error) {
+    error.message;
+  } else {
+    String(error);
+  }
+}
+// catch 블록의 값은 unknown 입니다 (useUnknownInCatchVariables)
+// 그래서 이런 확인이 반드시 필요합니다</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">④ in — 속성 존재 여부</span>
+<pre><code data-lang="ts">type Dog = { bark(): void };
+type Cat = { meow(): void };
+
+function speak(animal: Dog | Cat) {
+  if ("bark" in animal) {
+    animal.bark();          // ✅ Dog
+  } else {
+    animal.meow();          // ✅ Cat
+  }
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">⑤ 판별 유니온 — 가장 권장되는 방법 (52장)</span>
+<pre><code data-lang="ts">type Shape =
+  | { kind: "circle"; radius: number }
+  | { kind: "square"; size: number }
+  | { kind: "rect"; width: number; height: number };
+
+function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle": return Math.PI * shape.radius ** 2;
+    case "square": return shape.size ** 2;
+    case "rect":   return shape.width * shape.height;
+  }
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✅</span> <code>never</code>로 빠짐없이 처리했는지 검사하기</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">function area(shape: Shape): number {
+  switch (shape.kind) {
+    case "circle": return Math.PI * shape.radius ** 2;
+    case "square": return shape.size ** 2;
+    // rect를 빠뜨렸다고 합시다
+    default: {
+      const exhaustive: never = shape;
+      // ❌ Type '{ kind: "rect"; … }' is not assignable to type 'never'
+      //    → 처리하지 않은 경우가 있다고 알려 줍니다
+      throw new Error(`처리되지 않은 종류: ${exhaustive}`);
+    }
+  }
+}</code></pre>
+</div>
+<p style="margin-bottom:0"><b>나중에 새로운 종류를 추가하면</b> 이 자리에서 컴파일 오류가 나서
+"어디를 고쳐야 하는지" 알려 줍니다. 매우 강력한 패턴입니다.</p>
+</div>
+
+<h2 id="guard">사용자 정의 타입 가드</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// 반환 타입에 'value is Type' 을 씁니다
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &amp;&amp;
+    value !== null &amp;&amp;
+    "id" in value &amp;&amp;
+    "name" in value
+  );
+}
+
+function handle(value: unknown) {
+  if (isUser(value)) {
+    value.name;             // ✅ User 로 좁혀집니다
+  }
+}
+
+// 배열 필터링에서 특히 유용합니다
+const items: (User | null)[] = [user1, null, user2];
+
+const clean1 = items.filter(item =&gt; item !== null);
+//    ↑ 여전히 (User | null)[] 로 추론될 수 있습니다
+
+function isNotNull&lt;T&gt;(value: T | null): value is T {
+  return value !== null;
+}
+const clean2 = items.filter(isNotNull);    // ✅ User[]</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 타입 가드는 <b>거짓말할 수 있습니다</b></p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">function isUser(value: unknown): value is User {
+  return true;              // 😱 아무것도 검사하지 않아도 통과합니다
+}</code></pre>
+</div>
+<p style="margin-bottom:0">컴파일러는 <b>여러분의 말을 믿습니다.</b>
+그래서 타입 가드 안의 검사 로직이 <b>실제로 정확한지는 사람이 책임져야</b> 합니다.
+속성 하나만 확인하고 "이건 User다"라고 선언하면 나중에 터집니다.</p>
+</div>
+
+<h2 id="assertion">타입 단언 — 최후의 수단</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">const input = document.getElementById("email") as HTMLInputElement;
+input.value;      // ✅ 컴파일은 통과합니다
+
+// 하지만 그 요소가 없거나 input이 아니면 런타임에 터집니다</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>표현</th><th>의미</th><th>위험도</th></tr></thead>
+<tbody>
+<tr><td><code>value as Type</code></td><td>"이 타입이라고 믿어라"</td><td>중간 — 틀리면 런타임 오류</td></tr>
+<tr><td><code>value!</code></td><td>"null·undefined가 아니라고 믿어라"</td><td>중간</td></tr>
+<tr><td><code>value as unknown as Type</code></td><td>"관계없는 타입으로 강제 변환"</td><td><b>매우 높음</b> — 거의 항상 잘못된 설계 신호</td></tr>
+<tr><td><code>satisfies</code></td><td><b>검사하되 추론은 유지</b></td><td><b>안전</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">as 대신 안전하게</span>
+<pre><code data-lang="ts">// ❌ 단언
+const input = document.getElementById("email") as HTMLInputElement;
+
+// ✅ 확인
+const el = document.getElementById("email");
+if (el instanceof HTMLInputElement) {
+  el.value;
+}
+
+// ✅ 또는 옵셔널 체이닝과 함께 (26장)
+const value = (document.getElementById("email") as HTMLInputElement | null)?.value;</code></pre>
+</div>
+
+<h3 id="satisfies">satisfies — 검사와 추론을 동시에</h3>
+<div class="codeblock">
+<pre><code data-lang="ts">type Config = Record&lt;string, string | number&gt;;
+
+// ❌ 타입을 명시하면 구체적인 정보를 잃습니다
+const a: Config = { port: 3000, host: "localhost" };
+a.port.toFixed();     // ❌ string일 수도 있다고 판단합니다
+
+// ✅ satisfies — Config를 만족하는지 검사하되, 추론은 구체적으로 유지
+const b = { port: 3000, host: "localhost" } satisfies Config;
+b.port.toFixed();     // ✅ number 임을 알고 있습니다
+b.host.toUpperCase(); // ✅ string
+// b.wrong;           ❌ 없는 키는 여전히 오류</code></pre>
+</div>
+<p><code>satisfies</code>는 TypeScript 4.9부터 사용할 수 있습니다.
+<b>"이 값이 이 타입에 맞는지 검사해 줘. 단, 타입을 넓히지는 마"</b>라는 뜻입니다.</p>
+
+<h2 id="runtime">외부 데이터는 런타임에 검증하세요</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚨</span> 이 코드는 거짓말입니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">const user: User = await response.json();
+// 서버가 무엇을 보내든 통과합니다. TypeScript는 확인하지 않습니다.
+user.name.toUpperCase();   // name이 없으면 런타임 오류</code></pre>
+</div>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">Zod로 검증하기 — 실무 표준</span>
+<pre><code data-lang="ts">import { z } from "zod";
+
+const UserSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(),
+  role: z.enum(["admin", "user"]),
+  createdAt: z.string().datetime()
+});
+
+// 스키마에서 타입을 자동으로 뽑아냅니다 — 중복 정의가 없습니다
+type User = z.infer&lt;typeof UserSchema&gt;;
+
+async function getUser(id: number): Promise&lt;User&gt; {
+  const response = await fetch(`/api/users/${id}`);
+  const raw = await response.json();
+
+  // 실제로 검사합니다. 형태가 다르면 여기서 오류가 납니다
+  return UserSchema.parse(raw);
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🛡️</span> 검증이 필요한 지점</p>
+<ul style="margin-bottom:0">
+<li><b>API 응답</b> — 서버가 언제든 바뀔 수 있습니다</li>
+<li><b>사용자 입력</b> — 폼, 쿼리 문자열</li>
+<li><b><code>localStorage</code>에서 읽은 값</b> — 옛 버전의 데이터가 남아 있을 수 있습니다(39장)</li>
+<li><b>환경 변수</b> — 배포 설정 누락을 시작 시점에 잡습니다</li>
+</ul>
+<p style="margin-bottom:0"><b>내 코드 안</b>은 TypeScript가 지켜 주고,
+<b>바깥과의 경계</b>는 런타임 검증이 지킵니다. 둘 다 필요합니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — <code>as</code>가 늘어난다면</p>
+<p style="margin-bottom:0">코드에 <code>as</code>가 많아진다면 <b>타입 설계가 잘못되었다는 신호</b>입니다.
+잘 설계된 타입에서는 좁히기만으로 대부분 해결됩니다.</p>
+<ul style="margin-bottom:0">
+<li>유니온이 너무 넓지 않은지 — 판별 유니온으로 바꿀 수 있는지</li>
+<li>함수가 너무 많은 경우를 처리하려 하는지 — 나눌 수 있는지</li>
+<li><code>any</code>가 흘러들어와 그것을 <code>as</code>로 수습하고 있는지</li>
+</ul>
+<p style="margin-bottom:0"><code>as</code>를 쓸 때는 <b>왜 안전한지 주석으로 남기세요.</b>
+"이 시점에는 반드시 로드되어 있음" 같은 근거가 있어야 다음 사람이 판단할 수 있습니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>TypeScript는 <b>제어 흐름을 분석</b>해 평범한 조건문만으로 타입을 좁힌다.</li>
+<li>도구: <code>typeof</code> · 진리값 · <code>instanceof</code> · <code>in</code> · <b>판별 유니온</b>.</li>
+<li>진리값 검사는 <b><code>0</code>과 빈 문자열</b>도 걸러 버린다. <code>!= null</code>이 정확하다.</li>
+<li><b><code>never</code> 검사</b>로 모든 경우를 처리했는지 컴파일러가 확인하게 만든다.</li>
+<li>타입 가드(<code>value is T</code>)는 <b>내용의 정확성을 사람이 책임진다.</b></li>
+<li><b><code>as</code>는 검사하지 않는다.</b> 확인 가능한 상황이면 좁히기를 쓴다.</li>
+<li><code>satisfies</code>는 <b>검사하되 추론을 유지</b>한다.</li>
+<li><b>외부 데이터는 Zod 같은 도구로 런타임 검증</b>한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html" target="_blank" rel="noopener">TypeScript 핸드북 — 타입 좁히기</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates" target="_blank" rel="noopener">핸드북 — 타입 서술어(타입 가드)</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator" target="_blank" rel="noopener">TypeScript 4.9 — satisfies 연산자</a></li>
+<li><a href="https://zod.dev/" target="_blank" rel="noopener">Zod 공식 문서</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>count: number | undefined</code> 에서 <code>if (!count)</code> 로 검사할 때의 문제는?",
+    o: [
+      "문법 오류다",
+      "<code>0</code>도 falsy라서 유효한 값 0이 undefined와 함께 걸러진다. <code>count != null</code>이나 <code>count === undefined</code>가 정확하다",
+      "undefined는 falsy가 아니다",
+      "number 타입에는 ! 연산자를 쓸 수 없다"
+    ],
+    a: 1,
+    e: "25장에서 본 falsy 목록에 <code>0</code>과 빈 문자열이 포함됩니다. \"값이 없음\"만 걸러내려면 <code>!= null</code>(null과 undefined 모두) 또는 명시적 비교를 써야 합니다. 이 실수는 수량·가격 처리에서 특히 자주 나옵니다."
+  },
+  {
+    q: "판별 유니온의 <code>switch</code>에서 <code>default</code>에 <code>const x: never = shape</code> 를 두는 이유는?",
+    o: [
+      "런타임 오류를 방지하려고",
+      "나중에 새로운 종류가 추가되면 그 값이 never에 할당되지 않아 컴파일 오류가 나므로, 처리해야 할 곳을 알려 주기 때문",
+      "코드 실행 속도를 높이려고",
+      "타입 단언의 일종이라서"
+    ],
+    a: 1,
+    e: "모든 경우를 처리했다면 <code>default</code>에 도달하는 값의 타입은 <code>never</code>가 됩니다. 새 종류를 추가하고 처리를 빠뜨리면 <b>그 타입이 never에 할당 불가</b>가 되어 즉시 오류로 알려 줍니다. 누락을 컴파일러가 잡아 주는 강력한 패턴입니다."
+  },
+  {
+    q: "<code>function isUser(v: unknown): v is User { return true }</code> 의 문제는?",
+    o: [
+      "문법 오류다",
+      "실제로 아무것도 검사하지 않는데 컴파일러는 이 선언을 믿기 때문에, 잘못된 값이 User로 취급되어 런타임 오류가 난다",
+      "unknown은 타입 가드에 쓸 수 없다",
+      "반환 타입이 boolean이어야 한다"
+    ],
+    a: 1,
+    e: "타입 가드는 <b>개발자의 보증</b>입니다. 컴파일러는 함수 내부 로직의 정확성을 검증하지 않습니다. 그래서 실제 속성을 확인하는 로직을 제대로 작성할 책임이 사람에게 있습니다."
+  },
+  {
+    q: "<code>const config = { port: 3000 } satisfies Config</code> 와 <code>const config: Config = { port: 3000 }</code> 의 차이는?",
+    o: [
+      "차이가 없다",
+      "satisfies는 Config를 만족하는지 검사하면서도 port를 number로 구체적으로 추론하고, 타입 주석 방식은 Config에 선언된 넓은 타입으로 추론된다",
+      "satisfies는 런타임 검증을 한다",
+      "타입 주석 방식이 더 안전하다"
+    ],
+    a: 1,
+    e: "타입 주석을 달면 값의 타입이 <b>선언한 타입으로 넓어져</b> 구체적인 정보를 잃습니다. <code>satisfies</code>는 <b>검사만 하고 추론은 그대로</b> 두므로, 제약을 지키면서도 구체적인 타입의 이점을 유지합니다."
+  },
+  {
+    q: "<code>const user: User = await response.json()</code> 이 위험한 이유와 올바른 대응은?",
+    o: [
+      "await를 빠뜨려서. return을 추가한다",
+      "타입 주석은 런타임 검증이 아니라 서버가 다른 형태를 보내도 통과한다. Zod 같은 도구로 실제 값을 파싱·검증해야 한다",
+      "response.json()이 문자열을 반환해서",
+      "User 타입이 잘못 정의되어서"
+    ],
+    a: 1,
+    e: "TypeScript는 <b>빌드 시점의 정합성</b>만 검사합니다. 네트워크로 들어온 값은 실행 시점의 현실이므로 타입 선언과 무관합니다. 스키마로 <b>파싱</b>하면 형태가 다를 때 즉시 명확한 오류가 나고, 스키마에서 타입을 뽑아 중복 정의도 없앨 수 있습니다."
+  }
+]);
+</script>

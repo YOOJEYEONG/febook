@@ -1,0 +1,325 @@
+<!--desc: 클로저가 무엇인지, 왜 자동으로 생기는지, 데이터 은닉과 이벤트 핸들러 등 실전 활용, 반복문 함정과 메모리 주의점을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>클로저의 정의와 <b>왜 저절로 생기는지</b></li>
+  <li>클로저로 <b>비공개 변수</b> 만들기</li>
+  <li>실전 활용 — 카운터, 한 번만 실행, 디바운스</li>
+  <li>반복문 함정과 메모리 주의점</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 면접 최다 출제 주제</p>
+
+<h2 id="what">클로저란</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📦</span> 한 문장 정의</p>
+<p style="margin-bottom:0"><b>함수가 자기 바깥의 변수를 기억하고, 그 함수가 원래 자리를 떠난 뒤에도 계속 쓸 수 있는 것.</b><br>
+함수와 <b>그 함수가 선언될 때의 주변 환경</b>이 함께 묶인 것을 클로저라고 부릅니다.</p>
+</div>
+
+<div class="runner" data-lang="js" data-title="클로저 첫 예제" data-note="makeCounter가 끝났는데도 count가 살아 있다는 점에 주목하세요.">
+<textarea class="rn-src">
+function makeCounter() {
+  let count = 0;              // 이 변수는 makeCounter의 지역 변수입니다
+
+  return function () {        // 반환된 함수가 count를 '기억'합니다
+    count++;
+    return count;
+  };
+}
+
+const counter = makeCounter();
+// 이 시점에 makeCounter는 이미 끝났습니다.
+// 보통이라면 지역 변수 count는 사라져야 합니다. 그런데…
+
+console.log(counter());   // 1
+console.log(counter());   // 2
+console.log(counter());   // 3
+
+console.log("--- 각각 독립적인 저장소를 가집니다 ---");
+const a = makeCounter();
+const b = makeCounter();
+console.log("a:", a(), a(), a());
+console.log("b:", b());          // b는 따로 셉니다
+
+console.log("--- 바깥에서는 접근할 수 없습니다 ---");
+console.log(typeof count);       // "undefined" — 완전히 감춰져 있습니다
+</textarea>
+</div>
+
+<h3 id="why">왜 사라지지 않을까</h3>
+<p>JavaScript 엔진은 함수가 끝나면 그 지역 변수를 정리합니다.
+하지만 <b>누군가 아직 그 변수를 참조하고 있다면 지우지 않습니다.</b></p>
+<p>위 예에서 반환된 함수가 <code>count</code>를 참조하고 있고, 그 함수는 <code>counter</code> 변수에 담겨 살아 있습니다.
+그래서 <code>count</code>도 함께 살아남습니다.
+<b>클로저는 특별한 문법이 아니라, 스코프 규칙(24장)의 자연스러운 결과</b>입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📸</span> 값이 아니라 <b>변수 자체</b>를 기억합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">function outer() {
+  let value = "처음";
+  const read = () =&gt; console.log(value);
+  value = "나중에 바뀜";
+  return read;
+}
+outer()();   // "나중에 바뀜"  ← 사진을 찍어 둔 게 아닙니다</code></pre>
+</div>
+</div>
+
+<h2 id="private">데이터 은닉</h2>
+
+<div class="runner" data-lang="js" data-title="비공개 상태 만들기" data-note="balance를 직접 조작할 방법이 없다는 것이 핵심입니다.">
+<textarea class="rn-src">
+function createAccount(initial) {
+  let balance = initial;          // 비공개
+
+  // 정해진 통로만 외부에 공개합니다
+  return {
+    deposit(amount) {
+      if (amount <= 0) return "금액이 올바르지 않습니다";
+      balance += amount;
+      return `입금 완료. 잔액 ${balance}원`;
+    },
+    withdraw(amount) {
+      if (amount > balance) return "잔액이 부족합니다";
+      balance -= amount;
+      return `출금 완료. 잔액 ${balance}원`;
+    },
+    getBalance() {
+      return balance;
+    }
+  };
+}
+
+const account = createAccount(10000);
+console.log(account.deposit(5000));
+console.log(account.withdraw(20000));   // 규칙이 지켜집니다
+console.log(account.withdraw(3000));
+console.log("잔액:", account.getBalance());
+
+console.log("--- 직접 조작 시도 ---");
+console.log("balance 속성:", account.balance);   // undefined
+account.balance = 999999;                        // 아무 효과 없음
+console.log("실제 잔액:", account.getBalance()); // 그대로
+
+// 객체로 만들었다면 이렇게 뚫렸을 것입니다:
+// const bad = { balance: 10000 };
+// bad.balance = 999999;   ← 규칙을 우회
+</textarea>
+</div>
+
+<h2 id="patterns">실전 활용</h2>
+
+<div class="runner" data-lang="js" data-title="클로저 활용 4종" data-note="네 가지 모두 실무에서 자주 쓰는 패턴입니다.">
+<textarea class="rn-src">
+console.log("--- ① 함수를 만들어 내는 함수 ---");
+function makeGreeter(greeting) {
+  return function (name) {
+    return `${greeting}, ${name}님!`;
+  };
+}
+const hello = makeGreeter("안녕하세요");
+const welcome = makeGreeter("환영합니다");
+console.log(hello("홍길동"));
+console.log(welcome("김철수"));
+
+console.log("--- ② 한 번만 실행되게 만들기 ---");
+function once(fn) {
+  let called = false;
+  let result;
+  return function (...args) {
+    if (called) return result;
+    called = true;
+    result = fn(...args);
+    return result;
+  };
+}
+const initialize = once(() => {
+  console.log("  초기화 실행!");
+  return "완료";
+});
+console.log(initialize());
+console.log(initialize());   // 실행되지 않고 저장된 값 반환
+console.log(initialize());
+
+console.log("--- ③ 결과 캐싱(메모이제이션) ---");
+function memoize(fn) {
+  const cache = new Map();
+  return function (n) {
+    if (cache.has(n)) {
+      console.log("  캐시에서:", n);
+      return cache.get(n);
+    }
+    const result = fn(n);
+    cache.set(n, result);
+    return result;
+  };
+}
+const slowSquare = memoize(n => {
+  console.log("  계산 중:", n);
+  return n * n;
+});
+console.log(slowSquare(5));
+console.log(slowSquare(5));   // 두 번째는 캐시
+
+console.log("--- ④ 디바운스: 마지막 호출만 실행 ---");
+function debounce(fn, delay) {
+  let timerId;                        // 클로저가 기억하는 값
+  return function (...args) {
+    clearTimeout(timerId);            // 이전 예약 취소
+    timerId = setTimeout(() => fn(...args), delay);
+  };
+}
+const search = debounce(keyword => console.log("  검색 실행:", keyword), 100);
+search("자");
+search("자바");
+search("자바스");
+search("자바스크립트");   // 마지막 것만 실행됩니다
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⌨️</span> 디바운스는 왜 필요한가</p>
+<p style="margin-bottom:0">검색창에 "자바스크립트"를 입력하면 <code>input</code> 이벤트가 <b>7번</b> 발생합니다.
+그때마다 서버에 요청하면 <b>7번의 낭비</b>입니다.
+디바운스는 <b>입력이 멈춘 뒤 일정 시간이 지나야</b> 실행합니다.
+비슷한 것으로 <b>스로틀(throttle)</b>이 있는데, 이쪽은 <b>일정 간격마다 최대 한 번</b>만 실행합니다.
+스크롤 이벤트 처리에 자주 씁니다.</p>
+</div>
+
+<h2 id="loop">반복문 함정</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ❌ var — 함수 스코프라 i가 하나뿐
+for (var i = 0; i &lt; 3; i++) {
+  setTimeout(() =&gt; console.log(i), 0);   // 3, 3, 3
+}
+
+// ✅ let — 반복마다 새 바인딩이 만들어짐
+for (let i = 0; i &lt; 3; i++) {
+  setTimeout(() =&gt; console.log(i), 0);   // 0, 1, 2
+}
+
+// ES6 이전에는 즉시 실행 함수로 스코프를 만들었습니다
+for (var i = 0; i &lt; 3; i++) {
+  (function (captured) {
+    setTimeout(() =&gt; console.log(captured), 0);
+  })(i);
+}</code></pre>
+</div>
+<p>24장에서 본 그 예제입니다. 이제 원리를 설명할 수 있습니다.
+<b><code>let</code>은 반복마다 새로운 변수를 만들고, 각 콜백이 자기 차례의 변수를 클로저로 붙잡습니다.</b></p>
+
+<h2 id="memory">메모리 주의점</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧠</span> 클로저는 참조를 붙잡아 둡니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">function attach() {
+  const hugeData = new Array(1_000_000).fill("...");   // 큰 데이터
+
+  document.getElementById("btn").addEventListener("click", () =&gt; {
+    console.log("클릭");   // hugeData를 쓰지 않지만…
+  });
+}
+// 엔진 최적화에 따라 다르지만, 클로저가 스코프를 붙잡고 있는 한
+// 관련 데이터가 해제되지 않을 수 있습니다.</code></pre>
+</div>
+<p style="margin-bottom:0">따라서 <b>더 이상 필요 없는 이벤트 리스너는 <code>removeEventListener</code>로 제거</b>하고,
+큰 데이터를 클로저 안에 오래 붙잡아 두지 않도록 주의하세요.
+React에서 <code>useEffect</code>의 정리 함수(61장)가 하는 일이 정확히 이것입니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 여러분은 이미 클로저를 쓰고 있습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">const items = ["a", "b", "c"];
+items.forEach((item) =&gt; {
+  button.addEventListener("click", () =&gt; {
+    console.log(item);   // 각 핸들러가 자기 item을 기억 → 클로저
+  });
+});</code></pre>
+</div>
+<p style="margin-bottom:0">React의 <code>useState</code>가 값을 기억하는 것도,
+커스텀 훅이 상태를 유지하는 것도 전부 클로저 위에 세워져 있습니다(59·66장).
+"클로저를 배운다"는 것은 <b>이미 쓰고 있던 것에 이름을 붙이는 일</b>에 가깝습니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>클로저 = <b>함수 + 그 함수가 선언될 때의 주변 환경</b>.</li>
+<li>바깥 함수가 끝나도 <b>참조가 남아 있으면 변수는 살아 있다.</b></li>
+<li>값의 사본이 아니라 <b>변수 자체</b>를 기억한다.</li>
+<li>클로저로 <b>비공개 상태</b>를 만들 수 있다.</li>
+<li>실전 패턴: 함수 팩토리, <code>once</code>, 메모이제이션, <b>디바운스·스로틀</b>.</li>
+<li>반복문에서는 <code>let</code>이 매 회차 새 바인딩을 만들어 클로저가 올바르게 동작한다.</li>
+<li>불필요한 리스너는 제거해 <b>메모리 누수</b>를 막는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Closures" target="_blank" rel="noopener">MDN — 클로저</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map" target="_blank" rel="noopener">MDN — Map (메모이제이션에 유용)</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener" target="_blank" rel="noopener">MDN — removeEventListener</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "클로저의 정의로 가장 정확한 것은?",
+    o: [
+      "함수 안에 함수를 넣는 문법",
+      "함수와 그 함수가 선언될 때의 주변 스코프가 함께 묶인 것으로, 바깥 함수가 끝난 뒤에도 그 변수에 접근할 수 있는 상태",
+      "전역 변수를 지역 변수로 바꾸는 기법",
+      "비동기 처리를 위한 특수 문법"
+    ],
+    a: 1,
+    e: "클로저는 <b>특별한 문법이 아니라 스코프 규칙의 자연스러운 결과</b>입니다. 안쪽 함수가 바깥 변수를 참조하고 있으면 엔진은 그 변수를 정리하지 않습니다. 그래서 바깥 함수가 종료된 뒤에도 값이 유지됩니다."
+  },
+  {
+    q: "<code>function outer() { let v = \"A\"; const read = () =&gt; console.log(v); v = \"B\"; return read; } outer()();</code> 의 출력은?",
+    o: ["\"A\"", "\"B\"", "undefined", "오류"],
+    a: 1,
+    e: "클로저는 <b>값의 사본이 아니라 변수 자체</b>를 참조합니다. 함수가 정의된 시점의 값을 사진처럼 찍어 두는 것이 아니라, 호출 시점에 그 변수를 읽습니다. 그래서 마지막에 대입된 <code>\"B\"</code>가 출력됩니다."
+  },
+  {
+    q: "<code>makeCounter()</code>를 두 번 호출해 <code>a</code>, <code>b</code>를 만들면 두 카운터는?",
+    o: [
+      "같은 count를 공유한다",
+      "각각 독립적인 count를 갖는다. 호출할 때마다 새로운 스코프가 만들어지기 때문",
+      "두 번째 호출에서 오류가 난다",
+      "b가 a의 값을 이어받는다"
+    ],
+    a: 1,
+    e: "함수를 호출할 때마다 <b>새로운 실행 스코프</b>가 만들어지고, 그 안의 <code>count</code>도 새로 생깁니다. 반환된 각 함수는 자기 스코프의 <code>count</code>만 기억하므로 서로 완전히 독립적입니다."
+  },
+  {
+    q: "검색창 입력마다 서버 요청이 나가는 문제를 클로저로 해결하는 대표적인 기법은?",
+    o: [
+      "메모이제이션",
+      "디바운스 — 타이머 ID를 클로저에 담아 두고 새 입력이 오면 이전 예약을 취소한다",
+      "재귀 호출",
+      "이벤트 위임"
+    ],
+    a: 1,
+    e: "<b>디바운스</b>는 반환된 함수가 <code>timerId</code>를 클로저로 기억하다가, 새 호출이 오면 <code>clearTimeout</code>으로 이전 예약을 취소하고 다시 예약합니다. 결과적으로 <b>입력이 멈춘 뒤에만</b> 한 번 실행됩니다. 일정 간격마다 한 번 실행하는 것은 스로틀입니다."
+  },
+  {
+    q: "<code>for (var i = 0; i &lt; 3; i++) setTimeout(() =&gt; console.log(i), 0)</code> 가 3,3,3을 출력하는 이유를 클로저 관점에서 설명하면?",
+    o: [
+      "setTimeout이 세 번 등록되지 않아서",
+      "var는 함수 스코프라 i가 하나뿐이고, 세 콜백이 모두 같은 변수를 참조하므로 반복이 끝난 뒤의 값 3을 읽기 때문",
+      "화살표 함수가 클로저를 만들지 못해서",
+      "setTimeout의 지연 시간이 0이라서"
+    ],
+    a: 1,
+    e: "세 콜백이 클로저로 붙잡은 것은 <b>같은 하나의 <code>i</code></b>입니다. 콜백이 실행될 때 그 변수는 이미 3입니다. <code>let</code>은 <b>반복마다 새 바인딩</b>을 만들어 각 콜백이 서로 다른 변수를 기억하므로 0,1,2가 나옵니다."
+  }
+]);
+</script>

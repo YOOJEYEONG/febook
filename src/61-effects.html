@@ -1,0 +1,378 @@
+<!--desc: useEffect의 정확한 용도와 의존성 배열, 정리 함수, StrictMode의 두 번 실행, 그리고 Effect가 필요 없는 경우들을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>useEffect</code>가 <b>정확히 언제 실행되는지</b></li>
+  <li><b>의존성 배열</b>과 <code>exhaustive-deps</code> 규칙</li>
+  <li><b>정리 함수</b> — 가장 자주 빠뜨리는 부분</li>
+  <li>개발 모드에서 <b>두 번 실행되는</b> 이유</li>
+  <li><b>Effect가 필요 없는 경우</b> — 이게 이 챕터의 핵심입니다</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 26분 · React 버그의 최대 원인이 여기 있습니다</p>
+
+<h2 id="what">useEffect란</h2>
+
+<p><b>Effect</b>는 <b>React 바깥 세계와 동기화</b>하는 장치입니다.
+렌더링만으로는 할 수 없는 일 — 네트워크 요청, 타이머, 구독, 직접적인 DOM 조작 —
+즉 <b>부수 효과</b>(27장)를 다룹니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">useEffect(() =&gt; {
+  // 부수 효과
+  document.title = `${count}개의 알림`;
+
+  return () =&gt; {
+    // 정리 함수 (선택)
+  };
+}, [count]);   // 의존성 배열</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">실행 시점</span>
+<pre><code data-lang="text">렌더링 → 화면에 그리기(paint) → Effect 실행
+
+의존성 배열에 따라:
+  [ ]        → 마운트 후 한 번만
+  [a, b]     → a나 b가 바뀌었을 때만
+  (생략)      → 매 렌더링마다  ← 거의 항상 실수입니다</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⏱️</span> Effect는 <b>화면이 그려진 뒤</b> 실행됩니다</p>
+<p style="margin-bottom:0">그래서 Effect 안에서 레이아웃을 측정해 위치를 바꾸면
+<b>사용자가 깜빡임을 볼 수 있습니다.</b>
+그런 경우에만 <code>useLayoutEffect</code>를 쓰는데, 이것은 <b>그리기 전에 동기적으로</b> 실행되어
+화면을 잠깐 막습니다. <b>기본은 <code>useEffect</code></b>이고, 깜빡임 문제가 실제로 확인될 때만 바꾸세요.</p>
+</div>
+
+<h2 id="deps">의존성 배열</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// ❌ 배열 생략 — 매 렌더링마다 실행
+useEffect(() =&gt; {
+  fetchData();      // 데이터를 받아 상태를 바꾸면 → 다시 렌더링 → 또 실행 → 무한 루프
+});
+
+// ✅ 한 번만
+useEffect(() =&gt; {
+  fetchData();
+}, []);
+
+// ✅ userId가 바뀔 때마다
+useEffect(() =&gt; {
+  fetchUser(userId);
+}, [userId]);</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔗</span> 의존성을 <b>거짓말하지 마세요</b></p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ❌ userId를 쓰면서 의존성에 안 넣음
+useEffect(() =&gt; {
+  fetchUser(userId);
+}, []);
+// → userId가 바뀌어도 다시 실행되지 않습니다.
+//   클로저가 첫 렌더링의 userId를 붙잡고 있습니다(31장).
+//   "사용자를 바꿨는데 이전 사람 정보가 그대로"인 버그가 됩니다.</code></pre>
+</div>
+<p style="margin-bottom:0"><b>Effect 안에서 쓰는 모든 반응형 값</b>(props·state·그로부터 계산된 값)은
+<b>전부 의존성에 들어가야 합니다.</b>
+48장에서 말한 <code>react-hooks/exhaustive-deps</code> 규칙이 이것을 자동으로 검사해 줍니다.
+<b>이 경고를 끄지 마세요.</b></p>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔧</span> 의존성이 너무 많다면 — 배열이 아니라 코드를 고치세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// 문제: 객체·함수는 매 렌더링마다 새로 만들어져 의존성이 계속 바뀝니다
+const options = { id: userId };          // 매번 새 객체 (25장)
+useEffect(() =&gt; { fetch(options); }, [options]);   // 매번 실행됨
+
+// ✅ 해법 1: 원시 값만 의존성으로
+useEffect(() =&gt; { fetch({ id: userId }); }, [userId]);
+
+// ✅ 해법 2: 객체·함수를 Effect 안으로 옮기기
+useEffect(() =&gt; {
+  const options = { id: userId };
+  fetch(options);
+}, [userId]);
+
+// ✅ 해법 3: 함수형 갱신으로 의존성 제거 (59장)
+useEffect(() =&gt; {
+  const timer = setInterval(() =&gt; setCount(prev =&gt; prev + 1), 1000);
+  return () =&gt; clearInterval(timer);
+}, []);   // count를 의존성에 넣지 않아도 됩니다</code></pre>
+</div>
+</div>
+
+<h2 id="cleanup">정리 함수</h2>
+
+<p>Effect가 <b>구독·타이머·연결</b>을 만들었다면 <b>반드시 정리해야</b> 합니다.
+정리 함수는 <b>다음 Effect가 실행되기 전</b>과 <b>컴포넌트가 사라질 때</b> 호출됩니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">정리가 필요한 대표적인 경우</span>
+<pre><code data-lang="jsx">// ① 타이머
+useEffect(() =&gt; {
+  const id = setInterval(tick, 1000);
+  return () =&gt; clearInterval(id);
+}, []);
+
+// ② 이벤트 리스너 (38장)
+useEffect(() =&gt; {
+  const onResize = () =&gt; setWidth(window.innerWidth);
+  window.addEventListener("resize", onResize);
+  return () =&gt; window.removeEventListener("resize", onResize);
+}, []);
+
+// ③ Observer (40장)
+useEffect(() =&gt; {
+  const observer = new IntersectionObserver(callback);
+  observer.observe(ref.current);
+  return () =&gt; observer.disconnect();
+}, []);
+
+// ④ 네트워크 요청 취소 (37장)
+useEffect(() =&gt; {
+  const controller = new AbortController();
+
+  fetch(`/api/users/${userId}`, { signal: controller.signal })
+    .then(r =&gt; r.json())
+    .then(setUser)
+    .catch(err =&gt; {
+      if (err.name !== "AbortError") setError(err);
+    });
+
+  return () =&gt; controller.abort();
+}, [userId]);</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🏁</span> 요청 취소가 막아 주는 실제 버그</p>
+<p style="margin-bottom:0">사용자를 빠르게 A → B로 바꾸면 두 요청이 나갑니다.
+<b>A의 응답이 B보다 늦게 도착하면</b> 화면에 A의 데이터가 표시됩니다.
+이것을 <b>경쟁 상태(race condition)</b>라고 하고,
+정리 함수에서 이전 요청을 취소하면 사라집니다.<br>
+취소가 불가능한 상황이라면 <b>플래그 방식</b>도 씁니다.</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">useEffect(() =&gt; {
+  let ignore = false;
+  fetchUser(userId).then(data =&gt; { if (!ignore) setUser(data); });
+  return () =&gt; { ignore = true; };
+}, [userId]);</code></pre>
+</div>
+</div>
+
+<h2 id="strict">개발 모드에서 두 번 실행되는 이유</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// StrictMode 안에서는 개발 중에만 이렇게 동작합니다
+Effect 실행 → 정리 함수 실행 → Effect 다시 실행</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔁</span> 버그가 아니라 <b>검사</b>입니다</p>
+<p style="margin-bottom:0">React 18부터 <code>&lt;StrictMode&gt;</code>는 개발 모드에서 Effect를
+<b>일부러 한 번 더 실행</b>합니다. <b>정리 함수를 제대로 만들었는지 확인</b>하기 위해서입니다.<br>
+정리를 올바르게 했다면 <b>두 번 실행해도 결과가 같아야</b> 합니다.
+두 번 실행돼서 문제가 생긴다면 <b>그것은 실제 버그</b>입니다.
+(사용자가 페이지를 이동했다 돌아오면 같은 일이 일어납니다.)<br>
+<b>StrictMode를 끄지 마세요.</b> 운영 빌드에서는 한 번만 실행됩니다.</p>
+</div>
+
+<h2 id="unnecessary">Effect가 필요 없는 경우 — 이 챕터에서 가장 중요합니다</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> 신입이 가장 많이 하는 실수</p>
+<p style="margin-bottom:0"><code>useEffect</code>를 <b>"무언가 바뀌면 실행"</b> 용도로 남용하는 것입니다.
+대부분의 경우 <b>더 간단하고 정확한 방법</b>이 있습니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">① 다른 상태로 계산할 수 있는 값</span>
+<pre><code data-lang="jsx">// ❌ 불필요한 Effect + 불필요한 상태
+const [items, setItems] = useState([]);
+const [total, setTotal] = useState(0);
+useEffect(() =&gt; {
+  setTotal(items.reduce((s, i) =&gt; s + i.price, 0));
+}, [items]);
+// 렌더링이 두 번 일어나고, 한 프레임 동안 값이 어긋납니다
+
+// ✅ 그냥 계산합니다 (59장)
+const total = items.reduce((s, i) =&gt; s + i.price, 0);</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">② 사용자 이벤트에 대한 반응</span>
+<pre><code data-lang="jsx">// ❌ 상태를 감시해서 반응
+useEffect(() =&gt; {
+  if (isSubmitted) {
+    sendAnalytics();
+    showToast();
+  }
+}, [isSubmitted]);
+
+// ✅ 이벤트 핸들러에서 바로 하세요
+function handleSubmit() {
+  setIsSubmitted(true);
+  sendAnalytics();
+  showToast();
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 판단 기준 한 줄</p>
+<p style="margin-bottom:0"><b>"이 코드는 무엇 때문에 실행되는가?"</b><br>
+<b>사용자의 행동</b> 때문이라면 → <b>이벤트 핸들러</b><br>
+<b>화면에 나타났기 때문</b>이라면 → <b>Effect</b><br>
+데이터를 받아오는 것은 "화면에 나타나서"이므로 Effect가 맞습니다.
+버튼을 눌러 저장하는 것은 "사용자가 눌러서"이므로 핸들러가 맞습니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">③ props가 바뀔 때 상태 초기화</span>
+<pre><code data-lang="jsx">// ❌
+useEffect(() =&gt; { setDraft(""); }, [userId]);
+
+// ✅ key로 컴포넌트 자체를 새로 시작 (59장)
+&lt;Editor key={userId} userId={userId} /&gt;</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">④ 부모에게 데이터 전달</span>
+<pre><code data-lang="jsx">// ❌ 자식이 상태를 갖고 Effect로 부모에게 알림
+useEffect(() =&gt; { onChange(value); }, [value]);
+
+// ✅ 상태를 부모로 올리거나(59장), 이벤트 시점에 함께 알립니다
+function handleChange(next) {
+  setValue(next);
+  onChange(next);
+}</code></pre>
+</div>
+
+<h2 id="fetch">데이터 페칭</h2>
+
+<div class="codeblock">
+<span class="cb-label">직접 쓴다면 최소 이 정도는 필요합니다</span>
+<pre><code data-lang="jsx">function UserProfile({ userId }) {
+  const [state, setState] = useState({ status: "loading" });
+
+  useEffect(() =&gt; {
+    const controller = new AbortController();
+    setState({ status: "loading" });
+
+    fetch(`/api/users/${userId}`, { signal: controller.signal })
+      .then(res =&gt; {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);   // 37장
+        return res.json();
+      })
+      .then(data =&gt; setState({ status: "success", data }))
+      .catch(error =&gt; {
+        if (error.name === "AbortError") return;
+        setState({ status: "error", error });
+      });
+
+    return () =&gt; controller.abort();
+  }, [userId]);
+
+  if (state.status === "loading") return &lt;Spinner /&gt;;
+  if (state.status === "error") return &lt;ErrorMessage error={state.error} /&gt;;
+  return &lt;div&gt;{state.data.name}&lt;/div&gt;;
+}</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 그래서 실무에서는 라이브러리를 씁니다</p>
+<p style="margin-bottom:0">위 코드에도 아직 없는 것이 많습니다.
+<b>캐싱, 중복 요청 제거, 재시도, 창 포커스 시 갱신, 낙관적 업데이트, 페이지네이션…</b>
+이걸 전부 직접 만들면 버그투성이가 됩니다.<br>
+그래서 <b>TanStack Query</b>나 <b>SWR</b>을 씁니다(67장).
+React 공식 문서도 <b>직접 만든 Effect 페칭 대신 라이브러리나 프레임워크 기능을 쓰라</b>고 권합니다.
+<b>Effect로 데이터를 가져오는 법을 아는 것은 필요하지만, 실무에서 그대로 쓰지는 않습니다.</b></p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>Effect는 <b>React 바깥 세계와 동기화</b>하는 도구다. 화면이 그려진 <b>뒤</b> 실행된다.</li>
+<li><b>의존성을 거짓말하지 마라.</b> 안에서 쓰는 반응형 값은 전부 넣는다.</li>
+<li>의존성이 문제면 <b>배열이 아니라 코드를 고친다</b> — 객체를 안으로, 원시 값만, 함수형 갱신.</li>
+<li><b>정리 함수</b>로 타이머·리스너·구독·요청을 반드시 정리한다.</li>
+<li>요청 취소가 <b>경쟁 상태</b>를 막는다.</li>
+<li><b>StrictMode의 두 번 실행은 검사</b>다. 문제가 생기면 정리가 잘못된 것이다.</li>
+<li><b>대부분의 Effect는 필요 없다.</b> 계산할 수 있으면 계산하고, 사용자 행동이면 핸들러에서.</li>
+<li>판단 기준: <b>사용자 행동 → 핸들러, 화면에 나타남 → Effect.</b></li>
+<li>데이터 페칭은 실무에서 <b>전용 라이브러리</b>를 쓴다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.react.dev/learn/synchronizing-with-effects" target="_blank" rel="noopener">React — Effect와 동기화하기</a></li>
+<li><a href="https://ko.react.dev/learn/you-might-not-need-an-effect" target="_blank" rel="noopener">React — Effect가 필요하지 않을 수도 있습니다</a> <b>(반드시 읽어 보세요)</b></li>
+<li><a href="https://ko.react.dev/learn/removing-effect-dependencies" target="_blank" rel="noopener">React — Effect 의존성 제거하기</a></li>
+<li><a href="https://ko.react.dev/reference/react/StrictMode" target="_blank" rel="noopener">React — StrictMode</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>useEffect(() =&gt; { fetchUser(userId) }, [])</code> 에서 userId가 바뀌면?",
+    o: [
+      "Effect가 다시 실행되어 새 사용자를 불러온다",
+      "다시 실행되지 않는다. 클로저가 첫 렌더링의 userId를 붙잡고 있어 이전 사용자 정보가 그대로 남는다",
+      "오류가 발생한다",
+      "React가 자동으로 의존성을 추론해 실행한다"
+    ],
+    a: 1,
+    e: "의존성 배열이 비어 있으면 <b>마운트 시 한 번만</b> 실행됩니다. Effect 안의 <code>userId</code>는 첫 렌더링 값으로 고정됩니다(31장 클로저). <code>[userId]</code>를 넣어야 하며, <code>exhaustive-deps</code> 규칙이 이런 실수를 잡아 줍니다."
+  },
+  {
+    q: "개발 모드에서 Effect가 두 번 실행되는 이유는?",
+    o: [
+      "React 버그다",
+      "StrictMode가 정리 함수를 제대로 작성했는지 검사하려고 일부러 실행 → 정리 → 재실행을 하기 때문. 운영 빌드에서는 한 번만 실행된다",
+      "네트워크가 느려서",
+      "의존성 배열이 잘못돼서"
+    ],
+    a: 1,
+    e: "정리를 올바르게 했다면 <b>두 번 실행해도 결과가 같아야</b> 합니다. 두 번 실행이 문제를 일으킨다면 사용자가 화면을 떠났다 돌아왔을 때도 같은 문제가 생깁니다. StrictMode를 끄는 것은 <b>증상을 가리는 것</b>입니다."
+  },
+  {
+    q: "다음 중 <code>useEffect</code>가 <b>필요 없는</b> 경우는?",
+    o: [
+      "컴포넌트가 화면에 나타날 때 서버에서 데이터를 가져오기",
+      "items 배열로부터 합계를 계산해 total 상태에 저장하기",
+      "window의 resize 이벤트 구독하기",
+      "IntersectionObserver 등록하기"
+    ],
+    a: 1,
+    e: "합계는 <b>렌더링 중에 계산</b>하면 됩니다. Effect로 상태에 저장하면 렌더링이 두 번 일어나고 한 프레임 동안 값이 어긋납니다. 나머지 셋은 모두 <b>React 바깥 세계와의 동기화</b>라 Effect가 적절합니다."
+  },
+  {
+    q: "사용자를 빠르게 A→B로 전환했을 때 A의 응답이 늦게 도착해 화면에 잘못된 데이터가 표시됩니다. 해결책은?",
+    o: [
+      "요청을 순차적으로 보낸다",
+      "정리 함수에서 <code>AbortController.abort()</code>로 이전 요청을 취소하거나, ignore 플래그로 늦게 온 응답을 무시한다",
+      "setTimeout으로 지연시킨다",
+      "의존성 배열을 비운다"
+    ],
+    a: 1,
+    e: "이것이 <b>경쟁 상태(race condition)</b>입니다. 응답은 보낸 순서대로 오지 않습니다. 정리 함수는 <b>다음 Effect 실행 전</b>에 호출되므로, 여기서 이전 요청을 취소하거나 결과를 무시하도록 표시하면 항상 최신 요청의 결과만 반영됩니다."
+  },
+  {
+    q: "\"저장 버튼을 누르면 분석 이벤트를 전송한다\"는 로직은 어디에 두어야 하나요?",
+    o: [
+      "isSaved 상태를 감시하는 useEffect",
+      "저장 버튼의 이벤트 핸들러 안. 사용자의 행동 때문에 실행되는 코드이기 때문",
+      "컴포넌트 최상단",
+      "useLayoutEffect"
+    ],
+    a: 1,
+    e: "판단 기준은 <b>\"무엇 때문에 실행되는가\"</b>입니다. 사용자의 클릭 때문이면 <b>이벤트 핸들러</b>, 화면에 나타났기 때문이면 <b>Effect</b>입니다. 상태를 감시하는 Effect로 처리하면 다른 경로로 그 상태가 바뀔 때도 실행되어 예상 못 한 동작을 만듭니다."
+  }
+]);
+</script>

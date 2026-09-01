@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>64장. useRef, memo, useMemo, useCallback — 프엔북</title>
+<meta name="description" content="useRef의 두 가지 용도, memo·useMemo·useCallback이 실제로 하는 일과 언제 써야 하는지, React Compiler까지 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="64장. useRef, memo, useMemo, useCallback — 프엔북">
+<meta property="og:description" content="useRef의 두 가지 용도, memo·useMemo·useCallback이 실제로 하는 일과 언제 써야 하는지, React Compiler까지 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="64-ref-memo">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">8부 · React</p>
+    <h1>64장. useRef, memo, useMemo, useCallback</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>useRef</code>의 두 가지 용도</li>
+  <li><b>렌더링이 왜 일어나는지</b> 정확히 알기</li>
+  <li><code>memo</code>·<code>useMemo</code>·<code>useCallback</code>이 하는 일</li>
+  <li><b>언제 써야 하고, 왜 대부분 필요 없는지</b></li>
+  <li><span class="term" data-term="react">React</span> Compiler가 바꾸는 것</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 성급한 최적화를 피하는 것이 목표입니다</p>
+
+<h2 id="ref">useRef</h2>
+
+<div class="codeblock">
+<span class="cb-label">용도 ① <span class="term" data-term="dom">DOM</span> 요소 <span class="term" data-term="reference">참조</span></span>
+<pre><code data-lang="jsx">function SearchBox() {
+  const inputRef = useRef(null);
+
+  useEffect(() =&gt; {
+    inputRef.current?.focus();     // 화면에 나타나면 포커스
+  }, []);
+
+  return &lt;input ref={inputRef} /&gt;;
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">용도 ② 렌더링과 무관한 값 저장</span>
+<pre><code data-lang="jsx">function Timer() {
+  const [seconds, setSeconds] = useState(0);
+  const intervalRef = useRef(null);        // 화면에 안 보이는 값
+
+  function start() {
+    if (intervalRef.current) return;
+    intervalRef.current = setInterval(() =&gt; setSeconds(s =&gt; s + 1), 1000);
+  }
+  function stop() {
+    clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }
+
+  useEffect(() =&gt; stop, []);   // 정리 (61장)
+}</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th><code>useState</code></th><th><code>useRef</code></th></tr></thead>
+<tbody>
+<tr><td>값이 바뀌면</td><td><b>다시 렌더링</b></td><td><b>아무 일도 없음</b></td></tr>
+<tr><td>값 읽기</td><td>바로</td><td><code>.current</code></td></tr>
+<tr><td>값 변경</td><td><code>setX(...)</code></td><td><code>ref.current = …</code> (직접 대입)</td></tr>
+<tr><td>용도</td><td>화면에 <b>보이는</b> 값</td><td>화면과 <b>무관한</b> 값</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> ref로 화면에 보이는 값을 관리하지 마세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ❌ 화면이 갱신되지 않습니다
+const countRef = useRef(0);
+&lt;button onClick={() =&gt; countRef.current++}&gt;{countRef.current}&lt;/button&gt;</code></pre>
+</div>
+<p style="margin-bottom:0">"불필요한 렌더링을 줄이려고" ref를 쓰는 것은 <b>React를 거스르는 것</b>입니다.
+<b>화면에 나오는 값은 반드시 상태</b>여야 합니다.</p>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> ref가 맞는 경우</p>
+<ul style="margin-bottom:0">
+<li><b>포커스·스크롤·미디어 재생</b> 등 명령형 DOM 조작</li>
+<li><b>타이머 ID</b>, 이전 값 기억</li>
+<li><b>외부 라이브러리 인스턴스</b>(차트, 지도)</li>
+<li><b>렌더링 결과에 영향을 주지 않는</b> 모든 값</li>
+</ul>
+</div>
+
+<h2 id="rerender">렌더링은 왜 일어나는가</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔄</span> 정확히 이 세 가지입니다</p>
+<ol style="margin-bottom:0">
+<li><b>자신의 상태가 바뀔 때</b></li>
+<li><b>부모가 다시 렌더링될 때</b> ← 이것이 핵심입니다</li>
+<li><b>구독 중인 <span <span class="term" data-term="class">class</span>="term" data-term="context">Context</span> 값이 바뀔 때</b>(65장)</li>
+</ol>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">💡</span> "부모가 렌더링되면 자식도 렌더링된다"</p>
+<span class="mythline"><span class="term" data-term="props">props</span>가 바뀌지 않아도 <b>자식은 다시 렌더링됩니다.</b>
+React는 props를 비교하지 않고 그냥 다시 실행합니다.</span>
+<span class="mythline"><b class="yes">하지만 이것이 곧 성능 문제는 아닙니다.</b>
+"렌더링"은 <b><span class="term" data-term="component">컴포넌트</span> 함수를 실행해 <span class="term" data-term="virtual-dom">가상 DOM</span>을 만드는 것</b>이고,
+결과가 같으면 <b>실제 DOM은 건드리지 않습니다</b>(57장).
+함수 실행 자체는 대개 매우 빠릅니다.</span>
+<span class="mythline">문제가 되는 것은 <b>렌더링이 정말 무거울 때</b>뿐입니다.
+목록 수천 개, 복잡한 계산, 큰 트리 같은 경우입니다.</span>
+</div>
+
+<h2 id="memo">memo</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">const ExpensiveList = memo(function ExpensiveList({ items }) {
+  // props가 이전과 같으면 다시 실행하지 않고 이전 결과를 재사용합니다
+  return &lt;ul&gt;{items.map(i =&gt; &lt;li key={i.id}&gt;{i.name}&lt;/li&gt;)}&lt;/ul&gt;;
+});</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💔</span> m<span class="term" data-term="em">em</span>o가 쉽게 무력해지는 이유</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">function Parent() {
+  return (
+    &lt;ExpensiveList
+      items={items.filter(i =&gt; i.active)}   // ❌ 매번 새 배열
+      onSelect={() =&gt; {}}                    // ❌ 매번 새 함수
+      config={{ mode: "list" }}              // ❌ 매번 새 객체
+    /&gt;
+  );
+}</code></pre>
+</div>
+<p style="margin-bottom:0"><code>memo</code>는 props를 <b>얕게 비교</b>합니다.
+객체·배열·함수는 <b>내용이 같아도 매 렌더링마다 새로 만들어져</b> 참조가 다릅니다(25장).
+그래서 <b><code>memo</code>만 붙이면 아무 효과가 없습니다.</b>
+props도 함께 안정시켜야 하고, 그것이 <code>useMemo</code>·<code>useCallback</code>의 역할입니다.</p>
+</div>
+
+<h2 id="usememo">useMemo와 useCallback</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// useMemo: 계산 결과를 기억
+const sorted = useMemo(
+  () =&gt; items.toSorted((a, b) =&gt; a.price - b.price),
+  [items]
+);
+
+// useCallback: 함수 자체를 기억
+const handleSelect = useCallback((id) =&gt; {
+  setSelectedId(id);
+}, []);
+
+// 사실 useCallback은 useMemo의 축약입니다
+const fn = useCallback(f, deps);
+const fn = useMemo(() =&gt; f, deps);   // 같은 뜻</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구</th><th>기억하는 것</th><th>주 목적</th></tr></thead>
+<tbody>
+<tr><td><code>memo</code></td><td>컴포넌트 렌더링 결과</td><td>부모 렌더링 시 자식 건너뛰기</td></tr>
+<tr><td><code>useMemo</code></td><td>계산 <b>결과값</b></td><td>비싼 계산 반복 방지, <b>참조 안정화</b></td></tr>
+<tr><td><code>useCallback</code></td><td><b>함수 자체</b></td><td>함수 참조 안정화</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="when">언제 써야 하나</h3>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✅</span> 쓸 만한 경우</p>
+<ol style="margin-bottom:0">
+<li><b>진짜로 비싼 계산</b> — 수천 개 항목 정렬·필터링, 무거운 변환.
+"비싸다"의 기준은 <b>Performance 탭으로 측정한 결과</b>입니다(49장).</li>
+<li><b><code>memo</code>된 자식에게 넘기는 객체·함수</b> — 위에서 본 무력화를 막기 위해</li>
+<li><b><code>useEffect</code>의 의존성으로 쓰이는 값</b> — 매번 바뀌면 Effect가 계속 실행됩니다(61장)</li>
+<li><b>Context의 value 객체</b> — 매번 새 객체면 모든 소비자가 다시 렌더링됩니다(65장)</li>
+</ol>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> 쓰지 말아야 할 경우 — 대부분이 여기 해당합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ❌ 이런 것에 useMemo는 손해입니다
+const doubled = useMemo(() =&gt; count * 2, [count]);
+const name = useMemo(() =&gt; `${first} ${last}`, [first, last]);
+const isValid = useMemo(() =&gt; email.includes("@"), [email]);</code></pre>
+</div>
+<p style="margin-bottom:0"><code>useMemo</code>도 <b>공짜가 아닙니다.</b>
+<span class="term" data-term="dependency-array">의존성 배열</span>을 만들고, 비교하고, 이전 값을 메모리에 들고 있어야 합니다.
+<b>계산 자체가 비교보다 싸다면 최적화가 아니라 손해</b>입니다.
+게다가 코드가 읽기 어려워지는 비용이 항상 따라옵니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 순서를 지키세요</p>
+<ol>
+<li><b>먼저 측정합니다.</b> React <span class="term" data-term="devtools">DevTools</span> Profiler로 어느 컴포넌트가 얼마나 걸리는지 봅니다.
+<b>추측으로 최적화하지 마세요.</b></li>
+<li><b>구조를 먼저 고칩니다.</b> 상태를 아래로 내리기, 컴포넌트 나누기, 계산을 줄이기.
+대개 이것만으로 해결됩니다.</li>
+<li><b>그래도 느리면</b> <span class="term" data-term="memoization">메모이제이션</span>을 적용합니다.</li>
+<li><b>적용 후 다시 측정</b>해 실제로 빨라졌는지 확인합니다.</li>
+</ol>
+<p style="margin-bottom:0">React 팀의 오랜 조언은 <b>"필요할 때까지 최적화하지 말라"</b>입니다.
+신입이 <code>useCallback</code>을 모든 함수에 붙이는 것은 <b>거의 항상 순손실</b>입니다.</p>
+</div>
+
+<h3 id="structure">메모이제이션 대신 구조 바꾸기</h3>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// ❌ 입력할 때마다 무거운 목록까지 전부 다시 렌더링
+function Page() {
+  const [query, setQuery] = useState("");
+  return (
+    &lt;&gt;
+      &lt;input value={query} onChange={e =&gt; setQuery(e.target.value)} /&gt;
+      &lt;HeavyList /&gt;              {/* query와 무관한데 함께 렌더링됩니다 */}
+    &lt;/&gt;
+  );
+}
+
+// ✅ 상태를 필요한 곳으로 내립니다 — memo 없이 해결
+function Page() {
+  return (
+    &lt;&gt;
+      &lt;SearchInput /&gt;            {/* query 상태를 여기가 갖습니다 */}
+      &lt;HeavyList /&gt;
+    &lt;/&gt;
+  );
+}
+
+// ✅ 또는 무거운 부분을 children으로 받습니다
+function Page() {
+  return (
+    &lt;SearchLayout&gt;
+      &lt;HeavyList /&gt;              {/* Page에서 만들어졌으므로 다시 만들어지지 않습니다 */}
+    &lt;/SearchLayout&gt;
+  );
+}</code></pre>
+</div>
+
+<h2 id="compiler">React Compiler</h2>
+
+<p>React 팀은 <b>메모이제이션을 자동으로 넣어 주는 컴파일러</b>를 만들고 있습니다.
+빌드 시점에 코드를 분석해 <code>useMemo</code>·<code>useCallback</code>·<code>memo</code>를
+<b>필요한 곳에 알아서 적용</b>합니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🤖</span> 무엇이 달라지나</p>
+<p style="margin-bottom:0">컴파일러가 널리 쓰이게 되면 <b>손으로 메모이제이션을 붙일 일이 크게 줄어듭니다.</b>
+지금 <code>useCallback</code>을 습관적으로 붙이는 코드는 <b>미래에 불필요한 잡음</b>이 됩니다.<br>
+다만 컴파일러가 제대로 동작하려면 <b>컴포넌트가 규칙을 지켜야</b> 합니다 —
+렌더링 중 <span class="term" data-term="side-effect">부수 효과</span> 없음, 상태를 직접 수정하지 않음, 훅 규칙 준수.
+<b>결국 "React를 규칙대로 쓰는 것"이 최선의 최적화</b>라는 결론은 변하지 않습니다.
+도입 여부는 프로젝트의 React 버전과 공식 안내를 확인하세요.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>useRef</code>는 <b>DOM 참조</b>와 <b>렌더링과 무관한 값</b>에 쓴다. 바꿔도 다시 그리지 않는다.</li>
+<li><b>화면에 보이는 값은 반드시 상태</b>로 관리한다.</li>
+<li>렌더링 원인은 <b>자기 상태 변경 · 부모 렌더링 · Context 변경</b> 셋뿐이다.</li>
+<li><b>부모가 렌더링되면 자식도 렌더링</b>되지만, 그것이 곧 성능 문제는 아니다.</li>
+<li><code>memo</code>는 <b>얕은 비교</b>를 한다. 객체·함수 props가 매번 새로 만들어지면 무력해진다.</li>
+<li><code>useMemo</code>·<code>useCallback</code>도 <b>비용이 있다.</b> 싼 계산에 쓰면 손해다.</li>
+<li><b>측정 → 구조 개선 → 그래도 안 되면 메모이제이션 → 재측정.</b></li>
+<li>상태를 <b>필요한 곳으로 내리는 것</b>이 대부분의 렌더링 문제를 해결한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.react.dev/reference/react/useRef" target="_blank" rel="noopener">React — useRef</a></li>
+<li><a href="https://ko.react.dev/reference/react/useMemo" target="_blank" rel="noopener">React — useMemo (언제 쓸지에 대한 상세한 안내 포함)</a></li>
+<li><a href="https://ko.react.dev/reference/react/memo" target="_blank" rel="noopener">React — memo</a></li>
+<li><a href="https://ko.react.dev/learn/react-compiler" target="_blank" rel="noopener">React — React Compiler</a></li>
+<li><a href="https://ko.react.dev/learn/manipulating-the-dom-with-refs" target="_blank" rel="noopener">React — ref로 DOM 조작하기</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "\"불필요한 렌더링을 줄이려고\" 화면에 표시되는 카운터 값을 <code>useRef</code>로 관리하면?",
+    o: [
+      "성능이 좋아진다",
+      "값은 바뀌지만 렌더링이 일어나지 않아 화면이 갱신되지 않는다. 화면에 보이는 값은 상태여야 한다",
+      "오류가 발생한다",
+      "자동으로 상태로 변환된다"
+    ],
+    a: 1,
+    e: "<code>ref.current</code> 변경은 <b>React가 감지하지 않습니다</b>. 그것이 ref의 목적입니다. 화면에 반영되어야 하는 값은 반드시 <code>useState</code>로 관리해야 하고, ref는 타이머 ID·DOM 참조처럼 렌더링과 무관한 값에 씁니다."
+  },
+  {
+    q: "<code>memo</code>로 감쌌는데도 자식이 계속 다시 렌더링됩니다. 가장 흔한 원인은?",
+    o: [
+      "memo가 동작하지 않는 버전이라서",
+      "props로 넘기는 객체·배열·함수가 매 렌더링마다 새로 만들어져 얕은 비교에서 매번 다르다고 판정되기 때문",
+      "자식에 상태가 있어서",
+      "key를 안 줘서"
+    ],
+    a: 1,
+    e: "<code>memo</code>는 props를 <b>얕게(<code>Object.is</code>) 비교</b>합니다. <code>items.filter(...)</code>나 <code>() =&gt; {}</code>는 내용이 같아도 <b>매번 새 참조</b>입니다(25장). <code>useMemo</code>·<code>useCallback</code>으로 참조를 안정시켜야 효과가 납니다."
+  },
+  {
+    q: "<code>const doubled = useMemo(() =&gt; count * 2, [count])</code> 의 문제는?",
+    o: [
+      "문법 오류다",
+      "곱셈 자체가 의존성 비교보다 싸기 때문에 오히려 손해이고, 코드만 읽기 어려워진다",
+      "count가 변하지 않는다",
+      "useMemo는 숫자에 쓸 수 없다"
+    ],
+    a: 1,
+    e: "<code>useMemo</code>는 공짜가 아닙니다. 의존성 배열 생성·비교·이전 값 보관 비용이 듭니다. <b>계산이 비교보다 싸면 순손실</b>입니다. 정렬·필터링 같은 실제로 무거운 작업에만 쓰고, 그것도 <b>측정한 뒤</b> 적용해야 합니다."
+  },
+  {
+    q: "검색 입력창 때문에 무거운 목록이 매번 다시 렌더링됩니다. memo보다 먼저 시도할 방법은?",
+    o: [
+      "모든 컴포넌트에 memo를 적용한다",
+      "검색어 상태를 입력창 컴포넌트 안으로 내리거나, 무거운 목록을 children으로 받아 부모 렌더링의 영향을 받지 않게 한다",
+      "useRef로 검색어를 관리한다",
+      "setTimeout으로 렌더링을 늦춘다"
+    ],
+    a: 1,
+    e: "<b>구조를 고치는 것이 먼저</b>입니다. 상태를 필요한 곳까지 내리면 무거운 형제가 아예 다시 렌더링되지 않습니다. children으로 받은 요소는 <b>부모에서 이미 만들어진</b> 것이라 재생성되지 않습니다. memo 없이 해결되는 경우가 많습니다."
+  },
+  {
+    q: "React 컴포넌트가 다시 렌더링되는 원인이 <b>아닌</b> 것은?",
+    o: [
+      "자신의 state가 변경됨",
+      "부모 컴포넌트가 다시 렌더링됨",
+      "구독 중인 Context 값이 변경됨",
+      "ref.current 값이 변경됨"
+    ],
+    a: 3,
+    e: "<code>ref.current</code> 변경은 <b>렌더링을 유발하지 않습니다</b>. 이것이 state와 ref의 결정적 차이이며, 렌더링과 무관한 값을 담는 용도로 ref를 쓰는 이유입니다."
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>65장. Context와 전역 상태 관리 — 프엔북</title>
+<meta name="description" content="Context API의 사용법과 성능 함정, useReducer, 그리고 Zustand·Redux·Jotai 등 전역 상태 관리 도구의 선택 기준을 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="65장. Context와 전역 상태 관리 — 프엔북">
+<meta property="og:description" content="Context API의 사용법과 성능 함정, useReducer, 그리고 Zustand·Redux·Jotai 등 전역 상태 관리 도구의 선택 기준을 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="65-context-state">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">8부 · React</p>
+    <h1>65장. Context와 전역 상태 관리</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>Context</b>로 값 공유하기와 <b>성능 함정</b></li>
+  <li><code>useReducer</code>로 복잡한 상태 다루기</li>
+  <li><b>서버 상태와 <span <span class="term" data-term="class">class</span>="term" data-term="client">클라이언트</span> 상태의 구분</b> — 가장 중요한 개념</li>
+  <li>Zustand·Redux·Jotai 중 무엇을 고를지</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분</p>
+
+<h2 id="context">Context</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// ① 만들기
+const ThemeContext = createContext("light");
+
+// ② 제공하기
+function App() {
+  const [theme, setTheme] = useState("light");
+  return (
+    &lt;ThemeContext.Provider value={theme}&gt;
+      &lt;Layout /&gt;
+    &lt;/ThemeContext.Provider&gt;
+  );
+}
+
+// ③ 사용하기 — 몇 단계 아래든 상관없습니다
+function DeepChild() {
+  const theme = useContext(ThemeContext);
+  return &lt;div className={theme}&gt;…&lt;/div&gt;;
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📦</span> 실무에서는 훅으로 감쌉니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">const ThemeContext = createContext(null);
+
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState("light");
+  const value = useMemo(() =&gt; ({ theme, setTheme }), [theme]);   // ⭐ 아래 설명
+  return &lt;ThemeContext.Provider value={value}&gt;{children}&lt;/ThemeContext.Provider&gt;;
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (context === null) {
+    throw new Error("useTheme은 ThemeProvider 안에서만 쓸 수 있습니다");
+  }
+  return context;
+}</code></pre>
+</div>
+<p style="margin-bottom:0">이렇게 하면 <b>Provider 밖에서 쓰는 실수</b>를 즉시 알 수 있고,
+Context 객체를 밖으로 노출하지 않아도 됩니다.</p>
+</div>
+
+<h3 id="context-perf">성능 함정</h3>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💥</span> value 객체를 매번 새로 만들면</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ❌ 렌더링마다 새 객체 → 모든 소비자가 다시 렌더링됩니다
+&lt;AuthContext.Provider value={{ user, login, logout }}&gt;
+
+// ✅ useMemo로 참조를 안정시킵니다 (64장)
+const value = useMemo(() =&gt; ({ user, login, logout }), [user, login, logout]);
+&lt;AuthContext.Provider value={value}&gt;</code></pre>
+</div>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🌊</span> Context는 <b>부분 구독</b>을 지원하지 않습니다</p>
+<p style="margin-bottom:0">하나의 Context에 <code>user</code>·<code>theme</code>·<code>cart</code>를 전부 담으면,
+<b>어느 하나만 바뀌어도 그 Context를 쓰는 모든 <span class="term" data-term="component">컴포넌트</span>가 다시 렌더링</b>됩니다.
+<code>theme</code>만 쓰는 컴포넌트도 <code>cart</code>가 바뀌면 렌더링됩니다.</p>
+<ul style="margin-bottom:0">
+<li><b>해결 1</b> — Context를 <b>목적별로 나눕니다.</b> <code>ThemeContext</code>, <code>AuthContext</code> 따로.</li>
+<li><b>해결 2</b> — <b>값과 갱신 함수를 분리</b>합니다. 값은 자주 바뀌지만 함수는 안 바뀝니다.</li>
+<li><b>해결 3</b> — 자주 바뀌는 상태는 <b>전역 상태 라이브러리</b>를 씁니다. 대부분 부분 구독을 지원합니다.</li>
+</ul>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> Context에 어울리는 것</p>
+<ul style="margin-bottom:0">
+<li><b>자주 바뀌지 않고</b> <b>많은 곳에서 필요한</b> 값</li>
+<li>테마, 로그인 사용자 정보, 언어 설정, 라우터 정보</li>
+<li>컴파운드 컴포넌트의 내부 상태(63장)</li>
+</ul>
+<p style="margin-bottom:0"><b>어울리지 않는 것</b>: 입력 중인 폼 값, 마우스 위치, 초당 여러 번 바뀌는 값.</p>
+</div>
+
+<h2 id="reducer">useReducer</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// 상태 변경 로직을 컴포넌트 밖의 순수 함수로 (27장)
+function reducer(state, action) {
+  switch (action.type) {
+    case "added":
+      return { ...state, items: [...state.items, action.item] };
+    case "removed":
+      return { ...state, items: state.items.filter(i =&gt; i.id !== action.id) };
+    case "cleared":
+      return { ...state, items: [] };
+    default:
+      throw new Error("알 수 없는 action: " + action.type);
+  }
+}
+
+function Cart() {
+  const [state, dispatch] = useReducer(reducer, { items: [] });
+
+  return &lt;button onClick={() =&gt; dispatch({ type: "added", item })}&gt;담기&lt;/button&gt;;
+}</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th><code>useState</code>가 나은 경우</th><th><code>useReducer</code>가 나은 경우</th></tr></thead>
+<tbody>
+<tr><td>상태가 한두 개<br>변경이 단순<br>대부분의 경우</td><td>상태가 서로 <b>연관</b>됨<br>변경 방식이 <b>여러 가지</b><br>다음 상태가 <b>이전 상태에 크게 의존</b><br>변경 로직을 <b>테스트</b>하고 싶음</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧪</span> reducer는 <span class="term" data-term="pure-function">순수 함수</span>라 테스트가 쉽습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// React 없이 그냥 함수 호출로 검증할 수 있습니다 (75장)
+expect(reducer({ items: [] }, { type: "added", item: a }))
+  .toEqual({ items: [a] });</code></pre>
+</div>
+<p style="margin-bottom:0">그리고 52장의 <b><span class="term" data-term="discriminated-union">판별 유니온</span></b>으로 action에 타입을 붙이면
+잘못된 action을 컴파일 시점에 잡을 수 있습니다(56장).</p>
+</div>
+
+<h2 id="kinds">가장 중요한 구분: 서버 상태와 클라이언트 상태</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔀</span> 이 구분을 놓치면 전역 상태 관리가 지옥이 됩니다</p>
+<div class="tablewrap" style="margin:.6em 0 0">
+<table>
+<thead><tr><th></th><th>서버 상태</th><th>클라이언트 상태</th></tr></thead>
+<tbody>
+<tr><td>예</td><td>사용자 목록, 상품 정보, 주문 내역</td><td>모달 열림, 선택된 탭, 다크 모드, 폼 입력값</td></tr>
+<tr><td>진짜 주인</td><td><b>서버</b> — 우리는 사본을 갖고 있을 뿐</td><td><b><span class="term" data-term="browser">브라우저</span></b></td></tr>
+<tr><td>특성</td><td>비동기, <b>낡을 수 있음</b>, 다른 사람이 바꿈</td><td>동기, 항상 최신</td></tr>
+<tr><td>필요한 것</td><td>캐싱, <span class="term" data-term="revalidate">재검증</span>, 로딩·에러, 중복 제거</td><td>단순 저장</td></tr>
+<tr><td>도구</td><td><b><span class="term" data-term="tanstack-query">TanStack Query</span>·SWR</b>(67장)</td><td><code>useState</code>·Context·Zustand</td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin-bottom:0"><b>서버 데이터를 Redux 같은 곳에 넣고 직접 관리하려는 것</b>이
+과거 <span class="term" data-term="frontend">프론트엔드</span>가 복잡해진 큰 이유였습니다.
+지금은 <b>서버 상태 전용 도구</b>가 그 일을 대신하고,
+그 결과 <b>전역 상태 라이브러리에 남는 것은 놀랄 만큼 적어집니다.</b></p>
+</div>
+
+<h2 id="libs">전역 상태 라이브러리</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구</th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><b>Zustand</b></td><td>매우 단순. 보일러플레이트가 거의 없고 <b>부분 구독</b>을 지원합니다. 현재 가장 인기 있는 선택</td></tr>
+<tr><td><b>Redux Toolkit</b></td><td>큰 팀·복잡한 앱. <b><span class="term" data-term="devtools">DevTools</span>의 시간 여행 디버깅</b>이 강력합니다. 규칙이 엄격해 일관성이 좋습니다</td></tr>
+<tr><td><b>Jotai / Recoil</b></td><td>작은 단위(atom)로 상태를 쪼개는 방식. 세밀한 구독</td></tr>
+<tr><td><b>Context + useReducer</b></td><td>추가 의존성 없음. 소규모에 충분합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">Zustand의 느낌</span>
+<pre><code data-lang="js">import { create } from "zustand";
+
+const useCartStore = create((set) =&gt; ({
+  items: [],
+  add: (item) =&gt; set((s) =&gt; ({ items: [...s.items, item] })),
+  clear: () =&gt; set({ items: [] })
+}));
+
+function Cart() {
+  // ⭐ 필요한 것만 구독합니다 — items가 바뀌어도 count만 쓰는 컴포넌트는 안 바뀝니다
+  const items = useCartStore((s) =&gt; s.items);
+  const add = useCartStore((s) =&gt; s.add);
+}</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 선택 순서</p>
+<ol>
+<li><b>먼저 <code>useState</code>로 시작</b>합니다. 대부분의 상태는 <b>한 컴포넌트 안</b>에 있으면 됩니다.</li>
+<li>두세 컴포넌트가 공유하면 <b><span class="term" data-term="lifting-<span class="term" data-term="state">state</span>">상태 끌어올리기</span></b>(59장).</li>
+<li><span class="term" data-term="props">props</span> 전달이 길어지면 <b>합성으로 해결</b>을 먼저 시도(63장).</li>
+<li>정말 넓은 범위면 <b>Context</b>.</li>
+<li>Context로 성능이 문제되거나 로직이 복잡하면 <b>Zustand</b> 같은 라이브러리.</li>
+<li><b>서버 데이터는 처음부터 TanStack Query</b>(67장). 여기에 넣지 마세요.</li>
+</ol>
+<p style="margin-bottom:0"><b>"<span class="term" data-term="react">React</span> 프로젝트니까 상태 관리 라이브러리를 깔아야지"는 잘못된 출발</b>입니다.
+서버 상태를 분리하고 나면 <b>전역으로 관리할 것이 거의 없다는 것</b>을 알게 되는 경우가 많습니다.</p>
+</div>
+
+<h2 id="url">URL도 상태 저장소입니다</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// ❌ 검색어·필터·페이지를 상태로만 관리하면
+// 새로고침하면 사라지고, 링크를 공유할 수 없고, 뒤로 가기가 동작하지 않습니다
+const [page, setPage] = useState(1);
+
+// ✅ URL에 담습니다 (3·40장)
+const [searchParams, setSearchParams] = useSearchParams();
+const page = Number(searchParams.get("page") ?? 1);</code></pre>
+</div>
+<p><b>공유 가능하고 뒤로 가기가 동작해야 하는 것</b>은 <span class="term" data-term="url">URL</span>에 두는 것이 맞습니다.
+검색어, 필터, 정렬, 페이지, 열린 탭이 대표적입니다. 68장에서 다시 다룹니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>Context는 <b>깊은 props 전달</b>을 없애 준다. <span class="term" data-term="custom-hook">커스텀 훅</span>으로 감싸 쓴다.</li>
+<li><b><code>value</code> 객체는 <code>useMemo</code>로 안정화</b>한다.</li>
+<li>Context는 <b>부분 구독을 지원하지 않는다.</b> 목적별로 나눈다.</li>
+<li>Context에 어울리는 것은 <b>자주 바뀌지 않는 넓은 범위의 값</b>이다.</li>
+<li><code>useReducer</code>는 상태 변경이 <b>여러 방식</b>일 때, 그리고 <b>테스트</b>하고 싶을 때.</li>
+<li><b>서버 상태와 클라이언트 상태를 구분</b>하는 것이 가장 중요하다.</li>
+<li>서버 데이터는 <b>TanStack Query</b>, 클라이언트 상태만 전역 라이브러리로.</li>
+<li>공유·뒤로 가기가 필요한 상태는 <b>URL</b>에 둔다.</li>
+<li><b>라이브러리부터 깔지 말고</b> 필요해질 때 도입한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.react.dev/learn/passing-data-deeply-with-context" target="_blank" rel="noopener">React — Context로 데이터 전달하기</a></li>
+<li><a href="https://ko.react.dev/learn/scaling-up-with-reducer-and-context" target="_blank" rel="noopener">React — Reducer와 Context로 확장하기</a></li>
+<li><a href="https://zustand.docs.pmnd.rs/" target="_blank" rel="noopener">Zustand 공식 문서</a></li>
+<li><a href="https://redux-toolkit.js.org/" target="_blank" rel="noopener">Redux Toolkit</a></li>
+<li><a href="https://tanstack.com/query/latest" target="_blank" rel="noopener">TanStack Query</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>&lt;Ctx.Provider value={{ user, login }}&gt;</code> 처럼 객체 리터럴을 직접 넘기면?",
+    o: [
+      "문제없다",
+      "렌더링마다 새 객체가 만들어져 참조가 달라지므로, 값이 실제로 바뀌지 않아도 모든 소비자가 다시 렌더링된다",
+      "Provider가 동작하지 않는다",
+      "useContext가 undefined를 반환한다"
+    ],
+    a: 1,
+    e: "Context 소비자는 <b>value의 참조가 바뀌면</b> 다시 렌더링됩니다. 객체 리터럴은 매번 새로 만들어지므로(25장) <code>useMemo</code>로 참조를 안정시켜야 합니다."
+  },
+  {
+    q: "하나의 Context에 user·theme·cart를 모두 담으면 생기는 문제는?",
+    o: [
+      "메모리를 많이 쓴다",
+      "Context는 부분 구독을 지원하지 않아, cart만 바뀌어도 theme만 쓰는 컴포넌트까지 전부 다시 렌더링된다",
+      "값을 읽을 수 없다",
+      "Provider를 중첩할 수 없다"
+    ],
+    a: 1,
+    e: "<code>useContext</code>는 <b>Context 전체</b>를 구독합니다. 일부 값만 쓰더라도 value가 바뀌면 렌더링됩니다. 목적별로 Context를 나누거나, 부분 구독을 지원하는 Zustand 같은 도구를 씁니다."
+  },
+  {
+    q: "\"서버 상태\"와 \"클라이언트 상태\"를 구분해야 하는 이유는?",
+    o: [
+      "코드를 나누기 위한 관례일 뿐이다",
+      "서버 상태는 진짜 주인이 서버라서 캐싱·재검증·로딩·에러 처리가 필요한데, 이를 일반 전역 상태로 다루면 그 모든 것을 직접 만들어야 하기 때문",
+      "서버 상태는 저장할 수 없기 때문",
+      "클라이언트 상태는 렌더링을 유발하지 않기 때문"
+    ],
+    a: 1,
+    e: "서버 데이터는 <b>우리가 가진 사본</b>일 뿐이고 언제든 낡을 수 있습니다. 캐시 무효화·중복 요청 제거·재시도·포커스 시 갱신이 필요합니다. TanStack Query 같은 전용 도구가 이를 담당하면 <b>전역 상태로 남는 것은 매우 적어집니다.</b>"
+  },
+  {
+    q: "검색 필터와 페이지 번호를 <code>useState</code>로만 관리할 때의 문제는?",
+    o: [
+      "성능이 나쁘다",
+      "새로고침하면 초기화되고, 현재 화면을 링크로 공유할 수 없으며, 뒤로 가기가 기대대로 동작하지 않는다",
+      "타입 지정이 불가능하다",
+      "Context를 쓸 수 없다"
+    ],
+    a: 1,
+    e: "<b>URL도 상태 저장소</b>입니다. 공유·북마크·뒤로 가기가 의미 있는 값(검색어·필터·정렬·페이지)은 쿼리 문자열에 두는 것이 맞습니다(3·68장). 모달 열림 같은 일시적 UI 상태는 <code>useState</code>가 적절합니다."
+  },
+  {
+    q: "<code>useReducer</code>가 <code>useState</code>보다 나은 상황은?",
+    o: [
+      "상태가 하나뿐일 때",
+      "서로 연관된 여러 값이 다양한 방식으로 함께 바뀌고, 그 변경 로직을 순수 함수로 분리해 테스트하고 싶을 때",
+      "비동기 작업이 있을 때",
+      "Context를 쓸 때만"
+    ],
+    a: 1,
+    e: "reducer는 <code>(상태, 액션) =&gt; 새 상태</code>인 <b>순수 함수</b>라 React 없이 테스트할 수 있고, 변경 방식이 한곳에 모여 읽기 좋습니다. 반면 상태 하나를 토글하는 정도라면 <code>useState</code>가 훨씬 간단합니다."
+  }
+]);
+</script>
+</body>
+</html>

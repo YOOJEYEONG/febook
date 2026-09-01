@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>75장. 테스트 — 프엔북</title>
+<meta name="description" content="테스트를 쓰는 이유와 종류, Vitest 단위 테스트, Testing Library로 컴포넌트 테스트, Playwright E2E, 무엇을 테스트할지 판단하는 법을 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="75장. 테스트 — 프엔북">
+<meta property="og:description" content="테스트를 쓰는 이유와 종류, Vitest 단위 테스트, Testing Library로 컴포넌트 테스트, Playwright E2E, 무엇을 테스트할지 판단하는 법을 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="75-testing">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">10부 · 품질, 성능, 보안</p>
+    <h1>75장. 테스트</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>테스트가 <b>실제로 주는 것</b></li>
+  <li>단위·<span class="term" data-term="component">컴포넌트</span>·E2E 테스트의 역할 분담</li>
+  <li><b>사용자처럼 테스트하기</b> — Testing Library의 철학</li>
+  <li><b>무엇을 테스트하고 무엇을 하지 말지</b></li>
+  <li>테스트하기 쉬운 코드의 특징</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분</p>
+
+<h2 id="why">왜 쓰는가</h2>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🎯</span> "버그를 잡으려고"는 절반만 맞습니다</p>
+<span class="mythline">테스트가 주는 <b>진짜 가치</b>는 이것입니다.</span>
+<span class="mythline"><b>① 겁내지 않고 고칠 수 있게 됩니다.</b>
+테스트가 없으면 "건드리면 뭐가 깨질지 몰라서" 나쁜 코드를 그대로 둡니다.
+이것이 프로젝트가 썩는 가장 큰 이유입니다.</span>
+<span class="mythline"><b>② 같은 버그가 다시 나지 않습니다.</b>
+버그를 고칠 때 테스트를 하나 추가하면 그 버그는 <b>영원히</b> 재발하지 않습니다.</span>
+<span class="mythline"><b>③ 문서가 됩니다.</b>
+잘 쓴 테스트는 <b>"이 코드는 이럴 때 이렇게 동작한다"</b>는 실행 가능한 명세입니다.</span>
+</div>
+
+<h2 id="kinds">테스트의 종류</h2>
+
+<div class="codeblock">
+<span class="cb-label">테스트 트로피 — <span <span class="term" data-term="class">class</span>="term" data-term="frontend">프론트엔드</span>에서 널리 쓰이는 비중</span>
+<pre><code data-lang="text">        ▲  E2E          적음    느리고 비싸지만 '진짜'를 검증
+       ███ 통합·컴포넌트  많음 ⭐ 투자 대비 효과가 가장 좋음
+      █████ 단위          중간   순수 로직에
+     ███████ 정적          기반   TypeScript + ESLint (48·50장)</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>종류</th><th>대상</th><th>도구</th><th>속도</th></tr></thead>
+<tbody>
+<tr><td><b>정적</b></td><td>타입·문법·패턴</td><td><span class="term" data-term="typescript">TypeScript</span>, <span class="term" data-term="eslint">ESLint</span></td><td>즉시</td></tr>
+<tr><td><b>단위</b></td><td>함수 하나</td><td><span class="term" data-term="vite">Vite</span>st, Jest</td><td>매우 빠름</td></tr>
+<tr><td><b>컴포넌트</b></td><td>화면 조각의 동작</td><td>Testing Library</td><td>빠름</td></tr>
+<tr><td><b>E2E</b></td><td>실제 <span class="term" data-term="browser">브라우저</span>에서 전체 흐름</td><td>Playwright, Cypress</td><td>느림</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🏆</span> 왜 통합·컴포넌트 테스트가 중심인가</p>
+<p style="margin-bottom:0">단위 테스트를 아무리 많이 써도 <b>조각들이 잘 붙는지는 알 수 없습니다.</b>
+반대로 E2E만 쓰면 느리고 불안정해서 <b>결국 아무도 안 돌립니다.</b><br>
+<b>"컴포넌트 몇 개가 함께 동작하는 수준"</b>이 사용자가 실제로 겪는 단위에 가깝고,
+속도도 감당할 만합니다. 그래서 여기에 가장 많이 투자합니다.</p>
+</div>
+
+<h2 id="unit">단위 테스트</h2>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm install -D vitest</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">formatPrice.test.ts</span>
+<pre><code data-lang="ts">import { describe, it, expect } from "vitest";
+import { formatPrice } from "./formatPrice";
+
+describe("formatPrice", () =&gt; {
+  it("천 단위에 콤마를 넣는다", () =&gt; {
+    expect(formatPrice(1234567)).toBe("1,234,567원");
+  });
+
+  it("0원도 표시한다", () =&gt; {
+    expect(formatPrice(0)).toBe("0원");
+  });
+
+  it("음수는 마이너스를 유지한다", () =&gt; {
+    expect(formatPrice(-1000)).toBe("-1,000원");
+  });
+
+  it("숫자가 아니면 오류를 던진다", () =&gt; {
+    expect(() =&gt; formatPrice("abc" as never)).toThrow();
+  });
+});</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧪</span> <span class="term" data-term="pure-function">순수 함수</span>는 테스트가 쉽습니다</p>
+<p style="margin-bottom:0">27장에서 말한 <b>순수 함수</b>(같은 입력 → 같은 출력, <span class="term" data-term="side-effect">부수 효과</span> 없음)는
+<b>입력을 넣고 출력을 확인</b>하면 끝입니다.<br>
+<b>테스트하기 어려운 코드는 대개 설계가 나쁜 코드</b>입니다.
+전역 상태를 읽고, 시간에 의존하고, 네트워크를 직접 부르는 함수는 테스트가 어렵습니다.
+<b>테스트를 쓰다 보면 자연스럽게 설계가 좋아지는</b> 이유입니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">경계값을 노리세요</span>
+<pre><code data-lang="ts">// 가장 버그가 많이 숨는 곳
+expect(calculate([])).toBe(0);              // 빈 배열
+expect(calculate([1])).toBe(1);             // 하나
+expect(getDiscount(0)).toBe(0);             // 0
+expect(paginate(items, 0)).toEqual([]);     // 첫 페이지 / 범위 밖
+expect(truncate("가나다", 3)).toBe("가나다"); // 정확히 경계</code></pre>
+</div>
+
+<h2 id="component">컴포넌트 테스트</h2>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm install -D vitest @testing-library/react @testing-library/user-event jsdom</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">LoginForm.test.tsx</span>
+<pre><code data-lang="tsx">import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { LoginForm } from "./LoginForm";
+
+it("이메일 형식이 잘못되면 오류를 보여준다", async () =&gt; {
+  const user = userEvent.setup();
+  render(&lt;LoginForm onSubmit={() =&gt; {}} /&gt;);
+
+  // 사용자가 보는 이름으로 요소를 찾습니다
+  await user.type(screen.getByLabelText("이메일"), "잘못된값");
+  await user.click(screen.getByRole("button", { name: "로그인" }));
+
+  expect(await screen.findByText("이메일 형식이 아닙니다")).toBeInTheDocument();
+});
+
+it("올바른 값이면 제출 함수를 호출한다", async () =&gt; {
+  const user = userEvent.setup();
+  const handleSubmit = vi.fn();
+  render(&lt;LoginForm onSubmit={handleSubmit} /&gt;);
+
+  await user.type(screen.getByLabelText("이메일"), "hong@example.com");
+  await user.type(screen.getByLabelText("비밀번호"), "12345678");
+  await user.click(screen.getByRole("button", { name: "로그인" }));
+
+  expect(handleSubmit).toHaveBeenCalledWith({
+    email: "hong@example.com",
+    password: "12345678"
+  });
+});</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">👤</span> Testing Library의 철학</p>
+<p style="margin-bottom:0"><b>"테스트는 소프트웨어가 쓰이는 방식과 닮을수록 신뢰할 수 있다."</b><br>
+그래서 <b>내부 상태나 함수 이름이 아니라 사용자가 보는 것</b>으로 찾습니다.
+<code>state.email</code>을 확인하지 않고 <b>화면에 오류 메시지가 보이는지</b>를 확인합니다.<br>
+덕분에 <b>구현을 바꿔도 테스트가 안 깨집니다.</b>
+<code>useState</code>를 <code>useReducer</code>로 바꾸든 클래스로 바꾸든,
+사용자에게 보이는 결과가 같으면 테스트는 통과합니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">요소 찾는 방법의 우선순위</span>
+<pre><code data-lang="tsx">// 1순위 — 접근성 기준 (11장)
+screen.getByRole("button", { name: "저장" });
+screen.getByLabelText("이메일");
+screen.getByPlaceholderText("검색어 입력");
+screen.getByText("환영합니다");
+
+// 최후의 수단
+screen.getByTestId("submit-button");   // data-testid="submit-button"</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">♿</span> 테스트가 <span class="term" data-term="a11y">접근성</span>을 강제합니다</p>
+<p style="margin-bottom:0"><code>getByRole("button")</code>으로 못 찾는다면
+<b>그 요소는 <span class="term" data-term="screen-reader">스크린 리더</span>에게도 버튼이 아닙니다</b>(11장의 <code>div</code> 클릭 문제).
+<code>getByLabelText</code>로 못 찾는다면 <b><code>label</code>이 연결되지 않은 것</b>입니다(9장).<br>
+<b>테스트를 이 방식으로 쓰면 접근성 문제가 자동으로 드러납니다.</b>
+<code>data-testid</code>를 남발하면 이 이점이 사라집니다.</p>
+</div>
+
+<h3 id="mocking">모킹</h3>
+<div class="codeblock">
+<pre><code data-lang="ts">// ❌ fetch를 직접 가로채면 구현에 묶입니다
+global.fetch = vi.fn();
+
+// ✅ MSW로 '네트워크 수준'에서 가짜 서버를 만듭니다
+import { http, HttpResponse } from "msw";
+import { setupServer } from "msw/node";
+
+const server = setupServer(
+  http.get("/api/users", () =&gt; HttpResponse.json([{ id: 1, name: "홍길동" }])),
+  http.post("/api/users", () =&gt; HttpResponse.json({ id: 2 }, { status: 201 }))
+);
+
+beforeAll(() =&gt; server.listen());
+afterEach(() =&gt; server.resetHandlers());
+afterAll(() =&gt; server.close());</code></pre>
+</div>
+<p>MSW를 쓰면 <code>fetch</code>를 쓰든 axios를 쓰든 <span class="term" data-term="tanstack-query">TanStack Query</span>를 쓰든 <b>테스트가 그대로</b>입니다.
+같은 정의를 <b>개발 중 가짜 서버</b>로도 쓸 수 있어 <span class="term" data-term="backend">백엔드</span>를 기다리지 않고 작업할 수 있습니다.</p>
+
+<h2 id="e2e">E2E 테스트</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">import { test, expect } from "@playwright/test";
+
+test("회원가입 후 로그인할 수 있다", async ({ page }) =&gt; {
+  await page.goto("/signup");
+
+  await page.getByLabel("이메일").fill("new@example.com");
+  await page.getByLabel("비밀번호").fill("password123");
+  await page.getByRole("button", { name: "가입" }).click();
+
+  await expect(page).toHaveURL("/welcome");
+  await expect(page.getByText("환영합니다")).toBeVisible();
+});</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎬</span> E2E는 <b>핵심 흐름 몇 개만</b></p>
+<p style="margin-bottom:0">E2E는 <b>진짜 브라우저에서 진짜 서버로</b> 동작합니다.
+그래서 <b>가장 신뢰할 수 있지만 가장 느리고 잘 깨집니다.</b>
+네트워크 지연, 애니메이션, 데이터 상태에 따라 <b>가끔 실패하는 테스트</b>가 되기 쉽습니다.<br>
+<b>돈이 오가는 흐름</b>(가입·로그인·결제·주문) 몇 개만 다루세요.
+모든 화면을 E2E로 덮으려 하면 <b>유지보수가 개발보다 비싸집니다.</b><br>
+Playwright는 실패 시 <b>스크린샷·비디오·추적 기록</b>을 남겨 주므로 반드시 켜 두세요.</p>
+</div>
+
+<h2 id="what">무엇을 테스트할까</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>테스트할 것</th><th>하지 않아도 되는 것</th></tr></thead>
+<tbody>
+<tr><td>
+<b>비즈니스 로직</b> (가격 계산, 할인, 권한 판정)<br>
+<b>조건 분기가 많은 함수</b><br>
+<b>버그가 났던 곳</b> ← 가장 중요<br>
+<b>핵심 사용자 흐름</b><br>
+자주 바뀌는데 <b>깨지면 티가 안 나는</b> 부분
+</td><td>
+<b>외부 라이브러리의 동작</b> (<span class="term" data-term="react">React</span>가 렌더링하는지)<br>
+<b>단순 표시</b> (제목이 잘 나오는지)<br>
+<b><span class="term" data-term="css">CSS</span>·시각적 스타일</b> (시각 회귀 도구의 영역)<br>
+<b>타입이 이미 보장하는 것</b><br>
+곧 바뀔 임시 코드
+</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📊</span> 커버리지 100%를 목표로 삼지 마세요</p>
+<p style="margin-bottom:0"><b>커버리지는 "코드가 실행됐다"만 알려 줍니다.</b>
+<b>"올바른지"는 알려 주지 않습니다.</b>
+아무것도 검증하지 않는 테스트로도 100%를 만들 수 있습니다.<br>
+커버리지의 <b>유용한 사용법</b>은 <b>낮은 곳을 찾는 것</b>입니다.
+"결제 계산 모듈이 20%네"는 의미 있는 신호이고,
+"전체 87%를 90%로 올리자"는 대개 시간 낭비입니다.</p>
+</div>
+
+<h2 id="testable">테스트하기 쉬운 코드</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// ❌ 테스트하기 어렵습니다
+function calculateTotal() {
+  const items = store.getState().cart.items;       // 전역 의존
+  const rate = new Date().getMonth() === 11 ? 0.9 : 1;  // 시간 의존
+  fetch("/api/log", { method: "POST" });           // 부수 효과
+  return items.reduce(…) * rate;
+}
+
+// ✅ 필요한 것을 인자로 받습니다
+function calculateTotal(items: Item[], discountRate = 1) {
+  return items.reduce((s, i) =&gt; s + i.price, 0) * discountRate;
+}
+// 로깅과 시간 판단은 호출하는 쪽에서</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 현실적인 시작</p>
+<ol>
+<li><b>전부 테스트하려 하지 마세요.</b> 그러다 하나도 못 씁니다.</li>
+<li><b>버그가 나면 그때 테스트를 쓰세요.</b> 재현하는 테스트를 먼저 쓰고, 고치고, 통과시킵니다.
+<b>가장 투자 대비 효과가 좋은 방법</b>입니다.</li>
+<li><b>순수 함수부터</b> 시작하세요. 쉽고 빠르게 성공을 경험할 수 있습니다.</li>
+<li><b>불안정한 테스트는 바로 고치거나 지우세요.</b> 가끔 실패하는 테스트가 몇 개만 있어도
+팀 전체가 <b>빨간불을 무시하게</b> 되고, 그 순간 테스트는 죽습니다.</li>
+<li><b><span class="term" data-term="ci">CI</span>에서 자동 실행</b>되게 하세요(74장). 사람이 기억해서 돌리는 테스트는 결국 안 돌아갑니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>테스트가 하나도 없는 프로젝트에서 시작한다면</b>,
+가장 중요한 계산 로직 하나에 테스트를 다는 것부터 하세요. 완벽함보다 시작이 중요합니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>테스트의 진짜 가치는 <b>겁내지 않고 고칠 수 있게</b> 되는 것이다.</li>
+<li>정적(TS·ESLint) → 단위 → <b>컴포넌트(중심)</b> → E2E(핵심 흐름만).</li>
+<li>Testing Library는 <b>사용자가 보는 것</b>으로 찾는다. 구현이 바뀌어도 안 깨진다.</li>
+<li><code>getByRole</code>·<code>getByLabelText</code>가 <b>접근성을 강제</b>한다. <code>data-testid</code>는 최후 수단.</li>
+<li>네트워크는 <b>MSW</b>로 모킹하면 구현에 묶이지 않는다.</li>
+<li><b>E2E는 돈이 오가는 흐름 몇 개만.</b> 전부 덮으려 하면 유지보수가 더 비싸다.</li>
+<li><b>커버리지 100%는 목표가 아니다.</b> 낮은 곳을 찾는 용도로 쓴다.</li>
+<li><b>버그가 나면 그때 테스트를 추가</b>하는 것이 가장 효율적이다.</li>
+<li><b>불안정한 테스트는 없는 것보다 나쁘다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://vitest.dev/" target="_blank" rel="noopener">Vitest 공식 문서</a></li>
+<li><a href="https://testing-library.com/docs/react-testing-library/intro/" target="_blank" rel="noopener">React Testing Library</a></li>
+<li><a href="https://testing-library.com/docs/queries/about/#priority" target="_blank" rel="noopener">Testing Library — 쿼리 우선순위</a></li>
+<li><a href="https://playwright.dev/" target="_blank" rel="noopener">Playwright</a></li>
+<li><a href="https://mswjs.io/" target="_blank" rel="noopener">MSW (Mock Service Worker)</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "Testing Library에서 <code>screen.getByTestId(\"submit\")</code> 보다 <code>screen.getByRole(\"button\", { name: \"저장\" })</code> 이 권장되는 이유는?",
+    o: [
+      "실행 속도가 빠르다",
+      "사용자와 보조기술이 요소를 인식하는 방식과 같아, 통과한다는 것 자체가 접근성이 확보됐다는 증거가 되고 구현 변경에도 덜 깨진다",
+      "testid는 더 이상 지원되지 않는다",
+      "role이 더 짧다"
+    ],
+    a: 1,
+    e: "<code>getByRole</code>로 찾지 못하면 <b>스크린 리더도 그것을 버튼으로 인식하지 못합니다</b>(11장). 테스트가 접근성 검사를 겸하게 됩니다. 또 클래스명이나 내부 구조가 바뀌어도 사용자가 보는 역할과 이름이 같으면 테스트는 통과합니다."
+  },
+  {
+    q: "테스트 커버리지 100%를 목표로 삼는 것의 문제는?",
+    o: [
+      "달성이 불가능해서",
+      "커버리지는 코드가 실행됐다는 사실만 알려 줄 뿐 올바른지는 검증하지 않으므로, 숫자를 채우는 무의미한 테스트를 양산하게 되기 때문",
+      "CI가 느려져서",
+      "커버리지 도구가 부정확해서"
+    ],
+    a: 1,
+    e: "아무것도 <code>expect</code>하지 않는 테스트로도 100%를 만들 수 있습니다. 커버리지의 유용한 쓰임은 <b>비정상적으로 낮은 영역을 발견</b>하는 것입니다. \"결제 모듈 20%\"는 신호지만 \"전체를 87%에서 90%로\"는 대개 시간 낭비입니다."
+  },
+  {
+    q: "E2E 테스트를 핵심 흐름 몇 개로 제한하는 이유는?",
+    o: [
+      "브라우저에서 실행할 수 없어서",
+      "느리고 외부 요인에 민감해 가끔 실패하는 불안정한 테스트가 되기 쉽고, 개수가 늘면 유지보수 비용이 개발보다 커지기 때문",
+      "E2E는 신뢰도가 낮아서",
+      "CI에서 지원되지 않아서"
+    ],
+    a: 1,
+    e: "E2E는 <b>가장 신뢰도가 높지만 가장 비쌉니다</b>. 네트워크·애니메이션·데이터 상태에 영향을 받아 간헐적으로 실패합니다. 가입·로그인·결제 같은 <b>돈과 직결된 흐름</b>에 집중하고 나머지는 컴포넌트 테스트로 덮는 것이 실용적입니다."
+  },
+  {
+    q: "테스트하기 어려운 함수의 전형적인 특징은?",
+    o: [
+      "인자를 많이 받는다",
+      "전역 상태를 직접 읽고, 현재 시각에 의존하고, 내부에서 네트워크 요청 같은 부수 효과를 일으킨다",
+      "반환값이 객체다",
+      "이름이 길다"
+    ],
+    a: 1,
+    e: "27장의 <b>순수 함수</b> 개념과 직결됩니다. 필요한 값을 <b>인자로 받고</b> 결과를 <b>반환만</b> 하면 테스트는 입력·출력 확인으로 끝납니다. \"테스트하기 어렵다\"는 것은 대개 <b>설계가 나쁘다</b>는 신호입니다."
+  },
+  {
+    q: "테스트가 하나도 없는 프로젝트에서 가장 효율적인 시작 방법은?",
+    o: [
+      "모든 컴포넌트에 테스트를 작성한다",
+      "버그가 발생하면 그것을 재현하는 테스트를 먼저 쓰고 고쳐서 통과시킨다. 그 버그는 다시는 재발하지 않는다",
+      "E2E 테스트로 모든 페이지를 덮는다",
+      "커버리지 목표를 먼저 정한다"
+    ],
+    a: 1,
+    e: "전부 테스트하려 하면 압도되어 하나도 못 씁니다. <b>실제로 발생한 버그</b>는 그 코드가 중요하고 실수하기 쉬운 곳이라는 증거입니다. 재현 테스트를 추가하면 <b>가장 확실한 가치</b>를 가장 적은 노력으로 얻습니다."
+  }
+]);
+</script>
+</body>
+</html>

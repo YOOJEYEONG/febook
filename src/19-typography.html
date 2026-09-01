@@ -1,0 +1,329 @@
+<!--desc: 글꼴 지정과 시스템 폰트 스택, 한글 웹폰트의 용량 문제와 서브셋, font-display, 행간과 글줄 길이, 한글 줄바꿈 처리까지 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>font-family</code>가 목록인 이유와 시스템 폰트 스택</li>
+  <li>한글 웹폰트가 <b>영문보다 수십 배 무거운</b> 이유와 해결책</li>
+  <li><code>font-display</code>로 글꼴 로딩 중 화면을 통제하기</li>
+  <li>읽기 좋은 <b>행간·글줄 길이</b>의 기준</li>
+  <li>한글 줄바꿈을 자연스럽게 만드는 <code>word-break: keep-all</code></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 웹의 95%는 글자입니다</p>
+
+<h2 id="family">font-family는 목록이다</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">body {
+  font-family: "Pretendard", "Apple SD Gothic Neo", "맑은 고딕", sans-serif;
+}</code></pre>
+</div>
+
+<p>브라우저는 <b>앞에서부터 차례로</b> 시도해 <b>사용 가능한 첫 글꼴</b>을 씁니다.
+게다가 <b>글자 하나하나마다 따로</b> 판단합니다.
+영문 전용 글꼴을 앞에 두면 <b>영어는 그 글꼴로, 한글은 뒤쪽 글꼴로</b> 표시되는 조합이 만들어집니다.</p>
+
+<p>맨 끝에는 반드시 <b>일반 이름</b>(<code>sans-serif</code>, <code>serif</code>, <code>monospace</code>)을 둡니다.
+앞의 것이 모두 없을 때 <b>운영체제가 알아서 비슷한 글꼴</b>을 고릅니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚡</span> 시스템 폰트 스택 — 다운로드 0바이트</p>
+<p>운영체제에 <b>이미 설치된</b> 글꼴만 쓰면 웹폰트를 내려받을 필요가 없습니다.
+로딩이 즉시 끝나고, 사용자에게 익숙한 모양이며, 용량은 0입니다.</p>
+<div class="codeblock" style="margin-bottom:0">
+<pre><code data-lang="css">font-family:
+  -apple-system,            /* macOS·iOS의 시스템 글꼴 */
+  BlinkMacSystemFont,       /* macOS Chrome */
+  "Segoe UI",               /* Windows */
+  "Apple SD Gothic Neo",    /* macOS 한글 */
+  "맑은 고딕", "Malgun Gothic",  /* Windows 한글 */
+  system-ui,
+  sans-serif;</code></pre>
+</div>
+</div>
+
+<h2 id="webfont">웹폰트 — 그리고 한글의 문제</h2>
+
+<div class="codeblock">
+<span class="cb-label">@font-face로 직접 불러오기</span>
+<pre><code data-lang="css">@font-face {
+  font-family: "MyFont";
+  src: url("/fonts/myfont.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🇰🇷</span> 한글 웹폰트는 영문의 수십 배입니다</p>
+<p>영문 글꼴은 <b>알파벳 대소문자 52자 + 숫자·기호</b>로 200~300자면 충분합니다. 파일은 보통 20~50KB.</p>
+<p style="margin-bottom:0">한글은 다릅니다. 완성형 한글만 <b>11,172자</b>이고 한자·기호까지 넣으면 훨씬 늘어납니다.
+글꼴 하나에 굵기가 여러 개면 그만큼 곱해집니다.
+<b>한글 웹폰트 한 벌이 수 MB에 이르는 경우가 흔합니다.</b>
+아무 생각 없이 넣으면 <b>페이지에서 가장 무거운 자원</b>이 됩니다.</p>
+</div>
+
+<h3 id="subset">해결책</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>방법</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><b>woff2 사용</b></td><td>웹 전용 압축 포맷. ttf·otf 대비 <b>30~50% 작습니다</b>. 모든 현대 브라우저가 지원하므로 <b>woff2 하나만</b> 넣으면 됩니다</td></tr>
+<tr><td><b>서브셋</b></td><td>실제로 쓰는 글자만 남기고 잘라냅니다. 한자·특수문자를 빼는 것만으로 크게 줄어듭니다</td></tr>
+<tr><td><b><code>unicode-range</code> 분할</b></td><td>글꼴을 문자 범위별 여러 파일로 나누면 <b>페이지에 실제로 등장한 범위만</b> 내려받습니다. 구글 폰트의 한글 글꼴이 이 방식을 씁니다</td></tr>
+<tr><td><b>굵기 줄이기</b></td><td>400·700 두 가지면 대부분 충분합니다. 굵기 6종을 다 넣지 마세요</td></tr>
+<tr><td><b>가변 폰트</b></td><td>한 파일에 모든 굵기가 들어 있습니다. 여러 굵기를 쓴다면 오히려 총량이 줄어듭니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="font-display">font-display — 로딩 중 무엇을 보여줄까</h3>
+
+<p>웹폰트를 내려받는 동안 브라우저는 선택해야 합니다.
+<b>글자를 감출까(FOIT), 대체 글꼴로 먼저 보여줄까(FOUT)?</b></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>값</th><th>동작</th><th>평가</th></tr></thead>
+<tbody>
+<tr><td><code>auto</code></td><td>브라우저에 맡김</td><td>대개 글자가 잠깐 안 보입니다</td></tr>
+<tr><td><code>block</code></td><td>최대 약 3초간 <b>글자를 감춤</b></td><td>내용을 못 읽는 시간이 생깁니다</td></tr>
+<tr><td><code>swap</code></td><td><b>즉시 대체 글꼴</b>로 보여주고, 도착하면 교체</td><td><b>대부분의 경우 권장.</b> 글자가 바뀌며 살짝 흔들립니다</td></tr>
+<tr><td><code>fallback</code></td><td>아주 짧게 감췄다가 대체 글꼴. 늦게 오면 <b>교체하지 않음</b></td><td>절충안</td></tr>
+<tr><td><code>optional</code></td><td>느리면 <b>아예 포기</b>하고 대체 글꼴 유지</td><td>성능 최우선일 때</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><code>swap</code>을 쓰면 글꼴이 바뀌는 순간 <b>글자 크기 차이로 레이아웃이 흔들립니다</b>(CLS).
+대체 글꼴의 크기를 실제 글꼴에 맞춰 미세 조정하는 속성이 있습니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">@font-face {
+  font-family: "Fallback";
+  src: local("Apple SD Gothic Neo");
+  size-adjust: 96%;          /* 크기 보정 */
+  ascent-override: 90%;      /* 위쪽 여백 보정 */
+}</code></pre>
+</div>
+<p>Chrome 87+, Firefox 89+, Safari 17+에서 지원됩니다.
+또 <b>가장 중요한 글꼴 한 벌은 미리 받아두면</b> 교체 시점이 빨라집니다.</p>
+<div class="codeblock">
+<pre><code data-lang="html">&lt;link rel="preload" href="/fonts/main.woff2" as="font"
+      type="font/woff2" crossorigin&gt;</code></pre>
+</div>
+<p><code>crossorigin</code> 속성은 <b>같은 도메인이어도 반드시 필요합니다.</b>
+글꼴은 CORS 규칙이 적용되는 자원이라, 빠뜨리면 미리 받은 파일을 못 쓰고 <b>두 번 내려받습니다.</b></p>
+
+<h2 id="readable">읽기 좋은 글의 조건</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>항목</th><th>권장</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td><b>본문 크기</b></td><td>16~18px</td><td>16px 미만은 모바일에서 읽기 힘들고, iOS Safari는 16px 미만 입력 칸에서 <b>자동 확대</b>합니다</td></tr>
+<tr><td><b>행간</b></td><td>1.5~1.9 (<b>단위 없이</b>)</td><td>한글은 영문보다 글자가 빽빽해 <b>더 넉넉한 행간</b>이 필요합니다</td></tr>
+<tr><td><b>글줄 길이</b></td><td>45~75자 (<code>max-width: 65ch</code>)</td><td>너무 길면 다음 줄 첫머리를 찾기 어려워집니다</td></tr>
+<tr><td><b>자간</b></td><td>본문은 <code>0</code>, 큰 제목은 <code>-0.02em</code> 정도</td><td>큰 글자는 자간이 넓어 보입니다</td></tr>
+<tr><td><b>정렬</b></td><td><code>text-align: left</code></td><td>양쪽 정렬은 단어 사이 간격이 들쭉날쭉해져 <b>난독 사용자에게 특히 불리</b>합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📐</span> <code>line-height</code>에 단위를 붙이지 마세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="css">body { font-size: 16px; line-height: 24px; }  /* ❌ 계산된 24px가 그대로 상속 */
+h1   { font-size: 40px; }                     /* → 40px 글자에 24px 행간. 겹칩니다 */
+
+body { font-size: 16px; line-height: 1.5; }   /* ✅ 비율이 상속 */
+h1   { font-size: 40px; }                     /* → 40 × 1.5 = 60px. 자동으로 맞음 */</code></pre>
+</div>
+</div>
+
+<h3 id="korean-wrap">한글 줄바꿈</h3>
+
+<p>브라우저의 기본 줄바꿈 규칙은 <b>영문 기준</b>입니다.
+영어는 단어 사이 공백에서 끊지만, 한글은 <b>공백이 없어도 아무 글자 사이에서 끊습니다.</b>
+그래서 "프론트엔"에서 줄이 바뀌는 어색한 결과가 나옵니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">body {
+  word-break: keep-all;        /* 한글 단어(어절) 중간에서 끊지 않음 */
+  overflow-wrap: break-word;   /* 단, 한 어절이 너무 길면 강제로 끊어 넘침 방지 */
+}</code></pre>
+</div>
+
+<div class="runner" data-lang="html" data-title="한글 줄바꿈 비교" data-note="브라우저 폭이 좁을수록 차이가 뚜렷합니다. 결과 창 크기를 줄여 보세요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 15px; }
+  .col { width: 200px; border: 1px solid #ccc; padding: 10px;
+         margin-bottom: 14px; border-radius: 6px; }
+  .normal   { word-break: normal; }
+  .keep-all { word-break: keep-all; overflow-wrap: break-word; }
+  h4 { margin: 0 0 6px; font-size: 12px; color: #666; }
+  .demo-lh { line-height: 1.4; margin-bottom: 10px; }
+  .demo-lh2 { line-height: 1.9; }
+</style>
+
+<h4>기본 (word-break: normal) — 어절 중간에서 끊긴다</h4>
+<div class="col normal">
+  프론트엔드 개발자는 사용자가 직접 보고 만지는 화면을 만듭니다.
+</div>
+
+<h4>word-break: keep-all — 어절 단위로 끊는다</h4>
+<div class="col keep-all">
+  프론트엔드 개발자는 사용자가 직접 보고 만지는 화면을 만듭니다.
+</div>
+
+<h4>행간 1.4 vs 1.9</h4>
+<div class="col keep-all demo-lh">
+  한글은 획이 많아 글자가 빽빽해 보입니다. 행간이 좁으면 답답합니다.
+</div>
+<div class="col keep-all demo-lh2">
+  한글은 획이 많아 글자가 빽빽해 보입니다. 행간이 넉넉하면 훨씬 편합니다.
+</div>
+</textarea>
+</div>
+
+<h3 id="text-wrap">text-wrap</h3>
+<div class="codeblock">
+<pre><code data-lang="css">h1 { text-wrap: balance; }  /* 제목의 각 줄 길이를 고르게 — 최대 몇 줄까지 */
+p  { text-wrap: pretty; }   /* 마지막 줄에 단어 하나만 남는 것을 방지 */</code></pre>
+</div>
+<p><code>balance</code>는 Chrome 114+, Safari 17.5+, Firefox 121+에서 지원됩니다.
+제목이 <b>"긴 제목이 두 줄로 나뉘는데 둘째 줄에 한 단어만"</b> 남는 문제를 해결합니다.
+지원하지 않는 브라우저는 이 선언을 무시할 뿐이므로 <b>안전하게 넣어도 됩니다.</b></p>
+
+<h2 id="truncate">말줄임</h2>
+<div class="codeblock">
+<pre><code data-lang="css">/* 한 줄 말줄임 */
+.one-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;      /* 세 줄이 모두 있어야 동작합니다 */
+}
+
+/* 여러 줄 말줄임 */
+.multi-line {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;    /* 3줄까지 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}</code></pre>
+</div>
+<p>여러 줄 말줄임은 <code>-webkit-</code> 접두사가 붙어 있지만 <b>모든 주요 브라우저가 지원</b>합니다.
+표준 <code>line-clamp</code> 속성도 도입되고 있으니 두 줄을 함께 써 두면 좋습니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">✂️</span> 말줄임은 정보를 감춥니다</p>
+<p style="margin-bottom:0">잘린 글자는 <b>사용자가 볼 수 없습니다.</b>
+중요한 정보(상품명, 오류 메시지)를 자르면 안 됩니다.
+잘라야만 한다면 <code>title</code> 속성이나 툴팁으로 전체 내용을 볼 수 있게 해 주세요.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 한국 웹 프로젝트의 표준 시작 세트</p>
+<div class="codeblock" style="margin-bottom:0">
+<pre><code data-lang="css">html {
+  font-size: 16px;
+}
+body {
+  font-family: "Pretendard Variable", Pretendard, -apple-system,
+               "Apple SD Gothic Neo", "맑은 고딕", sans-serif;
+  line-height: 1.7;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;  /* macOS에서 글자가 지나치게 두꺼워지는 것 완화 */
+}
+button, input, select, textarea { font: inherit; }
+p { max-width: 70ch; }</code></pre>
+</div>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>font-family</code>는 <b>목록</b>이며 글자 단위로 판단된다. 끝에 일반 이름을 꼭 둔다.</li>
+<li>시스템 폰트 스택은 <b>다운로드 0바이트</b>다.</li>
+<li>한글 웹폰트는 글자 수 때문에 매우 무겁다. <b>woff2 + 서브셋 + 굵기 최소화</b>가 필수.</li>
+<li><code>font-display: swap</code>이 대체로 정답. <code>preload</code>에는 <b><code>crossorigin</code> 필수</b>.</li>
+<li><code>line-height</code>는 <b>단위 없이</b>. 한글은 1.5~1.9가 편하다.</li>
+<li>글줄은 <b>45~75자</b>(<code>max-width: 65ch</code>).</li>
+<li>한글에는 <b><code>word-break: keep-all</code></b>을 넣는다.</li>
+<li>말줄임은 정보를 감춘다. 중요한 내용에는 쓰지 않는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/Text_styling/Fundamentals" target="_blank" rel="noopener">MDN — 텍스트 스타일링 기초</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display" target="_blank" rel="noopener">MDN — font-display</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/word-break" target="_blank" rel="noopener">MDN — word-break</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/text-wrap" target="_blank" rel="noopener">MDN — text-wrap</a></li>
+<li><a href="https://web.dev/articles/font-best-practices" target="_blank" rel="noopener">web.dev — 웹폰트 모범 사례</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "한글 웹폰트 파일이 영문 폰트보다 훨씬 큰 근본적인 이유는?",
+    o: [
+      "한글 글자가 더 복잡하게 생겨서",
+      "완성형 한글만 11,172자에 이르는 등 담아야 할 글자 수 자체가 영문의 수십 배이기 때문",
+      "한글은 압축이 되지 않아서",
+      "한글 폰트만 woff2를 지원하지 않아서"
+    ],
+    a: 1,
+    e: "영문은 알파벳·숫자·기호 200~300자면 충분하지만 한글은 완성형만 11,172자입니다. 굵기가 여러 개면 그만큼 곱해집니다. 그래서 <b>서브셋(사용하는 글자만 남기기)</b>과 <code>unicode-range</code> 분할이 한국 프로젝트에서 특히 중요합니다."
+  },
+  {
+    q: "<code>body { font-size: 16px; line-height: 24px }</code> 로 설정한 뒤 <code>h1 { font-size: 40px }</code>을 주면?",
+    o: [
+      "h1의 행간이 자동으로 60px가 된다",
+      "계산된 24px가 그대로 상속되어 40px 글자에 24px 행간이 적용돼 글줄이 겹친다",
+      "line-height가 무시된다",
+      "브라우저가 경고를 표시한다"
+    ],
+    a: 1,
+    e: "<code>line-height</code>에 단위를 붙이면 <b>계산된 절대값</b>이 상속됩니다. 단위 없이 <code>1.5</code>처럼 쓰면 <b>비율</b>이 상속되어 각 요소의 글자 크기에 맞게 다시 계산됩니다. 그래서 단위 없는 값이 권장됩니다."
+  },
+  {
+    q: "한국어 본문에 <code>word-break: keep-all</code>을 적용하는 이유는?",
+    o: [
+      "글자 간격을 넓히기 위해",
+      "기본 줄바꿈 규칙이 한글을 아무 글자 사이에서나 끊어 어절이 어색하게 잘리기 때문",
+      "한글 폰트 용량을 줄이기 위해",
+      "가로 스크롤을 만들기 위해"
+    ],
+    a: 1,
+    e: "브라우저 기본 줄바꿈은 영문 기준입니다. 한글은 어절 사이 공백이 아니라 <b>임의의 글자 사이</b>에서 끊겨 \"프론트엔 / 드\"처럼 됩니다. <code>keep-all</code>이 어절 단위 줄바꿈을 만들어 주며, 아주 긴 어절 대비로 <code>overflow-wrap: break-word</code>를 함께 씁니다."
+  },
+  {
+    q: "<code>&lt;link rel=\"preload\" ... as=\"font\"&gt;</code> 에서 <code>crossorigin</code> 속성을 빠뜨리면?",
+    o: [
+      "아무 문제 없다",
+      "글꼴은 CORS 규칙이 적용되는 자원이라 미리 받은 파일을 사용하지 못하고 같은 파일을 두 번 내려받게 된다",
+      "폰트가 아예 표시되지 않는다",
+      "HTTPS에서만 문제가 된다"
+    ],
+    a: 1,
+    e: "폰트는 항상 CORS 모드로 요청되기 때문에, <code>preload</code>에도 <code>crossorigin</code>을 명시해야 <b>같은 요청</b>으로 인식되어 재사용됩니다. 빠뜨리면 미리 받기의 효과가 사라질 뿐 아니라 <b>두 번 다운로드</b>하는 손해가 납니다. 같은 도메인이어도 필요합니다."
+  },
+  {
+    q: "<code>font-display: swap</code>의 동작과 부작용은?",
+    o: [
+      "글꼴이 올 때까지 글자를 감춘다. 부작용 없음",
+      "즉시 대체 글꼴로 보여주고 도착하면 교체한다. 교체 시 글자 크기 차이로 레이아웃이 흔들릴 수 있다",
+      "글꼴 다운로드를 취소한다",
+      "글꼴 파일 크기를 자동으로 줄인다"
+    ],
+    a: 1,
+    e: "<code>swap</code>은 <b>읽을 수 없는 시간을 없애는</b> 대신 글꼴 교체 시점에 글자 모양·크기가 바뀌어 레이아웃 이동(CLS)이 생길 수 있습니다. <code>size-adjust</code>·<code>ascent-override</code>로 대체 글꼴 크기를 맞추거나 <code>preload</code>로 교체 시점을 앞당겨 완화합니다."
+  }
+]);
+</script>

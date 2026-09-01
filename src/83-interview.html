@@ -1,0 +1,302 @@
+<!--desc: 프론트엔드 면접에서 자주 나오는 질문을 주제별로 정리하고, 답변의 방향과 관련 챕터를 연결합니다. 이력서와 포트폴리오 준비도 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>면접에서 <b>실제로 자주 나오는</b> 질문들</li>
+  <li>각 질문에 <b>어떻게 답해야 하는지</b>의 방향</li>
+  <li>모르는 것을 만났을 때의 태도</li>
+  <li>이력서와 포트폴리오 준비</li>
+</ul>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧭</span> 이 챕터의 사용법</p>
+<p style="margin-bottom:0"><b>답을 외우지 마세요.</b> 면접관은 <b>외운 답과 이해한 답을 구분합니다.</b>
+"왜 그런가요?"라는 후속 질문 한 번이면 드러납니다.<br>
+아래 질문들을 보고 <b>스스로 설명해 보세요.</b> 막히면 <b>해당 챕터로 돌아가세요.</b>
+이 챕터는 <b>복습 체크리스트</b>에 가깝습니다.</p>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분 · 답을 소리 내어 말해 보세요</p>
+
+<h2 id="web">웹 기초</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
+<tbody>
+<tr><td><b>주소창에 주소를 입력하면 무슨 일이 일어나나요?</b></td><td>DNS → TCP·TLS → HTTP 요청 → 응답 → 파싱 → 렌더링. <b>어느 단계든 깊게 물을 수 있습니다</b></td><td>2·3·4·5</td></tr>
+<tr><td>HTTP 상태 코드 중 아는 것을 말해 보세요</td><td>첫 자리로 분류. <b>401과 403의 차이</b>는 단골</td><td>4</td></tr>
+<tr><td>GET과 POST의 차이는?</td><td>데이터 위치, <b>안전·멱등</b>, 캐시 가능 여부</td><td>4</td></tr>
+<tr><td>CORS 오류는 왜 나고 어떻게 해결하나요?</td><td>동일 출처 정책, <b>서버가 헤더로 허용</b>. 프론트에서 못 고침</td><td>3·37</td></tr>
+<tr><td>쿠키·localStorage·sessionStorage의 차이는?</td><td>수명·범위·용량·<b>자동 전송 여부</b></td><td>39</td></tr>
+<tr><td>브라우저 렌더링 과정을 설명해 보세요</td><td>DOM·CSSOM → 렌더 트리 → 레이아웃 → 페인트 → 합성</td><td>5</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="html-css">HTML · CSS</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
+<tbody>
+<tr><td>시맨틱 태그를 왜 쓰나요?</td><td><b>접근성·SEO·유지보수.</b> 구체적 예를 들 것</td><td>7·11</td></tr>
+<tr><td>CSS 명시도를 설명해 보세요</td><td>세 자리를 <b>각각</b> 비교. 자릿수 합산이 아님</td><td>12</td></tr>
+<tr><td><code>display: none</code>과 <code>visibility: hidden</code>의 차이</td><td>렌더 트리 포함 여부, 공간 차지 여부</td><td>5·13</td></tr>
+<tr><td>Flexbox와 Grid를 언제 쓰나요?</td><td>한 방향 vs 두 방향. <b>실제로 함께 씀</b></td><td>15·16</td></tr>
+<tr><td><code>position</code> 값들을 설명해 보세요</td><td>기준이 무엇인지. <b><code>sticky</code>가 안 되는 이유</b>도 자주 묻습니다</td><td>17</td></tr>
+<tr><td><code>z-index</code>가 안 먹는 이유는?</td><td><b>쌓임 맥락</b>. <code>opacity</code>·<code>transform</code>도 원인</td><td>17</td></tr>
+<tr><td>반응형을 어떻게 구현하나요?</td><td>모바일 퍼스트, <b>컨테이너 쿼리</b>까지 말하면 좋습니다</td><td>18</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="js">JavaScript — 가장 많이 묻습니다</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
+<tbody>
+<tr><td><b><code>var</code>·<code>let</code>·<code>const</code>의 차이</b></td><td>스코프·재선언·재할당·<b>TDZ</b>. <code>const</code>는 재할당만 막음</td><td>24</td></tr>
+<tr><td><b>호이스팅이란?</b></td><td><b>코드가 이동하는 것이 아님.</b> 실행 전 등록 과정</td><td>24</td></tr>
+<tr><td><b>클로저란?</b></td><td>함수 + 선언 시 환경. <b>실용 예</b>(디바운스·은닉)를 함께</td><td>31</td></tr>
+<tr><td><b><code>this</code>는 어떻게 결정되나요?</b></td><td><b>호출 방식</b>이 결정. 네 규칙 + 화살표 함수</td><td>30</td></tr>
+<tr><td><b>이벤트 루프를 설명해 보세요</b></td><td>콜 스택·태스크·<b>마이크로태스크</b>. 출력 순서 문제가 자주 나옵니다</td><td>35</td></tr>
+<tr><td>Promise와 async/await</td><td>세 상태, <b>순차 vs 병렬</b>, <code>Promise.all</code></td><td>36</td></tr>
+<tr><td>얕은 복사와 깊은 복사</td><td>참조 복사, 전개 구문의 한계, <code>structuredClone</code></td><td>25·28</td></tr>
+<tr><td><code>==</code>와 <code>===</code></td><td>형변환 규칙의 복잡성. <b>항상 <code>===</code></b></td><td>25</td></tr>
+<tr><td>프로토타입이란?</td><td>속성을 찾아 올라가는 체인. <code>class</code>는 문법 설탕</td><td>32</td></tr>
+<tr><td>이벤트 버블링과 위임</td><td>전파 3단계, 위임의 이점(동적 요소)</td><td>38</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧩</span> 코드 출력 맞히기 문제</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// 자주 나오는 유형들
+console.log(1); setTimeout(() =&gt; console.log(2), 0);
+Promise.resolve().then(() =&gt; console.log(3)); console.log(4);
+// → 1 4 3 2  (35장)
+
+for (var i = 0; i &lt; 3; i++) setTimeout(() =&gt; console.log(i), 0);
+// → 3 3 3  (24·31장)
+
+const obj = { name: "a", greet: () =&gt; console.log(this.name) };
+obj.greet();
+// → undefined  (30장)
+
+console.log(0.1 + 0.2 === 0.3);
+// → false  (25장)</code></pre>
+</div>
+<p style="margin-bottom:0"><b>답보다 이유를 설명하는 것이 중요합니다.</b>
+"3 3 3입니다"보다 <b>"var는 함수 스코프라 i가 하나뿐이고, 콜백은 반복이 끝난 뒤 실행되므로…"</b>가
+훨씬 좋은 답입니다.</p>
+</div>
+
+<h2 id="react-q">React</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
+<tbody>
+<tr><td><b>가상 DOM이 빠른가요?</b></td><td><b>함정 질문입니다.</b> "직접 조작보다 빠르지 않다"고 정확히 답하세요</td><td>57</td></tr>
+<tr><td>React가 리렌더링하는 조건은?</td><td>자기 상태·부모 렌더링·Context</td><td>64</td></tr>
+<tr><td><b><code>key</code>에 인덱스를 쓰면 안 되는 이유</b></td><td>순서 변경 시 상태·포커스가 엉킴. <b>구체적 시나리오</b>로</td><td>60</td></tr>
+<tr><td><code>useEffect</code>의 의존성 배열</td><td>거짓말하지 않기, <b>정리 함수</b>, StrictMode 두 번 실행</td><td>61</td></tr>
+<tr><td><b>Effect가 필요 없는 경우는?</b></td><td>계산 가능한 값, 이벤트 핸들러로 충분한 것</td><td>61</td></tr>
+<tr><td><code>useMemo</code>·<code>useCallback</code>을 언제 쓰나요?</td><td><b>"측정 후에"</b>가 핵심. 남용은 손해</td><td>64</td></tr>
+<tr><td>상태를 어디에 두어야 하나요?</td><td>가장 가까운 공통 부모, <b>서버 상태와 분리</b></td><td>59·65</td></tr>
+<tr><td>제어 vs 비제어 컴포넌트</td><td>값의 출처, 각각의 장단</td><td>62</td></tr>
+<tr><td>불변성을 왜 지켜야 하나요?</td><td>참조 비교로 변경을 감지하기 때문</td><td>25·59</td></tr>
+<tr><td>서버 컴포넌트란?</td><td>번들에 포함되지 않음. <b>SSR과 다름</b></td><td>69·71</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="quality">성능 · 보안 · 접근성</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
+<tbody>
+<tr><td>Core Web Vitals가 무엇인가요?</td><td>LCP·INP·CLS와 기준값. <b>INP가 FID를 대체</b></td><td>76</td></tr>
+<tr><td>성능을 어떻게 개선하나요?</td><td><b>측정 → 큰 것부터 → 재측정.</b> 구체적 경험이 있으면 최고</td><td>76</td></tr>
+<tr><td>번들 크기를 어떻게 줄이나요?</td><td>코드 분할, 트리 셰이킹, 라이브러리 재검토</td><td>47</td></tr>
+<tr><td><b>XSS를 어떻게 막나요?</b></td><td>출력 이스케이프, <code>textContent</code>, DOMPurify, CSP</td><td>78</td></tr>
+<tr><td>CSRF는?</td><td>쿠키 자동 전송이 원인. <code>SameSite</code> + 토큰</td><td>78</td></tr>
+<tr><td>토큰을 어디에 저장하나요?</td><td><b>정답이 하나가 아님.</b> 위협 모델로 답하면 좋습니다</td><td>39·78</td></tr>
+<tr><td>접근성을 위해 무엇을 하나요?</td><td>시맨틱, 키보드, <code>alt</code>, 대비. <b>실제로 해 본 것</b>을</td><td>11·77</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="soft">경험과 태도 질문</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">💬</span> 사실 이쪽이 당락을 더 많이 가릅니다</p>
+<div class="tablewrap" style="margin:.6em 0 0">
+<table>
+<thead><tr><th>질문</th><th>답변 방향</th></tr></thead>
+<tbody>
+<tr><td><b>가장 어려웠던 문제와 해결 과정은?</b></td><td>가장 자주 나옵니다. <b>문제 → 분석 → 시도 → 해결 → 배운 점</b> 순서로 준비하세요</td></tr>
+<tr><td>왜 이 기술을 선택했나요?</td><td>"많이 쓰니까"는 나쁩니다. <b>대안과 비교한 이유</b>를</td></tr>
+<tr><td>코드 리뷰에서 의견이 갈리면?</td><td>근거를 제시하되 <b>합의 우선</b>. 82장</td></tr>
+<tr><td>모르는 기술을 만나면 어떻게 하나요?</td><td>공식 문서 → 작게 실험 → 팀에 확인. <b>학습 방법</b>을 보여주세요</td></tr>
+<tr><td>일정이 부족하면?</td><td><b>일찍 공유</b>하고 우선순위를 조정. 82장</td></tr>
+<tr><td>마지막으로 질문 있나요?</td><td><b>반드시 준비하세요.</b> 아래 참고</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">역질문 예시 — 관심의 증거입니다</span>
+<pre><code data-lang="text">- 프론트엔드 팀은 어떤 구조로 일하나요?
+- 코드 리뷰 문화가 어떻게 되어 있나요?
+- 현재 가장 큰 기술적 과제는 무엇인가요?
+- 신입이 합류하면 처음 어떤 일을 맡게 되나요?
+- 테스트와 배포 프로세스는 어떻게 되어 있나요?</code></pre>
+</div>
+
+<h2 id="unknown">모르는 것을 만났을 때</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎭</span> 아는 척이 가장 나쁩니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="text">❌ 얼버무리기 — 후속 질문 한 번에 드러납니다
+❌ "모릅니다"로 끝내기 — 대화가 끊깁니다
+
+✅ "정확히는 모르겠습니다. 다만 제가 아는 범위에서 추측하자면 …
+    맞을까요?"
+✅ "써 본 적은 없지만 개념은 알고 있습니다. △△와 비슷한 것으로 이해했는데
+    실제로는 어떤가요?"
+✅ "모르겠습니다. 나중에 찾아보고 정리하겠습니다."</code></pre>
+</div>
+<p style="margin-bottom:0"><b>면접관이 보는 것은 지식의 양이 아니라 사고 과정</b>입니다.
+모르는 것을 정직하게 말하고 <b>어떻게 접근할지</b> 보여주는 것이
+어설프게 아는 척하는 것보다 훨씬 좋은 인상을 줍니다.
+실무에서도 <b>아는 척하는 동료가 가장 위험합니다</b>(82장).</p>
+</div>
+
+<h2 id="resume">이력서와 포트폴리오</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>좋은 서술</th><th>약한 서술</th></tr></thead>
+<tbody>
+<tr><td>"검색 API 호출을 디바운스로 <b>90% 줄여</b> 서버 부하를 낮췄습니다"</td><td>"성능 최적화를 했습니다"</td></tr>
+<tr><td>"이미지 최적화와 코드 분할로 <b>LCP를 4.2초에서 1.8초로</b> 개선했습니다"</td><td>"React를 사용했습니다"</td></tr>
+<tr><td>"경쟁 상태로 검색 결과가 뒤섞이는 버그를 <code>AbortController</code>로 해결했습니다"</td><td>"버그를 수정했습니다"</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📐</span> 숫자와 구체성</p>
+<p style="margin-bottom:0"><b>무엇을 했는가</b>보다 <b>어떤 문제를 어떻게 해결했고 결과가 어땠는가</b>를 쓰세요.
+숫자가 있으면 신뢰도가 올라갑니다.<br>
+그리고 <b>이력서에 쓴 모든 것은 질문 대상</b>입니다.
+"Redux 사용"이라고 썼다면 <b>왜 Redux였는지</b> 답할 수 있어야 합니다.
+<b>확신 없는 기술은 쓰지 마세요.</b></p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 준비 방법</p>
+<ol>
+<li><b>소리 내어 설명해 보세요.</b> 머릿속으로 아는 것과 말로 설명하는 것은 완전히 다릅니다.
+녹음해서 들어 보면 더 좋습니다.</li>
+<li><b>자기 프로젝트를 깊게 준비하세요.</b> 모르는 기술 이야기보다
+<b>자기가 만든 것에 대한 질문</b>이 훨씬 많이 나옵니다.</li>
+<li><b>"왜"에 답할 수 있게.</b> 모든 선택에 이유를 준비하세요.</li>
+<li><b>최근 관심사를 하나 준비하세요.</b> "요즘 무엇을 공부하나요?"는 단골입니다.</li>
+<li><b>떨어져도 배우세요.</b> 못 답한 질문을 메모하고 찾아보면 그 자체가 최고의 학습 자료입니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>면접은 시험이 아니라 대화입니다.</b>
+"함께 일하고 싶은 사람인가"를 보는 자리이기도 합니다.
+모든 것을 아는 사람을 찾는 것이 아니라 <b>배울 수 있고 소통이 되는 사람</b>을 찾습니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>답을 외우지 말고 이해하세요.</b> 후속 질문에서 드러납니다.</li>
+<li>JavaScript 기초(<b>클로저·<code>this</code>·이벤트 루프·호이스팅</b>)가 가장 많이 나옵니다.</li>
+<li>"가상 DOM이 빠른가?"는 <b>함정 질문</b>입니다.</li>
+<li>코드 출력 문제는 <b>답보다 이유</b>가 중요합니다.</li>
+<li><b>"가장 어려웠던 문제"</b>는 반드시 준비하세요. 가장 자주 나옵니다.</li>
+<li><b>모르면 정직하게</b> 말하고 접근 방법을 보여주세요.</li>
+<li>이력서는 <b>구체적 문제와 결과</b>로. 쓴 것은 전부 질문 대상입니다.</li>
+<li><b>역질문을 준비</b>하세요.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/" target="_blank" rel="noopener">MDN</a> — 개념 확인의 기준</li>
+<li><a href="https://ko.react.dev/" target="_blank" rel="noopener">React 공식 문서</a></li>
+<li><a href="https://github.com/lydiahallie/javascript-questions/blob/master/ko-KR/README-ko_KR.md" target="_blank" rel="noopener">JavaScript 문제 모음 (한국어)</a> — 출력 맞히기 연습</li>
+<li><a href="https://roadmap.sh/frontend" target="_blank" rel="noopener">Frontend Roadmap</a> — 학습 범위 점검용</li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "면접에서 \"가상 DOM이 실제 DOM보다 빠른가요?\"라는 질문에 가장 좋은 답은?",
+    o: [
+      "네, 훨씬 빠릅니다",
+      "직접 최적화한 DOM 조작보다 빠르지는 않습니다. 객체 생성·비교라는 추가 비용이 있고, 가치는 선언형 프로그래밍을 감당 가능한 성능으로 가능하게 하는 데 있습니다",
+      "잘 모르겠습니다",
+      "브라우저마다 다릅니다"
+    ],
+    a: 1,
+    e: "이것은 <b>함정 질문</b>입니다. \"빠르다\"고 답하면 개념을 정확히 모른다는 신호가 됩니다(57장). React 팀도 이 점을 분명히 밝혀 왔습니다. <b>정확한 이해를 드러낼 좋은 기회</b>입니다."
+  },
+  {
+    q: "코드 출력 맞히기 문제에서 면접관이 실제로 보려는 것은?",
+    o: [
+      "정답을 아는지",
+      "왜 그런 결과가 나오는지 설명할 수 있는지. 답만 외운 것과 원리를 이해한 것을 구분하기 위해",
+      "타이핑 속도",
+      "암기력"
+    ],
+    a: 1,
+    e: "\"3 3 3입니다\"는 외웠을 수도 있습니다. <b>\"var는 함수 스코프라 반복문 전체에 i가 하나뿐이고, 콜백은 태스크 큐에 들어가 반복이 끝난 뒤 실행되므로…\"</b>라고 설명하면 스코프·클로저·이벤트 루프를 모두 이해했다는 증거가 됩니다."
+  },
+  {
+    q: "모르는 질문을 받았을 때 가장 좋은 대응은?",
+    o: [
+      "아는 것처럼 얼버무린다",
+      "\"모릅니다\"라고만 답한다",
+      "모른다고 인정하되 아는 범위에서 추측해 보거나 어떻게 알아볼지 설명한다",
+      "다른 주제로 화제를 돌린다"
+    ],
+    a: 2,
+    e: "얼버무리면 후속 질문 한 번에 드러나고 <b>신뢰를 잃습니다</b>. 반대로 \"모릅니다\"로 끝내면 사고 과정을 보여줄 기회를 잃습니다. 실무에서도 <b>아는 척하는 동료가 가장 위험합니다</b>(82장)."
+  },
+  {
+    q: "이력서에 \"성능 최적화를 했습니다\"보다 나은 서술은?",
+    o: [
+      "\"React와 TypeScript를 사용했습니다\"",
+      "\"이미지 최적화와 코드 분할로 LCP를 4.2초에서 1.8초로 개선했습니다\"",
+      "\"최신 기술 스택을 다룰 수 있습니다\"",
+      "\"성능에 관심이 많습니다\""
+    ],
+    a: 1,
+    e: "<b>어떤 문제를·어떻게·결과가 어땠는지</b>가 있어야 합니다. 숫자가 신뢰도를 높이고, 자연스럽게 \"어떻게 측정했나요?\", \"왜 그 방법을 골랐나요?\" 같은 <b>깊은 대화</b>로 이어집니다. 기술 나열은 누구나 씁니다."
+  },
+  {
+    q: "면접에서 가장 자주 나오는 경험 질문은?",
+    o: [
+      "좋아하는 프로그래밍 언어",
+      "가장 어려웠던 문제와 그것을 어떻게 해결했는지",
+      "하루에 코딩을 몇 시간 하는지",
+      "선호하는 편집기"
+    ],
+    a: 1,
+    e: "이 질문 하나로 <b>문제 분석 능력·끈기·학습 방법·소통 방식</b>을 모두 볼 수 있기 때문입니다. <b>문제 → 분석 → 시도 → 해결 → 배운 점</b> 구조로 미리 준비해 두세요. 자기 프로젝트에서 실제로 겪은 것이면 가장 좋습니다."
+  }
+]);
+</script>

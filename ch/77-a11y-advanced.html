@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>77장. 접근성 심화 — 프엔북</title>
+<meta name="description" content="WCAG의 네 원칙과 준수 수준, 키보드 포커스 관리, 모달과 동적 콘텐츠의 접근성, 스크린 리더 테스트, 자동 검사 도구를 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="77장. 접근성 심화 — 프엔북">
+<meta property="og:description" content="WCAG의 네 원칙과 준수 수준, 키보드 포커스 관리, 모달과 동적 콘텐츠의 접근성, 스크린 리더 테스트, 자동 검사 도구를 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="77-a11y-advanced">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">10부 · 품질, 성능, 보안</p>
+    <h1>77장. 접근성 심화</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>WCAG의 네 원칙</b>과 A·AA·AAA 수준</li>
+  <li><b>포커스 관리</b> — <span class="term" data-term="spa">SPA</span>에서 가장 많이 깨지는 부분</li>
+  <li>모달·드롭다운·토스트를 접근 가능하게 만들기</li>
+  <li><b><span <span class="term" data-term="class">class</span>="term" data-term="screen-reader">스크린 리더</span>로 직접 테스트</b>하는 법</li>
+  <li>자동 검사 도구의 한계</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 11장의 심화편입니다</p>
+
+<h2 id="wcag">WCAG 네 원칙 — POUR</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>원칙</th><th>뜻</th><th>예</th></tr></thead>
+<tbody>
+<tr><td><b>인식 가능</b><br>Perceivable</td><td>정보를 <b>지각</b>할 수 있어야</td><td>이미지 <code>alt</code>, 영상 자막, <span class="term" data-term="contrast">명도 대비</span></td></tr>
+<tr><td><b>운용 가능</b><br>Operable</td><td><b>조작</b>할 수 있어야</td><td>키보드 접근, 충분한 시간, 발작 유발 금지</td></tr>
+<tr><td><b>이해 가능</b><br>Understandable</td><td>내용과 동작을 <b>이해</b>할 수 있어야</td><td>명확한 오류 메시지, 일관된 탐색, <code>lang</code> 지정</td></tr>
+<tr><td><b>견고함</b><br>Robust</td><td>다양한 기술로 <b>해석</b>될 수 있어야</td><td>유효한 마크업, 올바른 <span class="term" data-term="aria">ARIA</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>수준</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><b>A</b></td><td>최소한. 이것을 못 지키면 아예 쓸 수 없는 사람이 생깁니다</td></tr>
+<tr><td><b>AA</b></td><td><b>실무의 목표.</b> 대부분의 법규와 공공 요구사항이 이 수준입니다</td></tr>
+<tr><td><b>AAA</b></td><td>매우 높은 수준. 전체 사이트에 적용하기는 현실적으로 어렵습니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🇰🇷</span> 한국의 기준</p>
+<p style="margin-bottom:0">11장에서 말했듯 <b>「장애인차별금지법」</b>에 따라 웹 <span class="term" data-term="a11y">접근성</span> 제공 의무가 있고,
+국내 기술 기준으로 <b>KWCAG</b>(한국형 웹 콘텐츠 접근성 지침)가 국가표준으로 제정되어 있습니다.
+KWCAG는 WCAG를 기반으로 하므로 <b>WCAG AA를 목표로 하면 대체로 함께 충족</b>됩니다.
+공공기관 프로젝트에서는 <b>접근성 인증</b>이 요구되기도 합니다.</p>
+</div>
+
+<h2 id="focus">포커스 관리</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎯</span> SPA에서 가장 많이 깨지는 부분입니다</p>
+<p style="margin-bottom:0">키보드 사용자에게 <b>포커스는 커서</b>입니다.
+포커스를 잃으면 <b>지금 어디 있는지 모르게</b> 되고, 다시 Tab을 처음부터 눌러야 합니다.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상황</th><th>해야 할 일</th></tr></thead>
+<tbody>
+<tr><td><b>페이지 이동</b>(68장)</td><td>새 페이지의 제목이나 <code>main</code>으로 포커스 이동</td></tr>
+<tr><td><b>모달 열기</b></td><td>모달 안 첫 요소로 이동, 안에 <b>가두기</b></td></tr>
+<tr><td><b>모달 닫기</b></td><td><b>열었던 버튼으로 되돌리기</b> ← 자주 빠뜨립니다</td></tr>
+<tr><td><b>항목 삭제</b></td><td>다음(또는 이전) 항목으로 이동. 안 하면 포커스가 <code>body</code>로 튑니다</td></tr>
+<tr><td><b>새 콘텐츠 추가</b></td><td>필요하면 그 콘텐츠로 이동하거나 <code>aria-live</code>로 알림</td></tr>
+<tr><td><b>오류 발생</b></td><td>첫 오류 필드로 이동(62장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">모달의 포커스 처리</span>
+<pre><code data-lang="jsx">function Modal({ isOpen, onClose, children }) {
+  const dialogRef = useRef(null);
+  const previousFocus = useRef(null);
+
+  useEffect(() =&gt; {
+    if (!isOpen) return;
+
+    previousFocus.current = document.activeElement;   // ① 현재 위치 기억
+    dialogRef.current?.focus();                        // ② 모달로 이동
+
+    return () =&gt; {
+      previousFocus.current?.focus();                  // ③ 닫으면 되돌리기
+    };
+  }, [isOpen]);
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✨</span> <code>&lt;dialog&gt;</code>를 쓰면 대부분 공짜입니다</p>
+<p style="margin-bottom:0">40장에서 말했듯 <code>&lt;dialog&gt;</code>의 <code>showModal()</code>은
+<b>포커스 가두기·Esc 닫기·배경 비활성화</b>를 <span class="term" data-term="browser">브라우저</span>가 처리합니다.
+직접 구현하면 반드시 무언가를 빠뜨립니다.<br>
+직접 만들어야 한다면 <b>Radix UI·<span class="term" data-term="react">React</span> Aria</b> 같은 <b>접근성이 검증된 라이브러리</b>를 쓰세요.
+"모달 하나쯤이야" 하고 만든 것이 <b>키보드 사용자를 갇히게</b> 만드는 일이 매우 흔합니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">건너뛰기 링크 — 모든 사이트에 필요합니다</span>
+<pre><code data-lang="html">&lt;a href="#main" class="skip-link"&gt;본문으로 건너뛰기&lt;/a&gt;
+&lt;nav&gt;… 링크 30개 …&lt;/nav&gt;
+&lt;main id="main" tabindex="-1"&gt;…&lt;/main&gt;</code></pre>
+</div>
+<div class="codeblock">
+<pre><code data-lang="css">.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 8px; top: 8px;      /* 포커스를 받으면 나타납니다 */
+  background: white; padding: 8px; z-index: 999;
+}</code></pre>
+</div>
+<p>키보드 사용자가 <b>매 페이지마다 메뉴 30개를 Tab으로 지나가지 않아도</b> 되게 합니다.
+평소에는 보이지 않다가 <b>Tab을 처음 누르면 나타납니다.</b></p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🙈</span> <code>display: none</code>으로 숨기면 안 됩니다</p>
+<p style="margin-bottom:0">건너뛰기 링크나 스크린 리더 전용 텍스트를 <code>display: none</code>으로 숨기면
+<b>스크린 리더에서도 사라집니다</b>(5장).
+위처럼 <b>화면 밖으로 밀어내는 방식</b>을 써야 합니다.
+이 패턴을 보통 <code>.sr-only</code> 또는 <code>.visually-hidden</code> 클래스로 만들어 둡니다.</p>
+</div>
+
+<h2 id="live">동적 콘텐츠 알리기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// 검색 결과 개수처럼 '알면 좋은' 변화
+&lt;div aria-live="polite" aria-atomic="true"&gt;
+  {results.length}개의 결과를 찾았습니다
+&lt;/div&gt;
+
+// 오류처럼 '즉시 알아야 하는' 것
+&lt;div role="alert"&gt;저장에 실패했습니다&lt;/div&gt;
+
+// 로딩 중
+&lt;div aria-busy="true" aria-live="polite"&gt;불러오는 중…&lt;/div&gt;</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📢</span> live 영역은 <b>미리 존재해야</b> 합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ❌ 요소 자체가 새로 생기면 읽히지 않을 수 있습니다
+{error &amp;&amp; &lt;div role="alert"&gt;{error}&lt;/div&gt;}
+
+// ✅ 컨테이너는 항상 두고 내용만 바꿉니다
+&lt;div role="alert"&gt;{error}&lt;/div&gt;</code></pre>
+</div>
+<p style="margin-bottom:0">스크린 리더는 <b>이미 감시 중이던 영역의 변화</b>를 알립니다.
+영역 자체가 새로 나타나면 놓칠 수 있습니다.<br>
+그리고 <b>남용하지 마세요.</b> 모든 변화를 알리면 <b>끊임없이 떠드는 화면</b>이 되어 오히려 못 씁니다.</p>
+</div>
+
+<h2 id="patterns">자주 쓰는 UI 패턴</h2>
+
+<div class="codeblock">
+<span class="cb-label">아코디언</span>
+<pre><code data-lang="jsx">&lt;button
+  aria-expanded={isOpen}
+  aria-controls="panel-1"
+  onClick={toggle}
+&gt;
+  자주 묻는 질문
+&lt;/button&gt;
+&lt;div id="panel-1" hidden={!isOpen}&gt;답변 내용&lt;/div&gt;
+
+{/* 또는 HTML 기본 요소로 — 접근성이 기본 제공됩니다 */}
+&lt;details&gt;
+  &lt;summary&gt;자주 묻는 질문&lt;/summary&gt;
+  &lt;p&gt;답변 내용&lt;/p&gt;
+&lt;/details&gt;</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">탭</span>
+<pre><code data-lang="jsx">&lt;div role="tablist"&gt;
+  &lt;button role="tab" aria-selected={active === "a"} aria-controls="panel-a" id="tab-a"&gt;
+    정보
+  &lt;/button&gt;
+&lt;/div&gt;
+&lt;div role="tabpanel" id="panel-a" aria-labelledby="tab-a" tabIndex={0}&gt;…&lt;/div&gt;
+
+{/* 화살표 키로 탭 간 이동도 직접 구현해야 합니다 */}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📚</span> 패턴은 <b>외우지 말고 찾아보세요</b></p>
+<p style="margin-bottom:0"><a href="https://www.w3.org/WAI/ARIA/apg/patterns/" target="_blank" rel="noopener">W3C ARIA 저작 실무 가이드(APG)</a>에
+<b>탭·아코디언·콤보박스·트리·모달 등 거의 모든 패턴</b>의
+필요한 ARIA 속성과 키보드 동작이 예제와 함께 정리되어 있습니다.<br>
+<b>직접 만들기 전에 반드시 확인</b>하세요. 화살표 키 동작, <code>aria-*</code> 조합 같은 것을
+감으로 만들면 거의 항상 틀립니다.</p>
+</div>
+
+<h2 id="testing">직접 테스트하기</h2>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🧪</span> 5분 점검</p>
+<ol>
+<li><b>Tab만으로</b> 처음부터 끝까지 써 보기 — 가장 효율적입니다(11장)</li>
+<li><b>브라우저 확대 200%</b>로 보기 — 잘리거나 겹치는 곳이 있는가</li>
+<li><b>이미지를 끄고</b> 보기 — <code>alt</code>만으로 이해되는가</li>
+<li><b>흑백으로</b> 보기 — 색만으로 정보를 전달하는 곳이 있는가 (<span class="term" data-term="devtools">DevTools</span>의 렌더링 패널에서 색각 이상 시뮬레이션 가능)</li>
+<li><b>스크린 리더</b>로 들어 보기</li>
+</ol>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">스크린 리더 기본 조작</span>
+<pre><code data-lang="text">macOS VoiceOver (⌘F5)
+  VO = Control + Option
+  VO + →      다음 항목
+  VO + Space  선택
+  VO + U      로터 (제목·링크 목록으로 탐색)
+
+Windows NVDA (무료)
+  H           다음 제목으로
+  K           다음 링크로
+  D           다음 랜드마크로
+  Insert + F7 요소 목록</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">👂</span> 처음엔 정신없습니다 — 정상입니다</p>
+<p style="margin-bottom:0">눈을 감고 <b>여러분이 만든 화면을 소리만으로</b> 써 보세요.
+<b>10분이면 충분합니다.</b> 그 경험이 문서 백 페이지보다 많은 것을 알려 줍니다.<br>
+"버튼, 버튼, 버튼"만 들리거나 "이미지 img_2024_final.png"가 나오면
+<b>무엇을 고쳐야 하는지 즉시 알게</b> 됩니다.</p>
+</div>
+
+<h2 id="tools">자동 검사 도구</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구</th><th>용도</th></tr></thead>
+<tbody>
+<tr><td><b>axe DevTools</b></td><td>브라우저 확장. 가장 정확도가 높다고 평가됩니다</td></tr>
+<tr><td><b><span class="term" data-term="lighthouse">Lighthouse</span></b></td><td>내장 검사(49장)</td></tr>
+<tr><td><b>eslint-plugin-jsx-a11y</b></td><td><b>코드 작성 중</b> 문제 발견(48장)</td></tr>
+<tr><td><b>jest-axe</b></td><td><b>테스트에 통합</b>해 회귀 방지(75장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🤖</span> 자동 도구는 <b>일부만</b> 잡습니다</p>
+<p>업계에서 널리 인용되는 추정치는 <b>자동 검사로 발견 가능한 문제가 전체의 30~40% 수준</b>이라는 것입니다.
+정확한 비율은 조사마다 다르지만, <b>절반에 못 미친다</b>는 점은 일관됩니다.</p>
+<div class="tablewrap" style="margin-bottom:0">
+<table>
+<thead><tr><th>자동으로 잡히는 것</th><th>사람만 판단할 수 있는 것</th></tr></thead>
+<tbody>
+<tr><td><code>alt</code>가 <b>있는지</b><br>명도 대비 수치<br><code>label</code> 연결 여부<br>중복 <code>id</code></td><td><code>alt</code> 내용이 <b>적절한지</b><br>포커스 순서가 <b>논리적인지</b><br>오류 메시지가 <b>이해되는지</b><br>키보드로 <b>실제로 쓸 수 있는지</b></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 실무에서 통하는 접근</p>
+<ol>
+<li><b>처음부터 챙기세요.</b> 나중에 고치는 비용이 훨씬 큽니다.
+"출시 전에 접근성 점검"은 대개 실패합니다.</li>
+<li><b><span class="term" data-term="s<span class="term" data-term="em">em</span>antic">시맨틱</span> <span class="term" data-term="html">HTML</span>이 80%입니다.</b> 11장의 기본만 지켜도 대부분 해결됩니다.
+ARIA는 그다음입니다.</li>
+<li><b>검증된 <span class="term" data-term="component">컴포넌트</span> 라이브러리</b>를 쓰세요. 모달·드롭다운·콤보박스를 직접 만드는 것은
+생각보다 훨씬 어렵습니다.</li>
+<li><b>린터를 켜세요.</b> <code>jsx-a11y</code>가 작성 시점에 잡아 줍니다.</li>
+<li><b>완벽할 필요 없습니다.</b> 이번 주에 하나 고치는 것이 "언젠가 전부"보다 낫습니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>접근성은 체크리스트가 아니라 사람에 관한 것</b>입니다.
+"규정을 통과했는가"가 아니라 <b>"실제로 쓸 수 있는가"</b>를 물어야 합니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>WCAG 네 원칙: <b>인식 가능·운용 가능·이해 가능·견고함</b>. 실무 목표는 <b>AA</b>.</li>
+<li><b>포커스 관리</b>가 SPA에서 가장 많이 깨진다. 모달은 <b>닫을 때 원래 위치로</b> 되돌린다.</li>
+<li><code>&lt;dialog&gt;</code>나 검증된 라이브러리를 쓰면 대부분 공짜로 해결된다.</li>
+<li><b>건너뛰기 링크</b>는 화면 밖으로 밀어내 숨긴다. <code>display: none</code>은 안 된다.</li>
+<li><code>aria-live</code> 영역은 <b>미리 존재</b>해야 하고, 남용하면 오히려 방해가 된다.</li>
+<li>UI 패턴은 <b>ARIA APG에서 찾아본다.</b> 감으로 만들면 틀린다.</li>
+<li><b>스크린 리더로 10분만</b> 써 보면 가장 많이 배운다.</li>
+<li><b>자동 도구는 절반도 못 잡는다.</b> 사람의 확인이 필요하다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://www.w3.org/WAI/WCAG22/quickref/" target="_blank" rel="noopener">WCAG 2.2 빠른 참조</a></li>
+<li><a href="https://www.w3.org/WAI/ARIA/apg/patterns/" target="_blank" rel="noopener">ARIA 저작 실무 가이드 — UI 패턴 전체</a></li>
+<li><a href="https://www.deque.com/axe/devtools/" target="_blank" rel="noopener">axe DevTools</a></li>
+<li><a href="https://webaim.org/techniques/screenreader/" target="_blank" rel="noopener">WebAIM — 스크린 리더 사용법</a></li>
+<li><a href="https://www.wa.or.kr/" target="_blank" rel="noopener">한국 웹접근성 평가센터</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "모달을 닫을 때 반드시 해야 하는 포커스 처리는?",
+    o: [
+      "포커스를 body로 옮긴다",
+      "모달을 열었던 버튼으로 포커스를 되돌린다. 그러지 않으면 키보드 사용자는 위치를 잃고 처음부터 Tab을 눌러야 한다",
+      "첫 번째 링크로 옮긴다",
+      "아무것도 하지 않아도 브라우저가 처리한다"
+    ],
+    a: 1,
+    e: "모달이 사라지면 포커스가 <code>body</code>로 떨어져 <b>다음 Tab이 페이지 처음부터</b> 시작됩니다. 열기 전 위치(<code>document.activeElement</code>)를 기억했다가 되돌려야 합니다. <code>&lt;dialog&gt;</code>의 <code>showModal()</code>은 이를 자동으로 처리합니다."
+  },
+  {
+    q: "건너뛰기 링크를 <code>display: none</code>으로 숨기면 안 되는 이유는?",
+    o: [
+      "CSS 문법 오류라서",
+      "display:none은 렌더 트리에서 제거되어 스크린 리더에서도 사라지므로, 화면 밖으로 밀어내는 방식을 써야 한다",
+      "링크가 동작하지 않아서",
+      "포커스를 받을 수 없어서"
+    ],
+    a: 1,
+    e: "5장에서 배운 대로 <code>display:none</code>은 <b>렌더 트리에서 제외</b>되고 접근성 트리에도 노출되지 않습니다. 시각적으로만 감추려면 <code>position:absolute; left:-9999px</code> 같은 방식을 쓰고, <code>:focus</code>에서 다시 보이게 합니다."
+  },
+  {
+    q: "<code>{error &amp;&amp; &lt;div role=\"alert\"&gt;{error}&lt;/div&gt;}</code> 방식의 문제는?",
+    o: [
+      "문법 오류다",
+      "요소 자체가 새로 생성되면 스크린 리더가 변화를 놓칠 수 있다. 컨테이너는 항상 두고 내용만 바꿔야 안정적이다",
+      "role=\"alert\"는 존재하지 않는다",
+      "error가 0일 때 문제가 된다"
+    ],
+    a: 1,
+    e: "스크린 리더는 <b>이미 감시 중이던 live 영역의 내용 변화</b>를 알립니다. 영역 자체가 나타나면 감시가 시작되기 전이라 놓칠 수 있습니다. 빈 <code>role=\"alert\"</code> 컨테이너를 두고 내용만 채우는 편이 안정적입니다. (참고: <code>error</code>가 <code>0</code>일 때 화면에 0이 표시되는 문제도 별개로 존재합니다 — 60장.)"
+  },
+  {
+    q: "자동 접근성 검사 도구(axe, Lighthouse)의 한계로 옳은 것은?",
+    o: [
+      "느려서 실무에 쓸 수 없다",
+      "전체 접근성 문제 중 절반에 못 미치는 비율만 발견한다. alt 내용의 적절성, 포커스 순서의 논리성, 실제 키보드 사용 가능 여부는 사람이 확인해야 한다",
+      "React 프로젝트에서는 동작하지 않는다",
+      "WCAG A 수준만 검사한다"
+    ],
+    a: 1,
+    e: "자동 도구는 <b>기계적으로 판정 가능한 것</b>만 검사합니다. \"<code>alt</code>가 있는가\"는 알지만 \"<code>alt</code>가 <code>\"이미지\"</code>라는 무의미한 값인가\"는 판단하지 못합니다. 점수가 100점이어도 <b>키보드로 쓸 수 없는 사이트</b>일 수 있습니다."
+  },
+  {
+    q: "탭 UI나 콤보박스를 직접 만들 때 권장되는 접근은?",
+    o: [
+      "감각적으로 ARIA 속성을 붙인다",
+      "W3C ARIA 저작 실무 가이드(APG)의 패턴 문서를 참고하거나, 접근성이 검증된 컴포넌트 라이브러리를 사용한다",
+      "role 속성만 붙이면 충분하다",
+      "테스트에서 통과하면 문제없다"
+    ],
+    a: 1,
+    e: "복합 위젯은 <b>필요한 ARIA 조합과 키보드 동작</b>(화살표 이동, Home/End, 타이핑 검색 등)이 정해져 있습니다. 감으로 만들면 거의 항상 틀립니다. APG에 패턴별 예제가 있고, Radix UI·React Aria 같은 라이브러리가 이를 구현해 두었습니다."
+  }
+]);
+</script>
+</body>
+</html>

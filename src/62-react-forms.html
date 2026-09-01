@@ -1,0 +1,391 @@
+<!--desc: 제어 컴포넌트와 비제어 컴포넌트, 폼 상태 관리, 유효성 검사와 에러 표시, 제출 처리, 폼 라이브러리까지 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>제어 컴포넌트</b>와 <b>비제어 컴포넌트</b></li>
+  <li>여러 입력을 하나의 상태로 관리하기</li>
+  <li>유효성 검사와 <b>에러를 언제 보여줄지</b></li>
+  <li>제출 처리와 <b>중복 제출 방지</b></li>
+  <li>폼 라이브러리를 언제 쓸지</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 9장(HTML 폼)과 함께 보세요</p>
+
+<h2 id="controlled">제어 컴포넌트</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">function NameInput() {
+  const [name, setName] = useState("");
+
+  return (
+    &lt;input
+      value={name}                                // 값은 상태에서
+      onChange={(e) =&gt; setName(e.target.value)}   // 변경은 상태로
+    /&gt;
+  );
+}</code></pre>
+</div>
+
+<p>입력 요소의 값이 <b>React 상태에 의해 결정</b>되는 방식입니다.
+57장의 <code>UI = f(state)</code>가 입력 요소에도 적용된 것입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔒</span> <code>value</code>만 주고 <code>onChange</code>를 빠뜨리면</p>
+<p style="margin-bottom:0">입력이 <b>아무것도 안 됩니다.</b> 타이핑해도 값이 변하지 않습니다.
+상태가 안 바뀌니 화면도 그대로이기 때문입니다.
+React가 콘솔에 경고를 띄워 줍니다.<br>
+읽기 전용이 의도라면 <code>readOnly</code>를 명시하세요.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">↔️</span> 제어/비제어가 뒤바뀌는 경고</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">const [name, setName] = useState();          // ❌ 초기값이 undefined
+&lt;input value={name} onChange={…} /&gt;
+// → 처음엔 비제어, 값이 들어오면 제어로 바뀌어 경고가 납니다
+
+const [name, setName] = useState("");        // ✅ 빈 문자열로 시작
+&lt;input value={name ?? ""} onChange={…} /&gt;    // ✅ 서버 값이 null일 수 있다면</code></pre>
+</div>
+</div>
+
+<h2 id="uncontrolled">비제어 컴포넌트</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">function NameForm() {
+  const inputRef = useRef(null);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    console.log(inputRef.current.value);   // 제출 시점에만 값을 읽습니다
+  }
+
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      &lt;input ref={inputRef} defaultValue="초기값" /&gt;
+      &lt;button&gt;전송&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}
+
+// FormData로 한 번에 읽는 방법 (9장)
+function handleSubmit(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.currentTarget));
+  console.log(data);   // { name: "…", email: "…" }
+}</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>제어</th><th>비제어</th></tr></thead>
+<tbody>
+<tr><td>값의 출처</td><td>React 상태</td><td>DOM 자체</td></tr>
+<tr><td>입력할 때마다 렌더링</td><td>있음</td><td><b>없음</b></td></tr>
+<tr><td>실시간 유효성 검사</td><td><b>쉬움</b></td><td>어려움</td></tr>
+<tr><td>다른 입력에 따라 값 바꾸기</td><td><b>쉬움</b></td><td>어려움</td></tr>
+<tr><td>파일 입력</td><td>불가</td><td><b>반드시 비제어</b></td></tr>
+<tr><td>코드량</td><td>많음</td><td>적음</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚖️</span> 무엇을 쓸까</p>
+<ul style="margin-bottom:0">
+<li><b>입력하는 동안 무언가 해야 한다</b> (검색 자동완성, 실시간 검증, 글자 수 표시) → <b>제어</b></li>
+<li><b>제출할 때만 값이 필요하다</b> → <b>비제어</b>가 더 간단합니다</li>
+<li><b>파일 업로드</b> → 비제어(<code>&lt;input type="file"&gt;</code>은 보안상 값을 설정할 수 없습니다)</li>
+</ul>
+<p style="margin-bottom:0">React 공식 문서는 <b>제어 컴포넌트를 기본</b>으로 안내합니다.
+다만 입력이 많은 큰 폼에서는 <b>비제어나 폼 라이브러리</b>가 성능·코드량 면에서 유리합니다.</p>
+</div>
+
+<h2 id="multi">여러 입력 관리하기</h2>
+
+<div class="codeblock">
+<span class="cb-label">하나의 객체 상태로</span>
+<pre><code data-lang="jsx">function SignupForm() {
+  const [form, setForm] = useState({
+    name: "", email: "", password: "", agree: false
+  });
+
+  function handleChange(e) {
+    const { name, value, type, checked } = e.target;
+    setForm(prev =&gt; ({
+      ...prev,                                   // 불변성 (59장)
+      [name]: type === "checkbox" ? checked : value    // 계산된 키 (28장)
+    }));
+  }
+
+  return (
+    &lt;form&gt;
+      &lt;input name="name" value={form.name} onChange={handleChange} /&gt;
+      &lt;input name="email" type="email" value={form.email} onChange={handleChange} /&gt;
+      &lt;input name="password" type="password" value={form.password} onChange={handleChange} /&gt;
+      &lt;input name="agree" type="checkbox" checked={form.agree} onChange={handleChange} /&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔑</span> <code>name</code> 속성이 핵심입니다</p>
+<p style="margin-bottom:0">9장에서 배운 <code>name</code>이 여기서 다시 등장합니다.
+<code>name</code>을 <b>상태 객체의 키와 일치</b>시키면
+<b>핸들러 하나로 모든 입력을 처리</b>할 수 있습니다.
+입력이 10개여도 핸들러는 하나입니다.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>입력 종류</th><th>읽는 값</th></tr></thead>
+<tbody>
+<tr><td>text, email, password, textarea, select</td><td><code>e.target.value</code></td></tr>
+<tr><td>checkbox</td><td><b><code>e.target.checked</code></b></td></tr>
+<tr><td>radio</td><td><code>e.target.value</code> (같은 <code>name</code>으로 묶기)</td></tr>
+<tr><td>file</td><td><code>e.target.files</code> (비제어)</td></tr>
+<tr><td>select multiple</td><td><code>[...e.target.selectedOptions].map(o =&gt; o.value)</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="validation">유효성 검사</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">function SignupForm() {
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [touched, setTouched] = useState({});      // 사용자가 건드린 필드
+  const [submitted, setSubmitted] = useState(false);
+
+  // 검사 로직은 순수 함수로 분리합니다 (27장)
+  const errors = {};
+  if (!form.email) errors.email = "이메일을 입력해 주세요";
+  else if (!form.email.includes("@")) errors.email = "이메일 형식이 아닙니다";
+  if (form.password.length &lt; 8) errors.password = "8자 이상 입력해 주세요";
+
+  const isValid = Object.keys(errors).length === 0;
+
+  // 에러를 '언제' 보여줄지가 사용성의 핵심입니다
+  function shouldShow(field) {
+    return (touched[field] || submitted) &amp;&amp; errors[field];
+  }
+
+  return (
+    &lt;form onSubmit={handleSubmit} noValidate&gt;
+      &lt;label htmlFor="email"&gt;이메일&lt;/label&gt;
+      &lt;input
+        id="email" name="email" type="email"
+        value={form.email}
+        onChange={handleChange}
+        onBlur={() =&gt; setTouched(t =&gt; ({ ...t, email: true }))}
+        aria-invalid={Boolean(shouldShow("email"))}
+        aria-describedby={shouldShow("email") ? "email-error" : undefined}
+      /&gt;
+      {shouldShow("email") &amp;&amp; (
+        &lt;p id="email-error" role="alert"&gt;{errors.email}&lt;/p&gt;
+      )}
+
+      &lt;button disabled={!isValid}&gt;가입&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⏰</span> 에러를 보여주는 시점</p>
+<ul style="margin-bottom:0">
+<li><b>입력하자마자</b> → 두 글자 쳤는데 "8자 이상"이 떠서 짜증납니다</li>
+<li><b>포커스를 벗어날 때(<code>onBlur</code>)</b> → <b>일반적으로 가장 좋습니다</b></li>
+<li><b>제출할 때</b> → 필수. 건드리지 않은 필드도 이때는 검사합니다</li>
+<li><b>이미 에러가 뜬 필드는</b> 입력 중에도 실시간으로 검사해 <b>고쳐지면 즉시 사라지게</b> 합니다</li>
+</ul>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">♿</span> 접근성 — 빠뜨리기 쉬운 부분</p>
+<ul style="margin-bottom:0">
+<li><b><code>label</code>과 <code>id</code> 연결</b>은 필수입니다(9·11장)</li>
+<li><code>aria-invalid</code>로 오류 상태를 알립니다</li>
+<li><code>aria-describedby</code>로 <b>오류 메시지를 입력 칸과 연결</b>합니다. 이게 없으면 스크린 리더 사용자는 무엇이 잘못됐는지 알 수 없습니다</li>
+<li><code>role="alert"</code>로 오류가 나타났을 때 <b>즉시 읽어 주게</b> 합니다</li>
+<li>색만으로 오류를 표시하지 않습니다(11장)</li>
+</ul>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> 제출 버튼을 비활성화하는 것이 항상 좋지는 않습니다</p>
+<p style="margin-bottom:0">비활성 버튼은 <b>왜 못 누르는지 알려 주지 않습니다.</b>
+스크린 리더 사용자는 버튼이 있다는 것조차 놓칠 수 있습니다.<br>
+<b>대안</b>: 버튼은 누를 수 있게 두고, 누르면 <b>모든 오류를 표시하고 첫 오류 필드로 포커스를 옮기는</b> 방식이
+접근성과 사용성 모두에서 낫다고 평가됩니다.</p>
+</div>
+
+<h2 id="submit">제출 처리</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">const [isSubmitting, setIsSubmitting] = useState(false);
+const [serverError, setServerError] = useState(null);
+
+async function handleSubmit(e) {
+  e.preventDefault();              // ✅ 새로고침 방지
+  setSubmitted(true);
+  if (!isValid) return;
+  if (isSubmitting) return;        // ✅ 중복 제출 방지
+
+  setIsSubmitting(true);
+  setServerError(null);
+  try {
+    const res = await fetch("/api/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form)
+    });
+    if (!res.ok) throw new Error(await res.text());   // 37장
+    navigate("/welcome");
+  } catch (error) {
+    setServerError("가입에 실패했습니다. 잠시 후 다시 시도해 주세요.");   // 33장
+  } finally {
+    setIsSubmitting(false);        // ✅ 성공·실패 모두 해제
+  }
+}</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 폼 체크리스트</p>
+<ol style="margin-bottom:0">
+<li><code>e.preventDefault()</code>를 빠뜨리지 않았는가 (새로고침되며 입력이 날아갑니다)</li>
+<li><b>중복 제출</b>을 막았는가 (결제라면 두 번 결제됩니다)</li>
+<li><b>로딩 상태</b>를 <code>finally</code>에서 해제했는가</li>
+<li>모든 입력에 <b>연결된 <code>label</code></b>이 있는가</li>
+<li>오류가 <b>어느 필드의 문제인지</b> 알 수 있는가</li>
+<li><b>Enter 키</b>로 제출되는가 (<code>form</code>과 <code>type="submit"</code>이면 자동)</li>
+<li><b>서버에서도 같은 검증</b>을 하는가 (9장 — 클라이언트 검증은 보안이 아닙니다)</li>
+<li>폼 안의 다른 버튼에 <b><code>type="button"</code></b>을 붙였는가 (9장)</li>
+</ol>
+</div>
+
+<h2 id="libs">폼 라이브러리</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구</th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><b>React Hook Form</b></td><td>비제어 기반이라 <b>렌더링이 적습니다.</b> 현재 가장 많이 쓰입니다</td></tr>
+<tr><td><b>Formik</b></td><td>오래된 선택지. 제어 기반</td></tr>
+<tr><td><b>Zod</b> (54장)</td><td>검증 스키마. 위 라이브러리들과 <b>함께</b> 씁니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">React Hook Form + Zod 조합의 느낌</span>
+<pre><code data-lang="jsx">const schema = z.object({
+  email: z.string().email("이메일 형식이 아닙니다"),
+  password: z.string().min(8, "8자 이상 입력해 주세요")
+});
+
+const { register, handleSubmit, formState: { errors, isSubmitting } } =
+  useForm({ resolver: zodResolver(schema) });
+
+&lt;form onSubmit={handleSubmit(onValid)}&gt;
+  &lt;input {...register("email")} /&gt;
+  {errors.email &amp;&amp; &lt;p role="alert"&gt;{errors.email.message}&lt;/p&gt;}
+&lt;/form&gt;</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📏</span> 언제 라이브러리를 쓸까</p>
+<ul style="margin-bottom:0">
+<li><b>입력 1~3개</b> → <code>useState</code>로 충분합니다. 라이브러리가 오히려 과합니다</li>
+<li><b>입력 5개 이상 + 검증</b> → 라이브러리가 이깁니다</li>
+<li><b>동적 필드·다단계 폼</b> → 확실히 라이브러리</li>
+</ul>
+<p style="margin-bottom:0"><b>먼저 직접 만들어 보세요.</b> 무엇이 번거로운지 알아야
+라이브러리가 무엇을 해 주는지 이해할 수 있습니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>제어</b>는 값이 상태에서, <b>비제어</b>는 DOM에서 온다.</li>
+<li><code>value</code>만 주고 <code>onChange</code>가 없으면 <b>입력이 안 된다.</b></li>
+<li>초기값은 <code>undefined</code>가 아니라 <b>빈 문자열</b>로 시작한다.</li>
+<li><code>name</code>을 상태 키와 맞추면 <b>핸들러 하나로</b> 모든 입력을 처리한다.</li>
+<li>체크박스는 <code>checked</code>, 파일은 비제어.</li>
+<li>에러는 <b><code>onBlur</code>와 제출 시</b>에 보여주고, 고쳐지면 즉시 없앤다.</li>
+<li><code>label</code>·<code>aria-invalid</code>·<code>aria-describedby</code>·<code>role="alert"</code>로 <b>접근성</b>을 확보한다.</li>
+<li><b>중복 제출을 막고</b> 로딩은 <code>finally</code>에서 해제한다.</li>
+<li>입력이 많아지면 <b>React Hook Form + Zod</b>.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.react.dev/reference/react-dom/components/input" target="_blank" rel="noopener">React — input 컴포넌트</a></li>
+<li><a href="https://ko.react.dev/learn/reacting-to-input-with-state" target="_blank" rel="noopener">React — state로 입력에 반응하기</a></li>
+<li><a href="https://react-hook-form.com/" target="_blank" rel="noopener">React Hook Form</a></li>
+<li><a href="https://www.w3.org/WAI/tutorials/forms/notifications/" target="_blank" rel="noopener">W3C WAI — 폼 오류 알림</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>&lt;input value={name} /&gt;</code> 만 쓰고 <code>onChange</code>를 빠뜨리면?",
+    o: [
+      "정상 동작한다",
+      "타이핑해도 값이 바뀌지 않는다. 값이 상태로 고정되어 있는데 상태를 바꿀 방법이 없기 때문",
+      "값이 자동으로 저장된다",
+      "비제어 컴포넌트가 된다"
+    ],
+    a: 1,
+    e: "제어 컴포넌트는 <b>화면 = 상태</b>입니다. 상태가 바뀌지 않으면 화면도 그대로입니다. React가 콘솔 경고를 띄워 주며, 읽기 전용이 의도라면 <code>readOnly</code>를 명시해야 합니다."
+  },
+  {
+    q: "여러 입력을 하나의 핸들러로 처리하는 핵심 기법은?",
+    o: [
+      "입력마다 별도 상태와 핸들러를 만든다",
+      "각 input의 <code>name</code>을 상태 객체의 키와 일치시키고, 핸들러에서 <code>[e.target.name]</code>으로 동적 키를 사용한다",
+      "ref를 배열로 관리한다",
+      "useReducer를 반드시 써야 한다"
+    ],
+    a: 1,
+    e: "<code>setForm(prev =&gt; ({ ...prev, [e.target.name]: e.target.value }))</code> 패턴입니다. 28장의 <b>계산된 속성 이름</b>과 59장의 <b>불변성</b>이 결합된 형태로, 입력이 몇 개든 핸들러는 하나면 됩니다."
+  },
+  {
+    q: "폼 유효성 오류를 보여주기에 일반적으로 가장 적절한 시점은?",
+    o: [
+      "입력하는 매 글자마다",
+      "해당 필드에서 포커스가 벗어날 때(onBlur)와 제출 시. 이미 오류가 표시된 필드는 입력 중에도 검사해 고쳐지면 즉시 없앤다",
+      "페이지 로드 시 전부",
+      "제출 후 서버 응답이 왔을 때만"
+    ],
+    a: 1,
+    e: "입력 중 즉시 표시하면 두 글자 입력에 \"8자 이상\" 오류가 떠서 방해가 됩니다. 페이지 로드 시 전부 표시하면 아무것도 안 했는데 혼나는 느낌을 줍니다(9장의 <code>:user-invalid</code>와 같은 원리)."
+  },
+  {
+    q: "제출 버튼을 <code>disabled={!isValid}</code> 로 막는 방식의 단점은?",
+    o: [
+      "성능이 나빠진다",
+      "왜 누를 수 없는지 알려 주지 않고, 스크린 리더 사용자는 버튼의 존재나 이유를 파악하기 어렵다",
+      "폼이 제출되지 않는다",
+      "onChange가 동작하지 않는다"
+    ],
+    a: 1,
+    e: "비활성 버튼은 <b>침묵하는 거부</b>입니다. 대안은 버튼을 활성 상태로 두고, 클릭 시 <b>모든 오류를 표시하고 첫 오류 필드로 포커스를 이동</b>시키는 것입니다. 무엇이 문제인지 즉시 알 수 있습니다."
+  },
+  {
+    q: "파일 업로드 input을 제어 컴포넌트로 만들 수 없는 이유는?",
+    o: [
+      "React가 지원하지 않아서",
+      "보안상 스크립트가 파일 입력의 값을 설정할 수 없기 때문. 반드시 ref나 이벤트로 <code>files</code>를 읽는 비제어 방식으로 다룬다",
+      "파일이 너무 커서",
+      "onChange 이벤트가 없어서"
+    ],
+    a: 1,
+    e: "스크립트가 파일 경로를 설정할 수 있다면 <b>사용자 몰래 임의의 파일을 업로드</b>시킬 수 있습니다. 그래서 브라우저는 <code>value</code> 설정을 금지합니다. 값은 <code>e.target.files</code>로 읽습니다."
+  }
+]);
+</script>

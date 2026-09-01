@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>검색 — 프엔북</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="assets/css/book.css">
+</head>
+<body data-base="" data-page="search">
+<div id="app-header"></div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+  <main class="page">
+    <h1 id="sr-title">검색</h1>
+    <p class="ch-meta" id="sr-meta"></p>
+    <div id="sr-list"></div>
+  </main>
+  <aside class="pagetoc" id="pagetoc"></aside>
+</div>
+
+<script src="assets/data/toc.js"></script>
+<script src="assets/data/glossary-data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  var FB = window.FB;
+  var q = new URLSearchParams(location.search).get("q") || "";
+  var input = document.getElementById("q");
+  if (input) input.value = q;
+  document.getElementById("sr-title").textContent = q ? '"' + q + '" 검색 결과' : "검색";
+  if (!q) { document.getElementById("sr-meta").textContent = "위 검색창에 찾을 내용을 입력하세요."; return; }
+  document.getElementById("sr-meta").textContent = "검색 중…";
+
+  FB.ensureIndex().then(function () {
+    var res = FB.search(q);
+    document.getElementById("sr-meta").textContent = res.length + "개 챕터에서 찾았습니다.";
+    document.getElementById("sr-list").innerHTML = res.length ? res.map(function (r) {
+      return '<article class="result">' +
+        '<h3><a href="ch/' + r.id + '.html">' + FB.markTerms(r.title, q) + '</a></h3>' +
+        '<p class="meta">' + r.n + '장 · ' + FB.esc(r.part || "") + '</p>' +
+        (r.snippet ? '<p>' + FB.markTerms(r.snippet, q) + '</p>' : "") +
+      '</article>';
+    }).join("") : '<p>결과가 없습니다. 다른 단어로 검색해 보세요.</p>';
+  });
+})();
+</script>
+</body>
+</html>

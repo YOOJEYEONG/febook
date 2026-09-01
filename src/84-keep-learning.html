@@ -1,0 +1,280 @@
+<!--desc: 신뢰할 수 있는 정보원, 변화하는 기술을 따라가는 법, 무엇을 배우고 무엇을 무시할지 판단하는 기준, 그리고 앞으로의 학습 방향을 제시합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>신뢰할 수 있는 정보원</b>과 그렇지 않은 것</li>
+  <li>변화를 따라가되 <b>휩쓸리지 않는</b> 법</li>
+  <li>무엇을 더 배울지 — <b>다음 단계</b></li>
+  <li>지속 가능하게 성장하기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 16분 · 마지막 챕터입니다</p>
+
+<h2 id="sources">정보원의 등급</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>등급</th><th>출처</th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><b>1급 — 명세</b></td><td>WHATWG HTML, TC39, W3C CSS</td><td><b>가장 정확</b>하지만 읽기 어렵습니다. 논쟁이 있을 때 최종 근거</td></tr>
+<tr><td><b>2급 — 공식 문서</b></td><td><b>MDN</b>, react.dev, typescriptlang.org, nextjs.org</td><td><b>일상적으로 볼 곳.</b> 정확하면서 읽을 만합니다</td></tr>
+<tr><td><b>3급 — 신뢰할 만한 매체</b></td><td>web.dev, Chrome·WebKit·Mozilla 블로그, 라이브러리 공식 블로그</td><td>배경과 의도를 설명해 줍니다</td></tr>
+<tr><td><b>4급 — 개인 글·영상</b></td><td>블로그, 유튜브, 커뮤니티</td><td><b>이해에는 도움, 근거로는 부족.</b> 반드시 교차 확인</td></tr>
+<tr><td><b>등급 없음</b></td><td>AI 답변, 오래된 Stack Overflow</td><td><b>출발점일 뿐입니다</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📅</span> 날짜를 항상 확인하세요</p>
+<p style="margin-bottom:0">프론트엔드 자료는 <b>2~3년만 지나도 틀린 내용이 됩니다.</b>
+이 책에서도 여러 번 봤습니다.</p>
+<ul style="margin-bottom:0">
+<li>클래스 컴포넌트와 <code>componentDidMount</code> (2019년 이전)</li>
+<li>"이미지에 <code>width</code>·<code>height</code>를 쓰지 마라" (지금은 반대, 8장)</li>
+<li>"HTTP 요청을 무조건 줄여라" (HTTP/2 이후 달라짐, 4장)</li>
+<li>Moment.js 사용 (43장)</li>
+<li><code>getServerSideProps</code> (Pages Router, 71장)</li>
+</ul>
+<p style="margin-bottom:0"><b>검색할 때 연도를 붙이거나 최근 1년으로 필터</b>하는 습관을 들이세요.</p>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🤖</span> AI를 쓰는 법</p>
+<p>AI는 강력한 도구입니다. 다만 <b>그럴듯한 거짓말</b>을 합니다.
+존재하지 않는 API, 사라진 옵션, 옛 문법을 자신 있게 알려 줍니다.</p>
+<ul style="margin-bottom:0">
+<li><b>좋은 용도</b> — 개념 설명, 코드 리뷰 요청, 오류 메시지 해석, 시작점 만들기, 반복 작업</li>
+<li><b>위험한 용도</b> — <b>검증 없이 복사</b>, 보안 관련 코드, 최신 API 확인</li>
+<li><b>원칙</b> — <b>동작하는 이유를 설명할 수 없는 코드는 쓰지 마세요.</b>
+그 코드는 여러분이 유지보수할 수 없고, 면접에서도 설명할 수 없습니다.</li>
+<li>AI가 준 API 이름은 <b>MDN이나 공식 문서에서 실제로 확인</b>하세요.</li>
+</ul>
+</div>
+
+<h2 id="pace">변화를 따라가되 휩쓸리지 않기</h2>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🌪️</span> "매주 새 프레임워크가 나온다"는 착각</p>
+<span class="mythline">실제로 <b>바뀌는 것</b>은 도구와 그 위의 유행입니다.</span>
+<span class="mythline">실제로 <b>바뀌지 않는 것</b>은 이 책의 대부분입니다.
+HTTP, 브라우저 렌더링, DOM, 스코프와 클로저, 이벤트 루프, 박스 모델, 접근성, 보안 원칙.
+<b>10년 전에도 그랬고 10년 뒤에도 그럴 것입니다.</b></span>
+<span class="mythline">기초가 튼튼하면 <b>새 도구를 배우는 데 며칠이면 충분합니다.</b>
+반대로 기초 없이 도구만 익히면 <b>도구가 바뀔 때마다 처음부터</b>입니다.</span>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>배울 가치가 있는 것</th><th>지켜보기만 해도 되는 것</th></tr></thead>
+<tbody>
+<tr><td>
+표준 웹 기술 (HTML·CSS·JS·브라우저 API)<br>
+채용 공고에 <b>반복해서</b> 나오는 것<br>
+<b>지금 일에 필요한</b> 것<br>
+개념 (상태 관리, 렌더링 전략, 캐싱)
+</td><td>
+나온 지 <b>6개월 미만</b>인 프레임워크<br>
+"~를 대체할 것"이라는 주장만 있는 것<br>
+쓰는 곳을 본 적 없는 도구<br>
+같은 문제를 조금 다르게 푸는 <b>N번째</b> 라이브러리
+</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎣</span> 정보를 흘려보내는 법</p>
+<p style="margin-bottom:0"><b>모든 것을 따라잡으려 하면 지칩니다.</b>
+"이런 게 나왔구나" 정도로 <b>이름만 기억</b>해 두고,
+<b>실제로 필요해질 때 깊이 파는</b> 방식이 지속 가능합니다.<br>
+주간 뉴스레터 하나 정도를 <b>훑어보기만</b> 하는 것으로 충분합니다.
+읽지 못했다고 죄책감을 가질 필요 없습니다.</p>
+</div>
+
+<h2 id="next">다음 단계</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>방향</th><th>배울 것</th></tr></thead>
+<tbody>
+<tr><td><b>깊이 — 프론트엔드 심화</b></td><td>브라우저 내부 동작, 애니메이션·인터랙션, 웹 접근성 전문, 대규모 앱 아키텍처, 디자인 시스템</td></tr>
+<tr><td><b>넓이 — 풀스택</b></td><td>Node.js 서버, 데이터베이스와 SQL, 인증·인가, API 설계</td></tr>
+<tr><td><b>기반 — CS 기초</b></td><td>자료구조·알고리즘, 네트워크, 운영체제. <b>급하지 않지만 오래 갑니다</b></td></tr>
+<tr><td><b>주변</b></td><td>Docker·CI/CD, 클라우드 기초, 테스트 전략, 성능 엔지니어링</td></tr>
+<tr><td><b>인접 분야</b></td><td>UX·디자인 기초, 제품 기획, 데이터 분석</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🧭</span> 무엇부터 할까</p>
+<p style="margin-bottom:0"><b>지금 하는 일에서 가장 답답한 것</b>부터 하세요.</p>
+<ul style="margin-bottom:0">
+<li>API가 왜 이렇게 생겼는지 모르겠다 → <b>백엔드 기초</b></li>
+<li>배포가 블랙박스처럼 느껴진다 → <b>인프라 기초</b></li>
+<li>코드가 커지면 감당이 안 된다 → <b>아키텍처·테스트</b></li>
+<li>화면이 항상 어설프다 → <b>디자인 기초</b></li>
+<li>알고리즘 문제가 나오면 막힌다 → <b>자료구조·알고리즘</b></li>
+</ul>
+<p style="margin-bottom:0"><b>남이 좋다는 것보다 내가 막히는 것</b>이 훨씬 좋은 학습 동기입니다.</p>
+</div>
+
+<h2 id="how">실력이 느는 방법</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📈</span> 효과가 큰 순서</p>
+<ol style="margin-bottom:0">
+<li><b>만들기</b> — 압도적 1위입니다. 읽기만 해서는 늘지 않습니다(81장).</li>
+<li><b>남의 코드 읽기</b> — 오픈소스, 팀 동료의 PR. <b>다른 사고방식</b>을 배웁니다.</li>
+<li><b>가르치기</b> — 블로그 글, 팀 공유. <b>설명하려면 정확히 알아야</b> 합니다.</li>
+<li><b>코드 리뷰 받기</b> — 혼자서는 절대 알 수 없는 것을 배웁니다(82장).</li>
+<li><b>공식 문서 읽기</b> — 목적 없이 훑는 것도 의외로 효과가 큽니다.</li>
+<li><b>강의·책</b> — 체계를 잡는 데 좋지만 <b>실습이 없으면 남지 않습니다</b>.</li>
+</ol>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔥</span> 번아웃을 조심하세요</p>
+<p style="margin-bottom:0">프론트엔드는 <b>따라잡아야 한다는 압박</b>이 유난히 강한 분야입니다.
+SNS에는 항상 새 기술을 쓰는 사람들이 보입니다.<br>
+<b>모두가 모든 것을 알지는 못합니다.</b> 그렇게 보일 뿐입니다.
+10년 차도 매일 검색합니다. 그것이 정상입니다.<br>
+<b>꾸준함이 강도보다 중요합니다.</b>
+하루 3시간씩 한 달 하고 그만두는 것보다
+<b>하루 30분씩 1년</b>이 훨씬 멀리 갑니다.</p>
+</div>
+
+<h2 id="feeds">참고할 만한 곳</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>분류</th><th>추천</th></tr></thead>
+<tbody>
+<tr><td><b>문서</b></td><td><a href="https://developer.mozilla.org/ko/" target="_blank" rel="noopener">MDN</a>,
+<a href="https://web.dev/" target="_blank" rel="noopener">web.dev</a>,
+<a href="https://ko.react.dev/" target="_blank" rel="noopener">react.dev</a></td></tr>
+<tr><td><b>지원 현황</b></td><td><a href="https://caniuse.com/" target="_blank" rel="noopener">Can I use</a>,
+<a href="https://developer.mozilla.org/en-US/docs/Web/API" target="_blank" rel="noopener">MDN 호환성 표</a></td></tr>
+<tr><td><b>실험</b></td><td><a href="https://codesandbox.io/" target="_blank" rel="noopener">CodeSandbox</a>,
+<a href="https://stackblitz.com/" target="_blank" rel="noopener">StackBlitz</a>,
+<a href="https://www.typescriptlang.org/play" target="_blank" rel="noopener">TS Playground</a></td></tr>
+<tr><td><b>연습</b></td><td><a href="https://flexboxfroggy.com/#ko" target="_blank" rel="noopener">Flexbox Froggy</a>,
+<a href="https://cssgridgarden.com/#ko" target="_blank" rel="noopener">Grid Garden</a>,
+<a href="https://www.frontendmentor.io/" target="_blank" rel="noopener">Frontend Mentor</a></td></tr>
+<tr><td><b>흐름 파악</b></td><td>주간 뉴스레터 하나 정도. <b>훑어보기만</b> 하세요</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="end">마치며</h2>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">🎓</span> 84개 챕터를 지나온 여러분에게</p>
+<p>1장에서 <b>"프론트엔드는 사용자의 브라우저에서 실행되는 코드"</b>라는 정의로 시작했습니다.
+이제 여러분은 그 한 문장 뒤에 있는 것들을 알고 있습니다.</p>
+<p>요청이 서버에 닿기까지의 여정, 브라우저가 픽셀을 그리는 과정,
+JavaScript가 한 번에 하나씩 처리하면서도 멈추지 않는 이유,
+상태를 선언하면 화면이 따라오게 만드는 방식,
+그리고 <b>그 모든 것 위에서 누군가가 실제로 서비스를 쓴다</b>는 사실까지.</p>
+<p><b>이 책을 다 읽었다고 실력이 생기지는 않습니다.</b>
+지도를 본 것이지 길을 걸은 것은 아닙니다.
+이제 필요한 것은 <b>직접 만들고, 막히고, 검색하고, 고치는 시간</b>입니다.
+그 과정에서 이 책의 내용이 <b>비로소 여러분의 것</b>이 됩니다.</p>
+<p style="margin-bottom:0">막히면 언제든 돌아오세요. <b>이 책은 처음부터 다시 읽는 책이 아니라
+필요할 때 펼치는 책</b>으로 만들어졌습니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">💚</span> 마지막으로 하나만 기억한다면</p>
+<p style="margin-bottom:0"><b>여러분이 만드는 화면 뒤에는 사람이 있습니다.</b><br>
+느린 네트워크에서 기다리는 사람, 화면을 볼 수 없어 소리로 듣는 사람,
+작은 화면에서 손가락으로 누르는 사람, 오래된 기기를 쓰는 사람.<br>
+<b>기술은 그들을 위한 수단</b>입니다.
+가장 화려한 코드가 아니라 <b>가장 많은 사람이 쓸 수 있는 코드</b>가 좋은 코드입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>정보원에는 <b>등급</b>이 있다. 명세 → 공식 문서 → 신뢰 매체 → 개인 글.</li>
+<li><b>자료의 날짜를 반드시 확인</b>한다. 2~3년이면 틀린 내용이 된다.</li>
+<li><b>AI의 답은 검증</b>한다. 설명할 수 없는 코드는 쓰지 않는다.</li>
+<li><b>도구는 바뀌지만 기초는 바뀌지 않는다.</b> 기초가 있으면 새 도구는 며칠이면 익힌다.</li>
+<li>모든 것을 따라잡으려 하지 말고 <b>이름만 기억했다가 필요할 때</b> 판다.</li>
+<li>다음 단계는 <b>지금 가장 답답한 것</b>부터.</li>
+<li>실력은 <b>만들기 → 남의 코드 읽기 → 가르치기</b> 순으로 는다.</li>
+<li><b>꾸준함이 강도보다 중요하다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/" target="_blank" rel="noopener">MDN Web Docs</a> — 프론트엔드 개발자의 사전</li>
+<li><a href="https://web.dev/" target="_blank" rel="noopener">web.dev</a> — 성능·접근성·모범 사례</li>
+<li><a href="https://caniuse.com/" target="_blank" rel="noopener">Can I use</a> — 브라우저 지원 확인</li>
+<li><a href="https://roadmap.sh/frontend" target="_blank" rel="noopener">Frontend Roadmap</a> — 학습 범위 점검</li>
+<li><a href="https://github.com/topics/awesome" target="_blank" rel="noopener">Awesome 목록</a> — 분야별 자료 모음</li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "기술 자료를 볼 때 날짜 확인이 특히 중요한 이유는?",
+    o: [
+      "오래된 글은 문법이 어려워서",
+      "프론트엔드는 변화가 빨라 2~3년만 지나도 권장 사항이 뒤집히는 경우가 많기 때문(이미지 크기 속성, HTTP 요청 최소화, 클래스 컴포넌트 등)",
+      "저작권 문제 때문에",
+      "검색 순위가 낮아서"
+    ],
+    a: 1,
+    e: "이 책에서만도 여러 번 확인했습니다. \"이미지에 width·height를 쓰지 마라\"는 조언은 <b>지금은 정반대</b>이고(8장), \"HTTP 요청을 무조건 줄여라\"는 HTTP/2 이후 달라졌으며(4장), 클래스 컴포넌트는 더 이상 새로 배우지 않습니다."
+  },
+  {
+    q: "AI가 알려 준 코드를 사용할 때의 원칙은?",
+    o: [
+      "동작하면 그대로 사용한다",
+      "동작하는 이유를 설명할 수 없는 코드는 쓰지 않는다. API 이름과 옵션은 공식 문서에서 실제로 확인한다",
+      "AI 코드는 절대 쓰지 않는다",
+      "테스트만 통과하면 된다"
+    ],
+    a: 1,
+    e: "AI는 <b>존재하지 않는 API를 자신 있게</b> 알려 주기도 합니다. 더 큰 문제는 <b>이해하지 못한 코드는 유지보수할 수 없다</b>는 것입니다. 버그가 나도 고칠 수 없고 면접에서도 설명할 수 없습니다."
+  },
+  {
+    q: "\"매주 새 프레임워크가 나와서 따라갈 수 없다\"는 고민에 대한 적절한 관점은?",
+    o: [
+      "모든 신기술을 즉시 학습해야 한다",
+      "변하는 것은 도구와 유행이고, HTTP·렌더링·DOM·스코프·이벤트 루프 같은 기초는 거의 변하지 않는다. 기초가 있으면 새 도구는 며칠이면 익힌다",
+      "프론트엔드는 오래 하기 어려운 분야다",
+      "한 프레임워크만 깊게 파고 나머지는 무시한다"
+    ],
+    a: 1,
+    e: "이 책의 84개 챕터 중 <b>대부분이 도구와 무관한 내용</b>입니다. 도구만 익힌 사람은 도구가 바뀔 때마다 처음부터 시작하지만, 기초가 있는 사람은 \"이건 결국 그것이구나\"로 빠르게 적응합니다."
+  },
+  {
+    q: "다음 학습 주제를 고르는 가장 좋은 기준은?",
+    o: [
+      "채용 공고에 가장 많이 등장하는 것",
+      "지금 하는 일에서 가장 답답하고 막히는 부분",
+      "가장 새로운 기술",
+      "커뮤니티에서 화제인 것"
+    ],
+    a: 1,
+    e: "<b>내가 막히는 것</b>이 가장 강한 학습 동기이고, 배운 즉시 쓸 수 있어 오래 남습니다. \"API가 왜 이렇게 생겼는지 모르겠다\"면 백엔드 기초를, \"코드가 커지면 감당이 안 된다\"면 아키텍처와 테스트를 배우는 식입니다."
+  },
+  {
+    q: "실력 향상에 가장 효과가 큰 활동은?",
+    o: [
+      "강의 시청",
+      "직접 만들기. 읽거나 보는 것만으로는 늘지 않는다",
+      "기술 뉴스 구독",
+      "책 읽기"
+    ],
+    a: 1,
+    e: "튜토리얼을 따라 치는 것과 <b>요구사항만 보고 스스로 만드는 것</b>은 완전히 다른 경험입니다(81장). 막히고, 검색하고, 고치는 과정에서만 지식이 자기 것이 됩니다. 강의와 책은 <b>체계를 잡는 데</b> 좋지만 실습이 없으면 남지 않습니다."
+  }
+]);
+</script>

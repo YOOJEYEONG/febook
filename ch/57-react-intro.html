@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>57장. React가 푸는 문제와 가상 DOM의 진실 — 프엔북</title>
+<meta name="description" content="React가 해결하는 문제, 선언형 UI와 UI = f(state) 개념, 가상 DOM의 진실과 흔한 오해, 재조정 과정을 설명합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="57장. React가 푸는 문제와 가상 DOM의 진실 — 프엔북">
+<meta property="og:description" content="React가 해결하는 문제, 선언형 UI와 UI = f(state) 개념, 가상 DOM의 진실과 흔한 오해, 재조정 과정을 설명합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="57-react-intro">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">8부 · React</p>
+    <h1>57장. React가 푸는 문제와 가상 DOM의 진실</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>직접 <span class="term" data-term="dom">DOM</span>을 조작할 때 <b>무엇이 무너지는지</b></li>
+  <li><b>선언형 UI</b> — <code>UI = f(state)</code></li>
+  <li><b>가상 DOM의 진실</b> — "더 빠르다"는 말은 정확하지 않습니다</li>
+  <li>재조정(reconciliation)이 하는 일</li>
+  <li>React는 <b>라이브러리</b>이지 <span class="term" data-term="framework">프레임워크</span>가 아닙니다</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 개념을 잡는 챕터입니다</p>
+
+<h2 id="problem">문제: 상태와 화면이 어긋난다</h2>
+
+<p>38장에서 배운 DOM 조작으로 장바구니를 만든다고 해 봅시다.
+상품을 하나 추가하면 <b>고쳐야 할 곳</b>이 이만큼입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="js">function addItem(item) {
+  cart.push(item);                                    // ① 데이터
+  renderCartList();                                   // ② 목록 다시 그리기
+  totalEl.textContent = calcTotal() + "원";           // ③ 합계
+  badgeEl.textContent = cart.length;                  // ④ 뱃지 숫자
+  emptyMessageEl.hidden = cart.length &gt; 0;            // ⑤ 빈 상태 안내
+  checkoutBtn.disabled = cart.length === 0;           // ⑥ 결제 버튼
+  saveToStorage(cart);                                // ⑦ 저장
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💥</span> 무엇이 문제인가</p>
+<ul style="margin-bottom:0">
+<li><b>하나라도 빠뜨리면 화면이 데이터와 어긋납니다.</b> 뱃지에는 3개인데 목록에는 2개.</li>
+<li><b>삭제·수정 함수에도 똑같은 목록을</b> 다시 써야 합니다. 기능이 늘수록 곱하기로 늘어납니다.</li>
+<li><b>새 UI를 추가할 때</b> 기존 함수를 전부 찾아 한 줄씩 넣어야 합니다.</li>
+<li>결국 <b>"화면 어딘가가 안 바뀌는" 버그</b>가 계속 나옵니다.</li>
+</ul>
+</div>
+
+<h2 id="declarative">해법: 선언형</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧮</span> UI = f(<span class="term" data-term="state">state</span>)</p>
+<p style="margin-bottom:0">React의 핵심 아이디어는 한 줄로 요약됩니다.<br>
+<b>"화면은 상태를 넣으면 나오는 함수의 결과다."</b><br>
+개발자는 <b>"이 상태일 때 화면은 이렇게 생겼다"</b>만 선언합니다.
+<b>어떻게 바꿀지는 React가 알아서</b> 합니다.</p>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">function Cart({ items }) {
+  const total = items.reduce((sum, i) =&gt; sum + i.price, 0);
+
+  return (
+    &lt;div&gt;
+      &lt;Badge count={items.length} /&gt;
+      {items.length === 0
+        ? &lt;p&gt;장바구니가 비어 있습니다&lt;/p&gt;
+        : &lt;ItemList items={items} /&gt;}
+      &lt;p&gt;합계: {total}원&lt;/p&gt;
+      &lt;button disabled={items.length === 0}&gt;결제하기&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}
+
+// 상품을 추가하는 코드는 이것뿐입니다
+setItems([...items, newItem]);
+// 뱃지·빈 상태·합계·버튼이 전부 자동으로 맞춰집니다</code></pre>
+</div>
+
+<div class="runner" data-lang="html" data-title="명령형 vs 선언형 직접 비교" data-note="위쪽은 갱신을 하나 빠뜨렸습니다. 버튼을 눌러 어떻게 어긋나는지 확인하세요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; }
+  .panel { border: 2px solid #ccc; border-radius: 8px; padding: 12px; margin-bottom: 14px; }
+  .panel h4 { margin: 0 0 8px; font-size: 13px; }
+  .bad { border-color: #c0392b; }
+  .good { border-color: #1f5f4f; }
+  button { padding: 5px 10px; font-size: 12px; margin-right: 4px; cursor: pointer; }
+  .row { margin: 6px 0; }
+  .badge { background: #333; color: white; border-radius: 999px; padding: 1px 7px; font-size: 11px; }
+  ul { margin: 6px 0; padding-left: 18px; }
+</style>
+
+<div class="panel bad">
+  <h4>❌ 명령형 — 갱신할 곳을 손으로 관리</h4>
+  <div class="row">장바구니 <span class="badge" id="badge1">0</span></div>
+  <ul id="list1"></ul>
+  <div class="row">합계: <b id="total1">0</b>원</div>
+  <button id="add1">추가</button>
+  <button id="del1">마지막 삭제</button>
+</div>
+
+<div class="panel good">
+  <h4>✅ 선언형 — 상태만 바꾸면 전체가 다시 그려짐</h4>
+  <div id="app2"></div>
+</div>
+
+<script>
+  // ===== 명령형 =====
+  let cart1 = [];
+  let price = 1000;
+
+  document.getElementById("add1").addEventListener("click", () => {
+    cart1.push({ name: "상품" + (cart1.length + 1), price: price });
+    // 목록 갱신
+    document.getElementById("list1").innerHTML =
+      cart1.map(i => "<li>" + i.name + " - " + i.price + "원</li>").join("");
+    // 합계 갱신
+    document.getElementById("total1").textContent =
+      cart1.reduce((s, i) => s + i.price, 0);
+    // 뱃지 갱신 ← 일부러 빠뜨렸습니다. 실무에서 매일 일어나는 실수입니다.
+  });
+
+  document.getElementById("del1").addEventListener("click", () => {
+    cart1.pop();
+    document.getElementById("list1").innerHTML =
+      cart1.map(i => "<li>" + i.name + " - " + i.price + "원</li>").join("");
+    document.getElementById("total1").textContent =
+      cart1.reduce((s, i) => s + i.price, 0);
+    // 여기서도 뱃지를 빠뜨렸습니다
+  });
+
+  // ===== 선언형 (아주 작은 React 흉내) =====
+  let cart2 = [];
+
+  // 화면 = 상태를 받아 문자열을 만드는 '함수'
+  function view(items) {
+    const total = items.reduce((s, i) => s + i.price, 0);
+    return `
+      <div class="row">장바구니 <span class="badge">${items.length}</span></div>
+      ${items.length === 0
+        ? "<p style='color:#888'>비어 있습니다</p>"
+        : "<ul>" + items.map(i => `<li>${i.name} - ${i.price}원</li>`).join("") + "</ul>"}
+      <div class="row">합계: <b>${total}</b>원</div>
+      <button id="add2">추가</button>
+      <button id="del2">마지막 삭제</button>
+    `;
+  }
+
+  // 상태를 바꾸는 유일한 통로
+  function setState(next) {
+    cart2 = next;
+    render();
+  }
+
+  function render() {
+    document.getElementById("app2").innerHTML = view(cart2);
+    document.getElementById("add2").onclick = () =>
+      setState([...cart2, { name: "상품" + (cart2.length + 1), price: 1000 }]);
+    document.getElementById("del2").onclick = () =>
+      setState(cart2.slice(0, -1));
+  }
+
+  render();
+  console.log("위쪽은 뱃지 갱신을 빠뜨렸습니다. 아래쪽은 빠뜨릴 곳 자체가 없습니다.");
+</script>
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔑</span> 핵심 차이</p>
+<p style="margin-bottom:0">선언형에서는 <b>"갱신을 빠뜨릴 곳" 자체가 없습니다.</b>
+화면 전체가 상태로부터 다시 만들어지기 때문입니다.
+React가 하는 일이 정확히 이것이고,
+<b>"전체를 다시 그리는데 어떻게 느리지 않은가"</b>를 푸는 것이 가상 DOM입니다.</p>
+</div>
+
+<h2 id="vdom">가상 DOM의 진실</h2>
+
+<p><b>가상 DOM</b>은 화면 구조를 <b>가벼운 <span <span class="term" data-term="class">class</span>="term" data-term="javascript">JavaScript</span> 객체로 표현한 것</b>입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="js">// 이런 JSX가
+&lt;div className="card"&gt;&lt;h1&gt;제목&lt;/h1&gt;&lt;/div&gt;
+
+// 이런 평범한 객체가 됩니다
+{
+  type: "div",
+  props: {
+    className: "card",
+    children: { type: "h1", props: { children: "제목" } }
+  }
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">동작 과정</span>
+<pre><code data-lang="text">상태 변경
+   ↓
+① 컴포넌트 함수를 다시 실행해 '새 가상 DOM'을 만든다
+   ↓
+② 이전 가상 DOM과 비교한다 (재조정, reconciliation)
+   ↓
+③ 실제로 달라진 부분만 골라낸다
+   ↓
+④ 그 부분만 진짜 DOM에 반영한다</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> "가상 DOM이 실제 DOM보다 빠르다"는 틀린 말입니다</p>
+<span class="mythline"><b class="no">오해</b> — 가상 DOM은 DOM 조작보다 빠른 기술이다.</span>
+<span class="mythline"><b class="yes">사실</b> — <b>가장 빠른 것은 항상 "필요한 것만 직접 고치는 것"</b>입니다.
+가상 DOM은 <b>객체를 만들고 비교하는 작업이 추가</b>되므로 <b>순수한 속도로는 더 느립니다.</b>
+React 팀도 이 점을 명확히 밝혀 왔습니다.</span>
+<span class="mythline">가상 DOM이 해결하는 것은 <b>"전체를 다시 그리겠다고 선언해도 실제로는 전체를 다시 그리지 않게"</b> 만드는 것입니다.
+즉 <b>선언형의 편리함을 감당 가능한 성능으로 제공</b>하는 장치입니다.</span>
+<span class="mythline">비교하자면 이렇습니다.<br>
+<b>손으로 최적화한 DOM 조작</b> ＞ <b>가상 DOM</b> ≫ <b>매번 <code>innerHTML</code>로 전체 교체</b><br>
+React가 이기는 대상은 세 번째이고, 첫 번째에는 집니다. 대신 <b>첫 번째는 사람이 유지할 수 없습니다.</b></span>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚖️</span> 그럼 왜 쓰나</p>
+<p style="margin-bottom:0"><b>속도를 조금 내주고 유지보수성을 크게 얻는 거래</b>입니다.
+그리고 실제 애플리케이션에서 그 "조금"은 대개 <b>사람이 체감하지 못하는 수준</b>입니다.
+반면 명령형으로 짠 화면이 커졌을 때 생기는 버그와 개발 속도 저하는 <b>명확히 체감됩니다.</b><br>
+참고로 <b>가상 DOM을 쓰지 않는</b> 선언형 도구도 있습니다(Svelte, Solid 등).
+빌드 시점에 "무엇이 바뀔지"를 계산해 두는 방식입니다. 선언형과 가상 DOM은 <b>같은 말이 아닙니다.</b></p>
+</div>
+
+<h2 id="library">React는 라이브러리입니다</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>React가 제공하는 것</th><th>제공하지 <b>않는</b> 것</th></tr></thead>
+<tbody>
+<tr><td><span class="term" data-term="component">컴포넌트</span>로 UI 만들기<br>상태 관리(기본)<br>화면 갱신</td><td><b><span class="term" data-term="routing">라우팅</span></b> — 별도 선택(68장)<br><b>데이터 페칭</b> — 별도 선택(67장)<br><b>스타일링</b> — 별도 선택(22장)<br><b>빌드·폴더 구조</b> — 별도 선택</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>32장의 라이브러리·프레임워크 구분을 떠올려 보세요.
+React는 <b>"내가 부르는"</b> 쪽입니다. 그래서 자유롭지만 <b>선택할 것이 많습니다.</b>
+이 선택 피로를 줄여 주는 것이 <b><span class="term" data-term="nextjs">Next.js</span> 같은 프레임워크</b>이고 9부에서 다룹니다.</p>
+
+<h2 id="why-popular">왜 널리 쓰이나</h2>
+<ul>
+<li><b>컴포넌트 재사용</b> — 버튼을 한 번 만들어 전체에서 씁니다.</li>
+<li><b>거대한 생태계</b> — 어떤 문제든 해결책과 사례가 있습니다.</li>
+<li><b>채용 시장</b> — 한국의 <span class="term" data-term="frontend">프론트엔드</span> 공고 대부분이 React를 요구합니다.</li>
+<li><b>React Native</b> — 같은 개념으로 모바일 앱까지.</li>
+<li><b>순수 JavaScript 실력이 그대로 쓰입니다</b> — 4·5부에서 배운 <span class="term" data-term="array-method">배열 메서드</span>, <span class="term" data-term="closure">클로저</span>, 구조 분해가 React 코드의 대부분입니다.</li>
+</ul>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 8부를 공부하는 방법</p>
+<ol style="margin-bottom:0">
+<li><b>4·5부를 이해했다면 React는 어렵지 않습니다.</b> React가 어려운 사람은 대개 JavaScript가 부족한 것입니다.
+막히면 해당 챕터로 돌아가세요.</li>
+<li><b>공식 문서가 매우 좋습니다.</b> <a href="https://ko.react.dev/" target="_blank" rel="noopener">ko.react.dev</a>는
+한국어 번역도 훌륭합니다. 이 책과 함께 보세요.</li>
+<li><b>클래스 컴포넌트 자료는 건너뛰세요.</b> 2019년 이전 자료에는
+<code>this.state</code>·<code>componentDidMount</code>가 나오는데, <b>지금은 쓰지 않습니다.</b></li>
+<li><b>직접 만들어 보세요.</b> 읽기만 해서는 절대 익혀지지 않습니다. 81장에 미니 프로젝트가 있습니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>명령형 DOM 조작은 <b>상태와 화면이 어긋나는 버그</b>를 구조적으로 만든다.</li>
+<li>React의 핵심은 <b><code>UI = f(state)</code></b> — 상태를 선언하면 화면은 따라온다.</li>
+<li><b>가상 DOM은 실제 DOM보다 빠르지 않다.</b> 선언형을 <b>감당 가능한 성능</b>으로 만들어 주는 장치다.</li>
+<li>React가 이기는 대상은 <b>매번 전체를 다시 그리는 방식</b>이지, 손으로 최적화한 조작이 아니다.</li>
+<li>선언형 ≠ 가상 DOM. 가상 DOM 없이 선언형을 구현한 도구도 있다.</li>
+<li>React는 <b>라이브러리</b>다. 라우팅·데이터 페칭·스타일은 직접 골라야 한다.</li>
+<li><b>JavaScript 실력이 React 실력의 상한</b>이다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.react.dev/learn" target="_blank" rel="noopener">React 공식 문서 — 학습하기 (한국어)</a></li>
+<li><a href="https://ko.react.dev/learn/thinking-in-react" target="_blank" rel="noopener">React로 사고하기</a></li>
+<li><a href="https://ko.react.dev/learn/preserving-and-resetting-state" target="_blank" rel="noopener">React — 상태 보존과 초기화(재조정 이해에 도움)</a></li>
+<li><a href="https://ko.react.dev/reference/react-dom/server" target="_blank" rel="noopener">React 공식 API 레퍼런스</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "\"가상 DOM은 실제 DOM 조작보다 빠르다\"는 주장의 문제는?",
+    o: [
+      "맞는 말이다",
+      "가상 DOM은 객체 생성과 비교라는 추가 작업이 있어 순수 속도로는 더 느리다. 가치는 선언형 프로그래밍을 감당 가능한 성능으로 가능하게 하는 데 있다",
+      "가상 DOM은 실제로 존재하지 않는다",
+      "실제 DOM은 조작할 수 없다"
+    ],
+    a: 1,
+    e: "가장 빠른 것은 <b>필요한 것만 직접 고치는 것</b>입니다. 가상 DOM은 그보다 느립니다. 다만 그렇게 손으로 최적화한 코드는 <b>사람이 유지할 수 없습니다</b>. React가 이기는 대상은 \"매번 전체를 다시 그리는 방식\"이며, 진짜 이득은 유지보수성입니다."
+  },
+  {
+    q: "<code>UI = f(state)</code>가 뜻하는 것은?",
+    o: [
+      "화면을 함수로 만들어야 한다는 문법 규칙",
+      "화면은 상태로부터 계산되는 결과이므로, 개발자는 각 상태에서의 모습만 선언하고 갱신 방법은 React가 처리한다",
+      "상태를 함수 안에 저장해야 한다",
+      "함수형 프로그래밍만 써야 한다"
+    ],
+    a: 1,
+    e: "명령형에서는 \"상태가 바뀌면 화면의 어디어디를 고쳐라\"를 전부 적어야 하고 <b>하나만 빠뜨려도 화면이 어긋납니다</b>. 선언형에서는 상태를 바꾸는 것만 하면 화면 전체가 그 상태로부터 다시 계산되므로 빠뜨릴 곳이 없습니다."
+  },
+  {
+    q: "React가 \"프레임워크가 아니라 라이브러리\"라는 말의 실질적 의미는?",
+    o: [
+      "React는 작은 도구라서 큰 앱을 만들 수 없다",
+      "라우팅·데이터 페칭·스타일링 같은 것을 직접 골라 조합해야 하며, React는 UI 렌더링에만 집중한다",
+      "React는 무료라는 뜻이다",
+      "React는 브라우저에서만 동작한다"
+    ],
+    a: 1,
+    e: "React는 <b>내가 호출하는</b> 도구입니다. 자유롭지만 선택할 것이 많아 초보자에게는 부담이 됩니다. 이 선택 피로를 줄이려고 Next.js 같은 <b>프레임워크</b>가 라우팅·데이터·빌드 규칙을 미리 정해 제공합니다(9부)."
+  },
+  {
+    q: "React에서 상태를 바꿨을 때 일어나는 과정의 순서는?",
+    o: [
+      "실제 DOM 전체를 다시 그린다",
+      "컴포넌트를 다시 실행해 새 가상 DOM을 만들고, 이전 것과 비교해 달라진 부분만 실제 DOM에 반영한다",
+      "브라우저를 새로고침한다",
+      "변경된 요소를 개발자가 직접 지정해야 한다"
+    ],
+    a: 1,
+    e: "이 비교 과정을 <b>재조정(reconciliation)</b>이라고 합니다. 개발자는 \"이 상태에서 화면은 이렇다\"만 선언하고, 실제 DOM에 무엇을 적용할지는 React가 계산합니다."
+  },
+  {
+    q: "React 학습이 어렵게 느껴지는 사람에게 가장 적절한 조언은?",
+    o: [
+      "React 문서를 반복해서 읽는다",
+      "대개 JavaScript 기초(배열 메서드·클로저·비동기·구조 분해)가 부족한 경우이므로 4·5부로 돌아간다",
+      "클래스 컴포넌트부터 배운다",
+      "다른 프레임워크로 바꾼다"
+    ],
+    a: 1,
+    e: "React 코드의 대부분은 <b>평범한 JavaScript</b>입니다. <code>map</code>으로 목록을 만들고, 클로저로 값을 기억하고, 전개 구문으로 새 객체를 만듭니다. 이 기초가 흔들리면 React 문법을 외워도 문제를 해결할 수 없습니다. 클래스 컴포넌트는 현재 새로 배울 필요가 없습니다."
+  }
+]);
+</script>
+</body>
+</html>

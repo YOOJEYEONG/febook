@@ -1,0 +1,355 @@
+<!--desc: Next.js의 데이터 페칭 방식, 캐싱과 재검증 전략, Server Actions로 데이터를 변경하는 법, 스트리밍과 병렬 로딩을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>서버 컴포넌트에서 데이터 가져오기</li>
+  <li><b>캐싱과 재검증</b> — 무엇을 얼마나 저장할지</li>
+  <li><b>Server Actions</b> — API 없이 데이터 변경하기</li>
+  <li><b>스트리밍</b>으로 느린 부분만 나중에 보내기</li>
+  <li>워터폴을 피하는 병렬 로딩</li>
+</ul>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📅</span> 캐싱 기본값은 버전마다 다릅니다</p>
+<p style="margin-bottom:0">Next.js의 <b>캐싱 동작은 메이저 버전마다 크게 바뀌어 왔습니다.</b>
+초기 App Router는 <code>fetch</code>를 기본으로 캐시했지만 이후 <b>기본을 캐시하지 않는 쪽</b>으로 바뀌었고,
+최신 버전에서는 <code>use cache</code> 같은 <b>명시적 캐시 지시어</b> 방향으로 정리되고 있습니다.<br>
+<b>따라서 "기본값이 무엇인지"를 외우지 마세요.</b>
+<b>개념</b>(무엇을 캐시할 수 있고, 언제 무효화하는가)을 이해하고
+<b>기본값은 여러분이 쓰는 버전의 문서에서 확인</b>하는 것이 옳습니다.</p>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분</p>
+
+<h2 id="fetch">서버에서 데이터 가져오기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">// 서버 컴포넌트는 async 함수가 될 수 있습니다 (69장)
+export default async function ProductPage({ params }) {
+  const { id } = await params;
+
+  // ① 외부 API
+  const res = await fetch(`https://api.example.com/products/${id}`);
+  if (!res.ok) throw new Error("불러오기 실패");     // error.tsx가 잡습니다
+  const product = await res.json();
+
+  // ② 또는 DB 직접 조회
+  // const product = await db.product.findUnique({ where: { id } });
+
+  return &lt;h1&gt;{product.name}&lt;/h1&gt;;
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✨</span> 이것이 얼마나 단순해진 것인지</p>
+<p style="margin-bottom:0">61장에서 본 <code>useEffect</code> 페칭과 비교해 보세요.
+<b><code>useState</code>도, <code>useEffect</code>도, 로딩 상태도, 경쟁 상태 처리도 없습니다.</b>
+그냥 <code>await</code>입니다. 로딩은 <code>loading.tsx</code>가, 오류는 <code>error.tsx</code>가 처리합니다(71장).<br>
+게다가 <b>API 키가 브라우저로 가지 않고</b>, 서버-DB 간 통신이라 <b>왕복이 짧습니다.</b></p>
+</div>
+
+<h2 id="cache">캐싱 개념</h2>
+
+<p>Next.js는 여러 층의 캐시를 씁니다. <b>층마다 목적이 다릅니다.</b></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>층</th><th>저장하는 것</th><th>목적</th></tr></thead>
+<tbody>
+<tr><td><b>데이터 캐시</b></td><td><code>fetch</code>·DB 조회 결과</td><td>같은 데이터를 반복 조회하지 않기</td></tr>
+<tr><td><b>전체 라우트 캐시</b></td><td>렌더링된 HTML</td><td>정적 페이지를 즉시 응답(SSG·ISR, 70장)</td></tr>
+<tr><td><b>요청 메모이제이션</b></td><td>같은 요청 중의 동일 호출</td><td>한 렌더링 안에서 <b>중복 호출 제거</b></td></tr>
+<tr><td><b>라우터 캐시</b></td><td>방문한 페이지</td><td>뒤로 가기를 즉시 표시</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">♻️</span> 요청 메모이제이션이 주는 자유</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="tsx">// 같은 렌더링 안에서 세 컴포넌트가 각자 호출해도
+// 실제 요청은 한 번만 나갑니다
+async function Header()  { const user = await getUser(); /* … */ }
+async function Sidebar() { const user = await getUser(); /* … */ }
+async function Profile() { const user = await getUser(); /* … */ }</code></pre>
+</div>
+<p style="margin-bottom:0">그래서 <b>데이터를 props로 계속 내려보낼 필요가 없습니다.</b>
+필요한 컴포넌트가 <b>각자 가져오면</b> 됩니다.
+63장의 props drilling 문제가 서버 컴포넌트에서는 다른 방식으로 해결됩니다.</p>
+</div>
+
+<h3 id="revalidate">재검증</h3>
+
+<div class="codeblock">
+<span class="cb-label">① 시간 기반 — ISR과 같은 개념 (70장)</span>
+<pre><code data-lang="tsx">// 페이지 단위
+export const revalidate = 3600;    // 1시간마다 갱신
+
+// 또는 fetch 단위
+await fetch(url, { next: { revalidate: 60 } });</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">② 온디맨드 — 바뀐 순간 갱신</span>
+<pre><code data-lang="ts">import { revalidatePath, revalidateTag } from "next/cache";
+
+// 데이터에 태그를 붙여 두고
+await fetch(url, { next: { tags: ["products"] } });
+
+// 변경이 일어나면 그 태그를 무효화합니다
+revalidateTag("products");
+revalidatePath("/products");</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔗</span> 67장과 같은 사고방식입니다</p>
+<p style="margin-bottom:0">TanStack Query의 <code>invalidateQueries</code>와 개념이 같습니다.
+<b>"이 데이터는 이제 낡았다"</b>고 표시하면 시스템이 알아서 갱신합니다.
+<b>어느 페이지가 그 데이터를 쓰는지 알 필요가 없습니다.</b></p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">③ 캐시하지 않기 — 항상 최신이어야 할 때</span>
+<pre><code data-lang="tsx">await fetch(url, { cache: "no-store" });
+
+// 또는 라우트 전체를 동적으로
+export const dynamic = "force-dynamic";</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🍪</span> 동적 함수를 쓰면 정적 생성이 해제됩니다</p>
+<p style="margin-bottom:0"><code>cookies()</code>·<code>headers()</code>·<code>searchParams</code>를 읽는 순간
+<b>"요청마다 달라지는 페이지"</b>가 되어 미리 만들어 둘 수 없습니다.<br>
+그래서 <b>페이지 최상단에서 무심코 <code>cookies()</code>를 호출하면</b>
+정적일 수 있었던 페이지가 전부 SSR이 됩니다.
+로그인 여부가 필요한 부분만 <b>작은 컴포넌트로 분리</b>하고 Suspense로 감싸면
+나머지는 정적으로 유지됩니다.</p>
+</div>
+
+<h2 id="actions">Server Actions</h2>
+
+<p><b>서버에서 실행되는 함수를 클라이언트에서 직접 호출</b>할 수 있게 하는 기능입니다.
+API 라우트를 만들지 않고도 데이터를 변경할 수 있습니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">// app/actions.ts
+"use server";                                    // ← 서버 전용 표시
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+
+const TodoSchema = z.object({ text: z.string().min(1).max(200) });
+
+export async function createTodo(formData: FormData) {
+  // ⭐ 클라이언트에서 오는 값이므로 반드시 검증합니다 (54·78장)
+  const parsed = TodoSchema.safeParse({ text: formData.get("text") });
+  if (!parsed.success) {
+    return { error: "내용을 입력해 주세요" };
+  }
+
+  // ⭐ 권한 검사도 여기서 (엔드포인트나 마찬가지입니다)
+  const session = await getSession();
+  if (!session) return { error: "로그인이 필요합니다" };
+
+  await db.todo.create({ data: { text: parsed.data.text, userId: session.userId } });
+
+  revalidatePath("/todos");                      // 목록 갱신
+  redirect("/todos");
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">폼에서 바로 쓰기 — JS 없이도 동작합니다</span>
+<pre><code data-lang="tsx">import { createTodo } from "./actions";
+
+export default function TodoForm() {
+  return (
+    &lt;form action={createTodo}&gt;
+      &lt;input name="text" required /&gt;
+      &lt;button&gt;추가&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📜</span> 점진적 향상</p>
+<p style="margin-bottom:0">이 폼은 <b>JavaScript가 로드되기 전이나 실패해도 동작합니다.</b>
+브라우저의 기본 폼 제출 동작을 그대로 쓰기 때문입니다(9장).
+JS가 준비되면 <b>새로고침 없이</b> 처리되는 방식으로 자연스럽게 향상됩니다.<br>
+69장의 <code>useActionState</code>·<code>useFormStatus</code>와 결합하면
+로딩 상태와 오류 표시까지 깔끔하게 만들 수 있습니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔓</span> Server Action은 <b>공개 엔드포인트</b>입니다</p>
+<p style="margin-bottom:0">"서버에서 실행되니 안전하다"는 <b>절반만 맞습니다.</b>
+Server Action은 <b>고유 주소를 가진 HTTP 엔드포인트로 노출</b>되며,
+누구나 직접 호출을 시도할 수 있습니다.<br>
+<b>따라서 모든 Server Action에서</b> ① 입력 검증 ② 인증 확인 ③ 권한 확인을
+<b>반드시</b> 해야 합니다. UI에서 버튼을 숨긴 것은 아무 보호도 되지 않습니다(78장).</p>
+</div>
+
+<h2 id="streaming">스트리밍</h2>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">import { Suspense } from "react";
+
+export default function Page() {
+  return (
+    &lt;&gt;
+      &lt;Header /&gt;                              {/* 즉시 전송 */}
+      &lt;ProductInfo /&gt;                          {/* 빠른 데이터 */}
+
+      &lt;Suspense fallback={&lt;ReviewSkeleton /&gt;}&gt;
+        &lt;Reviews /&gt;                            {/* 느린 데이터 — 준비되면 나중에 */}
+      &lt;/Suspense&gt;
+
+      &lt;Suspense fallback={&lt;RecommendSkeleton /&gt;}&gt;
+        &lt;Recommendations /&gt;
+      &lt;/Suspense&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🌊</span> 느린 하나가 전체를 막지 않게</p>
+<p style="margin-bottom:0">70장에서 SSR의 단점으로 <b>"느린 API 하나가 전체 전송을 막는다"</b>고 했습니다.
+스트리밍은 <b>준비된 부분부터 먼저 보내고</b> 나머지는 나중에 채웁니다.<br>
+추천 상품 API가 3초 걸려도 <b>상품 정보는 0.2초 만에</b> 보입니다.
+그 자리에는 스켈레톤이 표시되다가 준비되면 교체됩니다.</p>
+</div>
+
+<h3 id="waterfall">워터폴 피하기</h3>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">// ❌ 순차 실행 — 300ms (36장의 그 문제)
+const user = await getUser(id);
+const posts = await getPosts(id);
+const stats = await getStats(id);
+
+// ✅ 병렬 실행 — 100ms
+const [user, posts, stats] = await Promise.all([
+  getUser(id), getPosts(id), getStats(id)
+]);
+
+// ✅ 또는 컴포넌트를 나눠 각자 Suspense로 감싸면
+//    각 컴포넌트가 독립적으로 데이터를 가져와 병렬이 됩니다</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🪜</span> 컴포넌트 중첩이 워터폴을 만들 수 있습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="tsx">// ❌ Parent가 데이터를 받아야 Child가 렌더링되고, 그때서야 Child가 요청
+async function Parent() {
+  const user = await getUser();
+  return &lt;Child userId={user.id} /&gt;;
+}
+async function Child({ userId }) {
+  const posts = await getPosts(userId);   // 앞이 끝나야 시작됩니다
+}</code></pre>
+</div>
+<p style="margin-bottom:0">진짜 의존 관계라면 어쩔 수 없지만,
+<b>독립적인 데이터라면</b> 두 컴포넌트를 형제로 두고 각각 Suspense로 감싸세요.
+그러면 병렬로 진행됩니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트</p>
+<ol style="margin-bottom:0">
+<li><b>데이터를 쓰는 컴포넌트에서 가져오세요.</b> 요청 메모이제이션 덕분에 중복 호출이 자동으로 제거됩니다.</li>
+<li><b>동적 함수는 필요한 곳에만.</b> <code>cookies()</code> 한 줄이 페이지 전체를 동적으로 만듭니다.</li>
+<li><b>모든 Server Action에서 검증·인증·인가를 하세요.</b> 예외 없습니다.</li>
+<li><b>캐싱은 문서를 확인하세요.</b> 버전마다 기본값이 다릅니다. <code>npm run build</code> 출력에
+<b>각 라우트가 정적인지 동적인지</b> 표시되니 그것으로 확인하는 것이 확실합니다.</li>
+<li><b>클라이언트 데이터 라이브러리가 여전히 필요할 수 있습니다.</b>
+클라이언트 컴포넌트에서 자주 갱신되는 데이터를 다룬다면 TanStack Query(67장)를 함께 씁니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>서버 컴포넌트에서는 <b>그냥 <code>await</code></b>로 데이터를 가져온다. 로딩·오류는 특수 파일이 처리한다.</li>
+<li><b>요청 메모이제이션</b> 덕분에 여러 컴포넌트가 각자 가져와도 요청은 한 번이다.</li>
+<li>재검증은 <b>시간 기반</b>과 <b>온디맨드(태그·경로)</b> 두 가지다.</li>
+<li><code>cookies()</code>·<code>headers()</code>를 쓰면 <b>정적 생성이 해제</b>된다.</li>
+<li><b>Server Action</b>으로 API 없이 데이터를 변경한다. JS 없이도 폼이 동작한다.</li>
+<li><b>Server Action은 공개 엔드포인트다.</b> 검증·인증·인가가 필수다.</li>
+<li><b>스트리밍</b>으로 느린 부분이 전체를 막지 않게 한다.</li>
+<li>독립적인 데이터는 <b><code>Promise.all</code>이나 형제 Suspense</b>로 병렬 처리한다.</li>
+<li><b>캐싱 기본값은 버전마다 다르다.</b> 반드시 문서와 빌드 출력으로 확인한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://nextjs.org/docs/app/getting-started/fetching-data" target="_blank" rel="noopener">Next.js — 데이터 가져오기</a></li>
+<li><a href="https://nextjs.org/docs/app/getting-started/caching-and-revalidating" target="_blank" rel="noopener">Next.js — 캐싱과 재검증</a></li>
+<li><a href="https://nextjs.org/docs/app/getting-started/updating-data" target="_blank" rel="noopener">Next.js — Server Actions로 데이터 변경</a></li>
+<li><a href="https://nextjs.org/docs/app/api-reference/file-conventions/loading" target="_blank" rel="noopener">Next.js — 스트리밍과 loading</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "서버 컴포넌트 세 개가 각각 <code>await getUser()</code> 를 호출하면 실제 요청은 몇 번인가요?",
+    o: [
+      "세 번",
+      "한 번 — 같은 렌더링 안의 동일한 호출은 요청 메모이제이션으로 중복이 제거된다",
+      "컴포넌트 순서에 따라 다르다",
+      "요청이 전혀 나가지 않는다"
+    ],
+    a: 1,
+    e: "이 덕분에 <b>데이터를 props로 내려보낼 필요가 없습니다</b>. 필요한 컴포넌트가 각자 가져오면 되고, 중복은 프레임워크가 제거합니다. props drilling 문제가 서버 컴포넌트에서는 다른 방식으로 해결됩니다."
+  },
+  {
+    q: "페이지 최상단에서 <code>cookies()</code>를 호출하면 어떤 영향이 있나요?",
+    o: [
+      "아무 영향 없다",
+      "요청마다 달라지는 페이지가 되어 정적 생성이 해제되고 전체가 동적 렌더링된다",
+      "빌드가 실패한다",
+      "쿠키가 클라이언트로 전송된다"
+    ],
+    a: 1,
+    e: "쿠키는 <b>요청마다 다른 값</b>이므로 미리 HTML을 만들어 둘 수 없습니다. 정적일 수 있었던 페이지가 전부 SSR이 됩니다. 로그인 여부가 필요한 부분만 <b>작은 컴포넌트로 분리하고 Suspense로 감싸면</b> 나머지는 정적으로 유지됩니다."
+  },
+  {
+    q: "Server Action에서 입력 검증과 권한 확인을 반드시 해야 하는 이유는?",
+    o: [
+      "TypeScript가 요구하기 때문",
+      "Server Action은 고유 주소를 가진 HTTP 엔드포인트로 노출되어 누구나 직접 호출을 시도할 수 있기 때문",
+      "성능 때문에",
+      "캐시가 무효화되기 때문"
+    ],
+    a: 1,
+    e: "\"서버에서 실행되니 안전하다\"는 착각입니다. Server Action은 사실상 <b>API 엔드포인트</b>이고, UI에서 버튼을 숨기거나 비활성화한 것은 아무 보호도 되지 않습니다. 모든 액션에서 검증·인증·인가를 해야 합니다."
+  },
+  {
+    q: "상품 정보는 0.2초, 추천 목록은 3초가 걸립니다. 사용자가 상품 정보를 빨리 보게 하려면?",
+    o: [
+      "두 요청을 순차적으로 실행한다",
+      "추천 목록을 Suspense로 감싸 스트리밍한다. 준비된 부분부터 먼저 전송되고 느린 부분은 나중에 채워진다",
+      "추천 목록을 제거한다",
+      "클라이언트 렌더링으로 전환한다"
+    ],
+    a: 1,
+    e: "스트리밍이 없으면 <b>가장 느린 데이터가 전체 응답을 막습니다</b>(70장의 SSR 단점). Suspense 경계로 감싸면 그 부분만 대체 화면으로 먼저 보내고, 준비되면 교체되는 조각이 추가로 전송됩니다."
+  },
+  {
+    q: "Next.js의 캐싱 기본값에 대해 올바른 태도는?",
+    o: [
+      "한 번 외워 두면 계속 적용된다",
+      "메이저 버전마다 바뀌어 왔으므로 개념만 이해하고, 실제 동작은 사용 중인 버전의 문서와 빌드 출력으로 확인한다",
+      "캐싱은 항상 비활성화하는 것이 안전하다",
+      "캐싱은 프로덕션에서만 동작하므로 신경 쓸 필요 없다"
+    ],
+    a: 1,
+    e: "App Router의 캐싱 기본값은 여러 차례 바뀌었습니다. <b>무엇을 캐시할 수 있고 언제 무효화하는가</b>라는 개념은 안정적이지만 기본값은 그렇지 않습니다. <code>npm run build</code> 출력에 라우트별 정적/동적 표시가 나오므로 그것으로 확인하는 것이 확실합니다."
+  }
+]);
+</script>

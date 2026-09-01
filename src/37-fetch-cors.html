@@ -1,0 +1,389 @@
+<!--desc: fetch로 서버와 통신하는 법, response.ok를 반드시 확인해야 하는 이유, AbortController로 취소하기, 그리고 CORS 오류의 원인과 올바른 해결책을 설명합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>fetch</code>로 데이터를 주고받는 전체 흐름</li>
+  <li><b><code>fetch</code>는 404·500에도 실패하지 않는다</b> — 가장 중요한 함정</li>
+  <li>POST 요청과 헤더 다루기</li>
+  <li><code>AbortController</code>로 요청 취소하기</li>
+  <li><b>CORS 오류</b>의 정확한 원인과, 프론트엔드에서 고칠 수 없는 이유</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 실무 필수 챕터입니다</p>
+
+<h2 id="basic">fetch 기본</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">async function loadUsers() {
+  const response = await fetch("https://api.example.com/users");
+
+  // ⚠️ 이 줄이 없으면 404·500을 성공으로 착각합니다
+  if (!response.ok) {
+    throw new Error(`요청 실패: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data;
+}</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Response의 속성·메서드</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><code>response.ok</code></td><td>상태 코드가 <b>200~299</b>이면 <code>true</code></td></tr>
+<tr><td><code>response.status</code></td><td>숫자 상태 코드 (4장)</td></tr>
+<tr><td><code>response.headers.get("...")</code></td><td>응답 헤더 읽기</td></tr>
+<tr><td><code>await response.json()</code></td><td>본문을 JSON으로 파싱. <b>Promise를 반환</b>합니다</td></tr>
+<tr><td><code>await response.text()</code></td><td>본문을 문자열로</td></tr>
+<tr><td><code>await response.blob()</code></td><td>이미지·파일 등 이진 데이터로</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">💥</span> fetch의 가장 큰 함정</p>
+<span class="mythline"><b class="no">오해</b> — 서버가 404나 500을 돌려주면 <code>catch</code>로 간다.</span>
+<span class="mythline"><b class="yes">사실</b> — <b>가지 않습니다.</b> <code>fetch</code>는 <b>응답을 받는 데 성공했으면</b>
+그 내용이 무엇이든 <b>이행(fulfilled)</b>으로 처리합니다.
+"서버가 응답을 줬다"는 것 자체가 성공이라는 관점입니다.</span>
+<span class="mythline"><code>fetch</code>가 <b>거부(rejected)되는 경우</b>는 이런 것들뿐입니다:
+<b>네트워크 연결 실패, CORS 차단, 요청 취소, DNS 실패.</b></span>
+<span class="mythline">그래서 <b><code>if (!response.ok) throw ...</code>를 반드시</b> 써야 합니다.
+이것을 빠뜨려 "에러 페이지의 HTML을 JSON으로 파싱하려다 이상한 오류가 나는" 상황이 매우 흔합니다.</span>
+</div>
+
+<div class="runner" data-lang="js" data-title="응답 처리 흐름 연습" data-note="실제 서버 대신 가짜 fetch를 만들어 흐름만 연습합니다. 상태 코드를 바꿔 보세요.">
+<textarea class="rn-src">
+// 실제 fetch를 흉내 낸 가짜 함수 (오프라인에서도 동작하도록)
+function fakeFetch(url, { status = 200, body = { ok: true }, delay = 30 } = {}) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      if (status === 0) {
+        // 네트워크 자체가 실패한 경우에만 reject 됩니다
+        reject(new TypeError("Failed to fetch"));
+        return;
+      }
+      resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        statusText: { 200: "OK", 404: "Not Found", 500: "Internal Server Error" }[status] ?? "",
+        json: async () => body,
+        text: async () => JSON.stringify(body)
+      });
+    }, delay);
+  });
+}
+
+class HttpError extends Error {
+  constructor(status, statusText) {
+    super(`HTTP ${status} ${statusText}`);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
+async function request(url, options) {
+  const response = await fakeFetch(url, options);
+
+  if (!response.ok) {
+    throw new HttpError(response.status, response.statusText);
+  }
+  return response.json();
+}
+
+async function tryCase(label, options) {
+  try {
+    const data = await request("/api/users", options);
+    console.log(`✅ ${label}:`, data);
+  } catch (error) {
+    if (error instanceof HttpError) {
+      if (error.status === 404) console.error(`❌ ${label}: 데이터를 찾을 수 없습니다`);
+      else if (error.status >= 500) console.error(`❌ ${label}: 서버 오류 — 잠시 후 재시도`);
+      else console.error(`❌ ${label}: ${error.message}`);
+    } else {
+      console.error(`❌ ${label}: 네트워크 연결을 확인해 주세요 (${error.message})`);
+    }
+  }
+}
+
+(async () => {
+  await tryCase("정상", { status: 200, body: { users: ["홍길동"] } });
+  await tryCase("404", { status: 404 });
+  await tryCase("500", { status: 500 });
+  await tryCase("네트워크 끊김", { status: 0 });
+
+  console.log("--- ok 검사를 빠뜨리면 ---");
+  const bad = await fakeFetch("/api/users", { status: 404, body: { error: "not found" } });
+  const parsed = await bad.json();   // 오류 없이 지나갑니다
+  console.log("잘못 처리된 결과:", parsed, "← 성공으로 착각하게 됩니다");
+})();
+</textarea>
+</div>
+
+<h2 id="post">POST와 헤더</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">const response = await fetch("/api/users", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",     // 본문 형식을 알려 줍니다
+    "Authorization": `Bearer ${token}`
+  },
+  body: JSON.stringify({ name: "홍길동", email: "hong@example.com" })
+  //     ↑ 객체를 그냥 넣으면 안 됩니다. 문자열로 변환해야 합니다
+});</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">파일 업로드 — FormData</span>
+<pre><code data-lang="js">const formData = new FormData();
+formData.append("file", fileInput.files[0]);
+formData.append("title", "내 사진");
+
+await fetch("/api/upload", {
+  method: "POST",
+  body: formData
+  // ⚠️ Content-Type 을 직접 지정하지 마세요.
+  //    브라우저가 경계 문자열을 포함해 자동으로 설정합니다.
+});</code></pre>
+</div>
+
+<h2 id="abort">요청 취소하기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">const controller = new AbortController();
+
+fetch("/api/search?q=자바스크립트", { signal: controller.signal })
+  .then(res =&gt; res.json())
+  .catch(error =&gt; {
+    if (error.name === "AbortError") {
+      console.log("취소됨 — 정상 동작입니다");
+      return;
+    }
+    console.error(error);
+  });
+
+// 어디서든 취소할 수 있습니다
+controller.abort();</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">타임아웃 (표준 방법)</span>
+<pre><code data-lang="js">// AbortSignal.timeout — Chrome 103+, Safari 16+, Firefox 100+
+await fetch(url, { signal: AbortSignal.timeout(5000) });</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔄</span> 왜 취소가 필요한가</p>
+<ul style="margin-bottom:0">
+<li><b>검색어 자동완성</b> — 이전 검색 요청이 늦게 도착해 <b>최신 결과를 덮어쓰는</b> 문제(경쟁 상태)를 막습니다.</li>
+<li><b>화면 이동</b> — 사용자가 다른 페이지로 갔는데 이전 화면의 응답이 도착해 오류가 나는 것을 막습니다.</li>
+<li>React에서는 <code>useEffect</code>의 정리 함수에서 <code>abort()</code>를 호출하는 것이 정석입니다(61장).</li>
+</ul>
+</div>
+
+<h2 id="cors">CORS — 가장 많이 겪는 오류</h2>
+
+<div class="codeblock">
+<span class="cb-label">언젠가 반드시 보게 될 메시지</span>
+<pre><code data-lang="text">Access to fetch at 'https://api.other.com/data' from origin
+'http://localhost:3000' has been blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present on the requested resource.</code></pre>
+</div>
+
+<h3 id="why-cors">왜 막는가</h3>
+<p>3장에서 배운 <b>동일 출처 정책</b>이 출발점입니다.
+브라우저는 <b>다른 출처의 응답을 JavaScript가 읽는 것</b>을 기본적으로 막습니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🛡️</span> 없으면 무슨 일이 벌어질까</p>
+<p style="margin-bottom:0">여러분이 은행에 로그인한 상태로 공격자의 사이트에 방문했다고 합시다.
+그 사이트의 스크립트가 <code>fetch("https://mybank.com/api/account")</code>를 호출합니다.
+쿠키는 <b>브라우저가 자동으로</b> 붙이므로(4장) 서버는 정상 요청으로 처리합니다.<br>
+동일 출처 정책이 없다면 공격자는 <b>여러분의 계좌 정보를 그대로 읽을 수 있습니다.</b>
+CORS는 이것을 막기 위한 장치입니다.</p>
+</div>
+
+<h3 id="how-cors">어떻게 허용하는가</h3>
+<p><b>서버가 응답 헤더로 허락을 표시</b>해야 합니다.</p>
+<div class="codeblock">
+<pre><code data-lang="text">Access-Control-Allow-Origin: https://myapp.com
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+Access-Control-Allow-Headers: Content-Type, Authorization
+Access-Control-Allow-Credentials: true</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> 프론트엔드에서는 CORS를 고칠 수 없습니다</p>
+<span class="mythline"><b class="no">오해</b> — 요청 헤더를 잘 설정하면 CORS를 통과할 수 있다.</span>
+<span class="mythline"><b class="yes">사실</b> — <b>허가는 서버가 응답으로 내려주는 것</b>입니다.
+클라이언트가 스스로에게 허가를 줄 수 있다면 보안 장치의 의미가 없겠죠.
+요청 코드를 아무리 고쳐도 서버가 헤더를 주지 않으면 브라우저가 차단합니다.</span>
+<span class="mythline">참고로 <b>요청은 실제로 서버에 도달했고 서버는 처리까지 마쳤을 수 있습니다.</b>
+브라우저가 <b>응답을 JavaScript에 넘겨주지 않을 뿐</b>입니다.
+그래서 개발자 도구 Network 탭에는 200이 보이는데 코드에서는 오류가 나는 상황이 생깁니다.</span>
+</div>
+
+<h3 id="preflight">사전 요청(preflight)</h3>
+<p>어떤 요청은 본 요청을 보내기 전에 <b><code>OPTIONS</code> 요청으로 먼저 물어봅니다.</b>
+"이런 요청을 보내도 될까요?"라고 확인하는 것입니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>사전 요청이 <b>없는</b> 경우 (단순 요청)</th><th>사전 요청이 <b>필요한</b> 경우</th></tr></thead>
+<tbody>
+<tr><td>
+GET, HEAD, POST 중 하나이고<br>
+<code>Content-Type</code>이 <code>text/plain</code>,<br>
+<code>application/x-www-form-urlencoded</code>,<br>
+<code>multipart/form-data</code> 중 하나이며<br>
+특별한 헤더가 없을 때
+</td><td>
+PUT·DELETE·PATCH 사용<br>
+<b><code>Content-Type: application/json</code></b><br>
+<code>Authorization</code> 등 커스텀 헤더 사용
+</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>거의 모든 실무 API 요청은 사전 요청을 유발합니다.</b>
+JSON을 보내는 순간 <code>Content-Type: application/json</code>이 붙기 때문입니다.
+그래서 개발자 도구에 요청이 <b>두 번</b> 보이는 것을 자주 보게 됩니다.</p>
+
+<h3 id="cors-fix">해결 방법</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>상황</th><th>해결책</th></tr></thead>
+<tbody>
+<tr><td>내가 서버도 관리한다</td><td><b>서버에 CORS 헤더를 추가</b>합니다. 정공법입니다</td></tr>
+<tr><td>개발 중 로컬에서만 막힌다</td><td><b>개발 서버의 프록시 기능</b>을 씁니다. 같은 출처인 것처럼 우회합니다(47장)</td></tr>
+<tr><td>서버를 고칠 수 없다</td><td><b>내 서버를 하나 두고 대신 호출</b>하게 합니다. 서버 간 통신에는 CORS가 없습니다</td></tr>
+<tr><td>API 키가 필요한 외부 API</td><td><b>반드시</b> 서버를 경유해야 합니다. 키를 프론트엔드에 두면 노출됩니다(1·78장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🍪</span> 쿠키를 함께 보내려면</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">fetch(url, { credentials: "include" });   // 다른 출처에도 쿠키 전송</code></pre>
+</div>
+<p style="margin-bottom:0">이때 서버는 <code>Access-Control-Allow-Credentials: true</code>를 보내야 하고,
+<b><code>Access-Control-Allow-Origin</code>에 <code>*</code>를 쓸 수 없습니다.</b>
+정확한 출처를 명시해야 합니다. 보안상 당연한 제약입니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 요청 함수를 한 곳에 모으세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// api/client.js — 모든 요청이 이 함수를 통과하게 만듭니다
+const BASE_URL = import.meta.env.VITE_API_URL;
+
+export async function apiRequest(path, options = {}) {
+  const response = await fetch(BASE_URL + path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(getToken() &amp;&amp; { Authorization: `Bearer ${getToken()}` }),
+      ...options.headers
+    },
+    signal: AbortSignal.timeout(10000),
+    ...options
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) redirectToLogin();
+    throw new HttpError(response.status, await response.text());
+  }
+  if (response.status === 204) return null;   // 본문 없음
+  return response.json();
+}</code></pre>
+</div>
+<p style="margin-bottom:0">이렇게 모아 두면 <b>인증 토큰·타임아웃·에러 처리·재시도를 한 곳에서</b> 관리할 수 있습니다.
+실무에서는 이 역할을 axios나 TanStack Query 같은 도구가 대신하기도 합니다(67장).</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b><code>fetch</code>는 404·500에도 거부되지 않는다.</b> <code>if (!response.ok) throw</code>를 반드시 쓴다.</li>
+<li><code>fetch</code>가 거부되는 경우는 <b>네트워크 실패·CORS 차단·요청 취소</b> 정도다.</li>
+<li>JSON 전송은 <code>Content-Type: application/json</code> + <code>JSON.stringify(...)</code>.</li>
+<li><b><code>FormData</code>를 보낼 때는 <code>Content-Type</code>을 지정하지 않는다.</b></li>
+<li><code>AbortController</code>로 요청을 취소한다. 자동완성·화면 이동에 필수.</li>
+<li><b>CORS는 서버가 헤더로 허락</b>하는 것이다. 프론트엔드에서 고칠 수 없다.</li>
+<li>JSON을 보내면 대부분 <b>사전 요청(OPTIONS)</b>이 먼저 나간다.</li>
+<li><b>API 키는 반드시 서버를 경유</b>해야 한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/Fetch_API/Using_Fetch" target="_blank" rel="noopener">MDN — Fetch 사용하기</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Guides/CORS" target="_blank" rel="noopener">MDN — CORS</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/AbortController" target="_blank" rel="noopener">MDN — AbortController</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Response" target="_blank" rel="noopener">MDN — Response</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "서버가 404를 반환했을 때 <code>await fetch(url)</code> 는 어떻게 동작하나요?",
+    o: [
+      "예외를 던져 catch 블록으로 간다",
+      "정상적으로 이행되며, response.ok가 false일 뿐이다. 직접 확인해 예외를 던져야 한다",
+      "null을 반환한다",
+      "자동으로 재시도한다"
+    ],
+    a: 1,
+    e: "<code>fetch</code>는 <b>응답을 받는 데 성공했다면</b> 상태 코드와 무관하게 이행됩니다. 거부되는 것은 네트워크 실패·CORS 차단·취소 정도입니다. 따라서 <code>if (!response.ok) throw ...</code>가 필수이고, 이를 빠뜨리면 에러 응답 본문을 정상 데이터로 착각하게 됩니다."
+  },
+  {
+    q: "CORS 오류가 났습니다. 프론트엔드에서 할 수 있는 올바른 대응은?",
+    o: [
+      "요청 헤더에 <code>Access-Control-Allow-Origin</code>을 추가한다",
+      "서버에 CORS 허용 헤더를 추가해 달라고 요청하거나, 개발 중에는 개발 서버의 프록시를 쓰거나, 자체 서버를 경유한다",
+      "fetch 대신 XMLHttpRequest를 쓴다",
+      "mode: 'no-cors' 로 설정하면 응답을 읽을 수 있다"
+    ],
+    a: 1,
+    e: "<code>Access-Control-Allow-Origin</code>은 <b>응답 헤더</b>라 서버만 보낼 수 있습니다. 클라이언트가 스스로 허가할 수 있다면 보안 장치가 무의미하겠죠. <code>no-cors</code>는 오류를 없애는 대신 <b>응답 본문을 읽을 수 없는</b> 불투명 응답을 줍니다."
+  },
+  {
+    q: "<code>FormData</code>로 파일을 업로드할 때 <code>Content-Type</code>을 직접 지정하면 안 되는 이유는?",
+    o: [
+      "FormData는 Content-Type이 필요 없어서",
+      "브라우저가 데이터 구분에 쓰는 경계(boundary) 문자열을 포함해 자동 설정해야 하는데, 직접 지정하면 그 값이 빠져 서버가 파싱하지 못하기 때문",
+      "보안상 금지되어 있어서",
+      "파일 크기 제한 때문에"
+    ],
+    a: 1,
+    e: "<code>multipart/form-data</code>는 각 필드를 구분하는 <b>임의의 경계 문자열</b>이 헤더에 포함되어야 합니다. 브라우저가 본문을 만들면서 그 값을 생성하므로, 사람이 헤더를 덮어쓰면 경계 정보가 사라져 서버가 본문을 해석하지 못합니다."
+  },
+  {
+    q: "검색어 자동완성에서 <code>AbortController</code>가 필요한 이유는?",
+    o: [
+      "요청 속도를 높이기 위해",
+      "이전 검색 요청의 응답이 늦게 도착해 최신 결과를 덮어쓰는 경쟁 상태를 막기 위해",
+      "CORS를 우회하기 위해",
+      "서버 부하를 줄이는 유일한 방법이라서"
+    ],
+    a: 1,
+    e: "네트워크 응답은 <b>보낸 순서대로 도착하지 않습니다</b>. \"자바\"의 응답이 \"자바스크립트\"의 응답보다 늦게 오면 화면에 옛 결과가 표시됩니다. 새 요청을 보내기 전에 이전 요청을 <code>abort()</code>하면 이 문제가 사라집니다."
+  },
+  {
+    q: "<code>Content-Type: application/json</code> 으로 POST 요청을 보내면 개발자 도구에 요청이 두 개 보입니다. 이유는?",
+    o: [
+      "브라우저 버그다",
+      "단순 요청 조건을 벗어나 사전 요청(OPTIONS)이 먼저 나가 서버에 허용 여부를 확인하기 때문",
+      "재시도가 자동으로 일어나서",
+      "HTTP/2 때문에 요청이 복제되어서"
+    ],
+    a: 1,
+    e: "<code>application/json</code>은 단순 요청이 허용하는 <code>Content-Type</code> 목록에 없습니다. 그래서 브라우저는 본 요청 전에 <b><code>OPTIONS</code> 사전 요청</b>으로 허용 여부를 확인합니다. 실무 API 요청 대부분이 여기에 해당합니다."
+  }
+]);
+</script>

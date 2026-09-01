@@ -1,0 +1,376 @@
+<!--desc: try·catch·finally, Error 객체와 커스텀 에러, throw 시점, 비동기 에러 처리, 그리고 에러를 삼키지 않는 원칙을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>try</code>·<code>catch</code>·<code>finally</code>의 정확한 동작</li>
+  <li><code>Error</code> 객체와 <b>내가 만드는 에러</b></li>
+  <li><b>에러를 삼키지 마라</b> — 가장 중요한 원칙</li>
+  <li>비동기 코드에서 <code>try/catch</code>가 통하지 않는 경우</li>
+  <li>사용자에게 보여줄 메시지와 개발자용 정보 분리</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분</p>
+
+<h2 id="try">try / catch / finally</h2>
+
+<div class="runner" data-lang="js" data-title="기본 동작" data-note="finally가 언제 실행되는지 주목하세요.">
+<textarea class="rn-src">
+console.log("--- 기본 ---");
+try {
+  console.log("① 시도");
+  throw new Error("문제 발생");
+  console.log("② 여기는 실행되지 않습니다");
+} catch (error) {
+  console.log("③ 잡음:", error.message);
+} finally {
+  console.log("④ finally는 항상 실행됩니다");
+}
+
+console.log("--- 오류가 없어도 finally는 실행 ---");
+try {
+  console.log("정상 코드");
+} finally {
+  console.log("정리 작업");
+}
+
+console.log("--- return 이 있어도 finally는 실행 ---");
+function test() {
+  try {
+    return "try의 반환값";
+  } finally {
+    console.log("  return 직전에도 finally 실행");
+  }
+}
+console.log(test());
+
+console.log("--- 에러 객체가 필요 없으면 생략 가능 ---");
+try {
+  JSON.parse("잘못된 JSON");
+} catch {
+  console.log("파싱 실패 (에러 객체 생략)");
+}
+
+console.log("--- catch 안에서 또 오류가 나면 밖으로 전파됩니다 ---");
+try {
+  try {
+    throw new Error("첫 번째");
+  } catch (e) {
+    throw new Error("두 번째 (첫 번째 처리 중 발생)");
+  }
+} catch (e) {
+  console.log("바깥에서 잡음:", e.message);
+}
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧹</span> <code>finally</code>는 무엇에 쓰나</p>
+<p style="margin-bottom:0"><b>성공하든 실패하든 반드시 해야 하는 정리 작업</b>에 씁니다.
+로딩 스피너 끄기, 버튼 다시 활성화하기, 연결 닫기 같은 것입니다.</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">setLoading(true);
+try {
+  const data = await fetchData();
+  render(data);
+} catch (error) {
+  showError(error);
+} finally {
+  setLoading(false);   // 성공·실패 어느 쪽이든 스피너는 꺼야 합니다
+}</code></pre>
+</div>
+</div>
+
+<h2 id="error-object">Error 객체</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>속성</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>에러 종류. <code>"TypeError"</code>, <code>"SyntaxError"</code> 등</td></tr>
+<tr><td><code>message</code></td><td>사람이 읽을 설명</td></tr>
+<tr><td><code>stack</code></td><td>어디서 발생했는지의 호출 경로. <b>표준은 아니지만</b> 모든 주요 환경이 제공합니다</td></tr>
+<tr><td><code>cause</code></td><td>원인이 된 다른 에러 (아래 참고)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>내장 에러 종류</th><th>언제</th></tr></thead>
+<tbody>
+<tr><td><code>TypeError</code></td><td>타입이 맞지 않음. <code>null.x</code>, <code>x is not a function</code></td></tr>
+<tr><td><code>ReferenceError</code></td><td>없는 변수 참조. TDZ 위반</td></tr>
+<tr><td><code>SyntaxError</code></td><td>문법 오류. <code>JSON.parse</code> 실패도 여기</td></tr>
+<tr><td><code>RangeError</code></td><td>허용 범위를 벗어남. 무한 재귀 등</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="custom">내가 만드는 에러</h2>
+
+<div class="runner" data-lang="js" data-title="커스텀 에러 클래스" data-note="에러에 필요한 정보를 담아 두면 처리하는 쪽이 훨씬 편해집니다.">
+<textarea class="rn-src">
+class ValidationError extends Error {
+  constructor(field, message) {
+    super(message);
+    this.name = "ValidationError";   // name을 설정하는 것이 관례입니다
+    this.field = field;              // 추가 정보를 담을 수 있습니다
+  }
+}
+
+class NetworkError extends Error {
+  constructor(status, url) {
+    super(`요청 실패 (${status})`);
+    this.name = "NetworkError";
+    this.status = status;
+    this.url = url;
+  }
+  get isRetryable() {
+    return this.status >= 500;       // 서버 오류만 재시도 가치가 있습니다
+  }
+}
+
+function validate(user) {
+  if (!user.email) throw new ValidationError("email", "이메일을 입력해 주세요");
+  if (!user.email.includes("@")) throw new ValidationError("email", "이메일 형식이 아닙니다");
+  return true;
+}
+
+console.log("--- 에러 종류에 따라 다르게 처리 ---");
+const cases = [
+  () => validate({}),
+  () => validate({ email: "hong" }),
+  () => { throw new NetworkError(500, "/api/users"); },
+  () => { throw new NetworkError(404, "/api/users"); },
+  () => { throw new Error("알 수 없는 오류"); }
+];
+
+for (const run of cases) {
+  try {
+    run();
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      console.log(`입력 오류 [${error.field}]: ${error.message}`);
+    } else if (error instanceof NetworkError) {
+      console.log(`네트워크 오류 ${error.status} — 재시도 가치: ${error.isRetryable}`);
+    } else {
+      console.error("예상 못 한 오류:", error.message);
+    }
+  }
+}
+
+console.log("--- cause: 원인을 이어 붙이기 ---");
+try {
+  try {
+    JSON.parse("{bad}");
+  } catch (parseError) {
+    throw new Error("설정 파일을 읽을 수 없습니다", { cause: parseError });
+  }
+} catch (error) {
+  console.log("겉:", error.message);
+  console.log("원인:", error.cause.name);
+}
+</textarea>
+</div>
+
+<h2 id="swallow">가장 중요한 원칙: 에러를 삼키지 마라</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🕳️</span> 최악의 코드</p>
+<div class="codeblock" style="margin:.6em 0">
+<pre><code data-lang="js">try {
+  doSomething();
+} catch (e) {
+  // 아무것도 안 함
+}</code></pre>
+</div>
+<p style="margin-bottom:0">오류가 나도 <b>아무도 모릅니다.</b> 화면은 조용히 잘못된 상태가 되고,
+나중에 전혀 다른 곳에서 이상한 증상으로 나타납니다.
+<b>버그를 고친 게 아니라 숨긴 것</b>입니다.
+"일단 오류만 안 나게" 하려고 넣는 이 코드가 디버깅을 몇 배로 어렵게 만듭니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">catch 안에서 해야 할 일 (최소 하나)</span>
+<pre><code data-lang="js">catch (error) {
+  // ① 기록한다 — 개발자가 알 수 있게
+  console.error("주문 생성 실패:", error);
+
+  // ② 사용자에게 알린다 — 무엇을 해야 할지 함께
+  showToast("주문에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+
+  // ③ 대안을 실행한다
+  useCachedData();
+
+  // ④ 처리할 수 없으면 다시 던진다
+  throw error;
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 처리할 수 없으면 던지세요</p>
+<p style="margin-bottom:0"><b>"여기서 이 에러를 의미 있게 처리할 수 있는가?"</b>를 스스로 물어보세요.
+답이 "아니오"라면 <code>try/catch</code>를 쓰지 말고 <b>호출한 쪽으로 올려 보내는</b> 것이 맞습니다.
+에러 처리는 <b>그것을 처리할 수 있는 층</b>에서 하는 것이 원칙입니다.</p>
+</div>
+
+<h2 id="async">비동기에서의 에러</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⏱️</span> <code>try/catch</code>가 통하지 않는 경우</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 잡히지 않습니다
+try {
+  setTimeout(() =&gt; {
+    throw new Error("나중에 터짐");
+  }, 100);
+} catch (error) {
+  console.log("여기 안 옵니다");
+}
+
+// ✅ 콜백 안에서 처리해야 합니다
+setTimeout(() =&gt; {
+  try {
+    riskyOperation();
+  } catch (error) {
+    console.error(error);
+  }
+}, 100);</code></pre>
+</div>
+<p style="margin-bottom:0"><code>try</code> 블록은 <b>그 순간 실행되는 코드</b>만 감쌉니다.
+<code>setTimeout</code>은 콜백을 <b>예약만 하고 즉시 끝나므로</b>, 100ms 뒤 콜백이 실행될 때는
+이미 <code>try</code> 블록을 빠져나온 상태입니다. 35·36장에서 이유를 정확히 다룹니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">async/await 에서는 정상 동작합니다 (36장)</span>
+<pre><code data-lang="js">async function loadUser(id) {
+  try {
+    const response = await fetch(`/api/users/${id}`);
+
+    // ⚠️ fetch는 404·500에도 에러를 던지지 않습니다! (37장)
+    if (!response.ok) {
+      throw new NetworkError(response.status, response.url);
+    }
+    return await response.json();
+  } catch (error) {
+    if (error instanceof NetworkError) { /* … */ }
+    throw error;   // 처리 못 하면 올려 보냅니다
+  }
+}</code></pre>
+</div>
+
+<h2 id="global">마지막 그물</h2>
+<div class="codeblock">
+<pre><code data-lang="js">// 잡히지 않은 동기 에러
+window.addEventListener("error", (event) =&gt; {
+  reportToServer({ message: event.message, source: event.filename });
+});
+
+// 잡히지 않은 Promise 거부
+window.addEventListener("unhandledrejection", (event) =&gt; {
+  reportToServer({ reason: String(event.reason) });
+});</code></pre>
+</div>
+<p>실제 서비스에서는 Sentry 같은 도구가 이 일을 대신 해 줍니다(79장).
+<b>사용자가 겪은 오류를 개발자가 모르는 상태</b>가 가장 위험하기 때문입니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 사용자용 메시지와 개발자용 정보를 분리하세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">catch (error) {
+  // 개발자용: 전부 기록
+  console.error("[주문 생성]", error);
+  reportToSentry(error);
+
+  // 사용자용: 짧고, 다음 행동을 알려 주는 문장
+  showToast("주문에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+  // ❌ "TypeError: Cannot read properties of undefined" 를 그대로 보여주지 마세요
+  // ❌ 서버 내부 경로·SQL·스택 트레이스 노출은 보안 문제이기도 합니다(78장)
+}</code></pre>
+</div>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>finally</code>는 <b>성공·실패·<code>return</code> 어느 쪽이든</b> 실행된다. 정리 작업에 쓴다.</li>
+<li><code>Error</code>는 <code>name</code>·<code>message</code>·<code>stack</code>·<code>cause</code>를 가진다.</li>
+<li><code>extends Error</code>로 <b>커스텀 에러</b>를 만들면 종류별 처리가 쉬워진다.</li>
+<li><b>빈 <code>catch</code>는 버그를 숨긴다.</b> 기록·알림·대안·재던짐 중 최소 하나는 해야 한다.</li>
+<li><b>처리할 수 없으면 잡지 말고 올려 보낸다.</b></li>
+<li><code>setTimeout</code> 콜백의 에러는 바깥 <code>try/catch</code>로 <b>잡히지 않는다.</b></li>
+<li><code>window</code>의 <code>error</code>·<code>unhandledrejection</code>으로 마지막 그물을 친다.</li>
+<li>사용자에게는 <b>짧고 행동 가능한 문장</b>, 개발자에게는 전체 정보.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Statements/try...catch" target="_blank" rel="noopener">MDN — try...catch</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Error" target="_blank" rel="noopener">MDN — Error</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/cause" target="_blank" rel="noopener">MDN — Error.cause</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/unhandledrejection_event" target="_blank" rel="noopener">MDN — unhandledrejection 이벤트</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>try { setTimeout(() =&gt; { throw new Error(\"x\") }, 100) } catch (e) { … }</code> 에서 에러가 잡히지 않는 이유는?",
+    o: [
+      "setTimeout은 에러를 던질 수 없어서",
+      "try 블록은 그 순간 실행되는 코드만 감싸는데, 콜백은 100ms 뒤 별도로 실행되어 이미 try를 벗어난 상태이기 때문",
+      "화살표 함수를 써서",
+      "지연 시간이 100ms라서"
+    ],
+    a: 1,
+    e: "<code>setTimeout</code>은 콜백을 <b>예약만 하고 즉시 반환</b>합니다. <code>try</code> 블록은 그 시점에 이미 끝났고, 나중에 실행되는 콜백은 전혀 다른 실행 맥락에 있습니다. 에러 처리는 <b>콜백 안에서</b> 해야 합니다."
+  },
+  {
+    q: "<code>catch (e) { }</code> 처럼 비워 두는 것이 위험한 이유는?",
+    o: [
+      "문법 오류이기 때문",
+      "오류가 조용히 무시되어 아무도 문제를 모르게 되고, 잘못된 상태가 나중에 엉뚱한 곳에서 증상으로 나타나기 때문",
+      "성능이 느려지기 때문",
+      "브라우저가 경고를 띄우기 때문"
+    ],
+    a: 1,
+    e: "빈 <code>catch</code>는 <b>버그를 고치는 것이 아니라 숨기는 것</b>입니다. 최소한 <code>console.error</code>로 기록하거나, 사용자에게 알리거나, 대안을 실행하거나, 처리할 수 없다면 다시 던져야 합니다."
+  },
+  {
+    q: "<code>finally</code> 블록이 실행되지 <b>않는</b> 경우는?",
+    o: [
+      "try에서 에러가 발생했을 때",
+      "try에서 return을 했을 때",
+      "catch에서 또 에러를 던졌을 때",
+      "위 셋 모두 실행된다"
+    ],
+    a: 3,
+    e: "<code>finally</code>는 <b>정상 종료·예외 발생·<code>return</code>·<code>catch</code> 내부 예외</b> 어느 경우에도 실행됩니다. 그래서 로딩 상태 해제나 연결 종료처럼 \"반드시 해야 하는 정리\"에 적합합니다."
+  },
+  {
+    q: "<code>class ValidationError extends Error</code> 처럼 커스텀 에러를 만드는 이점은?",
+    o: [
+      "에러 발생을 막을 수 있다",
+      "<code>instanceof</code>로 종류를 구분해 상황별로 다르게 처리할 수 있고, 필드명 같은 추가 정보를 담을 수 있다",
+      "스택 트레이스가 짧아진다",
+      "try/catch 없이도 처리된다"
+    ],
+    a: 1,
+    e: "메시지 문자열을 비교해 분기하는 것은 깨지기 쉽습니다. 에러 클래스를 나누면 <code>instanceof</code>로 안전하게 구분할 수 있고, <code>field</code>·<code>status</code> 같은 <b>처리에 필요한 데이터</b>를 함께 실어 보낼 수 있습니다."
+  },
+  {
+    q: "함수 안에서 어떤 에러를 <b>의미 있게 처리할 수 없을 때</b> 올바른 행동은?",
+    o: [
+      "빈 catch로 잡아서 무시한다",
+      "잡지 말고 호출한 쪽으로 전파되게 두거나, 잡았다면 다시 던진다",
+      "false를 반환한다",
+      "프로그램을 종료한다"
+    ],
+    a: 1,
+    e: "에러 처리는 <b>그것을 처리할 수 있는 층</b>에서 해야 합니다. 아래 층에서 무작정 잡아 버리면 위층은 문제가 있었는지도 모릅니다. 문맥 정보를 덧붙이고 싶다면 <code>new Error(\"...\", { cause: error })</code>로 감싸 다시 던지면 됩니다."
+  }
+]);
+</script>

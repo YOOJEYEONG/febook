@@ -1,0 +1,333 @@
+<!--desc: 서버 상태 관리의 어려움, TanStack Query의 캐싱·재검증·뮤테이션, 낙관적 업데이트, 로딩과 에러 UI 설계를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>직접 만든 데이터 페칭에 <b>무엇이 부족한지</b></li>
+  <li>TanStack Query의 <b>캐싱과 재검증</b> 모델</li>
+  <li>데이터 변경(뮤테이션)과 <b>캐시 무효화</b></li>
+  <li><b>낙관적 업데이트</b></li>
+  <li>로딩·에러 UI를 제대로 설계하기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분</p>
+
+<h2 id="problem">직접 만들면 부족한 것들</h2>
+
+<p>61장에서 <code>useEffect</code>로 데이터를 가져오는 코드를 봤습니다.
+거기에 아직 없는 것들이 이만큼입니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>필요한 것</th><th>없으면</th></tr></thead>
+<tbody>
+<tr><td><b>캐싱</b></td><td>같은 화면을 다시 열 때마다 처음부터 로딩. 뒤로 가기가 느립니다</td></tr>
+<tr><td><b>중복 요청 제거</b></td><td>세 컴포넌트가 같은 데이터를 쓰면 요청이 세 번 나갑니다</td></tr>
+<tr><td><b>재검증</b></td><td>다른 탭에 갔다 오면 낡은 데이터가 그대로 보입니다</td></tr>
+<tr><td><b>경쟁 상태 처리</b></td><td>늦게 온 옛 응답이 최신 데이터를 덮어씁니다(37·61장)</td></tr>
+<tr><td><b>재시도</b></td><td>일시적인 네트워크 오류에 바로 실패 화면</td></tr>
+<tr><td><b>변경 후 갱신</b></td><td>글을 쓰고 목록으로 돌아가면 새 글이 없습니다</td></tr>
+<tr><td><b>페이지네이션·무한 스크롤</b></td><td>직접 구현하면 상태가 매우 복잡해집니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 이것들은 전부 "서버 상태"의 문제입니다</p>
+<p style="margin-bottom:0">65장에서 말한 그대로입니다.
+서버 데이터는 <b>우리가 가진 사본</b>일 뿐이고 언제든 낡을 수 있습니다.
+이 문제를 전담하는 도구가 <b>TanStack Query</b>(옛 React Query)와 <b>SWR</b>입니다.</p>
+</div>
+
+<h2 id="query">기본 사용법</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">import { useQuery } from "@tanstack/react-query";
+
+function UserProfile({ userId }) {
+  const { data, isPending, isError, error, refetch } = useQuery({
+    queryKey: ["user", userId],          // ⭐ 캐시의 이름표
+    queryFn: async () =&gt; {
+      const res = await fetch(`/api/users/${userId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);   // 37장
+      return res.json();
+    },
+    staleTime: 60_000                     // 1분간은 "신선하다"고 간주
+  });
+
+  if (isPending) return &lt;Spinner /&gt;;
+  if (isError) return &lt;ErrorBox message={error.message} onRetry={refetch} /&gt;;
+  return &lt;div&gt;{data.name}&lt;/div&gt;;
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔑</span> <code>queryKey</code>가 전부입니다</p>
+<p style="margin-bottom:0"><code>queryKey</code>는 <b>캐시의 이름표</b>이자 <b>의존성 배열</b>입니다.</p>
+<ul style="margin-bottom:0">
+<li>같은 키 = <b>같은 데이터</b>. 여러 컴포넌트가 써도 <b>요청은 한 번</b>입니다.</li>
+<li>키가 바뀌면 <b>자동으로 다시 가져옵니다.</b> <code>useEffect</code> 의존성을 손으로 관리할 필요가 없습니다.</li>
+<li>쿼리에 쓰는 <b>모든 변수</b>를 키에 넣어야 합니다. <code>["todos", { page, filter }]</code></li>
+</ul>
+</div>
+
+<h3 id="cache">캐시 모델 — 두 가지 시간</h3>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>설정</th><th>뜻</th></tr></thead>
+<tbody>
+<tr><td><b><code>staleTime</code></b></td><td>이 시간 동안은 데이터를 <b>신선하다고 간주</b>해 다시 가져오지 않습니다. <b>기본값 0</b></td></tr>
+<tr><td><b><code>gcTime</code></b></td><td>화면에서 사라진 데이터를 <b>메모리에 남겨 두는 시간</b>. 기본 5분</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">동작 흐름</span>
+<pre><code data-lang="text">화면 진입
+  ↓
+캐시에 데이터가 있는가?
+  ├─ 있고 신선함(staleTime 이내) → 그대로 사용. 요청 없음
+  ├─ 있지만 낡음 → 캐시를 '즉시 화면에 보여주고' 뒤에서 새로 받아 교체
+  └─ 없음 → 로딩 표시 후 요청</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚡</span> "낡은 것을 먼저 보여주고 뒤에서 갱신"</p>
+<p style="margin-bottom:0">이 전략(stale-while-revalidate)이 <b>체감 속도를 극적으로 바꿉니다.</b>
+목록 → 상세 → 뒤로 가기를 했을 때
+로딩 스피너 없이 <b>즉시</b> 목록이 나타나고, 변경분만 조용히 반영됩니다.<br>
+직접 만든 <code>useEffect</code> 페칭은 <b>뒤로 갈 때마다 흰 화면 + 스피너</b>입니다. 차이가 큽니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">기본 재검증 시점</span>
+<pre><code data-lang="js">{
+  refetchOnWindowFocus: true,   // 다른 탭 갔다 돌아오면
+  refetchOnReconnect: true,     // 네트워크가 복구되면
+  refetchOnMount: true          // 컴포넌트가 다시 마운트되면
+}
+// 모두 "낡았을 때만" 동작합니다. staleTime 이내면 요청하지 않습니다.</code></pre>
+</div>
+
+<h2 id="mutation">데이터 변경</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+function AddTodo() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (newTodo) =&gt;
+      fetch("/api/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newTodo)
+      }).then(r =&gt; {
+        if (!r.ok) throw new Error("추가 실패");
+        return r.json();
+      }),
+
+    onSuccess: () =&gt; {
+      // ⭐ 목록 캐시를 무효화 → 자동으로 다시 가져옵니다
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+    }
+  });
+
+  return (
+    &lt;button
+      onClick={() =&gt; mutation.mutate({ text: "새 할 일" })}
+      disabled={mutation.isPending}          // 중복 제출 방지 (62장)
+    &gt;
+      {mutation.isPending ? "추가 중…" : "추가"}
+    &lt;/button&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">♻️</span> 무효화가 핵심 개념입니다</p>
+<p style="margin-bottom:0">"글을 썼으니 목록을 다시 불러와야지"를 <b>직접 호출하지 않습니다.</b>
+<b>"이 키의 데이터는 이제 낡았다"고 표시</b>하면,
+그 데이터를 <b>보고 있는 화면들이 알아서</b> 다시 가져옵니다.<br>
+화면이 여러 개여도, 어느 화면이 그 데이터를 쓰는지 몰라도 됩니다.
+57장의 <b>선언형 사고</b>가 데이터 계층까지 확장된 것입니다.</p>
+</div>
+
+<h3 id="optimistic">낙관적 업데이트</h3>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">const toggleTodo = useMutation({
+  mutationFn: updateTodoOnServer,
+
+  onMutate: async (newTodo) =&gt; {
+    // ① 진행 중인 요청 취소 (덮어쓰기 방지)
+    await queryClient.cancelQueries({ queryKey: ["todos"] });
+    // ② 되돌리기용으로 현재 값 저장
+    const previous = queryClient.getQueryData(["todos"]);
+    // ③ 서버 응답을 기다리지 않고 화면부터 바꿈
+    queryClient.setQueryData(["todos"], (old) =&gt;
+      old.map(t =&gt; t.id === newTodo.id ? newTodo : t)
+    );
+    return { previous };
+  },
+
+  onError: (error, variables, context) =&gt; {
+    // ④ 실패하면 되돌립니다
+    queryClient.setQueryData(["todos"], context.previous);
+    showToast("변경에 실패했습니다");
+  },
+
+  onSettled: () =&gt; {
+    // ⑤ 성공·실패 관계없이 서버 기준으로 다시 맞춥니다
+    queryClient.invalidateQueries({ queryKey: ["todos"] });
+  }
+});</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">👍</span> 언제 쓰나</p>
+<p style="margin-bottom:0"><b>거의 항상 성공하고, 실패해도 되돌리기 쉬운</b> 동작에 씁니다.
+좋아요, 체크박스 토글, 즐겨찾기.
+체크박스를 눌렀는데 <b>0.5초 뒤에 체크되는</b> 것과 <b>즉시 체크되는</b> 것의 체감은 완전히 다릅니다.<br>
+반대로 <b>결제·삭제처럼 되돌리기 어려운 것</b>에는 쓰지 마세요.
+잘못된 상태를 사용자에게 보여주는 위험이 이득보다 큽니다.</p>
+</div>
+
+<h2 id="ui">로딩과 에러 UI</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상태</th><th>의미</th><th>화면</th></tr></thead>
+<tbody>
+<tr><td><code>isPending</code></td><td>캐시가 없고 <b>처음 가져오는 중</b></td><td>스켈레톤 또는 스피너</td></tr>
+<tr><td><code>isFetching</code></td><td><b>배경에서</b> 갱신 중 (데이터는 이미 있음)</td><td>작은 표시만. 전체를 가리지 마세요</td></tr>
+<tr><td><code>isError</code></td><td>실패</td><td>메시지 + <b>다시 시도 버튼</b></td></tr>
+<tr><td>데이터가 빈 배열</td><td>성공했지만 결과 없음</td><td><b>빈 상태 화면</b> — 오류와 구분해야 합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💀</span> 스켈레톤을 쓰세요</p>
+<p style="margin-bottom:0">스피너보다 <b>실제 콘텐츠 모양의 회색 뼈대</b>가 낫습니다.</p>
+<ul style="margin-bottom:0">
+<li><b>레이아웃이 미리 잡혀</b> 데이터가 와도 화면이 튀지 않습니다(8장 CLS)</li>
+<li>무엇이 올지 예상되어 <b>체감 대기 시간이 짧아집니다</b></li>
+</ul>
+<p style="margin-bottom:0">다만 <b>200ms 안에 끝날 로딩에는 아무것도 보여주지 않는 편</b>이 낫습니다.
+번쩍이는 스켈레톤이 더 거슬립니다.</p>
+</div>
+
+<h2 id="swr">SWR과의 비교</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>TanStack Query</th><th>SWR</th></tr></thead>
+<tbody>
+<tr><td>규모</td><td>기능이 많고 무겁습니다</td><td><b>가볍고 단순</b>합니다</td></tr>
+<tr><td>뮤테이션</td><td>강력한 <code>useMutation</code></td><td>상대적으로 단순</td></tr>
+<tr><td>개발 도구</td><td><b>전용 DevTools</b>가 훌륭합니다</td><td>상대적으로 약함</td></tr>
+<tr><td>선택 기준</td><td>복잡한 앱, 캐시 제어가 중요할 때</td><td>단순한 조회 위주</td></tr>
+</tbody>
+</table>
+</div>
+<p>Next.js를 쓴다면 <b>서버 컴포넌트에서 직접 데이터를 가져오는 방식</b>도 있습니다(9부).
+그 경우 클라이언트 데이터 라이브러리의 필요성이 줄어듭니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트</p>
+<ol>
+<li><b><code>queryKey</code>를 한곳에서 관리하세요.</b> 문자열을 여기저기 흩어 쓰면 오타로 캐시가 안 맞습니다.
+<code>const todoKeys = { all: ["todos"], detail: (id) =&gt; ["todos", id] }</code> 같은 팩토리를 만듭니다.</li>
+<li><b><code>staleTime</code>을 상황에 맞게.</b> 기본값 0은 화면에 들어올 때마다 요청합니다.
+자주 안 바뀌는 데이터라면 몇 분으로 늘리세요.</li>
+<li><b>DevTools를 켜 두세요.</b> 어떤 쿼리가 언제 실행되고 캐시가 어떤 상태인지 <b>눈으로</b> 볼 수 있습니다.</li>
+<li><b>에러 처리를 UI로 만드세요.</b> "다시 시도" 버튼이 없는 에러 화면은 사용자를 막다른 길에 세웁니다.</li>
+<li><b>빈 상태를 잊지 마세요.</b> 데이터가 0개일 때 "아직 항목이 없습니다 + 만들기 버튼"을 보여줘야 합니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>직접 만든 페칭에는 <b>캐싱·중복 제거·재검증·재시도</b>가 없다.</li>
+<li><b><code>queryKey</code>가 캐시의 이름표이자 의존성</b>이다. 쓰는 변수를 전부 넣는다.</li>
+<li><b><code>staleTime</code></b>이 "얼마나 신선하다고 볼지"를 정한다. 기본값은 0.</li>
+<li><b>낡은 캐시를 먼저 보여주고 뒤에서 갱신</b>하는 전략이 체감 속도를 바꾼다.</li>
+<li>변경 후에는 <b><code>invalidateQueries</code>로 무효화</b>만 하면 관련 화면이 알아서 갱신된다.</li>
+<li><b>낙관적 업데이트</b>는 되돌리기 쉬운 동작에만. 결제·삭제에는 쓰지 않는다.</li>
+<li><code>isPending</code>(첫 로딩)과 <code>isFetching</code>(배경 갱신)을 <b>구분</b>해서 UI를 만든다.</li>
+<li><b>빈 상태와 에러 상태</b>를 반드시 따로 설계한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://tanstack.com/query/latest/docs/framework/react/overview" target="_blank" rel="noopener">TanStack Query 공식 문서</a></li>
+<li><a href="https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults" target="_blank" rel="noopener">TanStack Query — 중요한 기본값</a></li>
+<li><a href="https://swr.vercel.app/ko" target="_blank" rel="noopener">SWR (한국어 문서)</a></li>
+<li><a href="https://ko.react.dev/reference/react/useEffect#fetching-data-with-effects" target="_blank" rel="noopener">React — Effect로 데이터 가져오기의 한계</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "TanStack Query에서 <code>queryKey</code>의 역할은?",
+    o: [
+      "요청 URL을 지정한다",
+      "캐시의 식별자이자 의존성 배열 역할을 한다. 같은 키는 같은 데이터를 공유하고, 키가 바뀌면 자동으로 다시 가져온다",
+      "응답을 정렬하는 기준이다",
+      "에러 메시지의 제목이다"
+    ],
+    a: 1,
+    e: "<code>queryKey</code>가 같으면 여러 컴포넌트가 <b>하나의 캐시</b>를 공유해 요청이 한 번만 나갑니다. 또 키에 포함된 값이 바뀌면 자동으로 재요청되므로 <code>useEffect</code> 의존성을 손으로 관리할 필요가 없습니다. 쿼리에 쓰는 변수는 <b>전부 키에 넣어야</b> 합니다."
+  },
+  {
+    q: "<code>staleTime</code>의 기본값이 0이면 어떤 동작이 되나요?",
+    o: [
+      "캐시를 전혀 사용하지 않는다",
+      "데이터를 받는 즉시 \"낡음\"으로 표시되어, 컴포넌트가 다시 마운트되거나 창에 포커스가 오면 배경에서 다시 가져온다",
+      "1초마다 자동 갱신된다",
+      "에러가 발생한다"
+    ],
+    a: 1,
+    e: "<code>staleTime: 0</code>이어도 <b>캐시는 사용됩니다</b>. 낡은 데이터를 즉시 보여주고 <b>뒤에서 갱신</b>합니다. 자주 바뀌지 않는 데이터라면 <code>staleTime</code>을 늘려 불필요한 요청을 줄이는 것이 좋습니다."
+  },
+  {
+    q: "새 글을 작성한 뒤 목록을 최신 상태로 만드는 권장 방법은?",
+    o: [
+      "목록 페이지로 이동할 때 강제로 새로고침한다",
+      "<code>invalidateQueries({ queryKey: [\"todos\"] })</code> 로 해당 캐시를 무효화하면, 그 데이터를 보고 있는 화면들이 자동으로 다시 가져온다",
+      "전역 상태에 새 글을 직접 추가한다",
+      "setInterval로 주기적으로 갱신한다"
+    ],
+    a: 1,
+    e: "\"어느 화면이 이 데이터를 쓰는지\"를 알 필요가 없습니다. <b>데이터가 낡았다고 선언</b>하면 구독 중인 곳들이 알아서 반응합니다. 57장의 선언형 사고가 데이터 계층으로 확장된 형태입니다."
+  },
+  {
+    q: "낙관적 업데이트를 쓰면 안 되는 경우는?",
+    o: [
+      "좋아요 버튼",
+      "체크박스 토글",
+      "결제나 계정 삭제처럼 실패 시 되돌리기 어렵고 잘못된 상태를 보여주는 위험이 큰 동작",
+      "즐겨찾기 추가"
+    ],
+    a: 2,
+    e: "낙관적 업데이트는 <b>거의 항상 성공하고 되돌리기 쉬운</b> 동작에 적합합니다. 결제가 성공한 것처럼 보였다가 실패로 되돌아가는 경험은 신뢰를 심각하게 해칩니다. 이런 동작은 <b>서버 응답을 확인한 뒤</b> 화면을 바꿔야 합니다."
+  },
+  {
+    q: "<code>isPending</code>과 <code>isFetching</code>을 구분해야 하는 이유는?",
+    o: [
+      "둘은 같은 값이다",
+      "isPending은 보여줄 데이터가 아예 없는 첫 로딩이고, isFetching은 데이터가 있는 상태에서의 배경 갱신이다. 후자에 전체 화면을 가리면 오히려 나쁜 경험이 된다",
+      "isFetching이 더 정확하다",
+      "isPending은 에러 상태를 뜻한다"
+    ],
+    a: 1,
+    e: "배경 갱신 중에 전체를 스피너로 덮으면 <b>이미 보고 있던 내용이 사라졌다가 돌아옵니다</b>. 이때는 작은 인디케이터 정도만 보여주고, 기존 데이터를 계속 표시하는 것이 stale-while-revalidate 전략의 핵심입니다."
+  }
+]);
+</script>

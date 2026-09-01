@@ -1,0 +1,329 @@
+<!--desc: 표를 올바르게 만드는 법, head 안의 메타데이터, Open Graph 미리보기, canonical과 구조화 데이터까지 SEO의 기본기를 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>접근 가능한 표를 만드는 법 (<code>th</code>·<code>scope</code>·<code>caption</code>)</li>
+  <li><code>&lt;head&gt;</code>에 들어가는 메타데이터 전체</li>
+  <li>카카오톡·슬랙에 링크를 붙였을 때 미리보기가 나오는 원리</li>
+  <li><code>canonical</code>·<code>robots</code>·구조화 데이터</li>
+  <li>프론트엔드 개발자가 실제로 책임지는 SEO의 범위</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분</p>
+
+<h2 id="table">표 — 데이터를 위한 것</h2>
+
+<div class="codeblock">
+<span class="cb-label">제대로 만든 표</span>
+<pre><code data-lang="html">&lt;table&gt;
+  &lt;caption&gt;2026년 1분기 지점별 매출&lt;/caption&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th scope="col"&gt;지점&lt;/th&gt;
+      &lt;th scope="col"&gt;1월&lt;/th&gt;
+      &lt;th scope="col"&gt;2월&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;th scope="row"&gt;강남&lt;/th&gt;
+      &lt;td&gt;120&lt;/td&gt;
+      &lt;td&gt;135&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  &lt;tfoot&gt;
+    &lt;tr&gt;&lt;th scope="row"&gt;합계&lt;/th&gt;&lt;td&gt;120&lt;/td&gt;&lt;td&gt;135&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tfoot&gt;
+&lt;/table&gt;</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>요소·속성</th><th>역할</th></tr></thead>
+<tbody>
+<tr><td><code>&lt;caption&gt;</code></td><td>표의 제목. <b><code>&lt;table&gt;</code>의 첫 자식</b>이어야 합니다</td></tr>
+<tr><td><code>&lt;th&gt;</code></td><td>머리 칸. <code>&lt;td&gt;</code>는 데이터 칸</td></tr>
+<tr><td><code>scope="col"</code></td><td>이 머리 칸은 <b>세로 열 전체</b>의 제목</td></tr>
+<tr><td><code>scope="row"</code></td><td>이 머리 칸은 <b>가로 행 전체</b>의 제목</td></tr>
+<tr><td><code>colspan</code> / <code>rowspan</code></td><td>칸 합치기</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔊</span> <code>scope</code>가 왜 중요한가</p>
+<p style="margin-bottom:0">눈으로 보는 사람은 표를 <b>2차원</b>으로 봅니다. 값 <code>135</code>를 보면
+위로 올려다봐 "2월", 왼쪽을 봐 "강남"임을 즉시 압니다.
+스크린 리더는 표를 <b>한 칸씩 순서대로</b> 읽습니다. <code>scope</code>가 있으면
+"강남, 2월, 135"라고 <b>맥락과 함께</b> 읽어 줍니다. 없으면 그냥 "135"입니다.
+표가 커질수록 이 차이는 결정적입니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> 표로 화면을 배치하지 마세요</p>
+<p style="margin-bottom:0">CSS가 빈약하던 시절에는 <code>&lt;table&gt;</code>로 페이지 레이아웃을 짰습니다.
+지금은 <b>절대 하면 안 됩니다.</b> 스크린 리더가 "표, 3열 5행"이라고 안내하는데
+실제로는 데이터가 아니라 그냥 배치용이면 사용자는 혼란에 빠집니다.
+배치는 <b>Flexbox와 Grid</b>(15·16장)의 일입니다.
+<b>표는 행과 열의 관계가 실제로 의미 있는 데이터에만</b> 씁니다.</p>
+</div>
+
+<div class="runner" data-lang="html" data-title="표 만들어 보기" data-note="scope 속성을 지우고 다시 실행해도 화면은 똑같습니다. 차이는 눈에 보이지 않는 곳에 있습니다.">
+<textarea class="rn-src">
+<style>
+  table { border-collapse: collapse; font-size: 14px; }
+  caption { text-align: left; font-weight: 700; margin-bottom: 8px; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: right; }
+  th[scope="col"] { background: #f0efec; }
+  th[scope="row"] { background: #f7f6f4; text-align: left; }
+  tfoot { font-weight: 700; }
+</style>
+
+<table>
+  <caption>2026년 1분기 지점별 매출 (단위: 백만 원)</caption>
+  <thead>
+    <tr>
+      <th scope="col">지점</th>
+      <th scope="col">1월</th>
+      <th scope="col">2월</th>
+      <th scope="col">3월</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><th scope="row">강남</th><td>120</td><td>135</td><td>150</td></tr>
+    <tr><th scope="row">홍대</th><td>90</td><td>88</td><td>102</td></tr>
+  </tbody>
+  <tfoot>
+    <tr><th scope="row">합계</th><td>210</td><td>223</td><td>252</td></tr>
+  </tfoot>
+</table>
+</textarea>
+</div>
+
+<h2 id="head">head 안의 메타데이터</h2>
+
+<div class="codeblock">
+<span class="cb-label">실무에서 쓰는 head 전체</span>
+<pre><code data-lang="html">&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+
+  &lt;title&gt;프론트엔드 입문 가이드 | 프엔북&lt;/title&gt;
+  &lt;meta name="description" content="비전공자를 위한 프론트엔드 학습 안내. 30분 만에 첫 페이지를 만듭니다."&gt;
+
+  &lt;link rel="canonical" href="https://example.com/guide"&gt;
+  &lt;link rel="icon" href="/favicon.ico"&gt;
+  &lt;link rel="stylesheet" href="/style.css"&gt;
+
+  &lt;!-- 공유 미리보기 --&gt;
+  &lt;meta property="og:type" content="article"&gt;
+  &lt;meta property="og:title" content="프론트엔드 입문 가이드"&gt;
+  &lt;meta property="og:description" content="비전공자를 위한 프론트엔드 학습 안내."&gt;
+  &lt;meta property="og:image" content="https://example.com/preview.png"&gt;
+  &lt;meta property="og:url" content="https://example.com/guide"&gt;
+  &lt;meta name="twitter:card" content="summary_large_image"&gt;
+&lt;/head&gt;</code></pre>
+</div>
+
+<h3 id="title-desc">title과 description</h3>
+<ul>
+<li><b><code>&lt;title&gt;</code></b> — 검색 결과의 <b>파란 제목 줄</b>이자 브라우저 탭 이름.
+페이지마다 <b>달라야</b> 합니다. 중요한 단어를 앞에 두고, <code>페이지 이름 | 사이트 이름</code> 형식이 무난합니다.</li>
+<li><b><code>description</code></b> — 검색 결과의 <b>회색 설명 줄</b>.
+검색 순위에 직접 영향을 주지는 않지만, <b>클릭할지 말지</b>를 결정하게 만듭니다.
+너무 길면 검색엔진이 잘라 버리거나 본문에서 다른 문장을 뽑아 씁니다.</li>
+</ul>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> <code>meta keywords</code>는 죽은 태그입니다</p>
+<span class="mythline"><b class="no">오해</b> — <code>&lt;meta name="keywords"&gt;</code>에 검색어를 잔뜩 넣으면 순위가 오른다.</span>
+<span class="mythline"><b class="yes">사실</b> — 남용이 심해서 <b>구글은 오래전에 이 태그를 순위에 반영하지 않는다고 공식 발표</b>했습니다.
+지금 넣어도 아무 효과가 없습니다. 옛 자료를 보고 시간을 낭비하지 마세요.</span>
+</div>
+
+<h3 id="og">Open Graph — 링크 미리보기의 정체</h3>
+
+<p>카카오톡·슬랙·페이스북에 링크를 붙이면 제목·설명·이미지가 담긴 카드가 뜹니다.
+그 카드는 <b>페이지의 <code>og:</code> 메타 태그를 읽어서</b> 만들어집니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>태그</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><code>og:title</code></td><td>카드 제목</td></tr>
+<tr><td><code>og:description</code></td><td>카드 설명</td></tr>
+<tr><td><code>og:image</code></td><td>카드 이미지. <b>반드시 절대 주소</b>(<code>https://…</code>)여야 합니다</td></tr>
+<tr><td><code>og:url</code></td><td>이 페이지의 대표 주소</td></tr>
+<tr><td><code>og:type</code></td><td><code>website</code>, <code>article</code> 등</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 미리보기가 안 바뀔 때</p>
+<p style="margin-bottom:0">OG 태그를 고쳤는데 미리보기가 그대로인 경우가 많습니다.
+<b>각 플랫폼이 이전 결과를 캐시</b>하고 있기 때문입니다.
+플랫폼마다 캐시를 갱신하는 디버거 도구를 제공하니 그것으로 새로 읽게 해야 합니다.
+그리고 <b><code>og:image</code>에 상대 경로를 쓰면 대부분 실패</b>합니다.
+크롤러는 다른 서버에서 요청하므로 상대 경로를 해석할 수 없습니다.</p>
+</div>
+
+<h3 id="canonical">canonical — 중복 페이지 정리</h3>
+<p>같은 내용이 여러 주소로 열릴 수 있습니다.</p>
+<div class="codeblock">
+<pre><code data-lang="text">https://example.com/product
+https://example.com/product?ref=kakao
+https://example.com/product?utm_source=ad
+https://www.example.com/product</code></pre>
+</div>
+<p>검색엔진은 이것을 <b>서로 다른 페이지</b>로 볼 수 있고, 그러면 평가가 분산됩니다.
+<code>&lt;link rel="canonical" href="…"&gt;</code>로 <b>"이게 대표 주소"</b>라고 알려 주면 하나로 합쳐 줍니다.</p>
+
+<h3 id="robots">robots — 색인 통제</h3>
+<div class="codeblock">
+<pre><code data-lang="html">&lt;meta name="robots" content="noindex, nofollow"&gt;</code></pre>
+</div>
+<ul>
+<li><code>noindex</code> — 검색 결과에 <b>넣지 마세요</b>. 관리자 페이지, 임시 페이지, 검색 결과 페이지에 씁니다.</li>
+<li><code>nofollow</code> — 이 페이지의 링크를 <b>따라가지 마세요</b>.</li>
+</ul>
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>noindex</code>는 보안이 아닙니다</p>
+<p style="margin-bottom:0">"검색에 안 나오게 했으니 안전하다"는 착각을 하면 안 됩니다.
+주소를 아는 사람은 <b>누구나 접근할 수 있습니다.</b> 예의 바른 크롤러만 이 지시를 따릅니다.
+진짜로 막으려면 <b>서버에서 인증을 검사</b>해야 합니다.</p>
+</div>
+
+<h3 id="jsonld">구조화 데이터 (JSON-LD)</h3>
+<p>검색엔진에 <b>"이 페이지는 요리 레시피이고, 조리 시간은 30분, 별점은 4.5"</b>처럼
+기계가 이해할 수 있는 형태로 알려 주는 방식입니다.
+잘 넣으면 검색 결과에 별점·가격·조리 시간 같은 <b>풍부한 결과(rich result)</b>가 표시될 수 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">JSON-LD 예시</span>
+<pre><code data-lang="html">&lt;script type="application/ld+json"&gt;
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "프론트엔드 입문 가이드",
+  "datePublished": "2026-01-15",
+  "author": { "@type": "Person", "name": "홍길동" }
+}
+&lt;/script&gt;</code></pre>
+</div>
+<p><code>type="application/ld+json"</code>이라 <b>브라우저는 실행하지 않고</b> 무시합니다.
+크롤러만 읽습니다. 어떤 종류가 있는지는 <a href="https://schema.org/" target="_blank" rel="noopener">schema.org</a>에 정리되어 있습니다.</p>
+
+<h2 id="seo-scope">프론트엔드 개발자의 SEO 책임 범위</h2>
+
+<p>SEO는 마케팅 영역까지 걸쳐 있어 범위가 넓습니다. 개발자가 <b>실제로 통제하는 부분</b>은 이렇습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>항목</th><th>왜 중요한가</th></tr></thead>
+<tbody>
+<tr><td><b>제목 계층</b></td><td><code>h1</code> 하나, 순서대로. 페이지 주제를 명확히 전달</td></tr>
+<tr><td><b>시맨틱 구조</b></td><td>본문이 <code>main</code> 안에 있는가</td></tr>
+<tr><td><b>고유한 title·description</b></td><td>페이지마다 다르게</td></tr>
+<tr><td><b>이미지 <code>alt</code></b></td><td>이미지 검색과 접근성 양쪽에 필요</td></tr>
+<tr><td><b>성능</b></td><td>Core Web Vitals는 실제 순위 요소입니다(76장)</td></tr>
+<tr><td><b>모바일 대응</b></td><td>구글은 <b>모바일 화면 기준</b>으로 색인합니다</td></tr>
+<tr><td><b>렌더링 방식</b></td><td>JavaScript로만 그리는 페이지는 크롤러가 내용을 놓칠 수 있습니다 → 9부 SSR</td></tr>
+<tr><td><b><code>sitemap.xml</code>, <code>robots.txt</code></b></td><td>크롤러에게 사이트 구조와 접근 범위를 알림</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">💡</span> 접근성과 SEO는 대부분 같은 일이다</p>
+<p style="margin-bottom:0">검색 크롤러는 <b>눈이 없는 방문자</b>입니다.
+스크린 리더 사용자를 위해 하는 일 — 시맨틱 태그, 제목 계층, <code>alt</code>, 명확한 링크 텍스트 —
+이 그대로 검색엔진에도 좋은 신호가 됩니다.
+접근성을 챙기면 SEO의 상당 부분이 저절로 해결됩니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>표는 <b>데이터에만</b> 쓴다. 배치에는 Flexbox·Grid.</li>
+<li><code>caption</code>·<code>th</code>·<code>scope</code>가 있어야 스크린 리더가 표를 맥락과 함께 읽는다.</li>
+<li><code>title</code>·<code>description</code>은 <b>페이지마다 고유하게</b>.</li>
+<li><code>meta keywords</code>는 효과가 없다.</li>
+<li>링크 미리보기는 <b>Open Graph</b> 태그로 만들어진다. <code>og:image</code>는 절대 주소.</li>
+<li><code>canonical</code>로 중복 주소의 대표를 지정한다.</li>
+<li><code>noindex</code>는 <b>보안이 아니다.</b></li>
+<li>접근성을 챙기면 SEO의 상당 부분이 따라온다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/Structuring_content/HTML_table_basics" target="_blank" rel="noopener">MDN — HTML 표 기초</a></li>
+<li><a href="https://www.w3.org/WAI/tutorials/tables/" target="_blank" rel="noopener">W3C WAI — 표 접근성 튜토리얼</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTML/Reference/Elements/meta" target="_blank" rel="noopener">MDN — meta 요소</a></li>
+<li><a href="https://ogp.me/" target="_blank" rel="noopener">The Open Graph protocol</a></li>
+<li><a href="https://developers.google.com/search/docs/fundamentals/seo-starter-guide?hl=ko" target="_blank" rel="noopener">Google 검색 센터 — SEO 기본 가이드</a></li>
+<li><a href="https://schema.org/" target="_blank" rel="noopener">schema.org — 구조화 데이터 어휘</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "표에서 <code>scope=\"row\"</code>, <code>scope=\"col\"</code>을 지정하는 이유는?",
+    o: [
+      "표의 테두리 스타일을 지정하기 위해",
+      "스크린 리더가 각 데이터 칸을 읽을 때 어느 행·열의 제목에 속하는지 함께 알려 주기 위해",
+      "표를 정렬 가능하게 만들기 위해",
+      "인쇄할 때 페이지를 나누기 위해"
+    ],
+    a: 1,
+    e: "눈으로 보는 사람은 표를 2차원으로 파악하지만 스크린 리더는 한 칸씩 순서대로 읽습니다. <code>scope</code>가 있으면 \"강남, 2월, 135\"처럼 <b>맥락과 함께</b> 읽어 줍니다. 시각적 결과는 전혀 바뀌지 않습니다."
+  },
+  {
+    q: "카카오톡에 링크를 붙였을 때 미리보기 카드가 나오는 원리는?",
+    o: [
+      "카카오톡이 페이지를 실제로 열어 화면을 캡처한다",
+      "페이지 <code>&lt;head&gt;</code>의 Open Graph(<code>og:</code>) 메타 태그를 읽어 카드를 구성한다",
+      "검색엔진 결과를 가져와서 보여준다",
+      "HTML의 첫 번째 이미지와 첫 문단을 자동으로 뽑는다"
+    ],
+    a: 1,
+    e: "플랫폼의 크롤러가 페이지를 가져와 <code>og:title</code>·<code>og:description</code>·<code>og:image</code>를 읽습니다. OG 태그가 없으면 일부 플랫폼이 본문에서 추측하기도 하지만 결과를 통제할 수 없습니다. <code>og:image</code>는 반드시 절대 주소여야 합니다."
+  },
+  {
+    q: "<code>&lt;meta name=\"keywords\" content=\"…\"&gt;</code> 에 검색어를 많이 넣으면?",
+    o: [
+      "검색 순위가 올라간다",
+      "구글은 이 태그를 순위에 반영하지 않는다고 공식적으로 밝혔으므로 효과가 없다",
+      "페이지 로딩이 빨라진다",
+      "스크린 리더가 그 단어들을 읽어 준다"
+    ],
+    a: 1,
+    e: "과거 남용이 심해 구글은 오래전부터 <code>keywords</code>를 순위 신호로 쓰지 않습니다. 지금 넣어도 아무 효과가 없습니다. 실제로 의미 있는 것은 <code>title</code>·<code>description</code>·본문 구조·성능입니다."
+  },
+  {
+    q: "관리자 전용 페이지에 <code>&lt;meta name=\"robots\" content=\"noindex\"&gt;</code>를 넣었습니다. 보안 측면에서 옳은 판단인가요?",
+    o: [
+      "옳다. 검색에 안 나오면 아무도 찾을 수 없다",
+      "옳지 않다. 주소를 아는 사람은 그대로 접근할 수 있으므로 서버에서 인증을 검사해야 한다",
+      "옳다. 브라우저가 접근을 차단해 준다",
+      "옳지 않다. noindex는 존재하지 않는 값이다"
+    ],
+    a: 1,
+    e: "<code>noindex</code>는 <b>예의 바른 크롤러에게 색인하지 말라고 부탁</b>하는 것일 뿐 접근 제어가 아닙니다. 링크가 어딘가에 노출되거나 주소를 추측하면 그대로 열립니다. 실제 보호는 반드시 서버 측 인증·인가로 해야 합니다."
+  },
+  {
+    q: "화면을 2단으로 나누기 위해 <code>&lt;table&gt;</code>을 쓰면 안 되는 이유는?",
+    o: [
+      "표는 느리게 렌더링되기 때문",
+      "스크린 리더가 데이터 표로 안내해 사용자를 혼란스럽게 만들고, 반응형 대응도 어렵기 때문",
+      "표에는 CSS를 적용할 수 없기 때문",
+      "표는 모바일에서 표시되지 않기 때문"
+    ],
+    a: 1,
+    e: "<code>table</code>은 <b>행과 열의 관계가 의미를 갖는 데이터</b>를 위한 요소입니다. 배치에 쓰면 보조기술이 존재하지 않는 데이터 구조를 안내하게 되고, 화면 폭에 따라 흐름을 바꾸기도 어렵습니다. 배치는 Flexbox·Grid의 일입니다."
+  }
+]);
+</script>

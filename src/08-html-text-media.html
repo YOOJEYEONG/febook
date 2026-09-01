@@ -1,0 +1,396 @@
+<!--desc: 텍스트 관련 태그, 목록, 링크의 모든 것, 이미지 alt와 반응형 이미지, 비디오·오디오까지 콘텐츠를 담는 태그들을 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>b</code>와 <code>strong</code>, <code>i</code>와 <code>em</code>의 진짜 차이</li>
+  <li>링크의 경로 표기법과 <code>target="_blank"</code>의 함정</li>
+  <li><code>alt</code>를 제대로 쓰는 법 (가장 많이 틀리는 부분)</li>
+  <li>이미지 때문에 화면이 덜컥거리는 현상(CLS)을 없애는 법</li>
+  <li>반응형 이미지와 <code>loading="lazy"</code></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분</p>
+
+<h2 id="text">텍스트 태그</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>태그</th><th>의미</th><th>기본 모양</th></tr></thead>
+<tbody>
+<tr><td><code>&lt;p&gt;</code></td><td>문단</td><td>블록, 위아래 여백</td></tr>
+<tr><td><code>&lt;strong&gt;</code></td><td><b>중요하다</b> — 의미의 강조</td><td>굵게</td></tr>
+<tr><td><code>&lt;b&gt;</code></td><td>중요하진 않지만 <b>시각적으로 구분</b> (예: 제품명)</td><td>굵게</td></tr>
+<tr><td><code>&lt;em&gt;</code></td><td><b>어조의 강조</b> — 말할 때 힘주어 읽는 부분</td><td>기울임</td></tr>
+<tr><td><code>&lt;i&gt;</code></td><td>다른 목소리·전문 용어·외국어 (강조 아님)</td><td>기울임</td></tr>
+<tr><td><code>&lt;mark&gt;</code></td><td>형광펜. 현재 맥락에서 눈에 띄어야 하는 부분</td><td>노란 배경</td></tr>
+<tr><td><code>&lt;small&gt;</code></td><td>부가 설명, 주의 문구, 저작권</td><td>작게</td></tr>
+<tr><td><code>&lt;code&gt;</code></td><td>코드 조각</td><td>고정폭 글꼴</td></tr>
+<tr><td><code>&lt;pre&gt;</code></td><td>서식이 있는 텍스트. <b>공백과 줄바꿈 보존</b></td><td>고정폭, 그대로</td></tr>
+<tr><td><code>&lt;blockquote&gt;</code></td><td>블록 인용</td><td>들여쓰기</td></tr>
+<tr><td><code>&lt;q&gt;</code></td><td>짧은 인용 (문장 안)</td><td>따옴표 자동 추가</td></tr>
+<tr><td><code>&lt;abbr title="…"&gt;</code></td><td>약어. <code>title</code>에 원말</td><td>점선 밑줄(브라우저마다 다름)</td></tr>
+<tr><td><code>&lt;time datetime="…"&gt;</code></td><td>날짜·시간. 기계가 읽을 값을 <code>datetime</code>에</td><td>변화 없음</td></tr>
+<tr><td><code>&lt;br&gt;</code></td><td>줄바꿈</td><td>—</td></tr>
+<tr><td><code>&lt;hr&gt;</code></td><td>주제의 전환</td><td>가로선</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔊</span> <code>strong</code>과 <code>b</code>, 실제로 뭐가 다른가</p>
+<p style="margin-bottom:0">화면에는 <b>똑같이 굵게</b> 나옵니다. 차이는 <b>의미</b>입니다.
+스크린 리더 중에는 <code>strong</code>·<code>em</code>을 목소리 톤을 바꿔 읽어 주는 것이 있고,
+검색엔진도 의미를 참고합니다. 판단 기준은 간단합니다.
+<b>"소리 내어 읽을 때 힘을 줄 부분인가?"</b> 그렇다면 <code>strong</code>·<code>em</code>,
+단지 눈에 띄게 하고 싶을 뿐이면 <code>b</code>·<code>i</code>이거나, 사실은 <b>CSS</b>가 맞습니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>&lt;br&gt;</code>로 여백을 만들지 마세요</p>
+<p style="margin-bottom:0"><code>&lt;br&gt;&lt;br&gt;&lt;br&gt;</code>로 간격을 벌리는 코드를 자주 보게 됩니다.
+<code>&lt;br&gt;</code>은 <b>"여기서 줄이 바뀌어야 의미가 통한다"</b>(주소, 시)일 때만 쓰는 태그입니다.
+간격은 CSS의 <code>margin</code>으로 만듭니다. 화면 크기가 바뀌면 <code>br</code>은 엉뚱한 곳에서 줄을 끊습니다.</p>
+</div>
+
+<h2 id="lists">목록</h2>
+
+<div class="codeblock">
+<span class="cb-label">세 가지 목록</span>
+<pre><code data-lang="html">&lt;!-- 순서가 의미 없는 목록 --&gt;
+&lt;ul&gt;
+  &lt;li&gt;우유&lt;/li&gt;
+  &lt;li&gt;달걀&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;!-- 순서가 의미 있는 목록 (단계, 순위) --&gt;
+&lt;ol&gt;
+  &lt;li&gt;재료를 준비한다&lt;/li&gt;
+  &lt;li&gt;불을 켠다&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;!-- 용어와 설명의 짝 --&gt;
+&lt;dl&gt;
+  &lt;dt&gt;HTML&lt;/dt&gt;
+  &lt;dd&gt;문서의 구조를 표시하는 언어&lt;/dd&gt;
+  &lt;dt&gt;CSS&lt;/dt&gt;
+  &lt;dd&gt;문서의 모습을 정하는 언어&lt;/dd&gt;
+&lt;/dl&gt;</code></pre>
+</div>
+
+<p><b><code>&lt;ul&gt;</code>·<code>&lt;ol&gt;</code>의 직계 자식은 반드시 <code>&lt;li&gt;</code>여야 합니다.</b>
+다른 요소를 넣고 싶으면 <code>&lt;li&gt;</code> 안에 넣으세요. 내비게이션 메뉴를
+<code>&lt;ul&gt;</code>로 만드는 관행도 여기서 나왔습니다. 스크린 리더가 "항목 5개"라고 미리 알려 주기 때문입니다.</p>
+
+<h2 id="links">링크</h2>
+
+<div class="codeblock">
+<span class="cb-label">a 요소</span>
+<pre><code data-lang="html">&lt;a href="https://example.com"&gt;외부 사이트&lt;/a&gt;   &lt;!-- 절대 경로 --&gt;
+&lt;a href="/about"&gt;소개 페이지&lt;/a&gt;                &lt;!-- 사이트 루트 기준 --&gt;
+&lt;a href="about.html"&gt;같은 폴더의 파일&lt;/a&gt;       &lt;!-- 현재 위치 기준 --&gt;
+&lt;a href="../index.html"&gt;상위 폴더로&lt;/a&gt;         &lt;!-- .. 는 한 단계 위 --&gt;
+&lt;a href="#section2"&gt;문서 안의 위치로&lt;/a&gt;        &lt;!-- id가 section2인 요소로 --&gt;
+&lt;a href="mailto:hi@example.com"&gt;메일 보내기&lt;/a&gt;
+&lt;a href="tel:+821012345678"&gt;전화 걸기&lt;/a&gt;
+&lt;a href="report.pdf" download&gt;내려받기&lt;/a&gt;</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>경로 표기</th><th>기준</th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><code>https://…</code></td><td>절대</td><td>어디서 쓰든 같은 곳으로</td></tr>
+<tr><td><code>/about</code></td><td>사이트 <b>루트</b></td><td>현재 페이지 위치와 무관. 실무에서 가장 안전</td></tr>
+<tr><td><code>about.html</code></td><td>현재 <b>파일</b> 위치</td><td>폴더 구조를 바꾸면 깨짐</td></tr>
+<tr><td><code>../about.html</code></td><td>한 단계 위 폴더</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="blank">새 창으로 여는 링크의 함정</h3>
+
+<div class="codeblock">
+<span class="cb-label">target 과 rel</span>
+<pre><code data-lang="html">&lt;a href="https://example.com" target="_blank" rel="noopener noreferrer"&gt;
+  새 탭에서 열기
+&lt;/a&gt;</code></pre>
+</div>
+
+<ul>
+<li><code>target="_blank"</code> — 새 탭에서 엽니다.</li>
+<li><code>rel="noopener"</code> — 새로 열린 페이지가 <b>원래 페이지를 조종하지 못하게</b> 막습니다.
+과거에는 이것 없이 새 탭을 열면, 그 페이지의 스크립트가 <code>window.opener</code>를 통해
+원래 탭을 <b>가짜 로그인 페이지로 바꿔치기</b>할 수 있었습니다(탭내빙 공격).
+<b>현재 주요 브라우저는 <code>target="_blank"</code>에 <code>noopener</code>를 자동 적용</b>하지만,
+구형 환경 대비와 의도를 분명히 하기 위해 명시하는 것이 여전히 권장됩니다.</li>
+<li><code>rel="noreferrer"</code> — 이동한 사이트에 <b>어디서 왔는지</b> 알려 주지 않습니다.</li>
+</ul>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">♿</span> 링크 글자만 보고도 알 수 있어야 합니다</p>
+<p style="margin-bottom:0">스크린 리더 사용자는 <b>링크만 목록으로 뽑아 훑는 기능</b>을 자주 씁니다.
+그 목록에 "여기를 클릭", "더 보기", "자세히"만 열 개 있으면 아무 의미가 없습니다.
+<b>링크 텍스트 자체가 목적지를 설명</b>해야 합니다.<br>
+<span style="color:var(--danger)">나쁨:</span> 자세한 내용은 <u>여기</u>를 클릭하세요<br>
+<span style="color:var(--ok)">좋음:</span> <u>2026년 요금제 안내</u>를 확인하세요</p>
+</div>
+
+<h2 id="img">이미지</h2>
+
+<div class="codeblock">
+<span class="cb-label">img의 필수 속성</span>
+<pre><code data-lang="html">&lt;img src="cat.jpg" alt="창가에서 자고 있는 회색 고양이"
+     width="800" height="600"&gt;</code></pre>
+</div>
+
+<h3 id="alt">alt — 가장 많이 틀리는 속성</h3>
+
+<p><code>alt</code>는 <b>이미지를 볼 수 없는 상황에서 그 자리를 대신할 텍스트</b>입니다.
+스크린 리더가 읽어 주고, 이미지 로딩이 실패했을 때도 대신 표시됩니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상황</th><th>이렇게 쓴다</th></tr></thead>
+<tbody>
+<tr><td>내용을 전달하는 이미지</td><td><b>이미지가 전하는 정보</b>를 문장으로. <code>alt="2025년 매출이 전년 대비 30% 증가한 막대그래프"</code></td></tr>
+<tr><td>순수 장식용 이미지</td><td><b><code>alt=""</code> (빈 값)</b>. 그러면 스크린 리더가 <b>건너뜁니다</b>. 이게 정답입니다</td></tr>
+<tr><td>링크 안의 이미지</td><td><b>링크의 목적지</b>를 설명. <code>alt="홈으로"</code></td></tr>
+<tr><td>글자가 들어간 이미지</td><td>그 <b>글자를 그대로</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> alt에 대한 세 가지 오해</p>
+<span class="mythline"><b class="no">오해 1</b> — 장식 이미지에는 <code>alt</code>를 안 쓰면 된다.<br>
+<b class="yes">사실</b> — <code>alt</code>가 <b>아예 없으면</b> 스크린 리더가 파일 이름(<code>img_20250413_final2.jpg</code>)을 읽습니다.
+<b>비워서라도 반드시 쓰세요.</b> <code>alt=""</code>는 "의도적으로 건너뛰라"는 명확한 신호입니다.</span>
+<span class="mythline"><b class="no">오해 2</b> — <code>alt="이미지"</code>, <code>alt="사진"</code>이면 충분하다.<br>
+<b class="yes">사실</b> — 아무 정보도 없습니다. "이미지, 이미지, 이미지"만 반복해 들립니다.</span>
+<span class="mythline"><b class="no">오해 3</b> — <code>title</code> 속성이 <code>alt</code>를 대신할 수 있다.<br>
+<b class="yes">사실</b> — <code>title</code>은 <b>마우스를 올려야</b> 보입니다. 터치 기기에는 마우스가 없고,
+스크린 리더 지원도 일관되지 않습니다. <code>alt</code>의 대체재가 아닙니다.</span>
+</div>
+
+<h3 id="cls">width와 height는 성능 속성입니다</h3>
+
+<p>이미지에 크기를 적지 않으면, 브라우저는 이미지가 도착하기 전까지 <b>얼마나 자리를 비워 둘지 모릅니다.</b>
+그래서 일단 0으로 잡고 글을 그렸다가, 이미지가 도착하면 <b>글이 아래로 밀려납니다.</b>
+읽던 줄을 놓치고, 누르려던 버튼이 도망가는 그 현상입니다.</p>
+
+<p>이것을 <b>CLS</b>(Cumulative Layout Shift, 누적 레이아웃 이동)라고 하고,
+구글이 검색 순위에 반영하는 지표 중 하나입니다(76장).</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📐</span> 옛날 상식이 뒤집힌 부분</p>
+<p style="margin-bottom:0">"크기는 CSS로 정해야 하니 HTML에 <code>width</code>·<code>height</code>를 쓰지 마라"는 조언이 오래 통용됐습니다.
+<b>지금은 반대입니다.</b> 현대 브라우저는 HTML의 <code>width</code>·<code>height</code>로
+<b>가로세로 비율을 미리 계산해</b> 자리를 확보합니다.
+CSS에서 <code>width: 100%; height: auto;</code>로 반응형 처리를 하더라도
+<b>HTML 속성은 원본 픽셀 크기로 함께 적어 두는 것</b>이 현재 권장 사항입니다.</p>
+</div>
+
+<div class="runner" data-lang="html" data-title="레이아웃 이동 직접 보기" data-note="실행 버튼을 여러 번 눌러 보세요. 위쪽은 이미지 자리가 미리 잡혀 있고, 아래쪽은 글이 밀려납니다.">
+<textarea class="rn-src">
+<style>
+  .demo { border: 1px solid #ccc; padding: 10px; margin-bottom: 14px; }
+  .demo h4 { margin: 0 0 8px; font-size: 14px; }
+  img { background: #eee; display: block; max-width: 100%; }
+</style>
+
+<div class="demo">
+  <h4>✅ width/height 있음 — 자리를 미리 잡는다</h4>
+  <img width="300" height="120"
+       src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='%231f5f4f'/%3E%3C/svg%3E"
+       alt="초록색 사각형 예시 이미지">
+  <p>이미지 아래 문단. 이 글은 움직이지 않습니다.</p>
+</div>
+
+<div class="demo">
+  <h4>❌ width/height 없음 — 이미지 도착 후 글이 밀림</h4>
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Crect width='300' height='120' fill='%23a02a24'/%3E%3C/svg%3E"
+       alt="빨간색 사각형 예시 이미지">
+  <p>이미지 아래 문단. 실제 서비스에서는 이 글이 아래로 튕깁니다.</p>
+</div>
+</textarea>
+</div>
+
+<h3 id="responsive-img">반응형 이미지</h3>
+
+<p>휴대폰에 4000픽셀짜리 사진을 보내는 것은 낭비입니다.
+<code>srcset</code>은 <b>후보들을 알려 주고 브라우저가 고르게</b> 합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">srcset과 sizes</span>
+<pre><code data-lang="html">&lt;img
+  src="photo-800.jpg"                          &lt;!-- 지원 안 되는 환경용 --&gt;
+  srcset="photo-400.jpg 400w,
+          photo-800.jpg 800w,
+          photo-1600.jpg 1600w"                &lt;!-- 후보와 각각의 실제 너비 --&gt;
+  sizes="(max-width: 600px) 100vw, 800px"      &lt;!-- 화면에서 차지할 크기 --&gt;
+  width="800" height="600"
+  alt="바다가 보이는 창가"&gt;</code></pre>
+</div>
+
+<p>형식이 다른 파일을 제공하거나, 화면 크기에 따라 <b>다른 그림</b>을 보여주려면 <code>&lt;picture&gt;</code>를 씁니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">picture</span>
+<pre><code data-lang="html">&lt;picture&gt;
+  &lt;source srcset="hero.avif" type="image/avif"&gt;
+  &lt;source srcset="hero.webp" type="image/webp"&gt;
+  &lt;img src="hero.jpg" width="1200" height="600" alt="…"&gt;
+&lt;/picture&gt;</code></pre>
+</div>
+<p>브라우저는 <b>위에서부터 지원하는 첫 형식</b>을 씁니다. 맨 아래 <code>&lt;img&gt;</code>는 필수이며 최후의 대비책입니다.</p>
+
+<h3 id="lazy">지연 로딩</h3>
+<div class="codeblock">
+<span class="cb-label">loading 속성</span>
+<pre><code data-lang="html">&lt;img src="below-the-fold.jpg" loading="lazy" width="600" height="400" alt="…"&gt;</code></pre>
+</div>
+<p><code>loading="lazy"</code>는 <b>화면에 가까워질 때까지 다운로드를 미룹니다.</b>
+스크롤해야 보이는 이미지에 붙이면 초기 로딩이 확 가벼워집니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 첫 화면 이미지에는 <code>lazy</code>를 붙이지 마세요</p>
+<p style="margin-bottom:0">맨 위의 큰 대표 이미지에 <code>loading="lazy"</code>를 붙이면
+그 이미지 로딩이 <b>오히려 늦어집니다.</b> LCP 점수가 나빠집니다.
+"처음부터 보이는 것은 즉시, 스크롤해야 보이는 것은 lazy"가 원칙입니다.</p>
+</div>
+
+<h2 id="figure">figure와 figcaption</h2>
+<div class="codeblock">
+<span class="cb-label">설명이 붙은 그림</span>
+<pre><code data-lang="html">&lt;figure&gt;
+  &lt;img src="chart.png" width="600" height="400"
+       alt="2020년부터 2025년까지 매출이 매년 증가한 선 그래프"&gt;
+  &lt;figcaption&gt;그림 1. 연도별 매출 추이 (단위: 억 원)&lt;/figcaption&gt;
+&lt;/figure&gt;</code></pre>
+</div>
+<p><code>alt</code>와 <code>figcaption</code>은 역할이 다릅니다.
+<code>alt</code>는 <b>이미지를 못 보는 사람에게 이미지를 설명</b>하고,
+<code>figcaption</code>은 <b>모두에게 보이는 설명글</b>입니다. 같은 내용을 중복해서 쓰지 마세요.</p>
+
+<h2 id="media">비디오와 오디오</h2>
+
+<div class="codeblock">
+<span class="cb-label">video</span>
+<pre><code data-lang="html">&lt;video controls width="640" height="360"
+       poster="thumbnail.jpg" preload="metadata"&gt;
+  &lt;source src="movie.webm" type="video/webm"&gt;
+  &lt;source src="movie.mp4" type="video/mp4"&gt;
+  &lt;track kind="captions" src="ko.vtt" srclang="ko" label="한국어" default&gt;
+  이 브라우저는 video 태그를 지원하지 않습니다.
+&lt;/video&gt;</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>속성</th><th>뜻</th></tr></thead>
+<tbody>
+<tr><td><code>controls</code></td><td>재생·정지 버튼 표시. 없으면 사용자가 조작할 수 없습니다</td></tr>
+<tr><td><code>poster</code></td><td>재생 전 보여줄 이미지</td></tr>
+<tr><td><code>preload</code></td><td><code>none</code>·<code>metadata</code>·<code>auto</code>. 트래픽 절약에는 <code>metadata</code></td></tr>
+<tr><td><code>autoplay</code></td><td>자동 재생. <b>대부분의 브라우저는 소리가 있으면 차단</b>합니다. <code>muted</code>와 함께 써야 동작</td></tr>
+<tr><td><code>&lt;track kind="captions"&gt;</code></td><td><b>자막.</b> 청각장애인뿐 아니라 소리를 켤 수 없는 상황의 모두에게 필요합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트</p>
+<p style="margin-bottom:0">이미지 최적화는 프론트엔드 성능 개선에서 <b>효과 대비 노력이 가장 좋은 작업</b>입니다.
+평범한 웹 페이지 용량의 절반 이상이 이미지인 경우가 흔합니다. 순서는 이렇습니다.</p>
+<ol style="margin-bottom:0">
+<li><b>필요한 크기로 줄이기</b> — 400px로 보일 이미지를 4000px로 올리지 않기</li>
+<li><b>현대 포맷 쓰기</b> — WebP·AVIF는 JPEG 대비 용량이 크게 작습니다</li>
+<li><b>첫 화면 밖은 <code>loading="lazy"</code></b></li>
+<li><b><code>width</code>·<code>height</code> 항상 명시</b></li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>strong</code>·<code>em</code>은 <b>의미</b>, <code>b</code>·<code>i</code>는 <b>시각적 구분</b>. 단순 꾸밈은 CSS.</li>
+<li><code>&lt;br&gt;</code>로 간격을 만들지 않는다. 간격은 CSS <code>margin</code>.</li>
+<li>링크 텍스트만 읽어도 <b>어디로 가는지</b> 알 수 있어야 한다.</li>
+<li><code>target="_blank"</code>에는 <code>rel="noopener noreferrer"</code>를 함께 쓴다.</li>
+<li><b><code>alt</code>는 항상 쓴다.</b> 장식 이미지는 <code>alt=""</code>로 비운다.</li>
+<li><code>width</code>·<code>height</code>를 적어 <b>레이아웃 이동(CLS)</b>을 막는다.</li>
+<li><code>srcset</code>·<code>picture</code>로 상황에 맞는 이미지를, <code>loading="lazy"</code>로 지연 로딩을.</li>
+<li><b>첫 화면 이미지에는 <code>lazy</code>를 쓰지 않는다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/Structuring_content/Advanced_text_features" target="_blank" rel="noopener">MDN — 고급 텍스트 서식</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTML/Reference/Elements/img" target="_blank" rel="noopener">MDN — img 요소</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Guides/Responsive_images" target="_blank" rel="noopener">MDN — 반응형 이미지</a></li>
+<li><a href="https://www.w3.org/WAI/tutorials/images/" target="_blank" rel="noopener">W3C WAI — 이미지 대체 텍스트 튜토리얼</a></li>
+<li><a href="https://web.dev/articles/cls" target="_blank" rel="noopener">web.dev — Cumulative Layout Shift</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "순수하게 장식용인 배경 무늬 이미지의 <code>alt</code>는 어떻게 써야 하나요?",
+    o: [
+      "<code>alt</code> 속성을 아예 쓰지 않는다",
+      "<code>alt=\"\"</code> 처럼 빈 값으로 쓴다",
+      "<code>alt=\"장식 이미지\"</code> 라고 쓴다",
+      "<code>alt=\"none\"</code> 이라고 쓴다"
+    ],
+    a: 1,
+    e: "<code>alt</code>가 <b>없으면</b> 스크린 리더가 파일 이름을 읽어 버립니다. <code>alt=\"\"</code>는 \"의도적으로 건너뛰라\"는 명확한 신호라서 스크린 리더가 조용히 넘어갑니다. <code>alt=\"장식 이미지\"</code>는 의미 없는 소리를 반복하게 만듭니다."
+  },
+  {
+    q: "이미지에 <code>width</code>·<code>height</code> 속성을 쓰는 가장 중요한 이유는?",
+    o: [
+      "CSS 없이도 크기를 고정하기 위해",
+      "브라우저가 이미지 도착 전에 가로세로 비율로 자리를 확보해, 이미지가 뜰 때 글이 밀리는 레이아웃 이동(CLS)을 막기 위해",
+      "이미지 파일 용량을 줄이기 위해",
+      "검색엔진이 이미지를 색인하게 하기 위해"
+    ],
+    a: 1,
+    e: "크기를 모르면 브라우저는 자리를 0으로 잡았다가 이미지 도착 후 밀어냅니다. 이것이 <b>CLS</b>이고 검색 순위에도 반영됩니다. CSS로 <code>width:100%; height:auto</code>를 쓰더라도 HTML 속성은 원본 크기로 함께 적는 것이 현재 권장 사항입니다."
+  },
+  {
+    q: "페이지 최상단의 큰 대표 이미지에 <code>loading=\"lazy\"</code>를 붙이면?",
+    o: [
+      "초기 로딩이 빨라져 항상 이득이다",
+      "이미 화면에 보이는 이미지의 다운로드가 오히려 늦어져 LCP 지표가 나빠진다",
+      "이미지가 아예 표시되지 않는다",
+      "아무 차이가 없다"
+    ],
+    a: 1,
+    e: "<code>lazy</code>는 \"화면에 가까워질 때까지 미루라\"는 뜻입니다. 이미 화면에 있는 이미지에 붙이면 브라우저의 우선순위 판단을 방해해 <b>더 늦게</b> 뜹니다. 원칙은 \"처음부터 보이는 것은 즉시, 스크롤해야 보이는 것만 lazy\"입니다."
+  },
+  {
+    q: "<code>&lt;a href=\"…\" target=\"_blank\"&gt;</code> 에 <code>rel=\"noopener\"</code>를 함께 쓰는 이유는?",
+    o: [
+      "링크 속도를 높이기 위해",
+      "새로 열린 페이지가 원래 페이지를 조종해 가짜 화면으로 바꿔치기하는 공격을 막기 위해",
+      "검색엔진이 링크를 따라가지 못하게 하려고",
+      "새 탭 대신 새 창으로 열기 위해"
+    ],
+    a: 1,
+    e: "<code>noopener</code> 없이 새 탭을 열면 그 페이지가 <code>window.opener</code>로 원래 탭의 주소를 바꿀 수 있었습니다(탭내빙). 최신 브라우저는 <code>target=\"_blank\"</code>에 이 보호를 자동 적용하지만, 구형 환경 대비와 의도 표현을 위해 명시가 권장됩니다. 검색엔진 차단은 <code>rel=\"nofollow\"</code>의 역할입니다."
+  },
+  {
+    q: "스크린 리더 사용자를 고려할 때 가장 나쁜 링크 텍스트는?",
+    o: [
+      "\"2026년 요금제 안내\"",
+      "\"자세한 내용은 여기를 클릭\"",
+      "\"고객센터 전화번호 보기\"",
+      "\"환불 정책 전문 읽기\""
+    ],
+    a: 1,
+    e: "스크린 리더 사용자는 <b>링크만 목록으로 뽑아</b> 훑는 기능을 자주 씁니다. 그 목록에 \"여기\", \"클릭\", \"더 보기\"만 남으면 아무 정보가 없습니다. 링크 텍스트 자체가 목적지를 설명해야 합니다."
+  }
+]);
+</script>

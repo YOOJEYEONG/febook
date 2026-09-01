@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>53장. 제네릭 — 프엔북</title>
+<meta name="description" content="제네릭이 왜 필요한지, 타입 매개변수와 제약(extends), 기본값, 실전 패턴, 그리고 언제 쓰지 말아야 하는지를 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="53장. 제네릭 — 프엔북">
+<meta property="og:description" content="제네릭이 왜 필요한지, 타입 매개변수와 제약(extends), 기본값, 실전 패턴, 그리고 언제 쓰지 말아야 하는지를 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="53-ts-generics">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">7부 · TypeScript</p>
+    <h1>53장. 제네릭</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>제네릭이 <b>어떤 문제를 푸는지</b></li>
+  <li>타입 매개변수와 <b>제약(<code>extends</code>)</b></li>
+  <li>실무에서 쓰는 제네릭 패턴</li>
+  <li><b>제네릭을 쓰지 말아야 할 때</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 처음엔 어렵지만 익히면 코드가 크게 달라집니다</p>
+
+<h2 id="problem">문제 상황</h2>
+
+<div class="codeblock">
+<span class="cb-label">배열의 첫 요소를 반환하는 함수</span>
+<pre><code data-lang="ts">// 시도 1: 타입마다 따로 만들기 — 끝이 없습니다
+function firstString(arr: string[]): string { return arr[0]; }
+function firstNumber(arr: number[]): number { return arr[0]; }
+function firstUser(arr: User[]): User { return arr[0]; }
+
+// 시도 2: any — 타입 정보가 사라집니다
+function first(arr: any[]): any { return arr[0]; }
+const name = first(["a", "b"]);
+name.toFixed(2);      // 오류가 안 납니다. 실행하면 터집니다
+
+// ✅ 제네릭
+function first&lt;T&gt;(arr: T[]): T {
+  return arr[0];
+}
+const name2 = first(["a", "b"]);     // string 으로 추론
+const num = first([1, 2, 3]);         // number 로 추론
+// name2.toFixed(2);                  ❌ 즉시 오류</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📦</span> 제네릭은 <b>타입의 매개변수</b>입니다</p>
+<p style="margin-bottom:0">함수가 <b>값</b>을 나중에 받듯이, 제네릭은 <b>타입</b>을 나중에 받습니다.
+<code>&lt;T&gt;</code>는 "지금은 모르지만 <b>쓸 때 정해질 타입</b>"이라는 뜻입니다.<br>
+그리고 그 타입이 <b>입력과 출력을 연결</b>합니다.
+"들어온 배열의 요소 타입 = 나가는 값의 타입"이라는 관계를 표현하는 것이 제네릭의 본질입니다.</p>
+</div>
+
+<h2 id="basic">기본 문법</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// 함수
+function identity&lt;T&gt;(value: T): T { return value; }
+
+// 호출 — 대개 추론에 맡깁니다
+identity("hello");           // T = string 으로 추론
+identity&lt;string&gt;("hello");   // 명시할 수도 있습니다
+
+// 타입 매개변수 여러 개
+function pair&lt;K, V&gt;(key: K, value: V): [K, V] {
+  return [key, value];
+}
+pair("age", 20);             // [string, number]
+
+// 인터페이스·타입에도
+interface Box&lt;T&gt; {
+  value: T;
+}
+type Nullable&lt;T&gt; = T | null;
+
+const box: Box&lt;string&gt; = { value: "hello" };
+const maybeUser: Nullable&lt;User&gt; = null;
+
+// 클래스에도
+class Stack&lt;T&gt; {
+  private items: T[] = [];
+  push(item: T): void { this.items.push(item); }
+  pop(): T | undefined { return this.items.pop(); }
+}
+const stack = new Stack&lt;number&gt;();</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔤</span> 이름 관례</p>
+<ul style="margin-bottom:0">
+<li><code>T</code> — Type (가장 흔함)</li>
+<li><code>K</code>, <code>V</code> — Key, Value</li>
+<li><code>E</code> — El<span class="term" data-term="em">em</span>ent</li>
+<li><code>R</code> — Return</li>
+</ul>
+<p style="margin-bottom:0">다만 <b>의미가 있으면 풀어서 쓰는 편이 읽기 좋습니다.</b>
+<code>&lt;TData, TError&gt;</code>처럼요. <span <span class="term" data-term="class">class</span>="term" data-term="tanstack-query">TanStack Query</span> 같은 라이브러리가 이 방식을 씁니다.</p>
+</div>
+
+<h2 id="constraint">제약 — extends</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// ❌ T가 무엇이든 될 수 있어 length를 쓸 수 없습니다
+function logLength&lt;T&gt;(value: T) {
+  console.log(value.length);   // ❌ Property 'length' does not exist on type 'T'
+}
+
+// ✅ "length를 가진 것"으로 제한합니다
+function logLength&lt;T extends { length: number }&gt;(value: T) {
+  console.log(value.length);   // ✅
+}
+logLength("hello");        // ✅ 문자열에는 length가 있습니다
+logLength([1, 2, 3]);      // ✅
+logLength(42);             // ❌ 숫자에는 length가 없습니다</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label"><span class="term" data-term="key">key</span>of 와 함께 — 매우 자주 쓰는 패턴</span>
+<pre><code data-lang="ts">function getProperty&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+const user = { id: 1, name: "홍길동", isAdmin: true };
+
+const id = getProperty(user, "id");         // number
+const name = getProperty(user, "name");     // string
+const admin = getProperty(user, "isAdmin"); // boolean
+// getProperty(user, "age");                ❌ 없는 키는 자동 완성에도 안 나옵니다</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔑</span> 이 예제가 제네릭의 힘을 가장 잘 보여 줍니다</p>
+<p style="margin-bottom:0"><code>getProperty(user, "id")</code>가 <b><code>number</code>임을 아는 것</b>이 핵심입니다.
+<code>any</code>였다면 아무것도 몰랐을 것이고, 오버로드로 하나하나 정의했다면 끝이 없었을 것입니다.
+<b>키에 따라 반환 타입이 달라지는 관계</b>를 한 줄로 표현한 것입니다.</p>
+</div>
+
+<h2 id="default">기본값</h2>
+<div class="codeblock">
+<pre><code data-lang="ts">interface ApiResponse&lt;T = unknown&gt; {
+  data: T;
+  message: string;
+}
+
+const a: ApiResponse = { data: "아무거나", message: "ok" };        // T = unknown
+const b: ApiResponse&lt;User[]&gt; = { data: [], message: "ok" };        // T = User[]</code></pre>
+</div>
+
+<h2 id="patterns">실전 패턴</h2>
+
+<div class="codeblock">
+<span class="cb-label">① <span class="term" data-term="api">API</span> <span class="term" data-term="client">클라이언트</span></span>
+<pre><code data-lang="ts">async function apiGet&lt;T&gt;(path: string): Promise&lt;T&gt; {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json() as Promise&lt;T&gt;;
+}
+
+const users = await apiGet&lt;User[]&gt;("/api/users");     // User[] 로 다뤄집니다
+const post = await apiGet&lt;Post&gt;("/api/posts/1");</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 위 코드는 <b>거짓말할 수 있습니다</b></p>
+<p style="margin-bottom:0"><code>as Promise&lt;T&gt;</code>는 <b>"내가 보증한다"는 선언</b>일 뿐
+실제로 검사하지 않습니다. 서버가 다른 형태를 보내도 통과합니다.
+50장에서 말한 <b>"타입은 런타임에 사라진다"</b>는 원칙 그대로입니다.<br>
+안전하게 하려면 <span class="term" data-term="zod">Zod</span> 같은 라이브러리로 <b>실제 값을 검증</b>해야 합니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">② 배열 유틸리티</span>
+<pre><code data-lang="ts">function groupBy&lt;T, K extends string | number&gt;(
+  items: T[],
+  getKey: (item: T) =&gt; K
+): Record&lt;K, T[]&gt; {
+  const result = {} as Record&lt;K, T[]&gt;;
+  for (const item of items) {
+    const key = getKey(item);
+    (result[key] ??= []).push(item);
+  }
+  return result;
+}
+
+const byCategory = groupBy(products, p =&gt; p.category);
+//    ↑ 반환 타입이 자동으로 맞춰집니다</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">③ <span class="term" data-term="react">React</span>에서 (56장에서 자세히)</span>
+<pre><code data-lang="tsx">interface ListProps&lt;T&gt; {
+  items: T[];
+  renderItem: (item: T) =&gt; React.ReactNode;
+  keyExtractor: (item: T) =&gt; string;
+}
+
+function List&lt;T&gt;({ items, renderItem, keyExtractor }: ListProps&lt;T&gt;) {
+  return &lt;ul&gt;{items.map(item =&gt;
+    &lt;li key={keyExtractor(item)}&gt;{renderItem(item)}&lt;/li&gt;
+  )}&lt;/ul&gt;;
+}
+
+// 사용할 때 item의 타입이 정확히 추론됩니다
+&lt;List
+  items={users}
+  keyExtractor={u =&gt; String(u.id)}
+  renderItem={u =&gt; &lt;span&gt;{u.name}&lt;/span&gt;}   // u는 User 로 추론
+/&gt;</code></pre>
+</div>
+
+<h2 id="avoid">제네릭을 쓰지 말아야 할 때</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> 타입 매개변수가 한 번만 쓰이면 필요 없습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">// ❌ T가 매개변수에만 쓰이고 반환과 연결되지 않습니다
+function log&lt;T&gt;(value: T): void {
+  console.log(value);
+}
+
+// ✅ 그냥 이렇게 쓰면 됩니다
+function log(value: unknown): void {
+  console.log(value);
+}</code></pre>
+</div>
+<p style="margin-bottom:0"><b>제네릭의 목적은 "두 곳 이상을 연결하는 것"</b>입니다.
+매개변수와 반환값, 또는 여러 매개변수 사이의 <b>관계</b>를 표현할 때만 의미가 있습니다.
+연결하는 것이 없으면 복잡도만 늘어납니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 제네릭과 친해지는 법</p>
+<ol>
+<li><b>먼저 구체적인 타입으로 짜세요.</b> <code>string[]</code>용으로 만들고, 나중에 다른 타입도 필요해지면 그때 <code>T</code>로 바꿉니다. 처음부터 일반화하려 하면 방향을 잃습니다.</li>
+<li><b>이미 쓰고 있습니다.</b> <code>Array&lt;T&gt;</code>, <code>Promise&lt;T&gt;</code>, <code>useState&lt;T&gt;</code>, <code>Map&lt;K,V&gt;</code>가 전부 제네릭입니다.</li>
+<li><b>제약을 걸어 좁히세요.</b> <code>&lt;T&gt;</code>보다 <code>&lt;T extends { id: number }&gt;</code>가 훨씬 다루기 쉽습니다.</li>
+<li><b>남의 코드를 읽는 것이 먼저입니다.</b> 직접 제네릭 유틸리티를 만들 일은 생각보다 드뭅니다.
+라이브러리 타입 정의를 읽고 이해하는 능력이 더 자주 필요합니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>어렵게 느껴지는 것이 정상입니다.</b>
+개념은 단순하지만(타입을 나중에 받는다) 실제 코드는 복잡해 보입니다.
+당장 다 이해하지 못해도 <b>사용은 할 수 있습니다.</b> 만드는 것은 나중 일입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>제네릭은 <b>타입의 매개변수</b>다. 값이 아니라 타입을 나중에 받는다.</li>
+<li>핵심 목적은 <b>입력과 출력의 타입 관계를 표현</b>하는 것이다.</li>
+<li><code>any</code>는 타입을 버리지만 제네릭은 <b>보존한다.</b></li>
+<li><b><code>extends</code>로 제약</b>을 걸어야 그 타입의 속성을 쓸 수 있다.</li>
+<li><code>&lt;T, K extends keyof T&gt;</code> 패턴으로 <b>키에 따라 달라지는 반환 타입</b>을 표현한다.</li>
+<li><b><code>as</code> 단언은 검사하지 않는다.</b> 외부 데이터는 런타임 검증이 필요하다.</li>
+<li><b>타입 매개변수가 한 곳에서만 쓰이면 제네릭이 필요 없다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/generics.html" target="_blank" rel="noopener">TypeScript 핸드북 — 제네릭</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/keyof-types.html" target="_blank" rel="noopener">핸드북 — keyof 타입 연산자</a></li>
+<li><a href="https://www.typescriptlang.org/play" target="_blank" rel="noopener">TypeScript Playground</a> — 추론 결과를 즉시 확인하며 연습</li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>function first(arr: any[]): any</code> 대신 제네릭 <code>function first&lt;T&gt;(arr: T[]): T</code> 를 쓰는 이유는?",
+    o: [
+      "실행 속도가 빨라져서",
+      "any는 타입 정보를 버리지만 제네릭은 입력 타입과 반환 타입의 관계를 유지해, 결과에 대해서도 타입 검사와 자동 완성이 동작하기 때문",
+      "any는 문법 오류라서",
+      "제네릭이 번들 크기를 줄여서"
+    ],
+    a: 1,
+    e: "<code>any</code>를 반환하면 그 뒤의 모든 검사가 사라집니다. 제네릭은 <b>\"들어온 배열의 요소 타입 = 나가는 값의 타입\"</b>이라는 관계를 표현하므로, <code>first([\"a\"])</code>의 결과가 <code>string</code>임을 컴파일러가 압니다."
+  },
+  {
+    q: "<code>function logLength&lt;T&gt;(value: T) { console.log(value.length) }</code> 가 오류인 이유와 해결책은?",
+    o: [
+      "T는 무엇이든 될 수 있어 length가 있다고 보장할 수 없다. <code>&lt;T extends { length: number }&gt;</code>로 제약을 건다",
+      "length는 예약어라서",
+      "제네릭에서는 console.log를 쓸 수 없어서",
+      "T를 any로 바꾸면 해결된다"
+    ],
+    a: 0,
+    e: "제약이 없는 <code>T</code>는 <b>모든 타입</b>이 될 수 있으므로 특정 속성의 존재를 가정할 수 없습니다. <code>extends</code>로 \"이런 모양을 가진 타입만\"이라고 좁히면 그 안에서 안전하게 속성을 쓸 수 있습니다."
+  },
+  {
+    q: "<code>function getProperty&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K]</code> 의 이점은?",
+    o: [
+      "코드가 짧아진다",
+      "키에 따라 반환 타입이 달라지는 관계를 표현해, <code>getProperty(user, \"id\")</code>가 number임을 컴파일러가 알고 없는 키는 오류로 잡는다",
+      "런타임에 키 존재를 검사한다",
+      "객체를 복사한다"
+    ],
+    a: 1,
+    e: "<code>keyof T</code>가 키를 실제 존재하는 것으로 제한하고, <code>T[K]</code>가 <b>그 키에 해당하는 타입</b>을 반환합니다. 결과적으로 자동 완성에 실제 키만 나오고 반환 타입도 정확해집니다. 제네릭의 가치를 가장 잘 보여 주는 예입니다."
+  },
+  {
+    q: "<code>function log&lt;T&gt;(value: T): void { console.log(value) }</code> 의 문제는?",
+    o: [
+      "문법 오류다",
+      "T가 매개변수에서만 쓰이고 반환이나 다른 매개변수와 연결되지 않아 제네릭이 아무 역할을 하지 못한다. <code>value: unknown</code>이면 충분하다",
+      "console.log를 쓸 수 없다",
+      "void를 반환하면 안 된다"
+    ],
+    a: 1,
+    e: "제네릭의 목적은 <b>두 곳 이상을 연결</b>하는 것입니다. 타입 매개변수가 한 곳에서만 쓰이면 연결할 대상이 없어 복잡도만 늘어납니다. 이럴 때는 <code>unknown</code>이나 구체 타입이 낫습니다."
+  },
+  {
+    q: "<code>return response.json() as Promise&lt;T&gt;</code> 처럼 <code>as</code>로 타입을 지정하면?",
+    o: [
+      "런타임에 실제 데이터 형태를 검증한다",
+      "검증 없이 \"이 타입이라고 믿으라\"고 선언할 뿐이라, 서버가 다른 형태를 보내도 통과하고 나중에 런타임 오류가 난다",
+      "컴파일 오류가 발생한다",
+      "자동으로 형변환이 일어난다"
+    ],
+    a: 1,
+    e: "타입 단언(<code>as</code>)은 <b>컴파일러에게 의심하지 말라고 하는 것</b>입니다. 실제 값은 확인하지 않습니다. 외부에서 들어오는 데이터는 Zod 같은 도구로 <b>런타임 검증</b>을 해야 타입 선언이 진실이 됩니다."
+  }
+]);
+</script>
+</body>
+</html>

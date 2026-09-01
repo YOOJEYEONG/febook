@@ -1,0 +1,378 @@
+<!--desc: JSX 문법의 모든 규칙, 컴포넌트를 만들고 조합하는 법, props 전달과 구조 분해, children까지 React의 기본기를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>JSX가 <b>실제로 무엇인지</b>와 문법 규칙 전부</li>
+  <li>컴포넌트를 만들고 조합하기</li>
+  <li><b>props</b> — 부모에서 자식으로 값 내려보내기</li>
+  <li><b>props는 읽기 전용</b>이라는 원칙</li>
+  <li><code>children</code>으로 컴포넌트 감싸기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분</p>
+
+<h2 id="jsx">JSX는 함수 호출입니다</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// 우리가 쓰는 것
+const element = &lt;h1 className="title"&gt;안녕하세요&lt;/h1&gt;;
+
+// 빌드 도구가 바꾸는 것 (React 17 이후의 새 변환 방식)
+const element = _jsx("h1", { className: "title", children: "안녕하세요" });</code></pre>
+</div>
+
+<p><b>JSX는 HTML이 아닙니다.</b> JavaScript 안에 UI 구조를 편하게 쓰기 위한 <b>문법 확장</b>이고,
+빌드 시점에 <b>평범한 함수 호출</b>로 바뀝니다. 그래서 JSX는 <b>값</b>입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// 값이므로 변수에 담고, 배열에 넣고, 반환할 수 있습니다
+const greeting = &lt;p&gt;안녕&lt;/p&gt;;
+const items = [&lt;li key="1"&gt;A&lt;/li&gt;, &lt;li key="2"&gt;B&lt;/li&gt;];
+const message = isLoggedIn ? &lt;Dashboard /&gt; : &lt;Login /&gt;;</code></pre>
+</div>
+
+<h2 id="rules">JSX 문법 규칙</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>규칙</th><th>HTML</th><th>JSX</th></tr></thead>
+<tbody>
+<tr><td>클래스</td><td><code>class="card"</code></td><td><b><code>className="card"</code></b></td></tr>
+<tr><td>label 연결</td><td><code>for="id"</code></td><td><b><code>htmlFor="id"</code></b></td></tr>
+<tr><td>속성 이름</td><td><code>tabindex</code>, <code>onclick</code></td><td><b>카멜케이스</b> <code>tabIndex</code>, <code>onClick</code></td></tr>
+<tr><td>인라인 스타일</td><td><code>style="color:red"</code></td><td><b>객체</b> <code>style={{ color: "red" }}</code></td></tr>
+<tr><td>태그 닫기</td><td><code>&lt;br&gt;</code> 가능</td><td><b>반드시</b> <code>&lt;br /&gt;</code></td></tr>
+<tr><td>주석</td><td><code>&lt;!-- --&gt;</code></td><td><code>{/* 주석 */}</code></td></tr>
+<tr><td>예외</td><td colspan="2"><code>aria-*</code>와 <code>data-*</code>는 <b>하이픈 그대로</b> 씁니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">중괄호로 JavaScript 넣기</span>
+<pre><code data-lang="jsx">function Profile({ user }) {
+  const isAdmin = user.role === "admin";
+
+  return (
+    &lt;div className={isAdmin ? "card admin" : "card"}&gt;
+      &lt;h2&gt;{user.name}&lt;/h2&gt;
+      &lt;p&gt;나이: {user.age}세&lt;/p&gt;
+      &lt;p&gt;가입: {user.createdAt.toLocaleDateString("ko-KR")}&lt;/p&gt;
+      &lt;img src={user.avatarUrl} alt={`${user.name}의 프로필 사진`} /&gt;
+      &lt;p style={{ color: isAdmin ? "crimson" : "inherit", fontWeight: 700 }}&gt;
+        {isAdmin ? "관리자" : "일반 회원"}
+      &lt;/p&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 중괄호 안에는 <b>표현식</b>만</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">{user.name}                       ✅ 값
+{count + 1}                       ✅ 계산
+{items.map(i =&gt; &lt;li&gt;{i}&lt;/li&gt;)}    ✅ 함수 호출
+{isOk ? "예" : "아니오"}           ✅ 삼항 연산자
+
+{if (isOk) { … }}                 ❌ if는 '문'이라 값이 아닙니다
+{for (…) { … }}                   ❌ for도 마찬가지</code></pre>
+</div>
+<p style="margin-bottom:0">조건 분기가 복잡하면 <b>JSX 밖에서 변수로 계산</b>한 뒤 넣으세요.
+26장에서 배운 "값을 고를 때는 삼항, 동작을 나눌 때는 if"가 그대로 적용됩니다.</p>
+</div>
+
+<h3 id="root">최상위는 하나여야 합니다</h3>
+<div class="codeblock">
+<pre><code data-lang="jsx">// ❌ 형제가 둘
+return (
+  &lt;h1&gt;제목&lt;/h1&gt;
+  &lt;p&gt;내용&lt;/p&gt;
+);
+
+// ✅ 감싸기
+return (
+  &lt;div&gt;
+    &lt;h1&gt;제목&lt;/h1&gt;
+    &lt;p&gt;내용&lt;/p&gt;
+  &lt;/div&gt;
+);
+
+// ✅ 불필요한 div를 만들고 싶지 않다면 프래그먼트
+return (
+  &lt;&gt;
+    &lt;h1&gt;제목&lt;/h1&gt;
+    &lt;p&gt;내용&lt;/p&gt;
+  &lt;/&gt;
+);</code></pre>
+</div>
+<p>함수는 값을 <b>하나만</b> 반환할 수 있기 때문입니다.
+<b>프래그먼트</b>(<code>&lt;&gt;…&lt;/&gt;</code>)는 실제 DOM에 아무 요소도 만들지 않습니다.
+표(<code>&lt;tbody&gt;</code> 안)나 flex·grid 자식처럼 <b>중간에 <code>div</code>가 끼면 안 되는 곳</b>에 필수입니다.
+<code>key</code>가 필요하면 <code>&lt;React.Fragment key={id}&gt;</code>로 씁니다.</p>
+
+<h2 id="component">컴포넌트</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// 컴포넌트 = JSX를 반환하는 함수. 이름은 반드시 대문자로 시작
+function Welcome() {
+  return &lt;h1&gt;환영합니다&lt;/h1&gt;;
+}
+
+// 사용
+&lt;Welcome /&gt;</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔠</span> 대문자로 시작해야 합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">&lt;welcome /&gt;    // → "welcome"이라는 HTML 태그로 해석됩니다
+&lt;Welcome /&gt;    // → Welcome 이라는 컴포넌트 함수 호출</code></pre>
+</div>
+<p style="margin-bottom:0">React는 <b>첫 글자로 구분</b>합니다.
+소문자면 HTML 태그, 대문자면 컴포넌트입니다.
+"컴포넌트를 넣었는데 아무것도 안 나온다"면 가장 먼저 확인할 부분입니다.</p>
+</div>
+
+<h2 id="props">props</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// 넘기는 쪽
+&lt;UserCard name="홍길동" age={20} isAdmin tags={["신규", "VIP"]} /&gt;
+
+// 받는 쪽 — props는 하나의 객체로 들어옵니다
+function UserCard(props) {
+  return &lt;h2&gt;{props.name}&lt;/h2&gt;;
+}
+
+// ✅ 구조 분해로 받는 것이 표준입니다 (28장)
+function UserCard({ name, age, isAdmin = false, tags = [] }) {
+  return (
+    &lt;div&gt;
+      &lt;h2&gt;{name} {isAdmin &amp;&amp; "👑"}&lt;/h2&gt;
+      &lt;p&gt;{age}세&lt;/p&gt;
+      &lt;p&gt;{tags.join(", ")}&lt;/p&gt;
+    &lt;/div&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>전달 방법</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>name="홍길동"</code></td><td>문자열은 따옴표로 그대로</td></tr>
+<tr><td><code>age={20}</code></td><td><b>숫자·불리언·객체·배열·함수는 중괄호</b></td></tr>
+<tr><td><code>isAdmin</code></td><td>값 없이 쓰면 <code>true</code> (HTML 불리언 속성과 같습니다)</td></tr>
+<tr><td><code>onClick={handleClick}</code></td><td>함수 <b>자체</b>를 넘깁니다. <code>handleClick()</code>이 아닙니다(27장)</td></tr>
+<tr><td><code>{...props}</code></td><td>객체를 통째로 펼쳐 전달</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔒</span> props는 읽기 전용입니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">function Bad({ user }) {
+  user.name = "변경";        // ❌ 절대 하지 마세요
+  return &lt;p&gt;{user.name}&lt;/p&gt;;
+}</code></pre>
+</div>
+<p style="margin-bottom:0">props를 바꾸면 <b>React는 그 사실을 모릅니다.</b> 화면이 갱신되지 않고,
+부모의 데이터까지 오염되어(25장 참조 복사) 추적이 매우 어려운 버그가 됩니다.<br>
+<b>데이터는 위에서 아래로만 흐릅니다.</b> 자식이 무언가를 바꿔야 한다면
+<b>부모가 넘겨준 함수를 호출</b>해서 부모가 바꾸게 해야 합니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">자식이 부모에게 알리는 법</span>
+<pre><code data-lang="jsx">function Parent() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;Child
+      count={count}
+      onIncrease={() =&gt; setCount(count + 1)}   // ← 함수를 내려보냅니다
+    /&gt;
+  );
+}
+
+function Child({ count, onIncrease }) {
+  return &lt;button onClick={onIncrease}&gt;{count}&lt;/button&gt;;
+  //     자식은 "눌렸다"고 알릴 뿐, 상태는 부모가 관리합니다
+}</code></pre>
+</div>
+
+<h2 id="children">children</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">function Card({ title, children }) {
+  return (
+    &lt;section className="card"&gt;
+      &lt;h2&gt;{title}&lt;/h2&gt;
+      &lt;div className="card-body"&gt;{children}&lt;/div&gt;
+    &lt;/section&gt;
+  );
+}
+
+// 사용 — 태그 사이의 내용이 children으로 들어갑니다
+&lt;Card title="공지"&gt;
+  &lt;p&gt;내용이 여기 들어갑니다&lt;/p&gt;
+  &lt;button&gt;확인&lt;/button&gt;
+&lt;/Card&gt;</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎁</span> children이 있으면 컴포넌트가 유연해집니다</p>
+<p style="margin-bottom:0"><code>&lt;Card content="..." /&gt;</code>처럼 props로만 받으면
+<b>넣을 수 있는 것이 제한</b>됩니다.
+<code>children</code>을 받으면 <b>무엇이든</b> 넣을 수 있습니다.
+레이아웃·모달·패널처럼 <b>껍데기 역할을 하는 컴포넌트</b>에 특히 유용합니다. 63장에서 더 다룹니다.</p>
+</div>
+
+<h2 id="compose">조합하기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">function App() {
+  const users = [
+    { id: 1, name: "홍길동", age: 20 },
+    { id: 2, name: "김철수", age: 30 }
+  ];
+
+  return (
+    &lt;Layout&gt;
+      &lt;Header title="사용자 목록" /&gt;
+      &lt;main&gt;
+        {users.map(user =&gt; (
+          &lt;UserCard key={user.id} {...user} /&gt;
+        ))}
+      &lt;/main&gt;
+      &lt;Footer /&gt;
+    &lt;/Layout&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> 컴포넌트 안에 컴포넌트를 정의하지 마세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ❌ 매 렌더링마다 '새로운 함수'가 만들어집니다
+function Parent() {
+  function Child() { return &lt;p&gt;안녕&lt;/p&gt;; }
+  return &lt;Child /&gt;;
+}
+// React는 이것을 '다른 컴포넌트'로 보고 매번 새로 만듭니다.
+// → 상태가 초기화되고, 입력 포커스가 사라지고, 성능이 나빠집니다.
+
+// ✅ 밖에 정의합니다
+function Child() { return &lt;p&gt;안녕&lt;/p&gt;; }
+function Parent() { return &lt;Child /&gt;; }</code></pre>
+</div>
+</div>
+
+<h2 id="split">컴포넌트를 언제 나눌까</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>나눌 신호</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>같은 UI가 반복된다</b></td><td>가장 명확한 신호</td></tr>
+<tr><td><b>이름을 붙일 수 있다</b></td><td>"이 부분은 사용자 카드다"라고 말할 수 있으면 컴포넌트</td></tr>
+<tr><td><b>한 화면에 스크롤이 필요할 만큼 길다</b></td><td>대략 100~150줄이 넘으면 검토</td></tr>
+<tr><td><b>독립적으로 테스트하고 싶다</b></td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 너무 잘게 쪼개지도 마세요</p>
+<p style="margin-bottom:0"><code>&lt;Title&gt;</code>, <code>&lt;Subtitle&gt;</code>, <code>&lt;Spacer&gt;</code>처럼
+<b>한 줄짜리 컴포넌트를 남발</b>하면 파일을 계속 오가야 해서 오히려 읽기 어려워집니다.<br>
+좋은 기준은 <b>"이 컴포넌트를 한 문장으로 설명할 수 있는가"</b>입니다.
+"제목과 내용을 받아 카드로 보여준다"는 좋고, "h2를 감싼다"는 나쁩니다.<br>
+그리고 <b>처음부터 완벽하게 나누려 하지 마세요.</b>
+한 파일에 크게 쓴 뒤, 반복이 보이거나 길어질 때 나누는 것이 실무의 실제 순서입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>JSX는 HTML이 아니라 <b>함수 호출로 변환되는 문법</b>이다. 그래서 <b>값</b>이다.</li>
+<li><code>className</code>·<code>htmlFor</code>·카멜케이스·<code>style={{}}</code>·자기 닫기 태그를 기억한다.</li>
+<li>중괄호에는 <b>표현식</b>만. <code>if</code>·<code>for</code>는 밖에서 처리한다.</li>
+<li>반환값은 <b>하나</b>여야 한다. 필요하면 <b>프래그먼트</b>.</li>
+<li><b>컴포넌트 이름은 대문자로 시작</b>해야 한다.</li>
+<li><b>props는 읽기 전용</b>이다. 데이터는 위에서 아래로, 변경 요청은 함수로 위로.</li>
+<li><code>children</code>으로 <b>무엇이든 감쌀 수 있는</b> 컴포넌트를 만든다.</li>
+<li><b>컴포넌트 안에 컴포넌트를 정의하지 않는다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.react.dev/learn/writing-markup-with-jsx" target="_blank" rel="noopener">React — JSX로 마크업 작성하기</a></li>
+<li><a href="https://ko.react.dev/learn/passing-props-to-a-component" target="_blank" rel="noopener">React — 컴포넌트에 props 전달하기</a></li>
+<li><a href="https://ko.react.dev/learn/your-first-component" target="_blank" rel="noopener">React — 첫 번째 컴포넌트</a></li>
+<li><a href="https://ko.react.dev/reference/react/Fragment" target="_blank" rel="noopener">React — Fragment</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>&lt;welcome /&gt;</code> 라고 썼는데 화면에 아무것도 나오지 않습니다. 원인은?",
+    o: [
+      "컴포넌트에 return이 없어서",
+      "소문자로 시작하면 React가 HTML 태그로 해석하기 때문. 컴포넌트는 대문자로 시작해야 한다",
+      "self-closing 태그를 써서",
+      "props를 넘기지 않아서"
+    ],
+    a: 1,
+    e: "React는 <b>첫 글자의 대소문자</b>로 HTML 태그와 컴포넌트를 구분합니다. 소문자면 <code>&lt;welcome&gt;</code>이라는 존재하지 않는 HTML 태그를 만들려 하므로 아무것도 렌더링되지 않습니다."
+  },
+  {
+    q: "JSX의 중괄호 <code>{ }</code> 안에 넣을 수 <b>없는</b> 것은?",
+    o: [
+      "<code>user.name</code>",
+      "<code>items.map(i =&gt; &lt;li&gt;{i}&lt;/li&gt;)</code>",
+      "<code>if (isOk) { return \"예\" }</code>",
+      "<code>isOk ? \"예\" : \"아니오\"</code>"
+    ],
+    a: 2,
+    e: "중괄호에는 <b>값을 만들어 내는 표현식</b>만 들어갑니다. <code>if</code>와 <code>for</code>는 <b>문(statement)</b>이라 값이 아닙니다. 조건 분기는 삼항 연산자를 쓰거나 JSX 밖에서 변수로 계산해 넣습니다."
+  },
+  {
+    q: "자식 컴포넌트가 props로 받은 객체를 직접 수정하면?",
+    o: [
+      "정상적으로 화면이 갱신된다",
+      "React는 변경을 감지하지 못해 화면이 갱신되지 않고, 참조를 공유하므로 부모의 데이터까지 오염된다",
+      "컴파일 오류가 난다",
+      "자동으로 복사본이 만들어진다"
+    ],
+    a: 1,
+    e: "props는 <b>읽기 전용</b>입니다. 객체는 참조로 전달되므로(25장) 자식이 수정하면 부모의 원본도 바뀌지만 React는 이를 알지 못합니다. 자식은 <b>부모가 내려준 함수를 호출</b>해 변경을 요청해야 합니다."
+  },
+  {
+    q: "컴포넌트 함수 안에서 다른 컴포넌트를 정의하면 안 되는 이유는?",
+    o: [
+      "문법 오류라서",
+      "렌더링될 때마다 새로운 함수가 만들어져 React가 다른 컴포넌트로 인식하고, 상태 초기화·포커스 소실·성능 저하가 발생하기 때문",
+      "props를 받을 수 없어서",
+      "TypeScript에서 지원되지 않아서"
+    ],
+    a: 1,
+    e: "React는 <b>컴포넌트 함수의 동일성</b>으로 같은 컴포넌트인지 판단합니다. 부모가 렌더링될 때마다 새 함수가 만들어지면 매번 \"완전히 다른 컴포넌트\"로 보고 기존 것을 버리고 새로 만듭니다. 입력 중이던 값과 포커스가 사라지는 원인이 됩니다."
+  },
+  {
+    q: "<code>&lt;&gt;…&lt;/&gt;</code>(프래그먼트)를 쓰는 이유는?",
+    o: [
+      "성능을 높이려고",
+      "여러 요소를 반환해야 하는데 불필요한 div를 DOM에 추가하고 싶지 않을 때. 표나 flex/grid 자식에서 특히 필요하다",
+      "컴포넌트 이름을 생략하려고",
+      "조건부 렌더링을 위해"
+    ],
+    a: 1,
+    e: "함수는 값을 하나만 반환할 수 있으므로 형제 요소들은 감싸야 합니다. 하지만 <code>&lt;tbody&gt;</code> 안이나 flex·grid 컨테이너의 자식 자리에 <code>div</code>가 끼면 <b>레이아웃이 깨집니다</b>. 프래그먼트는 DOM에 아무 요소도 만들지 않습니다."
+  }
+]);
+</script>

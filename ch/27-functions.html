@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>27장. 함수 — 프엔북</title>
+<meta name="description" content="함수 선언문과 표현식, 화살표 함수의 차이, 매개변수 기본값과 나머지 매개변수, 콜백과 고차 함수, 순수 함수까지 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="27장. 함수 — 프엔북">
+<meta property="og:description" content="함수 선언문과 표현식, 화살표 함수의 차이, 매개변수 기본값과 나머지 매개변수, 콜백과 고차 함수, 순수 함수까지 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="27-functions">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">4부 · JavaScript 기초</p>
+    <h1>27장. 함수</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>함수를 만드는 세 가지 방법과 각각의 차이</li>
+  <li><b>화살표 함수가 일반 함수와 다른 네 가지</b></li>
+  <li>매개변수 기본값, 나<span class="term" data-term="merge">머지</span> 매개변수, 구조 분해 받기</li>
+  <li><b>함수도 값이다</b> — 콜백과 고차 함수</li>
+  <li>좋은 함수의 조건</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · <span <span class="term" data-term="class">class</span>="term" data-term="javascript">JavaScript</span>의 심장부입니다</p>
+
+<h2 id="three-ways">함수를 만드는 세 가지 방법</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ① 함수 선언문
+function add(a, b) {
+  return a + b;
+}
+
+// ② 함수 표현식 — 값으로 만들어 변수에 담는다
+const subtract = function (a, b) {
+  return a - b;
+};
+
+// ③ 화살표 함수
+const multiply = (a, b) =&gt; a * b;</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>선언문</th><th>표현식</th><th>화살표</th></tr></thead>
+<tbody>
+<tr><td><span class="term" data-term="hoisting">호이스팅</span></td><td><b>전체가 준비됨</b> — 위에서 호출 가능</td><td>변수 규칙(<span class="term" data-term="tdz">TDZ</span>)</td><td>변수 규칙(TDZ)</td></tr>
+<tr><td><code>this</code></td><td>호출 방식에 따라 결정</td><td>호출 방식에 따라 결정</td><td><b>없음</b> — 바깥에서 가져옴</td></tr>
+<tr><td><code>arguments</code></td><td>있음</td><td>있음</td><td><b>없음</b></td></tr>
+<tr><td><code>new</code>로 호출</td><td>가능</td><td>가능</td><td><b>불가능</b></td></tr>
+<tr><td>이름</td><td>필수</td><td>선택</td><td>선택</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="arrow-syntax">화살표 함수 문법</h3>
+<div class="codeblock">
+<pre><code data-lang="js">// 매개변수가 여러 개
+const add = (a, b) =&gt; a + b;
+
+// 하나면 괄호 생략 가능 (팀에 따라 항상 붙이기도 합니다)
+const double = n =&gt; n * 2;
+
+// 없으면 빈 괄호
+const hello = () =&gt; "안녕";
+
+// 본문이 한 줄이면 return 생략 (암묵적 반환)
+const square = n =&gt; n * n;
+
+// 여러 줄이면 중괄호와 return 필요
+const process = n =&gt; {
+  const doubled = n * 2;
+  return doubled + 1;
+};
+
+// 객체를 반환할 때는 괄호로 감싸야 합니다
+const makeUser = name =&gt; ({ name: name });
+//                       ↑ 이 괄호가 없으면 { } 를 함수 본문으로 해석합니다</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔺</span> 화살표 함수를 쓰면 안 되는 곳</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 객체의 메서드 — this가 객체를 가리키지 않습니다 (30장)
+const counter = {
+  count: 0,
+  increase: () =&gt; { this.count++; }   // this가 엉뚱한 곳
+};
+
+// ✅ 메서드 축약 문법
+const counter2 = {
+  count: 0,
+  increase() { this.count++; }
+};
+
+// ❌ DOM 이벤트 핸들러에서 this로 요소를 가리키려 할 때
+button.addEventListener("click", () =&gt; {
+  this.classList.add("on");   // this가 요소가 아님
+});
+
+// ✅ event.currentTarget 을 쓰면 화살표 함수여도 안전합니다
+button.addEventListener("click", (event) =&gt; {
+  event.currentTarget.classList.add("on");
+});</code></pre>
+</div>
+</div>
+
+<h2 id="params">매개변수</h2>
+
+<div class="runner" data-lang="js" data-title="매개변수의 모든 것" data-note="인자 개수를 바꿔 호출해 보세요.">
+<textarea class="rn-src">
+console.log("--- ① 기본값 ---");
+function greet(name = "손님", greeting = "안녕하세요") {
+  return `${greeting}, ${name}님!`;
+}
+console.log(greet());                  // 둘 다 기본값
+console.log(greet("홍길동"));           // 첫 번째만
+console.log(greet("홍길동", "반갑습니다"));
+console.log(greet(undefined, "환영"));  // undefined면 기본값 사용
+
+console.log("--- ② 인자가 부족하면 undefined ---");
+function show(a, b) {
+  console.log("a =", a, "/ b =", b);
+}
+show(1);          // b는 undefined
+show(1, 2, 3);    // 남는 인자는 그냥 무시됩니다
+
+console.log("--- ③ 나머지 매개변수 (...) ---");
+function sum(...numbers) {     // 배열로 모아 줍니다
+  console.log("받은 인자:", numbers);
+  return numbers.reduce((total, n) => total + n, 0);
+}
+console.log(sum(1, 2, 3));
+console.log(sum(1, 2, 3, 4, 5));
+
+console.log("--- ④ 앞에 고정 매개변수와 함께 ---");
+function log(level, ...messages) {
+  console.log(`[${level}]`, messages.join(" "));
+}
+log("INFO", "서버", "시작됨");
+
+console.log("--- ⑤ 객체로 받기 (이름 있는 인자) ---");
+function createUser({ name, age = 0, city = "미정" }) {
+  return `${name} (${age}세, ${city})`;
+}
+console.log(createUser({ name: "홍길동", city: "서울" }));
+// 순서를 기억할 필요가 없고, 호출부만 봐도 무슨 값인지 압니다
+
+console.log("--- ⑥ 기본값 계산도 가능합니다 ---");
+function makeId(prefix = "user", suffix = prefix.length) {
+  return prefix + "-" + suffix;
+}
+console.log(makeId());
+console.log(makeId("admin"));
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🏷️</span> 인자가 3개를 넘으면 객체로 받으세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 호출부만 보면 무슨 값인지 알 수 없습니다
+createUser("홍길동", 20, "서울", true, false);
+
+// ✅ 스스로 설명합니다. 순서도 자유롭습니다
+createUser({
+  name: "홍길동",
+  age: 20,
+  city: "서울",
+  isAdmin: true,
+  sendEmail: false
+});</code></pre>
+</div>
+</div>
+
+<h2 id="return">반환</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">function f1() { return 1; }
+function f2() { }                  // return 없음 → undefined 반환
+function f3() { return; }          // 값 없는 return → undefined
+
+// return 이후의 코드는 실행되지 않습니다
+function f4() {
+  return "끝";
+  console.log("실행 안 됨");
+}
+
+// ⚠️ 함정: return 뒤에서 줄을 바꾸지 마세요
+function bad() {
+  return
+    { name: "홍길동" };   // 자동 세미콜론 삽입으로 return; 이 되어 undefined
+}</code></pre>
+</div>
+
+<p>값을 여러 개 돌려주고 싶으면 <b>객체나 배열</b>로 묶습니다.</p>
+<div class="codeblock">
+<pre><code data-lang="js">function getMinMax(numbers) {
+  return { min: Math.min(...numbers), max: Math.max(...numbers) };
+}
+const { min, max } = getMinMax([3, 1, 4, 1, 5]);   // 구조 분해 (28장)</code></pre>
+</div>
+
+<h2 id="first-class">함수는 값이다</h2>
+
+<p>JavaScript에서 함수는 <b>일급 객체</b>입니다. 숫자나 문자열처럼
+<b>변수에 담고, 인자로 넘기고, 반환할 수 있습니다.</b></p>
+
+<div class="runner" data-lang="js" data-title="함수를 값처럼 다루기" data-note="이 개념이 29장의 map·filter와 8부 React 전체의 토대입니다.">
+<textarea class="rn-src">
+console.log("--- ① 변수에 담기 ---");
+const say = function () { return "안녕"; };
+console.log(say());
+
+console.log("--- ② 배열·객체에 담기 ---");
+const operations = {
+  add: (a, b) => a + b,
+  sub: (a, b) => a - b
+};
+console.log(operations.add(3, 2));
+
+console.log("--- ③ 인자로 넘기기 (콜백) ---");
+function repeat(times, action) {
+  for (let i = 0; i < times; i++) {
+    action(i);   // 넘겨받은 함수를 실행
+  }
+}
+repeat(3, function (i) { console.log("실행 " + i); });
+
+console.log("--- ④ 함수를 반환하기 (고차 함수) ---");
+function makeMultiplier(factor) {
+  return function (n) {
+    return n * factor;   // 바깥의 factor를 기억합니다 (31장 클로저)
+  };
+}
+const triple = makeMultiplier(3);
+const tenTimes = makeMultiplier(10);
+console.log(triple(5));     // 15
+console.log(tenTimes(5));   // 50
+
+console.log("--- ⑤ 실전: 배열 메서드가 바로 이 방식입니다 ---");
+const numbers = [1, 2, 3, 4, 5];
+console.log(numbers.map(n => n * 2));
+console.log(numbers.filter(n => n % 2 === 0));
+
+console.log("--- ⑥ 함수 호출과 함수 자체는 다릅니다 ---");
+function hello() { return "hi"; }
+console.log(hello);     // 함수 그 자체
+console.log(hello());   // 실행한 결과
+// setTimeout(hello, 100)   ✅ 나중에 실행하라고 넘김
+// setTimeout(hello(), 100) ❌ 지금 실행해서 결과(문자열)를 넘김
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💥</span> 신입이 가장 많이 하는 실수</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 지금 즉시 실행되고, 그 결과(undefined)가 등록됩니다
+button.addEventListener("click", handleClick());
+
+// ✅ 함수 자체를 넘깁니다. 클릭할 때 실행됩니다
+button.addEventListener("click", handleClick);
+
+// ✅ 인자를 넘겨야 한다면 감싸세요
+button.addEventListener("click", () =&gt; handleClick(id));</code></pre>
+</div>
+<p style="margin-bottom:0"><b>괄호를 붙이면 "지금 실행", 안 붙이면 "함수 그 자체"</b>입니다.</p>
+</div>
+
+<h2 id="good">좋은 함수의 조건</h2>
+
+<h3 id="pure">순수 함수</h3>
+<p><b>순수 함수</b>는 두 조건을 만족합니다.</p>
+<ol>
+<li><b>같은 입력이면 항상 같은 출력.</b></li>
+<li><b>바깥 세계를 바꾸지 않는다</b> (부수 효과 없음).</li>
+</ol>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ✅ 순수 함수 — 예측 가능하고 테스트하기 쉽습니다
+function add(a, b) {
+  return a + b;
+}
+
+// ❌ 순수하지 않음: 바깥 변수를 바꿉니다
+let total = 0;
+function addToTotal(n) {
+  total += n;
+}
+
+// ❌ 순수하지 않음: 인자로 받은 배열을 직접 수정합니다
+function addItemBad(list, item) {
+  list.push(item);        // 원본이 바뀝니다
+  return list;
+}
+
+// ✅ 새 배열을 만들어 반환합니다
+function addItem(list, item) {
+  return [...list, item];
+}</code></pre>
+</div>
+
+<p>모든 함수가 순수할 수는 없습니다. 화면을 바꾸고 서버에 요청하는 일은 <b>본질적으로 부수 효과</b>입니다.
+요령은 <b>순수한 계산 부분과 부수 효과 부분을 분리</b>하는 것입니다.
+<span class="term" data-term="react">React</span>가 이 원칙 위에 세워져 있어서(57장), 지금 익혀 두면 나중이 훨씬 수월합니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 함수 작성 원칙 5가지</p>
+<ol style="margin-bottom:0">
+<li><b>하나의 함수는 하나의 일만.</b> 이름에 "and"가 들어가면 쪼갤 신호입니다.</li>
+<li><b>이름은 동사로.</b> <code>getUserName</code>, <code>calculateTotal</code>, <code>isValid</code>.</li>
+<li><b>인자는 3개 이하.</b> 넘으면 객체로 받습니다.</li>
+<li><b>이른 반환으로</b> 중첩을 줄입니다.</li>
+<li><b>인자로 받은 객체·배열을 직접 수정하지 마세요.</b> 호출한 쪽이 예상하지 못합니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>함수 선언문은 <b>통째로 호이스팅</b>되어 위에서 호출할 수 있다. 표현식·화살표는 아니다.</li>
+<li>화살표 함수는 <b><code>this</code>·<code>arguments</code>가 없고 <code>new</code>로 호출할 수 없다.</b></li>
+<li>객체 메서드에는 <b>메서드 축약 문법</b>을 쓴다. 화살표 함수는 부적절하다.</li>
+<li>화살표 함수로 객체를 반환할 때는 <code>({ … })</code>로 감싼다.</li>
+<li>기본값·나머지 매개변수·객체 구조 분해로 인자를 유연하게 받는다.</li>
+<li><b>함수는 값이다.</b> 변수에 담고, 넘기고, 반환할 수 있다.</li>
+<li><b><code>fn</code>은 함수 자체, <code>fn()</code>은 실행 결과.</b> 콜백에 괄호를 붙이지 않는다.</li>
+<li>가능하면 <b>순수 함수</b>로. 부수 효과는 분리한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Functions" target="_blank" rel="noopener">MDN — 함수 가이드</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Functions/Arrow_functions" target="_blank" rel="noopener">MDN — 화살표 함수</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters" target="_blank" rel="noopener">MDN — 나머지 매개변수</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Glossary/First-class_Function" target="_blank" rel="noopener">MDN 용어사전 — 일급 함수</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>button.addEventListener(\"click\", handleClick())</code> 의 문제는?",
+    o: [
+      "문법 오류다",
+      "handleClick이 즉시 실행되고 그 반환값(대개 undefined)이 핸들러로 등록되어, 클릭해도 아무 일이 일어나지 않는다",
+      "이벤트가 두 번 등록된다",
+      "문제없다"
+    ],
+    a: 1,
+    e: "괄호는 <b>지금 실행하라</b>는 뜻입니다. 콜백으로 넘길 때는 <b>함수 자체</b>인 <code>handleClick</code>을 넘겨야 합니다. 인자를 전달해야 한다면 <code>() =&gt; handleClick(id)</code>처럼 감싸세요."
+  },
+  {
+    q: "객체의 메서드를 화살표 함수로 정의하면 안 되는 이유는?",
+    o: [
+      "문법 오류가 나기 때문",
+      "화살표 함수에는 자신의 this가 없어 객체를 가리키지 못하고 바깥 스코프의 this를 가져오기 때문",
+      "화살표 함수는 객체 안에서 쓸 수 없기 때문",
+      "성능이 느리기 때문"
+    ],
+    a: 1,
+    e: "화살표 함수는 <b>자신의 <code>this</code>를 갖지 않고</b> 정의된 위치의 바깥 <code>this</code>를 그대로 씁니다. 객체 리터럴은 스코프를 만들지 않으므로 <code>this</code>가 객체가 아니라 바깥(모듈이면 <code>undefined</code>)을 가리킵니다. 메서드 축약 문법 <code>increase() { … }</code>를 쓰세요."
+  },
+  {
+    q: "<code>const makeUser = name =&gt; { name: name };</code> 를 호출하면 무엇이 반환되나요?",
+    o: [
+      "<code>{ name: \"…\" }</code> 객체",
+      "<code>undefined</code> — 중괄호가 객체 리터럴이 아니라 함수 본문으로 해석되기 때문",
+      "문자열",
+      "문법 오류"
+    ],
+    a: 1,
+    e: "화살표 함수 뒤의 <code>{</code>는 <b>함수 본문의 시작</b>으로 해석됩니다. 안의 <code>name:</code>은 레이블 문법이 되고 <code>return</code>이 없어 <code>undefined</code>가 반환됩니다. 객체를 반환하려면 <code>name =&gt; ({ name })</code>처럼 <b>괄호로 감싸야</b> 합니다."
+  },
+  {
+    q: "다음 중 <b>순수 함수</b>인 것은?",
+    o: [
+      "<code>function add(a, b) { return a + b; }</code>",
+      "<code>function push(list, item) { list.push(item); return list; }</code>",
+      "<code>function save(data) { localStorage.setItem(\"k\", data); }</code>",
+      "<code>function random() { return Math.random(); }</code>"
+    ],
+    a: 0,
+    e: "순수 함수는 <b>같은 입력에 항상 같은 출력</b>이고 <b>바깥을 바꾸지 않습니다</b>. 두 번째는 인자로 받은 배열을 수정하고, 세 번째는 저장소를 바꾸며, 네 번째는 호출마다 결과가 다릅니다. 첫 번째만 두 조건을 모두 만족합니다."
+  },
+  {
+    q: "함수 선언문과 함수 표현식의 가장 실용적인 차이는?",
+    o: [
+      "선언문은 화살표 함수를 쓸 수 없다",
+      "선언문은 통째로 호이스팅되어 정의보다 위에서 호출할 수 있지만, 표현식은 변수 규칙(TDZ)을 따라 정의 이전에 호출하면 오류가 난다",
+      "표현식은 인자를 받을 수 없다",
+      "선언문은 this를 갖지 않는다"
+    ],
+    a: 1,
+    e: "함수 선언문은 실행 전에 <b>함수 전체가 준비</b>되어 위에서 호출해도 동작합니다. 함수 표현식은 <code>const</code>·<code>let</code> 변수에 담긴 값이므로 <b>TDZ</b> 규칙을 따라 선언 전에 호출하면 <code>ReferenceError</code>가 납니다."
+  }
+]);
+</script>
+</body>
+</html>

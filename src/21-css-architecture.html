@@ -1,0 +1,403 @@
+<!--desc: CSS 변수(커스텀 속성)로 디자인 토큰 만들기, 다크 모드 구현, BEM 등 이름 짓기 규칙, 캐스케이드 레이어로 명시도 전쟁 끝내기를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>CSS 변수(커스텀 속성)와 <b>디자인 토큰</b></li>
+  <li>다크 모드를 <b>세 가지 상태</b>로 올바르게 구현하기</li>
+  <li>클래스 이름 짓기 — BEM과 유틸리티 방식</li>
+  <li><b>캐스케이드 레이어</b>로 <code>!important</code> 전쟁 끝내기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · CSS가 커지기 시작할 때 필요한 것들</p>
+
+<h2 id="vars">CSS 변수 (커스텀 속성)</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">:root {
+  --color-primary: #1f5f4f;
+  --space-md: 16px;
+  --radius: 8px;
+}
+
+.button {
+  background: var(--color-primary);
+  padding: var(--space-md);
+  border-radius: var(--radius);
+}
+
+/* 값이 없을 때 쓸 기본값도 지정할 수 있습니다 */
+.card { gap: var(--card-gap, 12px); }</code></pre>
+</div>
+
+<p>이름은 반드시 <code>--</code>로 시작합니다. <code>:root</code>는 <code>&lt;html&gt;</code>을 가리키는 선택자로,
+여기에 정의하면 문서 전체에서 쓸 수 있습니다.</p>
+
+<h3 id="vars-vs-sass">Sass 변수와 무엇이 다른가</h3>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>Sass 변수 <code>$x</code></th><th>CSS 변수 <code>--x</code></th></tr></thead>
+<tbody>
+<tr><td>존재 시점</td><td>빌드할 때 값이 <b>박제</b>됨</td><td><b>브라우저에서 살아 있음</b></td></tr>
+<tr><td>상속</td><td>없음</td><td><b>있음</b> — 부모에서 자식으로</td></tr>
+<tr><td>실행 중 변경</td><td>불가능</td><td><b>가능</b> — JavaScript로, 미디어 쿼리로</td></tr>
+<tr><td>범위</td><td>파일·블록 단위</td><td><b>DOM 트리 단위</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>이 차이가 결정적입니다. CSS 변수는 <b>상속되고 실행 중에 바뀔 수 있어서</b>
+다크 모드, 테마 전환, 컴포넌트 변형을 <b>선택자 하나 추가 없이</b> 만들 수 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">JavaScript에서 읽고 쓰기</span>
+<pre><code data-lang="js">// 읽기
+const color = getComputedStyle(document.documentElement)
+  .getPropertyValue("--color-primary");
+
+// 쓰기
+document.documentElement.style.setProperty("--color-primary", "#c0392b");</code></pre>
+</div>
+
+<h3 id="tokens">디자인 토큰</h3>
+<p>색·간격·글자 크기 같은 값을 <b>이름 붙은 변수로 정리한 체계</b>를 디자인 토큰이라고 합니다.
+두 층으로 나누는 것이 좋은 관행입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">:root {
+  /* ① 원시 토큰 — 값 그 자체 */
+  --green-500: #1f5f4f;
+  --green-100: #e6f0ec;
+  --gray-900:  #23211d;
+  --size-2: 8px;
+  --size-3: 16px;
+
+  /* ② 의미 토큰 — "어디에 쓰는 색인가" */
+  --color-text:    var(--gray-900);
+  --color-accent:  var(--green-500);
+  --color-surface: var(--green-100);
+  --space-inline:  var(--size-3);
+}</code></pre>
+</div>
+
+<p>컴포넌트에서는 <b>의미 토큰만</b> 씁니다.
+그러면 다크 모드나 브랜드 색 변경 시 <b>의미 토큰이 가리키는 원시 토큰만 바꾸면</b> 전부 따라옵니다.</p>
+
+<h2 id="dark">다크 모드 제대로 만들기</h2>
+
+<p>다크 모드에는 <b>세 가지 상태</b>가 있습니다. 이걸 놓치면 반드시 버그가 납니다.</p>
+<ol>
+<li><b>시스템 설정 따르기</b> (기본값)</li>
+<li><b>사용자가 라이트를 명시적으로 선택</b></li>
+<li><b>사용자가 다크를 명시적으로 선택</b></li>
+</ol>
+
+<div class="codeblock">
+<span class="cb-label">세 상태를 모두 처리하는 구조</span>
+<pre><code data-lang="css">/* ① 라이트 팔레트를 기본으로 — 조건 없이 정의 */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --text: #23211d;
+}
+
+/* ② 시스템이 다크이고, 사용자가 라이트를 고르지 않았을 때 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #14161a;
+    --text: #e6e6e4;
+  }
+}
+
+/* ③ 사용자가 다크를 명시적으로 골랐을 때 — 시스템 설정과 무관하게 */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #14161a;
+  --text: #e6e6e4;
+}
+
+body { background: var(--bg); color: var(--text); }</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎛️</span> <code>color-scheme</code>을 빠뜨리지 마세요</p>
+<p style="margin-bottom:0">이 속성은 <b>브라우저 기본 UI</b>(스크롤바, 폼 컨트롤, 기본 배경)의 색을 함께 바꿔 줍니다.
+없으면 다크 모드에서 <b>스크롤바만 흰색</b>으로 남아 어색해집니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚡</span> 다크 모드의 화면 깜빡임(FOUC)</p>
+<p style="margin-bottom:0">테마 설정을 <code>localStorage</code>에서 읽어 적용하는 코드가
+<b>페이지 아래쪽</b>에 있으면, 잠깐 라이트 모드가 보였다가 다크로 바뀝니다.
+해결책은 <b><code>&lt;head&gt;</code> 안에 작은 인라인 스크립트</b>를 두어
+<b>화면이 그려지기 전에</b> <code>data-theme</code>을 붙이는 것입니다.
+(이 책도 그 방식을 씁니다.)</p>
+</div>
+
+<div class="runner" data-lang="html" data-title="변수로 만드는 테마 전환" data-note="--accent 값을 바꾸면 버튼·테두리·링크가 한꺼번에 바뀝니다. 변수 하나로 전부 연결된다는 것이 핵심입니다.">
+<textarea class="rn-src">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f4f4f2;
+    --text: #23211d;
+    --accent: #1f5f4f;
+    --radius: 10px;
+  }
+  [data-theme="dark"] {
+    --bg: #14161a;
+    --surface: #1e222a;
+    --text: #e6e6e4;
+    --accent: #5fc4a6;
+  }
+  [data-theme="rose"] {
+    --bg: #fff5f6;
+    --surface: #ffe9ec;
+    --text: #3a1f24;
+    --accent: #c0395a;
+  }
+
+  body {
+    background: var(--bg); color: var(--text);
+    font-size: 13px; padding: 14px; margin: 0;
+    transition: background 200ms, color 200ms;
+  }
+  .card {
+    background: var(--surface); border: 2px solid var(--accent);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
+  }
+  .btn {
+    background: var(--accent); color: var(--bg);
+    border: 0; border-radius: var(--radius);
+    padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  a { color: var(--accent); }
+  .switcher { display: flex; gap: 6px; margin-bottom: 12px; }
+  .switcher button { padding: 6px 10px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--accent); background: transparent; color: var(--text);
+    border-radius: 6px; }
+</style>
+
+<div class="switcher">
+  <button data-set="">라이트</button>
+  <button data-set="dark">다크</button>
+  <button data-set="rose">로즈</button>
+</div>
+
+<div class="card">
+  <p>변수 4개만 바꾸면 배경·글자·테두리·버튼·링크가 전부 따라옵니다.</p>
+  <button class="btn">버튼</button>
+  <a href="#">링크</a>
+</div>
+
+<script>
+  document.querySelectorAll(".switcher button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      const theme = b.getAttribute("data-set");
+      if (theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+      }
+      console.log("테마:", theme || "light(기본)");
+    });
+  });
+</script>
+</textarea>
+</div>
+
+<h2 id="naming">이름 짓기</h2>
+
+<p>CSS의 가장 큰 문제는 <b>모든 것이 전역</b>이라는 점입니다.
+어딘가에 <code>.title { color: red }</code>를 쓰면 <b>문서 전체의 모든 <code>.title</code></b>이 빨개집니다.
+이름 규칙은 이 충돌을 막기 위한 장치입니다.</p>
+
+<h3 id="bem">BEM</h3>
+<div class="codeblock">
+<pre><code data-lang="css">/* Block__Element--Modifier */
+.card { }                 /* 블록: 독립적인 덩어리 */
+.card__title { }          /* 요소: 블록의 일부 (__ 두 밑줄) */
+.card__image { }
+.card--featured { }       /* 변형: 블록의 다른 상태 (-- 두 하이픈) */
+.card__title--large { }</code></pre>
+</div>
+<ul>
+<li><b>장점</b> — 이름만 봐도 구조가 보이고, <b>명시도가 항상 (0,1,0)으로 평평</b>해서 캐스케이드 싸움이 없습니다.</li>
+<li><b>단점</b> — 이름이 깁니다.</li>
+</ul>
+
+<h3 id="utility">유틸리티 방식</h3>
+<div class="codeblock">
+<pre><code data-lang="html">&lt;div class="flex items-center gap-4 p-4 rounded-lg bg-white"&gt;</code></pre>
+</div>
+<p>Tailwind CSS로 대표되는 방식입니다. <b>한 클래스 = 한 속성</b>.
+이름을 고민할 필요가 없고 CSS 파일이 거의 늘지 않는 대신, HTML이 길어집니다. 22장에서 다룹니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 무엇을 고르든 지킬 두 가지</p>
+<ol style="margin-bottom:0">
+<li><b>선택자를 깊게 중첩하지 마세요.</b> <code>.page .content .card .title span</code> 같은 선택자는
+명시도가 높아 덮어쓰기 어렵고, HTML 구조가 조금만 바뀌어도 깨집니다.
+<b>클래스 하나로 직접 겨냥</b>하는 편이 거의 항상 낫습니다.</li>
+<li><b>요소 선택자로 스타일을 정의하지 마세요.</b> <code>div { margin: 10px }</code> 같은 규칙은
+문서 어디에 영향을 줄지 알 수 없습니다. (초기화 코드는 예외입니다.)</li>
+</ol>
+</div>
+
+<h2 id="layers">캐스케이드 레이어 — 명시도 전쟁의 종결</h2>
+
+<p>12장에서 승부 순서를 배웠습니다. 사실 그 앞에 한 단계가 더 있습니다.
+바로 <b>어느 레이어에 속하는가</b>입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">/* ① 우선순위를 미리 선언 — 나중에 쓴 레이어가 이깁니다 */
+@layer reset, base, components, utilities;
+
+@layer reset {
+  * { margin: 0; box-sizing: border-box; }
+}
+
+@layer components {
+  /* 명시도가 아무리 높아도… */
+  #app .card .title { color: blue; }
+}
+
+@layer utilities {
+  /* …나중 레이어의 이 한 줄이 이깁니다 */
+  .text-red { color: red; }
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🏆</span> 레이어는 명시도보다 <b>먼저</b> 판단됩니다</p>
+<p style="margin-bottom:0">즉 <code>utilities</code> 레이어의 <code>(0,1,0)</code>짜리 규칙이
+<code>components</code> 레이어의 <code>(1,2,0)</code>짜리 규칙을 <b>이깁니다.</b>
+"유틸리티 클래스가 항상 이겼으면 좋겠다"는 오랜 요구가 <code>!important</code> 없이 해결됩니다.<br>
+레이어에 속하지 않은 일반 CSS는 <b>모든 레이어보다 우선</b>합니다.
+그래서 외부 라이브러리를 <code>@layer</code>로 감싸 두면 내 코드가 자연스럽게 이깁니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">외부 라이브러리를 레이어에 가두기</span>
+<pre><code data-lang="css">@layer vendor, app;
+@import url("some-library.css") layer(vendor);
+
+@layer app {
+  /* 이제 여기 쓴 것이 라이브러리를 덮어씁니다 */
+}</code></pre>
+</div>
+<p>Chrome 99+, Safari 15.4+, Firefox 97+에서 지원됩니다.</p>
+
+<h3 id="where">:where()로 명시도 낮추기</h3>
+<div class="codeblock">
+<pre><code data-lang="css">/* 명시도 (0,2,1) — 덮어쓰기 어렵다 */
+.prose .content a { color: blue; }
+
+/* 명시도 (0,0,1) — a 하나만큼. 쉽게 덮어쓸 수 있다 */
+:where(.prose .content) a { color: blue; }</code></pre>
+</div>
+<p><code>:where()</code>는 <b>안에 든 것의 명시도를 0으로 만듭니다.</b>
+라이브러리나 기본 스타일을 만들 때, <b>사용자가 쉽게 덮어쓸 수 있게</b> 하는 데 유용합니다.</p>
+
+<h2 id="reset">초기화</h2>
+<p>브라우저마다 기본 스타일이 조금씩 다릅니다. 이를 맞추는 코드를 <b>리셋</b> 또는 <b>노멀라이즈</b>라고 합니다.
+요즘은 이 정도면 충분한 경우가 많습니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+  * { margin: 0; }
+  body { line-height: 1.7; -webkit-font-smoothing: antialiased; }
+  img, picture, video, canvas, svg { display: block; max-width: 100%; }
+  input, button, textarea, select { font: inherit; }
+  p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+  ul[role="list"], ol[role="list"] { list-style: none; padding: 0; }
+}</code></pre>
+</div>
+<p><code>img { display: block }</code>은 이미지 아래에 생기는 <b>미묘한 빈 공간</b>을 없앱니다.
+이미지가 인라인 요소라서 글자의 baseline 아래 여백이 남기 때문에 생기는 현상입니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>CSS 변수는 <b>상속되고 실행 중에 바꿀 수 있다.</b> Sass 변수와 근본적으로 다르다.</li>
+<li>토큰은 <b>원시 토큰 → 의미 토큰</b> 두 층으로. 컴포넌트는 의미 토큰만 쓴다.</li>
+<li>다크 모드는 <b>세 상태</b>(시스템·라이트 강제·다크 강제)를 모두 처리해야 한다. <code>color-scheme</code>도 함께.</li>
+<li>테마 스크립트는 <b><code>&lt;head&gt;</code>에 인라인</b>으로 두어 깜빡임을 막는다.</li>
+<li>이름 규칙은 <b>전역 충돌</b>을 막기 위한 것. 깊은 중첩과 요소 선택자를 피한다.</li>
+<li><b>캐스케이드 레이어는 명시도보다 먼저</b> 판단된다. <code>!important</code>의 대안이다.</li>
+<li><code>:where()</code>는 명시도를 0으로 만들어 덮어쓰기 쉽게 한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_cascading_variables/Using_CSS_custom_properties" target="_blank" rel="noopener">MDN — CSS 커스텀 속성 사용하기</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@layer" target="_blank" rel="noopener">MDN — @layer</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme" target="_blank" rel="noopener">MDN — color-scheme</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:where" target="_blank" rel="noopener">MDN — :where()</a></li>
+<li><a href="https://getbem.com/" target="_blank" rel="noopener">BEM 공식 사이트</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "Sass 변수(<code>$color</code>)와 CSS 변수(<code>--color</code>)의 결정적 차이는?",
+    o: [
+      "이름 표기법만 다르다",
+      "Sass 변수는 빌드 시점에 값이 고정되지만 CSS 변수는 브라우저에서 살아 있어 상속되고 실행 중에 바꿀 수 있다",
+      "CSS 변수는 색상에만 쓸 수 있다",
+      "Sass 변수만 미디어 쿼리 안에서 바꿀 수 있다"
+    ],
+    a: 1,
+    e: "Sass 변수는 컴파일 결과에 <b>값이 박제</b>됩니다. CSS 변수는 런타임에 존재해 <b>DOM 트리를 따라 상속</b>되고 JavaScript나 미디어 쿼리로 바꿀 수 있습니다. 다크 모드와 테마 전환이 쉬운 이유가 바로 이것입니다."
+  },
+  {
+    q: "다크 모드에서 <code>color-scheme: dark</code>를 함께 선언하는 이유는?",
+    o: [
+      "배경색을 자동으로 검게 만들기 위해",
+      "스크롤바·기본 폼 컨트롤 같은 브라우저 기본 UI의 색도 함께 다크로 맞추기 위해",
+      "다크 모드 미디어 쿼리를 활성화하기 위해",
+      "CSS 변수를 사용하기 위해"
+    ],
+    a: 1,
+    e: "<code>color-scheme</code>은 <b>브라우저가 그리는 UI</b>(스크롤바, 체크박스, 기본 배경)의 명암을 지정합니다. 없으면 페이지는 어두운데 스크롤바만 밝게 남는 어색한 상태가 됩니다."
+  },
+  {
+    q: "캐스케이드 레이어(<code>@layer</code>)와 명시도의 관계로 옳은 것은?",
+    o: [
+      "명시도가 먼저 비교되고 같을 때만 레이어를 본다",
+      "레이어가 명시도보다 먼저 비교되므로, 나중 레이어의 낮은 명시도 규칙이 앞선 레이어의 높은 명시도 규칙을 이긴다",
+      "레이어는 명시도에 아무 영향이 없다",
+      "레이어를 쓰면 !important가 무효가 된다"
+    ],
+    a: 1,
+    e: "캐스케이드 순서는 <b>출처·중요도 → 레이어 → 명시도 → 작성 순서</b>입니다. 레이어가 명시도보다 <b>앞</b>이므로 유틸리티 레이어의 <code>(0,1,0)</code> 규칙이 컴포넌트 레이어의 <code>(1,2,0)</code> 규칙을 이깁니다. <code>!important</code> 없이 우선순위를 설계할 수 있게 해 줍니다."
+  },
+  {
+    q: "라이브러리를 만들면서 기본 스타일을 사용자가 쉽게 덮어쓸 수 있게 하려면?",
+    o: [
+      "<code>!important</code>를 붙인다",
+      "<code>:where()</code>로 감싸 명시도를 0으로 만든다",
+      "id 선택자를 사용한다",
+      "인라인 스타일로 작성한다"
+    ],
+    a: 1,
+    e: "<code>:where()</code>는 <b>안에 든 선택자의 명시도를 0으로</b> 만듭니다. <code>:where(.prose .content) a</code>는 명시도가 <code>a</code> 하나(0,0,1)와 같아져 사용자가 클래스 하나로 쉽게 덮어쓸 수 있습니다. <code>:is()</code>는 반대로 인자 중 가장 높은 명시도를 취합니다."
+  },
+  {
+    q: "다크 모드에서 페이지 로드 직후 라이트 화면이 잠깐 보였다가 어두워집니다. 해결책은?",
+    o: [
+      "CSS 파일 크기를 줄인다",
+      "저장된 테마를 읽어 적용하는 작은 스크립트를 <code>&lt;head&gt;</code> 안에 인라인으로 두어 첫 페인트 전에 실행되게 한다",
+      "transition 시간을 늘린다",
+      "다크 모드를 기본값으로 만든다"
+    ],
+    a: 1,
+    e: "테마 적용 코드가 <b>첫 페인트 이후</b>에 실행되면 라이트 화면이 먼저 보입니다. <code>&lt;head&gt;</code> 안 인라인 스크립트는 파싱을 멈추고 즉시 실행되므로(5장), 화면이 그려지기 전에 <code>data-theme</code>을 붙일 수 있습니다."
+  }
+]);
+</script>

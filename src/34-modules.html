@@ -1,0 +1,353 @@
+<!--desc: ES 모듈의 export와 import 문법 전체, 모듈 스코프와 단 한 번 평가 원칙, 동적 import, CommonJS와의 차이를 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>모듈이 없던 시절의 문제와 모듈이 푸는 것</li>
+  <li><code>export</code>·<code>import</code> 문법 전체</li>
+  <li><b>모듈은 단 한 번만 평가된다</b>는 중요한 성질</li>
+  <li><code>import()</code>로 <b>필요할 때 불러오기</b></li>
+  <li>CommonJS(<code>require</code>)와 ESM의 차이</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 6부(개발 환경)로 넘어가는 다리입니다</p>
+
+<h2 id="why">모듈이 없던 시절</h2>
+
+<div class="codeblock">
+<span class="cb-label">2015년 이전의 흔한 코드</span>
+<pre><code data-lang="html">&lt;script src="jquery.js"&gt;&lt;/script&gt;
+&lt;script src="utils.js"&gt;&lt;/script&gt;
+&lt;script src="app.js"&gt;&lt;/script&gt;</code></pre>
+</div>
+
+<p>모든 파일이 <b>같은 전역 공간</b>을 공유했습니다. 문제가 세 가지였습니다.</p>
+<ul>
+<li><b>이름 충돌</b> — <code>utils.js</code>의 <code>format</code>과 다른 파일의 <code>format</code>이 서로를 덮어씀</li>
+<li><b>순서 의존</b> — <code>&lt;script&gt;</code> 순서를 하나 바꾸면 페이지가 깨짐</li>
+<li><b>의존 관계가 안 보임</b> — 이 파일이 무엇을 필요로 하는지 코드에 드러나지 않음</li>
+</ul>
+
+<p>2015년(ES2015)에 언어 차원의 표준 모듈 시스템 <b>ESM</b>이 도입되어 이 문제들이 해결되었습니다.</p>
+
+<h2 id="export">export</h2>
+
+<div class="codeblock">
+<span class="cb-label">math.js — 이름 있는 내보내기</span>
+<pre><code data-lang="js">// 선언과 동시에
+export const PI = 3.14159;
+export function add(a, b) { return a + b; }
+export class Calculator { }
+
+// 또는 아래에서 한 번에 (이 방식이 무엇을 공개하는지 한눈에 보입니다)
+const subtract = (a, b) =&gt; a - b;
+const multiply = (a, b) =&gt; a * b;
+export { subtract, multiply };
+
+// 이름을 바꿔서
+export { multiply as times };</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">Button.js — 기본 내보내기 (파일당 하나)</span>
+<pre><code data-lang="js">export default function Button() { }
+
+// 기본과 이름 있는 것을 함께 쓸 수도 있습니다
+export const SIZES = ["sm", "md", "lg"];</code></pre>
+</div>
+
+<h2 id="import">import</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// 이름 있는 가져오기 — 중괄호 필수, 이름이 정확히 일치해야 함
+import { add, PI } from "./math.js";
+
+// 이름 바꾸기
+import { add as sum } from "./math.js";
+
+// 기본 가져오기 — 중괄호 없음, 이름은 마음대로
+import Button from "./Button.js";
+import MyButton from "./Button.js";     // 같은 것. 이름 자유
+
+// 섞어서
+import Button, { SIZES } from "./Button.js";
+
+// 전부 하나의 객체로
+import * as math from "./math.js";
+math.add(1, 2);
+
+// 실행만 (부수 효과 목적. CSS 파일 등)
+import "./styles.css";</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎯</span> default와 named, 헷갈리는 지점</p>
+<div class="tablewrap" style="margin:.6em 0 0">
+<table>
+<thead><tr><th></th><th>기본 (default)</th><th>이름 있는 (named)</th></tr></thead>
+<tbody>
+<tr><td>개수</td><td>파일당 <b>하나</b></td><td>여러 개</td></tr>
+<tr><td>중괄호</td><td>없음</td><td><b>필수</b></td></tr>
+<tr><td>이름</td><td>가져올 때 <b>자유</b></td><td><b>정확히 일치</b>해야 함</td></tr>
+<tr><td>오타 시</td><td>알 수 없음 (다른 이름으로 받아짐)</td><td><b>즉시 오류</b> — 안전</td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin-bottom:0"><b>이름 있는 내보내기를 기본으로 쓰는 것을 권합니다.</b>
+오타를 도구가 잡아 주고, 자동 완성이 정확하며, 이름이 파일마다 제각각이 되는 일을 막습니다.
+React 컴포넌트처럼 관례상 <code>default</code>를 쓰는 경우만 예외로 두면 됩니다.</p>
+</div>
+
+<h2 id="properties">모듈의 세 가지 성질</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>성질</th><th>내용</th></tr></thead>
+<tbody>
+<tr><td><b>독립된 스코프</b></td><td>모듈 안의 최상위 변수는 <b>전역이 아닙니다.</b> <code>var</code>를 써도 <code>window</code>에 붙지 않습니다</td></tr>
+<tr><td><b>자동 엄격 모드</b></td><td><code>"use strict"</code>를 쓸 필요가 없습니다</td></tr>
+<tr><td><b>단 한 번만 평가</b></td><td>여러 파일이 같은 모듈을 가져와도 <b>실행은 한 번</b>. 그 결과를 공유합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">"한 번만 평가"의 실용적 의미 — 자연스러운 싱글턴</span>
+<pre><code data-lang="js">// config.js
+console.log("설정 초기화");        // 몇 번 import 해도 한 번만 출력됩니다
+export const config = { theme: "dark" };
+
+// a.js
+import { config } from "./config.js";
+config.theme = "light";
+
+// b.js
+import { config } from "./config.js";
+console.log(config.theme);   // "light" — 같은 객체를 봅니다</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔗</span> import는 복사가 아니라 <b>살아 있는 연결</b>입니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// counter.js
+export let count = 0;
+export function increase() { count++; }
+
+// main.js
+import { count, increase } from "./counter.js";
+console.log(count);   // 0
+increase();
+console.log(count);   // 1  ← 값을 복사해 온 것이 아닙니다
+
+count = 100;          // ❌ TypeError — 가져온 바인딩은 읽기 전용</code></pre>
+</div>
+</div>
+
+<h2 id="html">HTML에서 쓰기</h2>
+<div class="codeblock">
+<pre><code data-lang="html">&lt;script type="module" src="main.js"&gt;&lt;/script&gt;</code></pre>
+</div>
+<div class="tablewrap">
+<table>
+<thead><tr><th>일반 script와 다른 점</th></tr></thead>
+<tbody>
+<tr><td>기본으로 <b><code>defer</code>처럼</b> 동작합니다 (파싱을 막지 않고 DOM 완성 후 실행)</td></tr>
+<tr><td>같은 모듈을 여러 번 불러도 <b>한 번만</b> 실행됩니다</td></tr>
+<tr><td><b>CORS 규칙이 적용됩니다.</b> 그래서 <code>file://</code>로 열면 대개 실패합니다 — 로컬 서버가 필요합니다</td></tr>
+<tr><td>경로에 <b>확장자를 생략할 수 없습니다</b> (<code>"./math.js"</code>). 번들러를 쓰면 생략 가능해집니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> <code>file://</code>로 열면 모듈이 동작하지 않습니다</p>
+<p style="margin-bottom:0">파일을 더블클릭해서 연 페이지에서 <code>type="module"</code>을 쓰면
+<b>CORS 오류</b>가 납니다. 모듈은 CORS 규칙을 따르는데 <code>file://</code>에는 출처가 없기 때문입니다.
+간단한 로컬 서버(44·46장)를 띄우면 해결됩니다.
+<b>참고로 이 책 자체가 모듈을 쓰지 않는 이유가 바로 이것입니다</b> — 파일을 더블클릭해도 열리도록.</p>
+</div>
+
+<h2 id="dynamic">동적 import</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// 정적 import는 파일 맨 위에서만, 조건 없이
+import { heavy } from "./heavy.js";
+
+// 동적 import는 어디서든, 조건부로. Promise를 반환합니다
+button.addEventListener("click", async () =&gt; {
+  const { Chart } = await import("./chart-library.js");
+  new Chart(canvas, data);
+});
+
+// 조건에 따라 다른 모듈
+const locale = navigator.language.startsWith("ko") ? "ko" : "en";
+const messages = await import(`./locales/${locale}.js`);</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📦</span> 코드 분할의 출발점</p>
+<p style="margin-bottom:0">차트 라이브러리가 300KB인데 <b>사용자의 5%만</b> 차트를 본다면,
+나머지 95%에게 그 파일을 내려보내는 것은 낭비입니다.
+동적 <code>import()</code>는 <b>필요한 순간에만</b> 내려받게 합니다.
+번들러는 이 지점을 인식해 <b>파일을 자동으로 쪼갭니다</b>(47장).
+React의 <code>lazy()</code>도 내부적으로 이것을 씁니다(69장).</p>
+</div>
+
+<h2 id="cjs">CommonJS와의 차이</h2>
+
+<p>Node.js는 ESM이 표준이 되기 전부터 <b>CommonJS</b>라는 자체 모듈 시스템을 써 왔습니다.
+지금도 수많은 패키지가 이 방식으로 되어 있어 <b>둘 다 알아야</b> 합니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>CommonJS</th><th>ESM</th></tr></thead>
+<tbody>
+<tr><td>내보내기</td><td><code>module.exports = {}</code></td><td><code>export</code></td></tr>
+<tr><td>가져오기</td><td><code>const x = require("./m")</code></td><td><code>import x from "./m"</code></td></tr>
+<tr><td>시점</td><td><b>실행 중</b>(동기적)</td><td><b>정적 분석 가능</b></td></tr>
+<tr><td>조건부 로드</td><td>가능 (<code>if</code> 안에서 <code>require</code>)</td><td>정적 <code>import</code>는 불가, <code>import()</code>는 가능</td></tr>
+<tr><td>트리 셰이킹</td><td>어려움</td><td><b>가능</b> — 안 쓰는 코드 제거(47장)</td></tr>
+<tr><td>주 사용처</td><td>과거 Node.js</td><td><b>현재 표준</b> — 브라우저·Node 모두</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Node.js에서 ESM을 쓰려면 <code>package.json</code>에 <code>"type": "module"</code>을 넣거나
+파일 확장자를 <code>.mjs</code>로 씁니다(46장).</p>
+
+<h2 id="practice">모듈 설계 실습</h2>
+
+<div class="runner" data-lang="js" data-title="모듈처럼 나누기" data-note="이 실행기는 파일을 나눌 수 없어 한 파일에 담았지만, 각 블록이 별도 파일이라고 생각하며 읽어 보세요.">
+<textarea class="rn-src">
+// ===== [파일 1] validators.js 라고 상상하세요 =====
+// export function isEmail(value) { ... }
+function isEmail(value) {
+  return typeof value === "string" && value.includes("@");
+}
+function isNotEmpty(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+// ===== [파일 2] formatters.js =====
+function formatPrice(won) {
+  return won.toLocaleString("ko-KR") + "원";
+}
+function formatDate(date) {
+  return new Intl.DateTimeFormat("ko-KR").format(date);
+}
+
+// ===== [파일 3] userService.js =====
+// import { isEmail, isNotEmpty } from "./validators.js";
+function createUser(input) {
+  if (!isNotEmpty(input.name)) throw new Error("이름을 입력하세요");
+  if (!isEmail(input.email)) throw new Error("이메일 형식이 아닙니다");
+  return { ...input, createdAt: new Date() };
+}
+
+// ===== [파일 4] main.js =====
+// import { createUser } from "./userService.js";
+// import { formatPrice, formatDate } from "./formatters.js";
+try {
+  const user = createUser({ name: "홍길동", email: "hong@example.com" });
+  console.log("가입:", user.name, "/", formatDate(user.createdAt));
+  console.log("첫 주문:", formatPrice(15000));
+
+  createUser({ name: "", email: "bad" });
+} catch (error) {
+  console.error("오류:", error.message);
+}
+
+// 파일을 나누는 기준:
+// ① 하나의 파일은 하나의 관심사만 (검증 / 포맷 / 비즈니스 로직)
+// ② 파일 이름만 봐도 안에 무엇이 있을지 짐작되어야 한다
+// ③ 순환 참조(A가 B를, B가 A를 import)는 피한다
+</textarea>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 모듈 관련 실무 팁</p>
+<ol style="margin-bottom:0">
+<li><b>이름 있는 내보내기를 기본으로.</b> 오타를 도구가 잡아 줍니다.</li>
+<li><b>배럴 파일</b>(<code>index.js</code>에서 모아 다시 내보내기)은 편하지만 <b>남용하면 순환 참조와 번들 크기 문제</b>를 만듭니다. 깊은 폴더에서만 쓰세요.</li>
+<li><b>순환 참조를 피하세요.</b> A가 B를, B가 A를 가져오면 한쪽이 <code>undefined</code>로 보이는 미묘한 버그가 납니다. 공통 부분을 세 번째 파일로 빼는 것이 해법입니다.</li>
+<li><b>import 순서를 정리</b>하세요. 보통 외부 라이브러리 → 내부 모듈 → 스타일 순으로 씁니다. ESLint가 자동 정렬해 줍니다(48장).</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>모듈은 <b>이름 충돌·순서 의존·불투명한 의존 관계</b>를 해결한다.</li>
+<li><code>export default</code>는 파일당 하나·중괄호 없음·이름 자유. <b>이름 있는 내보내기가 더 안전하다.</b></li>
+<li>모듈은 <b>독립 스코프 + 자동 엄격 모드 + 단 한 번만 평가</b>된다.</li>
+<li><code>import</code>는 값 복사가 아니라 <b>읽기 전용 연결</b>이다.</li>
+<li><code>&lt;script type="module"&gt;</code>은 <code>defer</code>처럼 동작하고 <b>CORS를 따르므로 <code>file://</code>에서 실패</b>한다.</li>
+<li><code>import()</code>는 <b>필요할 때 불러오기</b>. 코드 분할의 출발점.</li>
+<li>CommonJS는 <code>require</code>, ESM은 <code>import</code>. <b>ESM만 트리 셰이킹이 가능</b>하다.</li>
+<li><b>순환 참조를 피한다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Modules" target="_blank" rel="noopener">MDN — JavaScript 모듈</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import" target="_blank" rel="noopener">MDN — import</a> · <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export" target="_blank" rel="noopener">export</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import" target="_blank" rel="noopener">MDN — 동적 import()</a></li>
+<li><a href="https://nodejs.org/api/esm.html" target="_blank" rel="noopener">Node.js — ECMAScript 모듈</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>export default</code>와 이름 있는 <code>export</code>의 차이로 옳은 것은?",
+    o: [
+      "default는 여러 개 만들 수 있다",
+      "default는 파일당 하나이고 가져올 때 이름을 자유롭게 정할 수 있는 반면, 이름 있는 export는 중괄호와 정확한 이름이 필요하다",
+      "이름 있는 export는 중괄호가 필요 없다",
+      "둘은 완전히 같다"
+    ],
+    a: 1,
+    e: "<code>default</code>는 파일당 하나이고 <code>import 아무이름 from</code>으로 받습니다. 이름 있는 export는 <code>import { 정확한이름 }</code>이어야 하므로 <b>오타를 도구가 잡아 줍니다</b>. 그래서 실무에서는 이름 있는 export를 기본으로 권장합니다."
+  },
+  {
+    q: "같은 모듈을 세 개의 파일에서 import 하면 모듈 안의 코드는 몇 번 실행되나요?",
+    o: ["세 번", "한 번 — 모듈은 최초 한 번만 평가되고 결과가 공유된다", "import한 순서대로 매번", "브라우저마다 다르다"],
+    a: 1,
+    e: "ESM은 <b>단 한 번만 평가</b>되고 그 결과가 모든 가져오는 쪽에 공유됩니다. 그래서 모듈에 담은 객체는 자연스럽게 <b>싱글턴</b>이 되며, 설정·캐시·상태 저장소를 만들 때 이 성질을 활용합니다."
+  },
+  {
+    q: "HTML 파일을 더블클릭해 <code>file://</code>로 열었더니 <code>type=\"module\"</code> 스크립트가 CORS 오류로 실패합니다. 이유는?",
+    o: [
+      "모듈 문법에 오류가 있어서",
+      "모듈은 CORS 규칙을 따르는데 file:// 에는 출처(origin)가 없어 차단되기 때문. 로컬 서버로 열어야 한다",
+      "브라우저가 모듈을 지원하지 않아서",
+      "확장자를 생략해서"
+    ],
+    a: 1,
+    e: "일반 <code>&lt;script src&gt;</code>와 달리 모듈은 <b>CORS 규칙을 따릅니다</b>. <code>file://</code>은 출처가 불투명해 요청이 차단됩니다. 간단한 정적 서버를 띄우면 해결되며, 이것이 개발 서버가 필요한 이유 중 하나입니다."
+  },
+  {
+    q: "차트 라이브러리(300KB)를 사용자의 5%만 쓰는 화면에서 불러옵니다. 가장 좋은 방법은?",
+    o: [
+      "파일 맨 위에서 정적 import 한다",
+      "필요한 순간에 <code>await import(\"./chart.js\")</code>로 동적 import 한다",
+      "script 태그로 직접 넣는다",
+      "라이브러리를 쓰지 않는다"
+    ],
+    a: 1,
+    e: "동적 <code>import()</code>는 <b>실행 시점에</b> 모듈을 불러오는 Promise를 반환합니다. 번들러는 이 지점을 인식해 파일을 자동으로 분할하므로, 초기 로딩에는 300KB가 포함되지 않습니다. React의 <code>lazy()</code>도 이 위에 세워져 있습니다."
+  },
+  {
+    q: "CommonJS(<code>require</code>) 대비 ESM(<code>import</code>)의 장점으로 옳은 것은?",
+    o: [
+      "실행 속도가 항상 빠르다",
+      "정적으로 분석할 수 있어 사용하지 않는 코드를 빌드 단계에서 제거하는 트리 셰이킹이 가능하다",
+      "조건문 안에서 import 할 수 있다",
+      "Node.js에서만 동작한다"
+    ],
+    a: 1,
+    e: "ESM의 <code>import</code>는 <b>파일 최상단에 정적으로</b> 위치하므로 번들러가 실행 전에 의존 관계를 파악할 수 있습니다. 덕분에 <b>안 쓰는 export를 제거</b>할 수 있습니다. 조건부 로드는 오히려 CommonJS의 특징이며, ESM에서는 동적 <code>import()</code>로 합니다."
+  }
+]);
+</script>

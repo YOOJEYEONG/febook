@@ -1,0 +1,388 @@
+<!--desc: Next.js App Router의 파일 기반 라우팅, 서버 컴포넌트와 클라이언트 컴포넌트의 경계, 레이아웃과 로딩·에러 파일, 라우트 핸들러를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>Next.js가 <b>무엇을 대신해 주는지</b></li>
+  <li><b>파일 기반 라우팅</b> — 폴더가 곧 주소</li>
+  <li><b>서버 컴포넌트와 클라이언트 컴포넌트의 경계</b> 긋기</li>
+  <li><code>layout</code>·<code>loading</code>·<code>error</code>·<code>not-found</code> 특수 파일</li>
+  <li>라우트 핸들러(API 만들기)</li>
+</ul>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📅</span> 버전에 민감한 챕터입니다</p>
+<p style="margin-bottom:0">Next.js는 변화가 빠릅니다. 이 챕터는 <b>App Router(Next.js 13 이후)</b> 기준이며
+<b>2026년 시점</b>의 안정된 개념 위주로 씁니다.
+캐싱 기본값처럼 <b>버전마다 달라진 부분</b>은 반드시
+<a href="https://nextjs.org/docs" target="_blank" rel="noopener">공식 문서에서 여러분이 쓰는 버전</a>을 확인하세요.
+개념(서버/클라이언트 경계, 파일 라우팅, 레이아웃)은 안정적입니다.</p>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분</p>
+
+<h2 id="why">Next.js가 대신해 주는 것</h2>
+
+<p>57장에서 React는 <b>라이브러리</b>라고 했습니다. 그래서 직접 골라야 할 것이 많았습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>React만 쓸 때 직접 골라야 하는 것</th><th>Next.js에 내장된 것</th></tr></thead>
+<tbody>
+<tr><td>라우팅 (68장)</td><td><b>파일 기반 라우팅</b></td></tr>
+<tr><td>번들러 설정 (47장)</td><td>내장 (Turbopack)</td></tr>
+<tr><td>렌더링 전략 (70장)</td><td>화면 단위로 선택</td></tr>
+<tr><td>이미지·폰트 최적화 (8·19장)</td><td>내장 컴포넌트 (73장)</td></tr>
+<tr><td>API 서버</td><td><b>라우트 핸들러</b></td></tr>
+<tr><td>메타데이터·SEO (10장)</td><td>메타데이터 API (73장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npx create-next-app@latest my-app
+cd my-app
+npm run dev</code></pre>
+</div>
+
+<h2 id="routing">파일 기반 라우팅</h2>
+
+<div class="codeblock">
+<span class="cb-label">폴더 구조가 곧 주소입니다</span>
+<pre><code data-lang="text">app/
+├── layout.tsx          모든 페이지를 감싸는 껍데기 (필수)
+├── page.tsx            /
+├── about/
+│   └── page.tsx        /about
+├── blog/
+│   ├── page.tsx        /blog
+│   └── [slug]/
+│       └── page.tsx    /blog/무엇이든   ← 동적 세그먼트
+├── shop/
+│   └── [...path]/
+│       └── page.tsx    /shop/a/b/c      ← 나머지 전부 잡기
+└── (marketing)/        괄호 = 주소에 안 나타나는 그룹
+    └── pricing/
+        └── page.tsx    /pricing</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📄</span> <code>page.tsx</code>가 있어야 주소가 됩니다</p>
+<p style="margin-bottom:0">폴더만 만들면 주소가 생기지 않습니다. <b><code>page</code> 파일이 있는 폴더만</b> 접근 가능합니다.
+덕분에 <code>app/blog/components/</code>처럼 <b>관련 파일을 같은 폴더에 두어도</b> 주소가 되지 않습니다.
+63장에서 말한 <b>"함께 바뀌는 것을 함께 두기"</b>가 자연스럽게 가능해집니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">동적 세그먼트 읽기</span>
+<pre><code data-lang="tsx">// app/blog/[slug]/page.tsx
+export default async function Post({ params }) {
+  const { slug } = await params;          // 최신 버전에서는 params가 Promise입니다
+  const post = await getPost(slug);
+  return &lt;article&gt;&lt;h1&gt;{post.title}&lt;/h1&gt;&lt;/article&gt;;
+}</code></pre>
+</div>
+
+<h2 id="special">특수 파일</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>파일</th><th>역할</th></tr></thead>
+<tbody>
+<tr><td><code>page</code></td><td>그 주소의 화면</td></tr>
+<tr><td><code>layout</code></td><td>감싸는 껍데기. <b>페이지가 바뀌어도 다시 렌더링되지 않습니다</b>(68장 중첩 라우트)</td></tr>
+<tr><td><code>loading</code></td><td>데이터를 기다리는 동안 보여줄 화면. <b>Suspense가 자동 적용</b>됩니다(69장)</td></tr>
+<tr><td><code>error</code></td><td>오류 화면. <b>에러 경계가 자동 적용</b>됩니다. <code>"use client"</code> 필수</td></tr>
+<tr><td><code>not-found</code></td><td>404 화면</td></tr>
+<tr><td><code>template</code></td><td><code>layout</code>과 비슷하되 <b>이동할 때마다 새로 만들어집니다</b></td></tr>
+<tr><td><code>route</code></td><td>화면이 아니라 <b>API 응답</b>을 만듭니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">layout — 중첩됩니다</span>
+<pre><code data-lang="tsx">// app/layout.tsx (루트 — html·body는 여기에만)
+export default function RootLayout({ children }) {
+  return (
+    &lt;html lang="ko"&gt;
+      &lt;body&gt;
+        &lt;Header /&gt;
+        {children}
+        &lt;Footer /&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+  );
+}
+
+// app/blog/layout.tsx — /blog 아래 모든 페이지에 추가로 적용됩니다
+export default function BlogLayout({ children }) {
+  return (
+    &lt;div className="blog"&gt;
+      &lt;BlogSidebar /&gt;
+      {children}
+    &lt;/div&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧱</span> <code>loading.tsx</code> 하나로 로딩 UI가 끝납니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="tsx">// app/blog/loading.tsx
+export default function Loading() {
+  return &lt;PostSkeleton /&gt;;
+}
+// 이 파일을 만드는 것만으로 /blog 페이지가 Suspense로 감싸집니다.
+// 데이터를 기다리는 동안 이 화면이 나오고, 준비되면 교체됩니다.</code></pre>
+</div>
+</div>
+
+<h2 id="boundary">서버와 클라이언트의 경계 — 가장 중요한 개념</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚧</span> App Router에서는 <b>모든 컴포넌트가 기본적으로 서버 컴포넌트</b>입니다</p>
+<p style="margin-bottom:0">69장에서 배운 서버 컴포넌트가 <b>기본값</b>입니다.
+상호작용이 필요한 컴포넌트에만 <b>파일 맨 위에 <code>"use client"</code></b>를 붙입니다.</p>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">// app/products/page.tsx — 서버 컴포넌트 (기본)
+import { db } from "@/lib/db";
+import AddToCartButton from "./AddToCartButton";
+
+export default async function ProductsPage() {
+  const products = await db.product.findMany();   // ⭐ DB 직접 조회
+
+  return (
+    &lt;ul&gt;
+      {products.map(p =&gt; (
+        &lt;li key={p.id}&gt;
+          {p.name}
+          &lt;AddToCartButton productId={p.id} /&gt;   {/* 여기만 클라이언트 */}
+        &lt;/li&gt;
+      ))}
+    &lt;/ul&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">// app/products/AddToCartButton.tsx
+"use client";                                    // ← 이 한 줄
+
+import { useState } from "react";
+
+export default function AddToCartButton({ productId }) {
+  const [added, setAdded] = useState(false);     // 훅은 여기서만 가능
+  return &lt;button onClick={() =&gt; setAdded(true)}&gt;{added ? "담김" : "담기"}&lt;/button&gt;;
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🍃</span> 경계를 <b>최대한 아래로</b> 내리세요</p>
+<p style="margin-bottom:0"><code>"use client"</code>는 <b>그 파일과 그 파일이 import 하는 모든 것</b>을
+클라이언트 번들에 포함시킵니다.
+페이지 최상단에 붙이면 <b>전체가 클라이언트 컴포넌트가 되어</b> 서버 컴포넌트의 이점이 사라집니다.<br>
+<b>버튼 하나만 클라이언트로</b> 만들고 나머지는 서버에 두는 것이 정석입니다.
+이것을 <b>"클라이언트 경계를 잎사귀로 밀어내기"</b>라고 부릅니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📦</span> 서버 → 클라이언트로 넘기는 props는 직렬화 가능해야</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="tsx">// ❌ 함수는 넘길 수 없습니다
+&lt;ClientButton onClick={() =&gt; console.log("x")} /&gt;
+
+// ❌ Date·Map·클래스 인스턴스도 제한이 있습니다
+// ✅ 문자열·숫자·불리언·배열·평범한 객체는 됩니다
+&lt;ClientButton productId={p.id} name={p.name} /&gt;</code></pre>
+</div>
+<p style="margin-bottom:0">서버 컴포넌트의 결과는 <b>네트워크로 전송</b>되므로 문자열로 바꿀 수 있어야 합니다.
+함수를 넘기려면 <b>Server Action</b>이라는 별도 장치가 필요합니다(72장).</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">클라이언트 컴포넌트 안에 서버 컴포넌트를 넣는 법</span>
+<pre><code data-lang="tsx">// ❌ 클라이언트 컴포넌트가 서버 컴포넌트를 직접 import 할 수 없습니다
+
+// ✅ children으로 넘기면 됩니다 (63장의 합성)
+// 서버 컴포넌트에서
+&lt;ClientWrapper&gt;
+  &lt;ServerContent /&gt;      {/* 서버에서 만들어져 전달됩니다 */}
+&lt;/ClientWrapper&gt;</code></pre>
+</div>
+
+<h2 id="nav">이동과 링크</h2>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+
+&lt;Link href="/about"&gt;소개&lt;/Link&gt;
+&lt;Link href={`/blog/${slug}`} prefetch&gt;글 보기&lt;/Link&gt;
+
+// 클라이언트 컴포넌트에서만
+"use client";
+const router = useRouter();
+router.push("/cart");
+router.refresh();        // 서버 데이터를 다시 가져옵니다</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚡</span> <code>&lt;Link&gt;</code>는 미리 불러옵니다</p>
+<p style="margin-bottom:0">화면에 보이는 <code>&lt;Link&gt;</code>의 대상 페이지를 <b>백그라운드에서 미리 받아 둡니다.</b>
+그래서 클릭하면 <b>거의 즉시</b> 화면이 바뀝니다.
+68장에서 말한 프리페치가 기본으로 동작하는 것입니다.
+일반 <code>&lt;a&gt;</code>를 쓰면 이 이점이 사라지고 전체 새로고침이 일어납니다.</p>
+</div>
+
+<h2 id="route-handler">라우트 핸들러 — API 만들기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// app/api/products/route.ts
+import { NextResponse } from "next/server";
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);       // 3장의 URL API
+  const category = searchParams.get("category");
+  const products = await db.product.findMany({ where: { category } });
+  return NextResponse.json(products);
+}
+
+export async function POST(request: Request) {
+  const body = await request.json();
+  const parsed = ProductSchema.safeParse(body);        // 54장 런타임 검증
+  if (!parsed.success) {
+    return NextResponse.json({ error: "잘못된 요청" }, { status: 400 });
+  }
+  const created = await db.product.create({ data: parsed.data });
+  return NextResponse.json(created, { status: 201 });
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🤔</span> 서버 컴포넌트가 있으면 API가 필요 없나요?</p>
+<p style="margin-bottom:0"><b>내 화면에 데이터를 보여주는 것만이 목적이라면</b> 서버 컴포넌트에서
+DB를 직접 조회하면 됩니다. API 계층이 <b>불필요</b>합니다.<br>
+라우트 핸들러가 필요한 경우는 이렇습니다.</p>
+<ul style="margin-bottom:0">
+<li><b>외부에 공개할 API</b> (모바일 앱, 다른 서비스)</li>
+<li><b>웹훅</b> 수신 (결제사 알림 등)</li>
+<li>클라이언트 컴포넌트에서 호출해야 하는 경우</li>
+<li><b>비밀 키를 감춰야 하는</b> 외부 API 프록시(1·37장)</li>
+</ul>
+</div>
+
+<h2 id="middleware">미들웨어</h2>
+<div class="codeblock">
+<pre><code data-lang="ts">// middleware.ts — 요청이 페이지에 도달하기 전에 실행됩니다
+import { NextResponse } from "next/server";
+
+export function middleware(request) {
+  const token = request.cookies.get("session");
+  if (!token &amp;&amp; request.nextUrl.pathname.startsWith("/admin")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+  return NextResponse.next();
+}
+
+export const config = { matcher: ["/admin/:path*"] };</code></pre>
+</div>
+<p>인증 확인, 리다이렉트, 국가별 분기 등에 씁니다.
+<b>모든 요청을 거치므로</b> 무거운 작업은 넣지 마세요.
+68장에서 말했듯 <b>진짜 권한 검사는 데이터에 접근하는 지점</b>에서도 해야 합니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — App Router 적응 팁</p>
+<ol style="margin-bottom:0">
+<li><b>"기본은 서버"</b>를 몸에 익히세요. <code>useState</code>가 필요할 때만 <code>"use client"</code>입니다.</li>
+<li><b>오류 메시지를 읽으세요.</b> Next.js는 "이건 클라이언트 컴포넌트에서만 됩니다" 같은 안내를 꽤 친절하게 줍니다.</li>
+<li><b>옛 자료 주의.</b> <code>getServerSideProps</code>·<code>getStaticProps</code>는 <b>Pages Router</b>의 것이고 App Router에는 없습니다.</li>
+<li><b>Pages Router도 여전히 지원됩니다.</b> 기존 프로젝트라면 그쪽일 수 있으니 폴더 이름(<code>app/</code> vs <code>pages/</code>)을 먼저 확인하세요.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>Next.js는 라우팅·번들·렌더링 전략·최적화를 <b>내장한 프레임워크</b>다.</li>
+<li>폴더 구조가 곧 주소이고, <b><code>page</code> 파일이 있어야</b> 접근 가능하다.</li>
+<li><code>layout</code>·<code>loading</code>·<code>error</code>·<code>not-found</code>가 특수 파일이다.</li>
+<li><b>모든 컴포넌트는 기본이 서버 컴포넌트</b>다. 훅·이벤트가 필요하면 <code>"use client"</code>.</li>
+<li><b>클라이언트 경계는 최대한 아래로</b> 내린다.</li>
+<li>서버 → 클라이언트 props는 <b>직렬화 가능해야</b> 한다. 함수는 불가.</li>
+<li>클라이언트 안에 서버 컴포넌트를 넣으려면 <b><code>children</code>으로 전달</b>한다.</li>
+<li><code>&lt;Link&gt;</code>는 <b>미리 불러오기</b>가 기본이다.</li>
+<li>서버 컴포넌트로 직접 조회할 수 있으면 <b>API 계층이 불필요</b>할 수 있다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://nextjs.org/docs/app" target="_blank" rel="noopener">Next.js — App Router 문서</a></li>
+<li><a href="https://nextjs.org/docs/app/getting-started/server-and-client-components" target="_blank" rel="noopener">Next.js — 서버 컴포넌트와 클라이언트 컴포넌트</a></li>
+<li><a href="https://nextjs.org/docs/app/api-reference/file-conventions" target="_blank" rel="noopener">Next.js — 파일 규칙 전체</a></li>
+<li><a href="https://nextjs.org/learn" target="_blank" rel="noopener">Next.js 공식 학습 코스</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "App Router에서 컴포넌트의 기본값은?",
+    o: [
+      "클라이언트 컴포넌트",
+      "서버 컴포넌트. 훅이나 이벤트 핸들러가 필요할 때만 <code>\"use client\"</code>를 붙인다",
+      "정적 컴포넌트",
+      "파일 위치에 따라 자동으로 결정된다"
+    ],
+    a: 1,
+    e: "App Router는 <b>서버 우선</b>입니다. 서버 컴포넌트는 번들에 포함되지 않아 용량이 0이고 DB에 직접 접근할 수 있습니다(69장). 상호작용이 필요한 부분만 클라이언트로 분리합니다."
+  },
+  {
+    q: "페이지 최상단 파일에 <code>\"use client\"</code>를 붙이면?",
+    o: [
+      "성능이 좋아진다",
+      "그 파일과 import하는 모든 하위 컴포넌트가 클라이언트 번들에 포함되어 서버 컴포넌트의 이점이 사라진다",
+      "서버 컴포넌트로 동작한다",
+      "아무 차이가 없다"
+    ],
+    a: 1,
+    e: "<code>\"use client\"</code>는 <b>경계 선언</b>입니다. 그 아래 전체가 클라이언트가 되므로, 상호작용이 필요한 <b>말단 컴포넌트</b>에만 붙이고 데이터 조회와 정적 마크업은 서버에 남겨야 합니다."
+  },
+  {
+    q: "서버 컴포넌트에서 클라이언트 컴포넌트로 <b>넘길 수 없는</b> props는?",
+    o: [
+      "문자열과 숫자",
+      "배열과 평범한 객체",
+      "함수(이벤트 핸들러 등)",
+      "불리언"
+    ],
+    a: 2,
+    e: "서버 컴포넌트의 결과는 <b>네트워크로 전송</b>되므로 직렬화 가능해야 합니다. 함수는 직렬화할 수 없습니다. 서버 로직을 호출해야 한다면 <b>Server Action</b>을 씁니다(72장)."
+  },
+  {
+    q: "<code>app/blog/loading.tsx</code> 파일을 만들면?",
+    o: [
+      "수동으로 Suspense를 감싸야 한다",
+      "해당 라우트가 자동으로 Suspense로 감싸져, 데이터를 기다리는 동안 그 컴포넌트가 표시된다",
+      "로딩 스피너 라이브러리가 설치된다",
+      "빌드 시점에만 사용된다"
+    ],
+    a: 1,
+    e: "Next.js의 특수 파일 규칙입니다. <code>loading</code>은 Suspense 경계를, <code>error</code>는 에러 경계를 <b>자동으로</b> 만들어 줍니다(69장). 파일을 만드는 것만으로 선언적 로딩·에러 처리가 완성됩니다."
+  },
+  {
+    q: "서버 컴포넌트에서 DB를 직접 조회할 수 있는데도 <b>라우트 핸들러(API)</b>가 필요한 경우는?",
+    o: [
+      "페이지에 데이터를 표시할 때",
+      "모바일 앱 등 외부에서 호출할 API, 웹훅 수신, 클라이언트 컴포넌트에서의 호출, 비밀 키를 감춘 외부 API 프록시",
+      "레이아웃을 만들 때",
+      "라우트 핸들러는 항상 필요하다"
+    ],
+    a: 1,
+    e: "내 화면에 데이터를 보여주는 것만이 목적이라면 서버 컴포넌트에서 직접 조회하는 편이 간단하고 빠릅니다. API 계층은 <b>다른 소비자가 있거나 외부와 통신해야 할 때</b> 의미가 있습니다."
+  }
+]);
+</script>

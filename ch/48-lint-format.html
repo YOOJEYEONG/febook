@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>48장. ESLint와 Prettier — 프엔북</title>
+<meta name="description" content="ESLint와 Prettier의 역할 구분, 설정 방법, 저장 시 자동 수정, Git 훅으로 강제하기, 팀 규칙을 코드로 만드는 법을 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="48장. ESLint와 Prettier — 프엔북">
+<meta property="og:description" content="ESLint와 Prettier의 역할 구분, 설정 방법, 저장 시 자동 수정, Git 훅으로 강제하기, 팀 규칙을 코드로 만드는 법을 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="48-lint-format">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">6부 · 개발 환경과 도구</p>
+    <h1>48장. ESLint와 Prettier</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>린터와 포매터는 다른 도구</b>입니다</li>
+  <li>ESLint가 실제로 잡아 주는 버그들</li>
+  <li>저장할 때 자동으로 고쳐지게 설정하기</li>
+  <li><b><span class="term" data-term="git">Git</span> 훅</b>으로 팀 전체에 강제하기</li>
+  <li><span <span class="term" data-term="class">class</span>="term" data-term="typescript">TypeScript</span>·타입 검사와의 역할 분담</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 16분</p>
+
+<h2 id="two">두 도구, 다른 일</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>Prettier (포매터)</th><th>ESLint (린터)</th></tr></thead>
+<tbody>
+<tr><td><b>담당</b></td><td><b>모양</b> — 줄바꿈, 들여쓰기, 따옴표</td><td><b>내용</b> — 버그 가능성, 나쁜 패턴</td></tr>
+<tr><td><b>질문</b></td><td>"보기 좋은가?"</td><td>"위험하지 않은가?"</td></tr>
+<tr><td><b>예</b></td><td>세미콜론, 한 줄 최대 길이</td><td>안 쓰는 변수, <code>==</code> 사용, <code>useEffect</code> 의존성 누락</td></tr>
+<tr><td><b>논쟁</b></td><td><b>없음</b> — 정해진 대로 무조건 통일</td><td>팀이 규칙을 고름</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🤝</span> 둘 다 씁니다</p>
+<p style="margin-bottom:0">예전에는 ESLint에도 서식 규칙이 있어 둘이 <span class="term" data-term="conflict">충돌</span>했습니다.
+지금은 역할을 나누는 것이 표준입니다.
+<b>서식은 Prettier에게 전부 맡기고, ESLint는 코드 품질만</b> 봅니다.</p>
+</div>
+
+<h2 id="prettier">Prettier</h2>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm install -D prettier</code></pre>
+</div>
+<div class="codeblock">
+<span class="cb-label">.prettierrc</span>
+<pre><code data-lang="json">{
+  "semi": true,
+  "singleQuote": false,
+  "printWidth": 100,
+  "tabWidth": 2,
+  "trailingComma": "all"
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🛑</span> 서식 논쟁을 끝내는 것이 목적입니다</p>
+<p style="margin-bottom:0">Prettier의 철학은 <b>"의견을 강하게 가지되 옵션은 최소로"</b>입니다.
+설정 항목이 일부러 적습니다.
+탭이냐 스페이스냐, 세미콜론을 붙이냐로 <b><span class="term" data-term="code-review">코드 리뷰</span>에서 다투는 시간</b>이 사라지는 것이 진짜 가치입니다.<br>
+<b>어느 쪽을 고르든 상관없습니다.</b> 팀이 하나를 정하고 자동화하면 됩니다.</p>
+</div>
+
+<h2 id="eslint">ESLint</h2>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm install -D eslint
+npx eslint --init        # 대화형으로 설정 파일 생성</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">eslint.config.js (Flat Config — ESLint 9 이후 표준)</span>
+<pre><code data-lang="js">import js from "@eslint/js";
+
+export default [
+  js.configs.recommended,
+  {
+    rules: {
+      "no-unused-vars": "warn",
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+      "eqeqeq": "error",              // == 대신 === 강제 (25장)
+      "prefer-const": "error",        // 재할당 없으면 const (24장)
+      "no-var": "error"
+    }
+  }
+];</code></pre>
+</div>
+
+<p>규칙의 수준은 세 가지입니다. <code>"off"</code>(끔), <code>"warn"</code>(경고),
+<code>"error"</code>(오류 — 빌드를 실패시킬 수 있음).</p>
+
+<h3 id="rules">실제로 버그를 잡아 주는 규칙들</h3>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>규칙</th><th>잡아 주는 것</th></tr></thead>
+<tbody>
+<tr><td><code>no-unused-vars</code></td><td>안 쓰는 변수·import. <b>오타로 만든 변수</b>도 여기서 걸립니다</td></tr>
+<tr><td><code>no-undef</code></td><td>선언하지 않은 변수 사용 (24장의 전역 오염)</td></tr>
+<tr><td><code>eqeqeq</code></td><td><code>==</code>의 예상 못 한 형변환 (25장)</td></tr>
+<tr><td><code>no-var</code>, <code>prefer-const</code></td><td><span class="term" data-term="scope">스코프</span> 문제 예방 (24장)</td></tr>
+<tr><td><code>react-hooks/exhaustive-deps</code></td><td><b><code>useEffect</code> 의존성 누락</b> — <span class="term" data-term="react">React</span> 버그의 최대 원인(61장)</td></tr>
+<tr><td><code>react-hooks/rules-of-hooks</code></td><td>훅을 조건문 안에서 호출하는 실수(59장)</td></tr>
+<tr><td><code>jsx-a11y/alt-text</code></td><td><code>alt</code> 없는 이미지 (8장)</td></tr>
+<tr><td><code>no-floating-promises</code></td><td><b><code>await</code> 빠뜨린 <span class="term" data-term="promise">Promise</span></b> (36장). TypeScript 전용</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 이 두 규칙만으로도 값어치를 합니다</p>
+<p style="margin-bottom:0"><b><code>react-hooks/exhaustive-deps</code></b>와
+<b><code>no-floating-promises</code></b>는
+실무에서 <b>가장 자주, 가장 찾기 어려운 버그</b>를 미리 잡아 줍니다.
+React·TypeScript 프로젝트라면 반드시 켜세요.</p>
+</div>
+
+<h2 id="editor">편집기 연동 — 여기서 진짜 가치가 나옵니다</h2>
+
+<div class="codeblock">
+<span class="cb-label">.vscode/settings.json — 이 파일은 <span class="term" data-term="commit">커밋</span>해서 팀과 공유합니다</span>
+<pre><code data-lang="json">{
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
+}</code></pre>
+</div>
+
+<p>이제 <b>저장할 때마다</b> 서식이 정리되고 자동 수정 가능한 ESLint 문제가 고쳐집니다.
+<b>명령어를 따로 실행할 필요가 없어야</b> 도구가 실제로 쓰입니다.
+수동으로 돌려야 하는 도구는 결국 아무도 안 씁니다.</p>
+
+<h2 id="hooks">Git 훅으로 강제하기</h2>
+
+<p>편집기 설정은 <b>각자 안 켜면 그만</b>입니다. 팀 전체에 확실히 적용하려면 커밋 시점에 검사합니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm install -D husky lint-staged
+npx husky init</code></pre>
+</div>
+<div class="codeblock">
+<span class="cb-label"><span class="term" data-term="package-json">package.json</span></span>
+<pre><code data-lang="json">{
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"],
+    "*.{css,md,json}": ["prettier --write"]
+  }
+}</code></pre>
+</div>
+
+<p><b><code>lint-staged</code></b>는 <b>커밋하려는 파일만</b> 검사합니다.
+프로젝트 전체를 매번 검사하면 너무 느려서 아무도 안 쓰게 되기 때문입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚦</span> 훅은 최후의 방어선이지 유일한 방어선이 아닙니다</p>
+<p style="margin-bottom:0">Git 훅은 <code>--no-verify</code> 옵션으로 <b>건너뛸 수 있습니다.</b>
+그리고 각자 컴퓨터에서만 돕니다.
+<b>진짜 강제는 <span class="term" data-term="ci">CI</span></b>(<span class="term" data-term="github">GitHub</span> Actions 등)에서 합니다.
+PR에서 린트·테스트가 실패하면 <span class="term" data-term="merge">머지</span>할 수 없게 막는 것이 최종 방어선입니다.</p>
+</div>
+
+<h2 id="ts">타입 검사와의 관계</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구</th><th>잡는 것</th></tr></thead>
+<tbody>
+<tr><td><b>Prettier</b></td><td>서식</td></tr>
+<tr><td><b>ESLint</b></td><td>위험한 <b>패턴</b>. "될 수는 있지만 하면 안 되는 것"</td></tr>
+<tr><td><b>TypeScript</b></td><td><b>타입 오류</b>. "이건 아예 말이 안 되는 것" (7부)</td></tr>
+<tr><td><b>테스트</b></td><td><b>동작</b>. "의도대로 작동하는가" (75장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>넷은 <b>겹치지 않고 서로를 대체하지 못합니다.</b>
+TypeScript가 있어도 ESLint가 필요하고, 둘 다 있어도 테스트가 필요합니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 린터를 대하는 태도</p>
+<ol>
+<li><b>경고를 방치하지 마세요.</b> 경고가 100개면 아무도 안 봅니다. 0개를 유지해야 새 경고가 눈에 띕니다.</li>
+<li><b>규칙을 끄기 전에 이유를 이해하세요.</b> 대부분의 규칙에는 실제 사고 사례가 있습니다.
+ESLint 문서에는 <b>왜 그 규칙이 존재하는지</b>가 적혀 있습니다.</li>
+<li><b><code>eslint-disable</code>에는 이유를 적으세요.</b>
+<code>// eslint-disable-next-line no-console -- 배포 스크립트에서 필요</code></li>
+<li><b>기존 프로젝트에 도입할 때는 점진적으로.</b> 갑자기 규칙을 다 켜면 오류가 수천 개 나옵니다.
+새 파일부터 적용하거나 <code>warn</code>으로 시작해 서서히 <code>error</code>로 올립니다.</li>
+<li><b>규칙을 팀이 함께 정하세요.</b> 한 사람이 정해서 강요하면 반발만 생깁니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>Prettier는 모양, ESLint는 내용.</b> 서식은 전부 Prettier에 맡긴다.</li>
+<li>서식 논쟁을 없애는 것 자체가 Prettier의 가치다. <b>어느 쪽이든 통일이 핵심.</b></li>
+<li>ESLint는 <b>실제 버그를 잡는다.</b> 특히 <code>exhaustive-deps</code>, <code>no-floating-promises</code>.</li>
+<li><b>저장 시 자동 실행</b>이 되어야 도구가 실제로 쓰인다.</li>
+<li>Git 훅(<code>husky</code> + <code>lint-staged</code>)은 <b>변경된 파일만</b> 검사한다.</li>
+<li><b>진짜 강제는 CI</b>에서. 훅은 우회 가능하다.</li>
+<li>Prettier·ESLint·TypeScript·테스트는 <b>서로를 대체하지 않는다.</b></li>
+<li><b>경고 0개를 유지</b>해야 도구가 의미를 갖는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://eslint.org/docs/latest/" target="_blank" rel="noopener">ESLint 공식 문서</a></li>
+<li><a href="https://prettier.io/docs/en/" target="_blank" rel="noopener">Prettier 공식 문서</a></li>
+<li><a href="https://typescript-eslint.io/" target="_blank" rel="noopener">typescript-eslint</a> — TypeScript 전용 규칙</li>
+<li><a href="https://typicode.github.io/husky/" target="_blank" rel="noopener">husky</a> · <a href="https://github.com/lint-staged/lint-staged" target="_blank" rel="noopener">lint-staged</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "ESLint와 Prettier의 역할 구분으로 옳은 것은?",
+    o: [
+      "둘 다 같은 일을 하므로 하나만 쓰면 된다",
+      "Prettier는 코드의 모양(서식), ESLint는 코드의 내용(버그 가능성·나쁜 패턴)을 담당한다",
+      "ESLint는 서식, Prettier는 타입 검사를 담당한다",
+      "Prettier는 TypeScript 전용이다"
+    ],
+    a: 1,
+    e: "\"보기 좋은가\"는 Prettier, \"위험하지 않은가\"는 ESLint입니다. 예전에는 ESLint에도 서식 규칙이 있어 충돌했지만, 지금은 <b>서식을 전부 Prettier에 맡기고</b> ESLint는 품질만 보는 것이 표준입니다."
+  },
+  {
+    q: "React 프로젝트에서 특히 중요한 ESLint 규칙은?",
+    o: [
+      "따옴표 통일 규칙",
+      "<code>react-hooks/exhaustive-deps</code> — useEffect 의존성 누락을 잡아 준다",
+      "들여쓰기 규칙",
+      "파일 끝 개행 규칙"
+    ],
+    a: 1,
+    e: "의존성 배열 누락은 <b>React 버그의 최대 원인</b> 중 하나이고, 증상이 늦게 나타나 원인을 찾기 매우 어렵습니다. 이 규칙 하나만으로도 린터 도입 값어치를 합니다. 나머지 셋은 모두 Prettier의 영역입니다."
+  },
+  {
+    q: "<code>lint-staged</code>가 커밋하려는 파일만 검사하는 이유는?",
+    o: [
+      "다른 파일은 문제가 없어서",
+      "프로젝트 전체를 매번 검사하면 너무 느려 개발자가 훅을 우회하게 되기 때문",
+      "Git이 그렇게만 허용해서",
+      "ESLint가 여러 파일을 처리하지 못해서"
+    ],
+    a: 1,
+    e: "커밋마다 전체 검사를 돌리면 몇 분씩 걸려 <b>결국 <code>--no-verify</code>로 건너뛰게</b> 됩니다. 변경된 파일만 검사하면 1~2초에 끝나 실제로 쓰이는 도구가 됩니다."
+  },
+  {
+    q: "Git 훅만으로는 팀 전체 품질을 강제할 수 없는 이유는?",
+    o: [
+      "훅은 Windows에서 동작하지 않아서",
+      "<code>--no-verify</code>로 건너뛸 수 있고 각자 컴퓨터에서만 동작하므로, 최종 강제는 CI에서 해야 하기 때문",
+      "훅은 커밋 후에 실행되어서",
+      "훅은 ESLint를 실행할 수 없어서"
+    ],
+    a: 1,
+    e: "Git 훅은 <b>로컬에서 도와주는 장치</b>입니다. 우회할 수 있고, 새로 합류한 사람이 설치를 빠뜨릴 수도 있습니다. PR에서 린트·테스트를 실행하고 실패하면 머지를 막는 <b>CI</b>가 최종 방어선입니다."
+  },
+  {
+    q: "ESLint 규칙을 <code>eslint-disable</code>로 끌 때 권장되는 방식은?",
+    o: [
+      "파일 전체에서 규칙을 끈다",
+      "해당 줄에만 적용하고 왜 껐는지 이유를 주석으로 함께 남긴다",
+      "설정 파일에서 규칙을 완전히 제거한다",
+      "아무 표시 없이 끈다"
+    ],
+    a: 1,
+    e: "규칙을 끄는 것이 정당한 경우도 있지만, <b>이유가 없으면 다음 사람이 판단할 수 없습니다</b>. 범위는 최소한(해당 줄)으로 하고 <code>-- 이유</code> 형식으로 근거를 남기는 것이 관례입니다."
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!--desc: px·em·rem·%·vw/vh 등 CSS 단위의 차이와 선택 기준, hex·rgb·hsl·oklch 색상 표기법, calc와 clamp 사용법을 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>px</code>·<code>em</code>·<code>rem</code>·<code>%</code>의 차이와 <b>언제 무엇을 쓸지</b></li>
+  <li>화면 크기 단위 <code>vw</code>·<code>vh</code>와 모바일에서의 함정</li>
+  <li>색을 적는 다섯 가지 방법과 각각의 장점</li>
+  <li><code>calc()</code>·<code>clamp()</code>로 계산하는 법</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분</p>
+
+<h2 id="abs">절대 단위 — px</h2>
+
+<p><code>px</code>는 <b>픽셀</b>이지만 <b>화면의 물리적 점 하나가 아닙니다.</b>
+고해상도(레티나) 화면에서는 CSS의 1px이 실제 점 2~3개로 그려집니다.
+CSS의 <code>px</code>는 <b>기기와 무관하게 일정한 크기로 보이도록 정의된 논리적 단위</b>입니다.
+그래서 아이폰이든 4K 모니터든 <code>16px</code> 글자는 대체로 비슷한 크기로 보입니다.</p>
+
+<p><code>cm</code>·<code>mm</code>·<code>in</code>·<code>pt</code> 같은 단위도 있지만 <b>화면에서는 쓰지 않습니다.</b>
+인쇄용 스타일시트에서만 의미가 있습니다.</p>
+
+<h2 id="rel">상대 단위</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>단위</th><th>무엇을 기준으로</th><th>주로 쓰는 곳</th></tr></thead>
+<tbody>
+<tr><td><code>em</code></td><td><b>그 요소의</b> <code>font-size</code><br>(<code>font-size</code>에 쓸 때는 <b>부모의</b> 값)</td><td>글자 크기에 비례해야 하는 여백(버튼 padding)</td></tr>
+<tr><td><code>rem</code></td><td><b>루트(<code>&lt;html&gt;</code>)의</b> <code>font-size</code>. 기본 16px</td><td><b>글자 크기, 대부분의 간격</b> — 가장 많이 씁니다</td></tr>
+<tr><td><code>%</code></td><td>부모의 같은 속성 값</td><td>너비, 높이</td></tr>
+<tr><td><code>vw</code> / <code>vh</code></td><td>뷰포트 너비 / 높이의 1%</td><td>전체 화면 요소, 큰 제목</td></tr>
+<tr><td><code>vmin</code> / <code>vmax</code></td><td>둘 중 작은 쪽 / 큰 쪽의 1%</td><td>가로·세로 전환 대응</td></tr>
+<tr><td><code>ch</code></td><td>현재 글꼴의 <code>0</code> 문자 너비</td><td><b>본문 최대 폭</b> (<code>max-width: 70ch</code>)</td></tr>
+<tr><td><code>fr</code></td><td>남은 공간의 비율</td><td><b>Grid 전용</b>(16장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="em-rem">em과 rem, 무엇이 다른가</h3>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🌀</span> em은 중첩되면 곱해집니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="css">html { font-size: 16px; }
+.a { font-size: 1.5em; }  /* 16 × 1.5 = 24px */
+.b { font-size: 1.5em; }  /* .a 안에 있으면 24 × 1.5 = 36px */
+.c { font-size: 1.5em; }  /* .b 안에 있으면 36 × 1.5 = 54px  ← 눈덩이 */</code></pre>
+</div>
+<p style="margin-bottom:0">목록 안에 목록이 중첩되는 구조에서 이 현상이 터집니다.
+<code>rem</code>은 <b>항상 루트만</b> 보므로 몇 겹으로 중첩되어도 값이 변하지 않습니다.</p>
+</div>
+
+<div class="runner" data-lang="html" data-title="em과 rem 비교" data-note="바깥 .box의 font-size를 20px로 바꿔 보세요. em 쪽만 전부 커집니다.">
+<textarea class="rn-src">
+<style>
+  html { font-size: 16px; }
+  .box { font-size: 16px; border: 1px solid #ccc; padding: 10px; margin-bottom: 12px; }
+  .em-1 { font-size: 1.5em; }
+  .em-2 { font-size: 1.5em; }
+  .em-3 { font-size: 1.5em; }
+  .rem-1, .rem-2, .rem-3 { font-size: 1.5rem; }
+  h4 { margin: 0 0 6px; font-size: 13px; color: #666; }
+</style>
+
+<div class="box">
+  <h4>em — 중첩될수록 곱해진다</h4>
+  <div class="em-1">1단계 (24px)
+    <div class="em-2">2단계 (36px)
+      <div class="em-3">3단계 (54px)</div>
+    </div>
+  </div>
+</div>
+
+<div class="box">
+  <h4>rem — 몇 겹이든 24px 그대로</h4>
+  <div class="rem-1">1단계
+    <div class="rem-2">2단계
+      <div class="rem-3">3단계</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll("[class*='-1'],[class*='-2'],[class*='-3']").forEach(function (el) {
+    console.log(el.className + " → " + getComputedStyle(el).fontSize);
+  });
+</script>
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">♿</span> 글자 크기에 rem을 쓰는 진짜 이유</p>
+<p style="margin-bottom:0">브라우저 설정에서 <b>기본 글꼴 크기를 크게</b> 해 둔 사용자가 있습니다(저시력 사용자에게 흔합니다).
+글자 크기를 <code>px</code>로 고정하면 그 설정이 <b>무시됩니다.</b>
+<code>rem</code>으로 쓰면 루트 크기가 사용자 설정을 따라 커지므로 전체가 함께 커집니다.
+그래서 <b>글자 크기는 <code>rem</code></b>이 권장됩니다.
+(참고로 브라우저의 <b>확대/축소</b> 기능은 <code>px</code>도 함께 확대하므로 이 문제와는 별개입니다.)</p>
+</div>
+
+<h3 id="viewport-units">vh의 모바일 함정</h3>
+<p>모바일 브라우저는 스크롤에 따라 주소창이 나타났다 사라집니다.
+그때 <b><code>100vh</code>가 실제 보이는 높이와 달라져</b> 요소가 화면 밖으로 잘리는 문제가 오래 있었습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>단위</th><th>기준</th></tr></thead>
+<tbody>
+<tr><td><code>svh</code></td><td><b>가장 작은</b> 뷰포트 (주소창이 보일 때)</td></tr>
+<tr><td><code>lvh</code></td><td><b>가장 큰</b> 뷰포트 (주소창이 숨겨졌을 때)</td></tr>
+<tr><td><code>dvh</code></td><td><b>실시간으로 변하는</b> 현재 뷰포트 ← 대체로 이것이 정답</td></tr>
+</tbody>
+</table>
+</div>
+<p>Chrome 108+, Safari 15.4+, Firefox 101+에서 지원됩니다.
+구형 대비가 필요하면 <code>height: 100vh; height: 100dvh;</code>처럼 두 줄을 겹쳐 쓰면
+지원하지 않는 브라우저는 앞줄을, 지원하는 브라우저는 뒷줄을 씁니다.</p>
+
+<h2 id="calc">계산 — calc, min, max, clamp</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">/* 다른 단위끼리도 계산됩니다 */
+width: calc(100% - 40px);
+height: calc(100vh - 60px);   /* 화면 높이에서 헤더 높이만큼 뺀다 */
+
+/* 여럿 중 작은 값 / 큰 값 */
+width: min(600px, 100%);      /* width:100%; max-width:600px 와 같은 뜻 */
+font-size: max(14px, 1vw);
+
+/* 최소, 이상적, 최대 */
+font-size: clamp(1rem, 2.5vw, 2rem);</code></pre>
+</div>
+
+<p><code>clamp(최솟값, 선호값, 최댓값)</code>은 <b>화면 크기에 따라 부드럽게 변하되 범위를 벗어나지 않는</b> 값을 만듭니다.
+미디어 쿼리 없이 반응형 타이포그래피를 구현하는 현대적인 방법이며, 19장에서 다시 다룹니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">➖</span> <code>calc()</code>의 공백 규칙</p>
+<p style="margin-bottom:0"><code>+</code>와 <code>-</code> 양옆에는 <b>반드시 공백</b>이 있어야 합니다.
+<code>calc(100%-40px)</code>은 동작하지 않습니다. <code>-40px</code>이 음수 값으로 해석되기 때문입니다.
+<code>*</code>와 <code>/</code>는 공백이 없어도 되지만, 통일해서 쓰는 편이 안전합니다.</p>
+</div>
+
+<h2 id="colors">색상 표기법</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>표기</th><th>예</th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><b>이름</b></td><td><code>red</code>, <code>tomato</code></td><td>약 150개. 빠른 실험용</td></tr>
+<tr><td><b>16진수</b></td><td><code>#1f5f4f</code>, <code>#fff</code>, <code>#1f5f4f80</code></td><td>가장 흔함. 세 자리는 축약형, 여덟 자리는 <b>뒤 두 자리가 투명도</b></td></tr>
+<tr><td><b>rgb</b></td><td><code>rgb(31 95 79)</code>, <code>rgb(31 95 79 / 50%)</code></td><td>빨강·초록·파랑 0~255. 현대 문법은 <b>쉼표 없이 공백</b>, 투명도는 <code>/</code> 뒤에</td></tr>
+<tr><td><b>hsl</b></td><td><code>hsl(165 51% 25%)</code></td><td><b>색상(0~360도)·채도·명도.</b> 사람이 조절하기 쉽습니다</td></tr>
+<tr><td><b>oklch</b></td><td><code>oklch(0.42 0.07 168)</code></td><td><b>명도·채도·색상.</b> 사람이 느끼는 밝기와 값이 일치합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎨</span> hsl과 oklch가 편한 이유</p>
+<p><code>#1f5f4f</code>를 <b>조금만 더 밝게</b> 만들려면 어떻게 해야 할까요? 16진수로는 감이 오지 않습니다.
+<code>hsl(165 51% 25%)</code>이라면 마지막 숫자만 <code>35%</code>로 올리면 됩니다.
+호버 색, 비활성 색, 다크 모드 색을 만들 때 훨씬 편합니다.</p>
+<p style="margin-bottom:0"><b>oklch</b>는 여기서 한 걸음 더 갑니다. HSL은 명도 값이 같아도
+노랑이 파랑보다 훨씬 밝게 <b>보입니다.</b> oklch는 <b>사람의 시각을 기준</b>으로 만들어져
+명도 값이 같으면 실제로 비슷한 밝기로 보입니다. 색 팔레트를 체계적으로 만들 때 유리합니다.
+Chrome 111+, Safari 15.4+, Firefox 113+에서 지원되어 지금은 실무 사용이 가능합니다.</p>
+</div>
+
+<div class="runner" data-lang="html" data-title="색 표기법 비교" data-note="hsl 줄의 명도 값(마지막 %)만 바꿔 보세요. 한 숫자로 색 계열이 유지된 채 밝기만 변합니다.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; }
+  .row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .sw {
+    width: 80px; height: 60px; border-radius: 8px;
+    display: flex; align-items: flex-end; justify-content: center;
+    color: white; font-size: 10px; padding-bottom: 4px;
+    font-family: monospace;
+  }
+  h4 { margin: 0 0 6px; }
+
+  .hsl-1 { background: hsl(165 51% 15%); }
+  .hsl-2 { background: hsl(165 51% 25%); }
+  .hsl-3 { background: hsl(165 51% 35%); }
+  .hsl-4 { background: hsl(165 51% 45%); }
+
+  .hex-1 { background: #0f2f27; }
+  .hex-2 { background: #1f5f4f; }
+  .hex-3 { background: #2f8f77; }
+  .hex-4 { background: #48b89b; }
+
+  .alpha-1 { background: rgb(31 95 79 / 100%); }
+  .alpha-2 { background: rgb(31 95 79 / 60%); }
+  .alpha-3 { background: rgb(31 95 79 / 30%); }
+  .alpha-4 { background: #1f5f4f26; }
+</style>
+
+<h4>hsl — 마지막 숫자(명도)만 바꿈</h4>
+<div class="row">
+  <div class="sw hsl-1">15%</div>
+  <div class="sw hsl-2">25%</div>
+  <div class="sw hsl-3">35%</div>
+  <div class="sw hsl-4">45%</div>
+</div>
+
+<h4>16진수 — 같은 계열을 만들려면 감으로 찍어야 함</h4>
+<div class="row">
+  <div class="sw hex-1">#0f2f27</div>
+  <div class="sw hex-2">#1f5f4f</div>
+  <div class="sw hex-3">#2f8f77</div>
+  <div class="sw hex-4">#48b89b</div>
+</div>
+
+<h4>투명도 — rgb의 / 문법과 16진수 8자리</h4>
+<div class="row">
+  <div class="sw alpha-1">100%</div>
+  <div class="sw alpha-2">60%</div>
+  <div class="sw alpha-3">30%</div>
+  <div class="sw alpha-4">#…26</div>
+</div>
+</textarea>
+</div>
+
+<h3 id="currentcolor">currentColor와 color-mix</h3>
+<div class="codeblock">
+<pre><code data-lang="css">.button {
+  color: #1f5f4f;
+  border: 1px solid currentColor;  /* 글자색과 항상 같은 테두리 */
+}
+
+/* 두 색을 섞는다 — Chrome 111+, Safari 16.2+, Firefox 113+ */
+.hover {
+  background: color-mix(in srgb, #1f5f4f 80%, white);
+}</code></pre>
+</div>
+<p><code>currentColor</code>는 <b>그 요소의 <code>color</code> 값</b>을 가리키는 키워드입니다.
+색을 한 곳만 바꾸면 테두리·아이콘이 함께 따라오게 만들 수 있어 유지보수에 좋습니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 단위 선택 기본값</p>
+<div class="tablewrap" style="margin-bottom:0">
+<table>
+<thead><tr><th>용도</th><th>권장</th></tr></thead>
+<tbody>
+<tr><td>글자 크기</td><td><b><code>rem</code></b></td></tr>
+<tr><td>여백·간격</td><td><code>rem</code> (일관된 간격 체계) 또는 <code>px</code> (미세 조정)</td></tr>
+<tr><td>테두리 두께, 그림자</td><td><b><code>px</code></b> — 글자 크기에 비례할 이유가 없습니다</td></tr>
+<tr><td>본문 최대 폭</td><td><b><code>ch</code></b> — <code>max-width: 65ch</code> 정도가 읽기 좋습니다</td></tr>
+<tr><td>전체 화면 요소</td><td><code>dvh</code> / <code>vw</code></td></tr>
+<tr><td>버튼 내부 여백</td><td><code>em</code> — 글자가 커지면 여백도 같이 커져야 자연스럽습니다</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>px</code>는 물리적 점이 아니라 <b>논리적 단위</b>다.</li>
+<li><code>em</code>은 <b>그 요소</b> 기준이라 중첩되면 곱해진다. <code>rem</code>은 <b>루트</b>만 본다.</li>
+<li>글자 크기는 <b><code>rem</code></b> — 사용자의 브라우저 글꼴 설정을 존중하기 위해.</li>
+<li>모바일 전체 화면은 <code>100vh</code> 대신 <b><code>100dvh</code></b>.</li>
+<li><code>calc()</code>의 <code>+</code>·<code>-</code> 양옆에는 <b>공백 필수</b>.</li>
+<li><code>clamp(최소, 선호, 최대)</code>로 미디어 쿼리 없이 반응형 크기를 만든다.</li>
+<li>색 조절이 쉬운 <b><code>hsl</code></b>, 시각적 밝기가 일치하는 <b><code>oklch</code></b>.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_values_and_units" target="_blank" rel="noopener">MDN — CSS 값과 단위</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/length" target="_blank" rel="noopener">MDN — 길이 단위 전체</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value" target="_blank" rel="noopener">MDN — 색상 값</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/clamp" target="_blank" rel="noopener">MDN — clamp()</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/oklch" target="_blank" rel="noopener">MDN — oklch()</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>html { font-size: 16px }</code> 이고 <code>.a</code>(1.5em) 안에 <code>.b</code>(1.5em)가 있을 때 <code>.b</code>의 실제 글자 크기는?",
+    o: ["24px", "36px", "16px", "48px"],
+    a: 1,
+    e: "<code>em</code>은 <b>그 요소가 상속받은 font-size</b>를 기준으로 합니다. <code>.a</code>가 16×1.5=24px가 되고, <code>.b</code>는 그 24px을 기준으로 24×1.5=<b>36px</b>가 됩니다. 중첩될수록 곱해지는 이 특성 때문에 글자 크기에는 대체로 <code>rem</code>을 씁니다."
+  },
+  {
+    q: "글자 크기에 <code>px</code>가 아닌 <code>rem</code>을 권장하는 주된 이유는?",
+    o: [
+      "px는 구형 브라우저에서 지원되지 않아서",
+      "브라우저 설정에서 기본 글꼴 크기를 키운 사용자의 설정을 rem은 반영하지만 px는 무시하기 때문",
+      "rem이 렌더링 속도가 빠르기 때문",
+      "px는 소수점을 쓸 수 없기 때문"
+    ],
+    a: 1,
+    e: "저시력 사용자 등은 브라우저 기본 글꼴 크기를 키워 두는 경우가 있습니다. <code>rem</code>은 루트 글꼴 크기를 기준으로 하므로 이 설정을 따라 함께 커지지만, <code>px</code>는 고정되어 설정이 무시됩니다. (브라우저 확대·축소 기능은 px도 함께 확대하므로 별개 문제입니다.)"
+  },
+  {
+    q: "모바일에서 <code>height: 100vh</code>인 요소가 주소창 때문에 잘립니다. 현대적인 해결책은?",
+    o: [
+      "<code>height: 100%</code>로 바꾼다",
+      "<code>height: 100dvh</code>를 사용한다",
+      "<code>overflow: hidden</code>을 추가한다",
+      "JavaScript로 매 스크롤마다 높이를 다시 계산한다"
+    ],
+    a: 1,
+    e: "<code>dvh</code>(dynamic viewport height)는 주소창이 나타나고 사라짐에 따라 <b>실시간으로 변하는</b> 실제 뷰포트 높이를 가리킵니다. Chrome 108+, Safari 15.4+, Firefox 101+에서 지원되며, 구형 대비가 필요하면 <code>100vh</code>를 먼저 쓰고 다음 줄에 <code>100dvh</code>를 겹쳐 씁니다."
+  },
+  {
+    q: "<code>width: calc(100%-40px)</code> 가 동작하지 않는 이유는?",
+    o: [
+      "calc는 % 단위를 지원하지 않아서",
+      "<code>-</code> 연산자 양옆에 공백이 없어서 <code>-40px</code>이 음수 값으로 해석되기 때문",
+      "calc 안에서는 두 개 이상의 단위를 섞을 수 없어서",
+      "width에는 calc를 쓸 수 없어서"
+    ],
+    a: 1,
+    e: "<code>calc()</code>에서 <code>+</code>와 <code>-</code>는 <b>양옆에 공백이 필수</b>입니다. 공백이 없으면 부호가 붙은 숫자로 해석되어 식이 무효가 됩니다. <code>calc(100% - 40px)</code>처럼 써야 하고, 서로 다른 단위를 섞는 것은 calc의 본래 용도입니다."
+  },
+  {
+    q: "버튼의 기본색 <code>hsl(165 51% 25%)</code>에서 호버용으로 <b>같은 계열의 더 밝은 색</b>을 만들려면?",
+    o: [
+      "세 번째 값(명도)을 35% 정도로 올린다",
+      "첫 번째 값(색상)을 265로 바꾼다",
+      "두 번째 값(채도)을 0%로 만든다",
+      "hsl로는 밝기를 조절할 수 없어 16진수로 다시 계산해야 한다"
+    ],
+    a: 0,
+    e: "HSL은 <b>색상(Hue) · 채도(Saturation) · 명도(Lightness)</b> 순입니다. 색 계열을 유지한 채 밝기만 바꾸려면 세 번째 값만 조정하면 됩니다. 색상 값을 바꾸면 다른 색이 되고, 채도를 0으로 만들면 회색이 됩니다."
+  }
+]);
+</script>

@@ -1,0 +1,427 @@
+<!--desc: 객체 리터럴과 속성 접근, 단축 문법, 구조 분해 할당, 전개 구문, Object 정적 메서드, JSON 변환까지 객체 다루기 전부를 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>객체를 만들고 값을 꺼내는 모든 방법</li>
+  <li><b>구조 분해 할당</b> — 실무 코드에서 가장 자주 보이는 문법</li>
+  <li><b>전개 구문</b>으로 복사하고 합치기</li>
+  <li><code>Object.keys</code>·<code>values</code>·<code>entries</code></li>
+  <li>JSON과 객체의 관계, 그리고 <code>JSON.stringify</code>의 함정</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분</p>
+
+<h2 id="basics">객체 만들기와 접근</h2>
+
+<div class="runner" data-lang="js" data-title="객체 기본" data-note="점 표기법과 대괄호 표기법의 차이를 확인하세요.">
+<textarea class="rn-src">
+const user = {
+  name: "홍길동",
+  age: 20,
+  "favorite color": "green",     // 공백이 있으면 따옴표 필요
+  address: {                      // 객체 안에 객체
+    city: "서울",
+    zip: "04524"
+  },
+  greet() {                       // 메서드 축약 문법
+    return `안녕하세요, ${this.name}입니다`;
+  }
+};
+
+console.log("--- 점 표기법 ---");
+console.log(user.name);
+console.log(user.address.city);
+console.log(user.greet());
+
+console.log("--- 대괄호 표기법 ---");
+console.log(user["name"]);
+console.log(user["favorite color"]);   // 점으로는 불가능
+
+console.log("--- 변수를 키로 쓸 때는 대괄호 ---");
+const key = "age";
+console.log(user[key]);      // 20  ✅
+console.log(user.key);       // undefined ❌ "key"라는 속성을 찾음
+
+console.log("--- 없는 속성 ---");
+console.log(user.email);              // undefined (오류 아님)
+// console.log(user.email.length);    // TypeError!
+console.log(user.email?.length);      // undefined (안전)
+
+console.log("--- 추가·수정·삭제 ---");
+user.email = "hong@example.com";      // 추가
+user.age = 21;                        // 수정
+delete user["favorite color"];        // 삭제
+console.log(Object.keys(user));
+
+console.log("--- 속성 존재 확인 ---");
+console.log("name" in user);                  // true
+console.log(Object.hasOwn(user, "name"));     // true (권장)
+console.log(user.age !== undefined);          // 값이 undefined면 오판할 수 있음
+</textarea>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상황</th><th>표기법</th></tr></thead>
+<tbody>
+<tr><td>속성 이름이 고정되어 있다</td><td><b>점 표기법</b> <code>user.name</code></td></tr>
+<tr><td>속성 이름이 <b>변수</b>에 들어 있다</td><td><b>대괄호</b> <code>user[key]</code></td></tr>
+<tr><td>이름에 공백·하이픈이 있다</td><td>대괄호 <code>user["my-key"]</code></td></tr>
+<tr><td>이름이 숫자로 시작한다</td><td>대괄호</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="shorthand">단축 문법</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">const name = "홍길동";
+const age = 20;
+
+// 옛 방식
+const user1 = { name: name, age: age };
+
+// ✅ 속성 축약 — 변수명과 키가 같으면 한 번만
+const user2 = { name, age };
+
+// 계산된 속성 이름 — 키를 동적으로
+const field = "email";
+const user3 = { [field]: "hong@example.com" };   // { email: "..." }
+const user4 = { [`user_${age}`]: true };          // { user_20: true }
+
+// 메서드 축약
+const obj = {
+  greet() { return "안녕"; }        // greet: function() {…} 와 같음
+};</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🐛</span> 디버깅에 유용한 축약 문법</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">console.log(userId, count, isActive);
+// 출력: 42 3 true   ← 뭐가 뭔지 모름
+
+console.log({ userId, count, isActive });
+// 출력: { userId: 42, count: 3, isActive: true }   ✅ 이름과 함께</code></pre>
+</div>
+</div>
+
+<h2 id="destructuring">구조 분해 할당</h2>
+
+<p>객체나 배열에서 <b>필요한 값만 꺼내 변수로 만드는</b> 문법입니다.
+React 코드를 열면 거의 모든 줄에 등장하므로 반드시 익혀야 합니다.</p>
+
+<div class="runner" data-lang="js" data-title="구조 분해 완전 정복" data-note="각 패턴을 직접 바꿔 보며 익히세요.">
+<textarea class="rn-src">
+const user = {
+  name: "홍길동",
+  age: 20,
+  address: { city: "서울", zip: "04524" },
+  hobbies: ["독서", "등산"]
+};
+
+console.log("--- ① 기본 ---");
+const { name, age } = user;
+console.log(name, age);
+
+console.log("--- ② 이름 바꾸기 ---");
+const { name: userName } = user;
+console.log(userName);
+// 이유: 이미 name이라는 변수가 있거나, 더 명확한 이름이 필요할 때
+
+console.log("--- ③ 기본값 ---");
+const { email = "없음", age: userAge = 0 } = user;
+console.log(email, userAge);
+// 속성이 undefined일 때만 기본값이 쓰입니다 (null이면 null 그대로)
+
+console.log("--- ④ 중첩 구조 분해 ---");
+const { address: { city, zip } } = user;
+console.log(city, zip);
+// 주의: address 자체는 변수로 만들어지지 않습니다
+
+console.log("--- ⑤ 나머지 모으기 ---");
+const { name: n2, ...rest } = user;
+console.log("name 뺀 나머지:", Object.keys(rest));
+
+console.log("--- ⑥ 배열 구조 분해 ---");
+const [first, second] = user.hobbies;
+console.log(first, second);
+
+const [only, , third = "없음"] = ["a", "b"];   // 두 번째는 건너뜀
+console.log(only, third);
+
+console.log("--- ⑦ 값 교환 ---");
+let x = 1, y = 2;
+[x, y] = [y, x];
+console.log(x, y);
+
+console.log("--- ⑧ 함수 매개변수에서 ---");
+function printUser({ name, address: { city } = {} }) {
+  console.log(`${name} / ${city}`);
+}
+printUser(user);
+
+console.log("--- ⑨ 반환값 여러 개 받기 ---");
+function getMinMax(nums) {
+  return { min: Math.min(...nums), max: Math.max(...nums) };
+}
+const { min, max } = getMinMax([3, 1, 4, 1, 5]);
+console.log(min, max);
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 구조 분해에서 자주 나는 오류</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 대상이 null·undefined면 오류
+const { name } = null;   // TypeError
+
+// ✅ 기본값으로 방어
+function f(options = {}) {
+  const { size = "md" } = options;
+}
+
+// ✅ 서버 응답처럼 없을 수 있는 값
+const { data } = response ?? {};</code></pre>
+</div>
+</div>
+
+<h2 id="spread">전개 구문 <code>...</code></h2>
+
+<div class="runner" data-lang="js" data-title="전개 구문" data-note="합칠 때 순서가 결과를 바꿉니다. 마지막에 온 값이 이깁니다.">
+<textarea class="rn-src">
+const defaults = { size: "md", color: "black", rounded: false };
+const options  = { color: "green" };
+
+console.log("--- ① 복사 (얕은 복사) ---");
+const copy = { ...defaults };
+copy.size = "lg";
+console.log("원본:", defaults.size);   // "md" — 안전
+
+console.log("--- ② 합치기 — 뒤에 온 것이 이깁니다 ---");
+const merged = { ...defaults, ...options };
+console.log(merged);   // color만 green으로 덮임
+
+console.log("--- ③ 순서가 반대면 ---");
+console.log({ ...options, ...defaults });   // defaults가 이겨서 color: black
+
+console.log("--- ④ 일부만 바꾼 새 객체 (React에서 매일 씁니다) ---");
+const user = { id: 1, name: "홍길동", age: 20 };
+const updated = { ...user, age: 21 };
+console.log(user.age, "→", updated.age);
+console.log("원본 그대로:", user);
+
+console.log("--- ⑤ 조건부 속성 추가 ---");
+const isAdmin = true;
+const config = {
+  base: true,
+  ...(isAdmin && { adminPanel: true })    // false면 아무것도 안 퍼짐
+};
+console.log(config);
+
+console.log("--- ⑥ 배열에서도 ---");
+const a = [1, 2], b = [3, 4];
+console.log([...a, ...b]);          // [1,2,3,4]
+console.log([0, ...a, 99]);         // [0,1,2,99]
+console.log(Math.max(...[5, 2, 9]));// 배열을 인자 목록으로 펼침
+
+console.log("--- ⑦ 얕은 복사의 한계 (25장) ---");
+const nested = { info: { city: "서울" } };
+const shallow = { ...nested };
+shallow.info.city = "부산";
+console.log("원본도 바뀜:", nested.info.city);
+</textarea>
+</div>
+
+<h2 id="object-methods">Object의 정적 메서드</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">const user = { name: "홍길동", age: 20 };
+
+Object.keys(user);       // ["name", "age"]
+Object.values(user);     // ["홍길동", 20]
+Object.entries(user);    // [["name","홍길동"], ["age",20]]
+
+// entries → 다시 객체로
+Object.fromEntries([["a", 1], ["b", 2]]);   // { a: 1, b: 2 }
+
+// 합치기 (첫 인자를 직접 수정하므로 빈 객체를 앞에 둡니다)
+Object.assign({}, defaults, options);       // { ...defaults, ...options } 와 유사
+
+// 얕은 동결 — 수정 시도가 조용히 무시됩니다 (엄격 모드에서는 오류)
+Object.freeze(user);
+
+// 소유 속성 확인 (상속된 것은 제외)
+Object.hasOwn(user, "name");   // true</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">실전: entries로 객체 가공하기</span>
+<pre><code data-lang="js">const prices = { apple: 1000, banana: 2000, grape: 3000 };
+
+// 값만 10% 인상한 새 객체
+const raised = Object.fromEntries(
+  Object.entries(prices).map(([name, price]) =&gt; [name, price * 1.1])
+);
+
+// 2000원 이상만 남기기
+const expensive = Object.fromEntries(
+  Object.entries(prices).filter(([, price]) =&gt; price &gt;= 2000)
+);</code></pre>
+</div>
+
+<h2 id="json">JSON</h2>
+
+<p><b>JSON</b>은 데이터를 주고받기 위한 <b>문자열 형식</b>입니다.
+JavaScript 객체 문법에서 유래했지만 <b>더 엄격합니다.</b></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>JavaScript 객체</th><th>JSON</th></tr></thead>
+<tbody>
+<tr><td>키</td><td>따옴표 선택</td><td><b>반드시 큰따옴표</b></td></tr>
+<tr><td>문자열</td><td>작은따옴표·백틱 가능</td><td><b>큰따옴표만</b></td></tr>
+<tr><td>마지막 쉼표</td><td>허용</td><td><b>불허</b></td></tr>
+<tr><td>주석</td><td>가능</td><td><b>불가</b></td></tr>
+<tr><td>함수·<code>undefined</code></td><td>가능</td><td><b>불가</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="runner" data-lang="js" data-title="JSON 변환과 함정" data-note="stringify가 무엇을 잃어버리는지 확인하세요.">
+<textarea class="rn-src">
+const user = { name: "홍길동", age: 20, tags: ["a", "b"] };
+
+console.log("--- 객체 → 문자열 ---");
+const json = JSON.stringify(user);
+console.log(json);
+console.log(typeof json);
+
+console.log("--- 보기 좋게 (들여쓰기 2칸) ---");
+console.log(JSON.stringify(user, null, 2));
+
+console.log("--- 문자열 → 객체 ---");
+const parsed = JSON.parse(json);
+console.log(parsed.name);
+
+console.log("--- ⚠️ stringify가 잃어버리는 것들 ---");
+const tricky = {
+  text: "정상",
+  fn: function () {},          // 사라짐
+  undef: undefined,            // 사라짐
+  sym: Symbol("s"),            // 사라짐
+  date: new Date("2026-01-01"),// 문자열이 됨
+  nan: NaN,                    // null 이 됨
+  inf: Infinity,               // null 이 됨
+  nested: { keep: true }
+};
+console.log(JSON.stringify(tricky, null, 2));
+
+console.log("--- Date는 되돌아오지 않습니다 ---");
+const back = JSON.parse(JSON.stringify({ d: new Date() }));
+console.log(typeof back.d);   // "string" — Date 객체가 아님
+
+console.log("--- 잘못된 JSON 파싱은 반드시 감싸세요 ---");
+try {
+  JSON.parse("{ name: '홍길동' }");   // 키에 따옴표 없음 → 오류
+} catch (error) {
+  console.error("파싱 실패:", error.message);
+}
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚫</span> <code>JSON.parse(JSON.stringify(x))</code>로 깊은 복사를 하지 마세요</p>
+<p style="margin-bottom:0">오랫동안 쓰이던 방법이지만 위에서 본 것처럼
+<b><code>Date</code>가 문자열이 되고, 함수·<code>undefined</code>가 사라지고, <code>NaN</code>이 <code>null</code>이 되며,
+순환 참조가 있으면 오류</b>가 납니다.
+지금은 <b><code>structuredClone()</code></b>이라는 표준 함수가 있습니다(25장).</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 속성 순서에 의존하지 마세요</p>
+<p style="margin-bottom:0">객체의 속성 순서는 <b>명세상 규칙이 있습니다.</b>
+정수처럼 보이는 키가 <b>오름차순으로 먼저</b> 오고, 그다음 문자열 키가 <b>추가된 순서</b>대로 옵니다.
+즉 <code>{ b: 1, 2: 2, a: 3, 1: 4 }</code>의 키 순서는 <code>"1", "2", "b", "a"</code>입니다.
+규칙이 있긴 하지만 <b>직관과 어긋나므로 순서에 의존하는 코드를 쓰지 마세요.</b>
+순서가 중요하면 <b>배열</b>이나 <code>Map</code>(41장)을 쓰는 것이 맞습니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>속성 이름이 <b>변수에 들어 있으면 대괄호</b> 표기법을 쓴다.</li>
+<li>축약 문법 <code>{ name, age }</code>, 계산된 키 <code>{ [field]: v }</code>, 메서드 축약 <code>greet() {}</code>.</li>
+<li><b>구조 분해</b>는 이름 바꾸기·기본값·중첩·나머지를 모두 지원한다. 대상이 <code>null</code>이면 오류.</li>
+<li><b>전개 구문</b>으로 복사·합치기. <b>뒤에 온 값이 이긴다.</b> 얕은 복사임을 잊지 말 것.</li>
+<li><code>Object.entries()</code> + <code>map</code>/<code>filter</code> + <code>fromEntries()</code>로 객체를 가공한다.</li>
+<li>JSON은 <b>더 엄격한 형식</b>이다. <code>stringify</code>는 함수·<code>undefined</code>를 버리고 <code>Date</code>를 문자열로 만든다.</li>
+<li>깊은 복사는 <b><code>structuredClone()</code></b>.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Working_with_objects" target="_blank" rel="noopener">MDN — 객체 다루기</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment" target="_blank" rel="noopener">MDN — 구조 분해 할당</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax" target="_blank" rel="noopener">MDN — 전개 구문</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/JSON" target="_blank" rel="noopener">MDN — JSON</a></li>
+<li><a href="https://www.json.org/json-ko.html" target="_blank" rel="noopener">JSON 공식 소개</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>const key = \"age\"; console.log(user.key)</code> 가 <code>undefined</code>인 이유는?",
+    o: [
+      "user에 age 속성이 없어서",
+      "점 표기법은 변수를 해석하지 않고 <code>\"key\"</code>라는 이름의 속성을 찾기 때문. 변수를 키로 쓰려면 <code>user[key]</code>여야 한다",
+      "key가 예약어라서",
+      "const로 선언해서"
+    ],
+    a: 1,
+    e: "점 표기법 뒤의 이름은 <b>문자 그대로</b>의 속성 이름입니다. 변수에 담긴 이름으로 접근하려면 <b>대괄호 표기법</b> <code>user[key]</code>를 써야 합니다. 이 차이가 동적 속성 접근의 기본입니다."
+  },
+  {
+    q: "<code>const merged = { ...defaults, ...options }</code> 에서 두 객체에 같은 키가 있으면?",
+    o: [
+      "defaults의 값이 유지된다",
+      "options의 값이 이긴다. 뒤에 전개된 것이 앞의 값을 덮어쓰기 때문",
+      "오류가 발생한다",
+      "두 값이 배열로 합쳐진다"
+    ],
+    a: 1,
+    e: "전개 구문은 <b>왼쪽에서 오른쪽으로</b> 속성을 채워 넣으므로 <b>뒤에 온 값이 이깁니다</b>. 그래서 \"기본값을 먼저 펼치고 사용자 옵션을 나중에 펼치는\" 순서가 관용구입니다."
+  },
+  {
+    q: "<code>JSON.parse(JSON.stringify(obj))</code> 로 깊은 복사를 하면 안 되는 이유로 옳지 <b>않은</b> 것은?",
+    o: [
+      "Date 객체가 문자열로 바뀐다",
+      "함수와 undefined 속성이 사라진다",
+      "NaN과 Infinity가 null이 된다",
+      "중첩 객체가 복사되지 않는다"
+    ],
+    a: 3,
+    e: "중첩 객체는 <b>제대로 복사됩니다</b> — 그게 이 기법을 써 온 이유입니다. 문제는 <code>Date</code>·함수·<code>undefined</code>·<code>NaN</code>·순환 참조에서 데이터가 손상되거나 오류가 난다는 점입니다. 지금은 <code>structuredClone()</code>이 표준 해법입니다."
+  },
+  {
+    q: "<code>const { size = \"md\" } = options;</code> 에서 <code>options.size</code>가 <code>null</code>이면 <code>size</code>의 값은?",
+    o: ["\"md\"", "null", "undefined", "오류"],
+    a: 1,
+    e: "구조 분해의 기본값은 <b><code>undefined</code>일 때만</b> 적용됩니다. <code>null</code>은 \"값이 있는 상태\"로 취급되어 그대로 들어옵니다. <code>null</code>까지 걸러내려면 <code>options.size ?? \"md\"</code>를 따로 써야 합니다."
+  },
+  {
+    q: "객체의 값들을 모두 두 배로 만든 <b>새 객체</b>를 만드는 올바른 방법은?",
+    o: [
+      "<code>obj.map(v =&gt; v * 2)</code>",
+      "<code>Object.fromEntries(Object.entries(obj).map(([k, v]) =&gt; [k, v * 2]))</code>",
+      "<code>[...obj].map(v =&gt; v * 2)</code>",
+      "<code>obj.forEach(v =&gt; v * 2)</code>"
+    ],
+    a: 1,
+    e: "객체에는 <code>map</code>이 없습니다. <code>Object.entries()</code>로 <code>[키, 값]</code> 배열을 만들고, 배열 <code>map</code>으로 가공한 뒤, <code>Object.fromEntries()</code>로 다시 객체로 돌리는 것이 표준 패턴입니다."
+  }
+]);
+</script>

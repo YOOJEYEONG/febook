@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>35장. 이벤트 루프 — 프엔북</title>
+<meta name="description" content="싱글 스레드 JavaScript가 어떻게 동시에 여러 일을 하는지, 콜 스택·태스크 큐·마이크로태스크 큐의 관계와 실행 순서를 코드로 확인합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="35장. 이벤트 루프 — 프엔북">
+<meta property="og:description" content="싱글 스레드 JavaScript가 어떻게 동시에 여러 일을 하는지, 콜 스택·태스크 큐·마이크로태스크 큐의 관계와 실행 순서를 코드로 확인합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="35-event-loop">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">5부 · JavaScript 심화와 브라우저 API</p>
+    <h1>35장. 이벤트 루프</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><span <span class="term" data-term="class">class</span>="term" data-term="javascript">JavaScript</span>가 <b>한 번에 하나만</b> 실행하는데도 멈추지 않는 이유</li>
+  <li>콜 스택 · 태스크 큐 · <b>마이크로태스크 큐</b></li>
+  <li><code>setTimeout(fn, 0)</code>이 <b>즉시 실행이 아닌</b> 이유</li>
+  <li><span class="term" data-term="promise">Promise</span>가 <code>setTimeout</code>보다 <b>항상 먼저</b> 실행되는 이유</li>
+  <li>메인 스레드를 막으면 어떤 일이 생기는가</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 36장 비동기의 토대입니다</p>
+
+<h2 id="single">JavaScript는 한 번에 하나만 합니다</h2>
+
+<p>JavaScript는 <b>싱글 스레드</b> 언어입니다. 코드를 실행하는 통로가 <b>하나뿐</b>입니다.
+그런데도 서버 응답을 기다리면서 애니메이션이 돌고 버튼도 눌립니다. 어떻게 가능할까요?</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">☕</span> 1인 카페 비유</p>
+<p style="margin-bottom:0">바리스타는 <b>한 명</b>입니다(싱글 스레드).
+손님이 커피를 주문하면 바리스타는 <b>기계에 넣고 기다리지 않습니다.</b>
+버튼만 누르고 다음 손님을 받습니다(비동기 요청).
+커피가 다 되면 기계가 알려 주고(<span class="term" data-term="callback">콜백</span>), 바리스타는 <b>지금 하던 일을 끝낸 뒤</b> 커피를 내어 줍니다.<br>
+<b>핵심: 기다리는 일은 바리스타가 아니라 기계(<span class="term" data-term="browser">브라우저</span>)가 합니다.</b></p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">구성 요소</span>
+<pre><code data-lang="text">┌─────────────┐   ┌──────────────────────────┐
+│  콜 스택     │   │  브라우저가 제공하는 기능  │
+│ (JS 엔진)   │   │  타이머 · 네트워크 · DOM  │
+│  한 개뿐     │   │  (JS 엔진 밖에서 동작)    │
+└──────┬──────┘   └────────────┬─────────────┘
+       │                       │ 완료되면 콜백을 큐에 넣음
+       │                       ▼
+       │          ┌────────────────────────────┐
+       │          │ 마이크로태스크 큐 (우선)     │ ← Promise, queueMicrotask
+       │          ├────────────────────────────┤
+       │          │ 태스크 큐                   │ ← setTimeout, 이벤트
+       │          └────────────┬───────────────┘
+       │                       │
+       └───────── 이벤트 루프 ──┘
+          "스택이 비면 큐에서 하나 꺼내 올린다"</code></pre>
+</div>
+
+<h2 id="stack">콜 스택</h2>
+
+<p>함수를 호출하면 <b>스택에 쌓이고</b>, 끝나면 <b>위에서부터 빠집니다.</b>
+접시를 쌓았다가 위에서부터 꺼내는 것과 같습니다.</p>
+
+<div class="runner" data-lang="js" data-title="콜 스택 확인" data-note="에러의 stack 항목이 콜 스택의 스냅샷입니다.">
+<textarea class="rn-src">
+function third() {
+  console.log("--- 지금 콜 스택 ---");
+  console.log(new Error().stack);
+}
+function second() { third(); }
+function first() { second(); }
+
+console.log("시작");
+first();
+console.log("끝");
+
+console.log("--- 스택이 넘치면 ---");
+function infinite(n) { return infinite(n + 1); }
+try {
+  infinite(0);
+} catch (error) {
+  console.error(error.name + ": 스택에 쌓을 자리가 없습니다");
+}
+</textarea>
+</div>
+
+<h2 id="order">실행 순서 — 이 챕터의 핵심</h2>
+
+<p>이벤트 루프의 규칙은 단순합니다.</p>
+<ol>
+<li><b>콜 스택의 코드를 끝까지</b> 실행한다.</li>
+<li>스택이 비면 <b>마이크로태스크 큐를 전부</b> 비운다.</li>
+<li>그다음 <b>태스크 큐에서 하나만</b> 꺼내 실행한다.</li>
+<li>다시 2번으로 — 태스크 하나마다 마이크로태스크를 전부 처리한다.</li>
+</ol>
+
+<div class="runner" data-lang="js" data-title="실행 순서 맞혀 보기" data-note="실행 전에 순서를 예측해 보고, 결과와 비교해 보세요.">
+<textarea class="rn-src">
+console.log("1. 동기 코드 시작");
+
+setTimeout(() => {
+  console.log("6. setTimeout 0ms (태스크)");
+}, 0);
+
+setTimeout(() => {
+  console.log("7. setTimeout 10ms (태스크)");
+}, 10);
+
+Promise.resolve().then(() => {
+  console.log("4. Promise .then (마이크로태스크)");
+});
+
+queueMicrotask(() => {
+  console.log("5. queueMicrotask (마이크로태스크)");
+});
+
+console.log("2. 동기 코드 끝");
+
+// 즉시 실행되는 부분이 먼저 다 끝납니다
+(function () {
+  console.log("3. 즉시 실행 함수");
+})();
+
+// 결과 순서: 1 → 2 → 3 → 4 → 5 → 6 → 7
+//
+// 이유:
+//  ① 동기 코드가 전부 먼저 (1, 2, 3)
+//  ② 스택이 비면 마이크로태스크 전부 (4, 5)
+//  ③ 그다음 태스크 (6, 7)
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚡</span> 마이크로태스크는 <b>전부</b>, 태스크는 <b>하나만</b></p>
+<p style="margin-bottom:0">이 비대칭이 중요합니다. 마이크로태스크 처리 중에 새 마이크로태스크가 추가되면
+<b>그것까지 다 처리한 뒤에야</b> 다음 단계로 넘어갑니다.
+그래서 <b>마이크로태스크로 무한 루프를 만들면 브라우저가 완전히 멈춥니다.</b></p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ⚠️ 절대 실행하지 마세요 — 브라우저가 응답하지 않게 됩니다
+function loop() { Promise.resolve().then(loop); }</code></pre>
+</div>
+</div>
+
+<div class="runner" data-lang="js" data-title="중첩된 순서" data-note="한 태스크가 끝날 때마다 마이크로태스크가 전부 비워지는 것을 확인하세요.">
+<textarea class="rn-src">
+console.log("A: 시작");
+
+setTimeout(() => {
+  console.log("D: 첫 번째 타이머");
+  Promise.resolve().then(() => console.log("E: 첫 타이머 안의 Promise"));
+}, 0);
+
+setTimeout(() => {
+  console.log("F: 두 번째 타이머");
+}, 0);
+
+Promise.resolve()
+  .then(() => {
+    console.log("B: Promise 1");
+    return Promise.resolve();
+  })
+  .then(() => {
+    console.log("C: Promise 2 (체이닝된 것도 마이크로태스크)");
+  });
+
+// 예상 순서: A → B → C → D → E → F
+//
+// 주목할 점: D(첫 타이머) 안에서 만든 Promise인 E가
+// F(두 번째 타이머)보다 먼저 실행됩니다.
+// 태스크 하나가 끝날 때마다 마이크로태스크 큐를 '전부' 비우기 때문입니다.
+</textarea>
+</div>
+
+<h2 id="timer">setTimeout(fn, 0)의 진실</h2>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">⏱️</span> "0ms니까 즉시 실행"이 아닙니다</p>
+<span class="mythline"><code>setTimeout</code>의 시간은 <b>"이만큼 지난 뒤에 큐에 넣어 달라"</b>는 뜻이지
+<b>"이만큼 뒤에 실행하라"</b>가 아닙니다.</span>
+<span class="mythline">큐에 들어간 뒤에도 <b>콜 스택이 비고 마이크로태스크가 다 처리될 때까지</b> 기다립니다.
+앞에 무거운 동기 코드가 있으면 <code>setTimeout(fn, 0)</code>이 <b>몇 초 뒤에</b> 실행될 수도 있습니다.</span>
+<span class="mythline">게다가 <span class="term" data-term="html">HTML</span> 명세상 <b>타이머가 5단계 이상 중첩되면 최소 4ms</b>로 제한됩니다.
+정확한 시간이 필요한 애니메이션에 <code>setTimeout</code>을 쓰면 안 되는 이유입니다.</span>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">그럼 setTimeout(fn, 0)은 언제 쓰나</span>
+<pre><code data-lang="js">// "지금 하던 일을 다 끝내고 나서 실행해 줘"라는 뜻으로 씁니다
+element.style.display = "block";
+setTimeout(() =&gt; {
+  element.classList.add("visible");   // 브라우저가 변화를 인식한 뒤 전환 시작
+}, 0);
+
+// 무거운 작업을 쪼개 화면이 멈추지 않게 하는 데도 씁니다</code></pre>
+</div>
+
+<h2 id="blocking">메인 스레드를 막으면</h2>
+
+<div class="runner" data-lang="js" data-title="블로킹 실험" data-note="반복 횟수를 늘리면 결과가 나타나기까지 더 오래 걸립니다. 그동안 아무것도 할 수 없습니다.">
+<textarea class="rn-src">
+console.log("무거운 작업 시작");
+
+const start = performance.now();
+
+// 동기적으로 시간이 오래 걸리는 작업
+let sum = 0;
+for (let i = 0; i < 30_000_000; i++) {
+  sum += i;
+}
+
+const elapsed = performance.now() - start;
+console.log(`완료: ${elapsed.toFixed(0)}ms 동안 아무것도 못 했습니다`);
+console.log("합계:", sum);
+
+// 이 시간 동안 브라우저에서는:
+//  - 버튼 클릭이 반응하지 않음
+//  - 애니메이션이 멈춤
+//  - 스크롤이 안 됨
+//  - 심지어 화면이 다시 그려지지도 않음
+//
+// 콜 스택이 비어야 이벤트 루프가 다음 일을 할 수 있기 때문입니다.
+// 그래서 프론트엔드에서 "메인 스레드를 막지 않는 것"이 중요합니다.
+</textarea>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 무거운 작업 다루기</p>
+<ol style="margin-bottom:0">
+<li><b>작게 쪼개기</b> — 큰 반복을 나눠 중간중간 브라우저에 제어권을 돌려줍니다.</li>
+<li><b>Web Worker</b>(40장) — <b>진짜 별도 스레드</b>에서 계산합니다. 메인 스레드를 전혀 막지 않습니다.</li>
+<li><b><code>requestIdleCallback</code></b> — 브라우저가 한가할 때 실행합니다. (Safari 미지원이라 대비 필요)</li>
+<li><b>알고리즘을 개선</b> — 대개 가장 효과가 큽니다. 3중 반복문을 하나로 줄이는 게 낫습니다.</li>
+</ol>
+</div>
+
+<h3 id="raf">애니메이션에는 requestAnimationFrame</h3>
+<div class="codeblock">
+<pre><code data-lang="js">// ❌ 타이밍이 부정확하고 화면 주사율과 어긋납니다
+setInterval(() =&gt; { moveElement(); }, 16);
+
+// ✅ 브라우저가 "다음 화면을 그리기 직전"에 호출해 줍니다
+function animate() {
+  moveElement();
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);</code></pre>
+</div>
+<p><code>requestAnimationFrame</code>은 <b>화면 주사율에 맞춰</b>(보통 초당 60회) 호출되고,
+<b>탭이 백그라운드로 가면 자동으로 멈춰</b> 배터리를 아낍니다.
+5장에서 본 "한 프레임 16.7ms" 예산이 여기서 의미를 갖습니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>JavaScript는 <b>싱글 스레드</b>다. 기다리는 일은 <b>브라우저가 대신</b> 한다.</li>
+<li>실행 순서: <b>동기 코드 전부 → 마이크로태스크 전부 → 태스크 하나</b>, 반복.</li>
+<li><b>Promise는 마이크로태스크</b>, <code>setTimeout</code>·이벤트는 <b>태스크</b>. Promise가 항상 먼저다.</li>
+<li><code>setTimeout(fn, 0)</code>은 즉시 실행이 아니라 <b>"지금 일을 다 끝낸 뒤"</b>라는 뜻이다.</li>
+<li>마이크로태스크는 <b>전부</b> 비우고, 태스크는 <b>하나씩</b> 처리한다.</li>
+<li><b>메인 스레드를 막으면</b> 클릭·애니메이션·렌더링이 전부 멈춘다.</li>
+<li>애니메이션에는 <b><code>requestAnimationFrame</code></b>.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Execution_model" target="_blank" rel="noopener">MDN — JavaScript 실행 모델(이벤트 루프)</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide" target="_blank" rel="noopener">MDN — 마이크로태스크 가이드</a></li>
+<li><a href="https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#timers" target="_blank" rel="noopener">WHATWG — 타이머 명세(4ms 제한 규정)</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/Window/requestAnimationFrame" target="_blank" rel="noopener">MDN — requestAnimationFrame</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>console.log(1); setTimeout(() =&gt; console.log(2), 0); Promise.resolve().then(() =&gt; console.log(3)); console.log(4);</code> 의 출력 순서는?",
+    o: ["1 2 3 4", "1 4 3 2", "1 4 2 3", "1 3 4 2"],
+    a: 1,
+    e: "동기 코드가 먼저 전부 실행되어 <b>1, 4</b>. 스택이 비면 <b>마이크로태스크</b>인 Promise 콜백 <b>3</b>. 마지막으로 <b>태스크</b>인 setTimeout 콜백 <b>2</b>입니다. 마이크로태스크가 태스크보다 항상 먼저입니다."
+  },
+  {
+    q: "<code>setTimeout(fn, 0)</code>의 정확한 의미는?",
+    o: [
+      "즉시 실행한다",
+      "0ms 뒤 콜백을 태스크 큐에 넣는다는 뜻이며, 실제 실행은 콜 스택이 비고 마이크로태스크가 모두 처리된 뒤다",
+      "다음 줄보다 먼저 실행된다",
+      "브라우저가 무시한다"
+    ],
+    a: 1,
+    e: "타이머의 시간은 <b>큐에 넣는 시점</b>을 정할 뿐입니다. 앞에 무거운 동기 코드가 있으면 몇 초 뒤에 실행될 수도 있습니다. 또 타이머가 5단계 이상 중첩되면 명세상 <b>최소 4ms</b>로 제한됩니다."
+  },
+  {
+    q: "마이크로태스크 큐와 태스크 큐 처리 방식의 차이는?",
+    o: [
+      "둘 다 하나씩 처리한다",
+      "마이크로태스크는 큐가 빌 때까지 전부 처리하고, 태스크는 한 번에 하나만 처리한다",
+      "태스크가 항상 먼저다",
+      "차이가 없다"
+    ],
+    a: 1,
+    e: "이 비대칭이 핵심입니다. 태스크 하나를 처리할 때마다 <b>마이크로태스크 큐를 전부 비웁니다</b>. 그래서 마이크로태스크를 무한히 만들면 태스크와 렌더링이 영원히 차례를 얻지 못해 브라우저가 멈춥니다."
+  },
+  {
+    q: "3천만 번 반복하는 동기 코드를 실행하는 동안 페이지에서 벌어지는 일은?",
+    o: [
+      "아무 영향 없다",
+      "클릭·스크롤·애니메이션·화면 다시 그리기가 모두 멈춘다. 콜 스택이 비어야 이벤트 루프가 다음 일을 할 수 있기 때문",
+      "브라우저가 자동으로 다른 스레드로 옮긴다",
+      "다른 탭도 함께 멈춘다"
+    ],
+    a: 1,
+    e: "싱글 스레드이므로 콜 스택이 차 있는 동안 <b>이벤트 루프는 아무것도 꺼낼 수 없습니다</b>. 렌더링도 이벤트 루프의 일부라 화면조차 갱신되지 않습니다. 해결책은 작업 쪼개기나 Web Worker입니다."
+  },
+  {
+    q: "부드러운 애니메이션에 <code>setInterval(fn, 16)</code>보다 <code>requestAnimationFrame</code>이 나은 이유는?",
+    o: [
+      "코드가 짧아서",
+      "브라우저가 다음 화면을 그리기 직전에 호출해 주사율과 동기화되고, 백그라운드 탭에서는 자동으로 멈춰 자원을 아끼기 때문",
+      "setInterval은 애니메이션에 쓸 수 없어서",
+      "requestAnimationFrame이 더 자주 호출되기 때문"
+    ],
+    a: 1,
+    e: "<code>setInterval</code>은 이벤트 루프 상황에 따라 호출 간격이 밀려 화면 갱신과 어긋납니다. <code>requestAnimationFrame</code>은 <b>렌더링 직전</b>에 호출되어 프레임과 정확히 맞고, 보이지 않는 탭에서는 호출이 중단되어 배터리를 절약합니다."
+  }
+]);
+</script>
+</body>
+</html>

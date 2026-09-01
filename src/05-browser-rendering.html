@@ -1,0 +1,261 @@
+<!--desc: 브라우저가 HTML을 받아 화면을 그리기까지의 과정 — 파싱, DOM과 CSSOM, 렌더 트리, 레이아웃, 페인트, 합성 — 과 script 태그가 렌더링을 막는 이유를 설명합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>HTML 문자열이 화면 픽셀이 되기까지의 여섯 단계</li>
+  <li><span class="term" data-term="dom">DOM</span>과 CSSOM이 무엇인지</li>
+  <li><code>&lt;script&gt;</code>가 왜 페이지를 멈추게 하는지, <code>defer</code>·<code>async</code>가 무엇을 바꾸는지</li>
+  <li>왜 애니메이션에 <code>transform</code>을 쓰라고 하는지</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분 · 성능 최적화(76장)의 토대가 되는 챕터입니다</p>
+
+<h2 id="pipeline">화면이 그려지기까지</h2>
+
+<p>서버에서 받은 HTML은 그저 <b>긴 문자열</b>입니다. 이것이 화면의 픽셀이 되기까지 브라우저는 이런 일을 합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">렌더링 파이프라인</span>
+<pre><code data-lang="text">HTML 문자열 ──파싱──▶ DOM ──┐
+                            ├──▶ 렌더 트리 ──▶ 레이아웃 ──▶ 페인트 ──▶ 합성 ──▶ 화면
+CSS 문자열  ──파싱──▶ CSSOM ─┘</code></pre>
+</div>
+
+<h3 id="dom">① 파싱 — DOM과 CSSOM 만들기</h3>
+
+<p>브라우저는 HTML을 위에서부터 읽으며 <b>DOM</b>이라는 나무 모양 구조를 만듭니다.
+DOM은 <b>HTML 파일 그 자체가 아니라, 브라우저가 해석해서 메모리에 만든 결과물</b>입니다. 이 구분이 중요합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">HTML이 DOM이 되는 모습</span>
+<pre><code data-lang="text">&lt;body&gt;                          body
+  &lt;h1&gt;제목&lt;/h1&gt;        ─────▶     ├── h1 ── "제목"
+  &lt;p&gt;본문 &lt;b&gt;강조&lt;/b&gt;&lt;/p&gt;        └── p ──┬── "본문 "
+&lt;/body&gt;                                   └── b ── "강조"</code></pre>
+</div>
+
+<p>같은 방식으로 CSS는 <b>CSSOM</b>이라는 구조가 됩니다.
+"어떤 요소에 어떤 스타일이 최종 적용되는지"를 계산해 둔 표라고 생각하면 됩니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> DOM ≠ HTML 파일</p>
+<p style="margin-bottom:0">닫는 태그를 빠뜨린 잘못된 HTML을 줘도 브라우저는 <b>알아서 고쳐서</b> DOM을 만듭니다.
+그래서 "소스 보기"에 보이는 HTML과 개발자 도구 <b>Elements 탭</b>에 보이는 구조가 다를 수 있습니다.
+JavaScript로 요소를 추가하면 DOM에는 있지만 원본 HTML 파일에는 없습니다.
+<b>개발자 도구가 보여주는 것은 항상 DOM입니다.</b></p>
+</div>
+
+<h3 id="render-tree">② 렌더 트리 — 화면에 그릴 것만 추리기</h3>
+
+<p>DOM과 CSSOM을 합쳐 <b>실제로 화면에 그려질 것들</b>만 모은 것이 렌더 트리입니다.
+<code>display: none</code>인 요소, <code>&lt;head&gt;</code> 안의 내용처럼 <b>보이지 않는 것은 여기서 빠집니다.</b></p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🙈</span> <code>display:none</code> 과 <code>visibility:hidden</code> 의 차이</p>
+<p style="margin-bottom:0"><code>display: none</code>은 <b>렌더 트리에서 빠집니다</b>. 공간도 차지하지 않습니다.
+<code>visibility: hidden</code>은 렌더 트리에 <b>남아 있고 자리도 차지</b>하지만 칠해지지 않을 뿐입니다.
+"숨겼는데 빈 공간이 남아요"의 원인이 대개 이겁니다.</p>
+</div>
+
+<h3 id="layout">③ 레이아웃(리플로우) — 위치와 크기 계산</h3>
+
+<p>각 요소가 <b>화면 어디에 얼마만 한 크기로</b> 놓일지 계산합니다.
+"너비 50%"처럼 상대적으로 적힌 값이 이 단계에서 실제 픽셀로 확정됩니다.
+이 계산을 다시 하는 것을 <b>리플로우(reflow)</b>라고 하며, <b>가장 비싼 작업</b>입니다.
+요소 하나의 크기가 바뀌면 그 주변, 때로는 문서 전체를 다시 계산해야 하기 때문입니다.</p>
+
+<h3 id="paint">④ 페인트 — 픽셀 칠하기</h3>
+<p>글자·색·그림자·테두리를 실제로 칠합니다. 위치는 이미 정해졌으니 <b>모양</b>만 그립니다.</p>
+
+<h3 id="composite">⑤ 합성 — 레이어 겹치기</h3>
+<p>브라우저는 화면을 여러 <b>레이어</b>로 나눠 그린 뒤 마지막에 겹칩니다.
+포토샵의 레이어와 같은 개념입니다. 레이어의 <b>위치나 투명도만 바뀐다면</b>,
+레이아웃과 페인트를 건너뛰고 <b>겹치기만 다시</b> 하면 됩니다. 이게 결정적으로 중요합니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 애니메이션에 <code>transform</code>을 쓰는 이유</p>
+<p>움직이는 애니메이션을 만들 때 두 가지 방법이 있습니다.</p>
+<ul>
+<li><code>left: 0 → 100px</code> — 위치가 바뀌므로 <b>레이아웃부터 다시</b>. 매 프레임 전체 계산.</li>
+<li><code>transform: translateX(100px)</code> — 대개 <b>합성 단계만</b> 다시. 훨씬 쌉니다.</li>
+</ul>
+<p style="margin-bottom:0">부드러운 화면은 <b>1초에 60프레임</b>, 즉 한 프레임에 약 <b>16.7밀리초</b> 안에 모든 걸 끝내야 합니다.
+레이아웃까지 다시 계산하면 이 예산을 넘기기 쉽고, 그 결과가 "버벅임"입니다.
+그래서 실무 원칙은 <b>"움직임은 <code>transform</code>, 사라짐은 <code>opacity</code>"</b>입니다. 20장에서 다시 다룹니다.</p>
+</div>
+
+<h2 id="blocking">CSS와 JavaScript가 렌더링을 막는 방식</h2>
+
+<h3 id="css-block">CSS는 렌더링을 막는다</h3>
+<p>CSSOM이 완성되기 전에 화면을 그리면 <b>스타일 없는 날것의 HTML</b>이 잠깐 보였다가 바뀝니다.
+이 깜빡임을 피하려고 브라우저는 <b>CSS를 다 받을 때까지 첫 화면 그리기를 미룹니다.</b>
+그래서 CSS 파일이 크고 느리면 <b>흰 화면 시간이 길어집니다.</b></p>
+
+<h3 id="js-block">JavaScript는 파싱 자체를 막는다</h3>
+<p>브라우저가 HTML을 읽다가 <code>&lt;script&gt;</code>를 만나면, <b>HTML 읽기를 멈추고</b>
+스크립트를 내려받아 <b>실행이 끝날 때까지 기다립니다.</b></p>
+
+<p>왜 그럴까요? 스크립트가 <code>document.write()</code>로 HTML을 바꿔 버릴 수도 있기 때문입니다.
+브라우저는 그럴 가능성을 배제할 수 없어서 <b>일단 멈추고 기다립니다.</b></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>작성 방식</th><th>내려받기</th><th>실행 시점</th><th>실행 순서</th></tr></thead>
+<tbody>
+<tr><td><code>&lt;script src&gt;</code></td><td>파싱 중단 후</td><td>즉시 (파싱 멈춤)</td><td>작성 순서</td></tr>
+<tr><td><code>&lt;script defer src&gt;</code></td><td>파싱과 <b>동시에</b></td><td>HTML 파싱이 <b>모두 끝난 뒤</b></td><td><b>작성 순서 보장</b></td></tr>
+<tr><td><code>&lt;script async src&gt;</code></td><td>파싱과 <b>동시에</b></td><td>내려받는 즉시 (파싱 잠깐 멈춤)</td><td><b>보장 안 됨</b> — 먼저 받아진 순</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✅</span> 실무에서의 기본 선택</p>
+<ul style="margin-bottom:0">
+<li>대부분의 경우 <b><code>defer</code></b>. 순서가 보장되고 DOM이 완성된 뒤 실행되므로 안전합니다.</li>
+<li>다른 코드와 아무 상관 없는 독립적인 스크립트(예: 방문 분석 도구)만 <b><code>async</code></b>.</li>
+<li><code>&lt;script type="module"&gt;</code>은 <b>기본으로 <code>defer</code>처럼 동작</b>합니다(34장).</li>
+<li>옛날 책에서 보는 "스크립트는 <code>&lt;/body&gt;</code> 직전에 두라"는 조언은 <code>defer</code>가 없던 시절의 우회법입니다. 지금은 <code>&lt;head&gt;</code>에 <code>defer</code>로 두는 편이 낫습니다.</li>
+</ul>
+</div>
+
+<h3 id="try">직접 확인해 보기</h3>
+<p>아래 예제는 스크립트 실행 순서와 두 가지 중요한 이벤트 시점을 보여 줍니다.
+<b>결과 아래 콘솔 출력의 순서</b>를 주목해서 보세요.</p>
+
+<div class="runner" data-lang="html" data-title="실행 순서 관찰하기" data-note="아래 &lt;p&gt; 태그들의 위치를 바꾸거나, 스크립트를 문서 맨 위로 옮겨서 순서가 어떻게 달라지는지 실험해 보세요.">
+<textarea class="rn-src">
+<h3>순서 실험</h3>
+
+<script>
+  // HTML을 읽다가 여기서 멈추고 이 코드를 실행합니다.
+  console.log("1) 위쪽 스크립트 실행");
+  // 이 시점에는 아직 아래 문단이 DOM에 없습니다.
+  console.log("   이 시점 문단 개수:", document.querySelectorAll("p").length);
+</script>
+
+<p>첫 번째 문단</p>
+<p>두 번째 문단</p>
+
+<script>
+  console.log("2) 아래쪽 스크립트 실행");
+  console.log("   이 시점 문단 개수:", document.querySelectorAll("p").length);
+
+  // DOMContentLoaded: HTML 파싱과 DOM 구성이 끝난 순간
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("3) DOMContentLoaded — DOM 완성됨");
+  });
+
+  // load: 이미지 등 모든 하위 자원까지 다 받아진 순간
+  window.addEventListener("load", function () {
+    console.log("4) load — 모든 자원 로딩 완료");
+  });
+</script>
+</textarea>
+</div>
+
+<p>위쪽 스크립트가 <b>문단 개수를 0으로</b> 보는 것을 확인하세요.
+"분명히 HTML에 요소를 썼는데 JavaScript에서 <code>null</code>이 나온다"는 초보자의 단골 문제가 바로 이것입니다.
+<b>아직 만들어지지 않은 요소를 찾으려 했기 때문</b>입니다. 해결책은 <code>defer</code>를 쓰거나
+<code>DOMContentLoaded</code>를 기다리는 것입니다.</p>
+
+<h2 id="fcp">"흰 화면"의 정체</h2>
+
+<p>페이지를 열었을 때 잠깐 아무것도 없는 시간이 있습니다. 그 시간 동안 브라우저는 이 일을 합니다.</p>
+<ol>
+<li>HTML을 받는다</li>
+<li>HTML을 읽다가 CSS 링크를 만나면 그것도 받는다 (<b>이게 끝날 때까지 못 그림</b>)</li>
+<li><code>defer</code> 없는 스크립트를 만나면 받아서 실행한다 (<b>여기서도 멈춤</b>)</li>
+<li>DOM + CSSOM → 렌더 트리 → 레이아웃 → 페인트</li>
+<li>비로소 첫 픽셀이 보인다</li>
+</ol>
+<p>이 첫 픽셀까지 걸린 시간을 <b>FCP</b>(First Contentful Paint)라고 부르고,
+"의미 있는 큰 콘텐츠"가 보인 시점을 <b>LCP</b>(Largest Contentful Paint)라고 부릅니다.
+LCP는 구글이 검색 순위에도 반영하는 지표입니다. 자세한 내용은 76장에 있습니다.</p>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> 자주 하는 오해</p>
+<span class="mythline"><b class="no">오해</b> — 화면에 안 보이게 하려면 <code>display: none</code>을 쓰면 되고, 그러면 성능에도 이득이다.</span>
+<span class="mythline"><b class="yes">사실</b> — 렌더 트리에서는 빠지지만 <b>DOM에는 그대로 남아 있습니다.</b>
+이미지가 있으면 다운로드도 되고, 요소 개수도 그대로입니다.
+목록 1만 개를 만들어 놓고 <code>display:none</code>으로 숨기는 것은 성능 개선이 아닙니다.
+정말 필요 없다면 <b>DOM에 만들지 않는 것</b>이 답입니다.</span>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>파이프라인: <b>파싱(DOM·CSSOM) → 렌더 트리 → 레이아웃 → 페인트 → 합성</b>.</li>
+<li><b>DOM은 HTML 파일이 아니라</b> 브라우저가 해석해 만든 결과물이다.</li>
+<li>레이아웃(리플로우)이 가장 비싸다. <code>transform</code>·<code>opacity</code>는 합성만으로 처리될 수 있어 싸다.</li>
+<li><b>CSS는 렌더링을 막고, 스크립트는 HTML 파싱 자체를 막는다.</b></li>
+<li><code>defer</code>는 순서 보장 + 파싱 후 실행, <code>async</code>는 순서 미보장 + 받는 즉시 실행.</li>
+<li>한 프레임 예산은 약 <b>16.7ms</b>(60fps).</li>
+<li><code>display:none</code>은 렌더 트리에서만 빠질 뿐 DOM에는 남는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/Critical_rendering_path" target="_blank" rel="noopener">MDN — 크리티컬 렌더링 패스</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script" target="_blank" rel="noopener">MDN — script 요소 (defer·async)</a></li>
+<li><a href="https://web.dev/articles/critical-rendering-path" target="_blank" rel="noopener">web.dev — Critical rendering path</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/DOMContentLoaded_event" target="_blank" rel="noopener">MDN — DOMContentLoaded 이벤트</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "HTML 파일에 <code>&lt;div id=\"box\"&gt;</code>가 분명히 있는데, <code>&lt;head&gt;</code>에 둔 스크립트의 <code>document.getElementById(\"box\")</code>가 <code>null</code>을 반환합니다. 원인은?",
+    o: [
+      "id에 오타가 있어서",
+      "스크립트가 실행되는 시점에는 아직 그 요소가 DOM에 만들어지지 않아서",
+      "getElementById가 div를 지원하지 않아서",
+      "CSS가 아직 로드되지 않아서"
+    ],
+    a: 1,
+    e: "브라우저는 HTML을 <b>위에서 아래로</b> 읽으며 DOM을 만듭니다. <code>&lt;head&gt;</code>의 스크립트는 <code>&lt;body&gt;</code>를 읽기 전에 실행되므로 아직 그 요소가 존재하지 않습니다. 해결책은 <code>&lt;script defer&gt;</code>를 쓰거나 <code>DOMContentLoaded</code> 이벤트를 기다리는 것입니다."
+  },
+  {
+    q: "여러 개의 스크립트가 <b>작성한 순서대로</b> 실행되어야 하고, HTML 파싱은 막지 않기를 원합니다. 무엇을 써야 하나요?",
+    o: ["<code>async</code>", "<code>defer</code>", "아무 속성도 쓰지 않는다", "<code>&lt;style&gt;</code>로 감싼다"],
+    a: 1,
+    e: "<code>defer</code>는 내려받기를 파싱과 병행하면서, 실행은 파싱이 끝난 뒤 <b>작성 순서대로</b> 합니다. <code>async</code>는 내려받는 즉시 실행하므로 순서가 보장되지 않아, 앞 파일에 의존하는 코드에서는 깨집니다. 속성이 없으면 파싱이 멈춥니다."
+  },
+  {
+    q: "요소를 부드럽게 이동시키는 애니메이션에서 <code>left</code>보다 <code>transform: translateX()</code>가 권장되는 이유는?",
+    o: [
+      "transform이 코드가 더 짧아서",
+      "left는 레이아웃 재계산을 유발하지만, transform은 대개 합성 단계만으로 처리되어 프레임당 비용이 훨씬 작아서",
+      "left는 구형 브라우저에서 동작하지 않아서",
+      "transform은 GPU를 끄기 때문에 배터리를 아껴서"
+    ],
+    a: 1,
+    e: "<code>left</code>를 바꾸면 요소의 위치가 문서 흐름에서 바뀌므로 <b>레이아웃 → 페인트 → 합성</b>을 모두 다시 해야 합니다. <code>transform</code>은 이미 그려진 레이어를 옮기는 것에 가까워 <b>합성</b>만으로 끝날 수 있습니다. 한 프레임 예산이 약 16.7ms이므로 이 차이가 버벅임을 만듭니다."
+  },
+  {
+    q: "<code>display: none</code>과 <code>visibility: hidden</code>의 차이로 옳은 것은?",
+    o: [
+      "둘은 완전히 같고 표기만 다르다",
+      "display:none은 렌더 트리에서 빠져 공간도 차지하지 않고, visibility:hidden은 공간은 차지한 채 보이지만 않는다",
+      "display:none은 DOM에서도 요소가 삭제된다",
+      "visibility:hidden은 자식 요소를 모두 삭제한다"
+    ],
+    a: 1,
+    e: "<code>display:none</code>은 렌더 트리에 포함되지 않아 자리도 사라집니다. <code>visibility:hidden</code>은 렌더 트리에 남아 <b>자리를 그대로 차지</b>합니다. 다만 <code>display:none</code>이어도 <b>DOM에서는 삭제되지 않는다</b>는 점이 중요합니다."
+  },
+  {
+    q: "\"CSS 파일이 클수록 첫 화면이 늦게 뜬다\"는 말이 맞는 이유는?",
+    o: [
+      "CSS가 JavaScript보다 무겁기 때문",
+      "브라우저는 CSSOM이 완성되기 전에 그리면 스타일 없는 화면이 깜빡이므로, CSS를 다 받을 때까지 첫 페인트를 미루기 때문",
+      "CSS는 항상 마지막에 다운로드되기 때문",
+      "CSS 파일 개수만큼 DNS 조회가 반복되기 때문"
+    ],
+    a: 1,
+    e: "CSS는 <b>렌더링 차단 자원</b>입니다. 스타일이 적용되지 않은 화면을 잠깐 보여줬다가 바꾸면 심하게 깜빡이므로, 브라우저는 CSSOM 구성이 끝날 때까지 첫 페인트를 미룹니다. 그래서 첫 화면에 필요한 CSS만 먼저 보내는 최적화가 존재합니다(76장)."
+  }
+]);
+</script>

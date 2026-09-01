@@ -1,0 +1,10 @@
+# Vercel
+.vercel
+.env*
+
+# macOS
+.DS_Store
+
+# 도구
+.gstack/
+node_modules/

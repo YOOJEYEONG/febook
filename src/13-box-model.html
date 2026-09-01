@@ -1,0 +1,305 @@
+<!--desc: 모든 요소는 상자다. content·padding·border·margin의 구조, box-sizing, display의 값들, 마진 상쇄까지 CSS 배치의 토대를 설명합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>박스 모델의 네 겹과 크기 계산법</li>
+  <li><code>box-sizing: border-box</code>를 모두가 쓰는 이유</li>
+  <li><code>display</code>의 값들과 각각의 성격</li>
+  <li><b>마진 상쇄</b> — 여백이 사라지는 미스터리</li>
+  <li><code>overflow</code>로 넘치는 내용 다루기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분</p>
+
+<h2 id="box">모든 요소는 상자다</h2>
+
+<p>CSS에서 화면의 모든 것은 <b>사각형 상자</b>입니다. 둥근 버튼도, 원형 프로필 사진도
+사실은 사각형 상자에 <code>border-radius</code>를 준 것입니다.
+그 상자는 <b>네 겹</b>으로 되어 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">박스 모델</span>
+<pre><code data-lang="text">┌─────────── margin (바깥 여백, 투명) ────────────┐
+│  ┌────────── border (테두리) ────────────────┐  │
+│  │  ┌──────── padding (안쪽 여백) ────────┐  │  │
+│  │  │                                    │  │  │
+│  │  │           content (내용)           │  │  │
+│  │  │                                    │  │  │
+│  │  └────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────┘  │
+└────────────────────────────────────────────────┘</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>겹</th><th>역할</th><th>배경색이 칠해지나</th></tr></thead>
+<tbody>
+<tr><td><b>content</b></td><td>글자·이미지가 들어가는 실제 내용</td><td>O</td></tr>
+<tr><td><b>padding</b></td><td>내용과 테두리 <b>사이</b>의 여백</td><td><b>O</b> ← 자주 헷갈립니다</td></tr>
+<tr><td><b>border</b></td><td>테두리 선</td><td>—</td></tr>
+<tr><td><b>margin</b></td><td>다른 요소와의 <b>바깥</b> 거리</td><td><b>X</b> — 항상 투명</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎁</span> 언제 padding, 언제 margin?</p>
+<p style="margin-bottom:0"><b>상자 안쪽을 넓히고 싶으면 <code>padding</code>, 상자끼리 띄우고 싶으면 <code>margin</code>.</b><br>
+버튼의 글자 주변을 넉넉하게 → <code>padding</code> (배경색도 함께 넓어져야 하므로)<br>
+버튼과 버튼 사이 간격 → <code>margin</code></p>
+</div>
+
+<h3 id="shorthand">여백 축약 표기</h3>
+<div class="codeblock">
+<pre><code data-lang="css">padding: 10px;                 /* 네 방향 모두 */
+padding: 10px 20px;            /* 위아래 10, 좌우 20 */
+padding: 10px 20px 30px;       /* 위 10, 좌우 20, 아래 30 */
+padding: 10px 20px 30px 40px;  /* 위 → 오른쪽 → 아래 → 왼쪽 (시계 방향) */</code></pre>
+</div>
+<p>값이 두 개일 때는 <b>"세로 가로"</b> 순서, 네 개일 때는 <b>12시부터 시계 방향</b>입니다.
+<code>margin</code>도 규칙이 같습니다.</p>
+
+<h2 id="box-sizing">box-sizing — 반드시 바꿔야 하는 기본값</h2>
+
+<p><code>width: 300px</code>이라고 쓰면, 그 300px은 <b>무엇의 너비</b>일까요?
+CSS의 원래 기본값에서는 <b>content만</b>의 너비입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">기본값의 문제</span>
+<pre><code data-lang="css">.card {
+  width: 300px;
+  padding: 20px;
+  border: 2px solid;
+}
+/* content-box(기본값) 기준 실제 차지하는 너비:
+   300 + 20(왼쪽 padding) + 20(오른쪽) + 2 + 2 = 344px  ← 예상 밖 */</code></pre>
+</div>
+
+<p>"너비를 300으로 정했는데 344가 되는" 이 동작은 직관에 어긋납니다.
+그래서 거의 모든 프로젝트가 이 한 줄로 시작합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">사실상의 표준 초기화</span>
+<pre><code data-lang="css">*, *::before, *::after {
+  box-sizing: border-box;
+}</code></pre>
+</div>
+
+<p><code>border-box</code>에서는 <code>width</code>가 <b>border까지 포함한 전체 너비</b>가 됩니다.
+padding을 늘려도 전체 크기는 300px 그대로이고, 안쪽 내용 영역만 줄어듭니다.
+<b>"내가 정한 크기가 그대로 지켜지는"</b> 훨씬 예측 가능한 동작입니다.</p>
+
+<div class="runner" data-lang="html" data-title="box-sizing 비교" data-note="두 상자의 width는 똑같이 200px입니다. padding 값을 40px로 바꿔서 차이를 더 크게 만들어 보세요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; }
+  .box {
+    width: 200px;
+    padding: 20px;
+    border: 4px solid #1f5f4f;
+    background: #e6f0ec;
+    margin-bottom: 12px;
+  }
+  .content-box { box-sizing: content-box; }  /* CSS 기본값 */
+  .border-box  { box-sizing: border-box; }   /* 실무 표준 */
+  .ruler { height: 6px; background: #c0392b; margin-bottom: 4px; }
+  code { background: #eee; padding: 1px 4px; border-radius: 3px; }
+</style>
+
+<div class="ruler" style="width: 200px"></div>
+<p>↑ 기준선: 정확히 200px</p>
+
+<div class="box content-box">
+  <code>content-box</code><br>
+  width:200 + padding 40 + border 8 = <b>248px</b>
+</div>
+
+<div class="box border-box">
+  <code>border-box</code><br>
+  전체가 정확히 <b>200px</b>
+</div>
+
+<script>
+  // 실제 측정값 확인
+  document.querySelectorAll(".box").forEach(function (el) {
+    console.log(el.className + " 실제 너비: " + el.getBoundingClientRect().width + "px");
+  });
+</script>
+</textarea>
+</div>
+
+<h2 id="display">display</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>값</th><th>동작</th></tr></thead>
+<tbody>
+<tr><td><code>block</code></td><td>혼자 한 줄. 너비·높이·상하 여백 <b>모두 적용</b>. <code>div</code>, <code>p</code>, <code>h1</code>의 기본값</td></tr>
+<tr><td><code>inline</code></td><td>글자처럼 흐름. <b>너비·높이 무시</b>, <b>상하 margin 무시</b>. <code>span</code>, <code>a</code>, <code>strong</code>의 기본값</td></tr>
+<tr><td><code>inline-block</code></td><td>옆으로 나열되면서 <b>크기 지정은 가능</b>. 둘의 절충</td></tr>
+<tr><td><code>flex</code></td><td>자식들을 한 줄(또는 한 열)로 배치(15장)</td></tr>
+<tr><td><code>grid</code></td><td>자식들을 격자로 배치(16장)</td></tr>
+<tr><td><code>none</code></td><td>렌더 트리에서 제거. 자리도 사라짐</td></tr>
+<tr><td><code>contents</code></td><td>상자만 없애고 <b>자식은 그대로</b> 남긴다. 중간 래퍼를 지울 때 유용하지만 <b>일부 요소에서 접근성 문제</b>가 보고되어 주의가 필요합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📏</span> 인라인 요소에는 크기가 먹지 않습니다</p>
+<p style="margin-bottom:0"><code>&lt;span&gt;</code>에 <code>width: 200px</code>을 줬는데 아무 변화가 없는 이유입니다.
+<b>인라인 요소는 내용만큼만 차지</b>하며, <b>위아래 <code>margin</code>도 무시</b>합니다.
+(좌우 <code>margin</code>과 <code>padding</code>은 적용되지만, 위아래 <code>padding</code>은
+공간을 밀어내지 않고 다른 요소와 겹칩니다.)<br>
+크기를 주고 싶으면 <code>display: inline-block</code> 또는 <code>block</code>으로 바꿔야 합니다.</p>
+</div>
+
+<h2 id="margin-collapse">마진 상쇄 — 여백이 사라지는 현상</h2>
+
+<p>"위 요소에 <code>margin-bottom: 30px</code>, 아래 요소에 <code>margin-top: 20px</code>을 줬는데
+간격이 50px이 아니라 <b>30px</b>이다." 버그가 아니라 <b>명세대로의 동작</b>입니다.</p>
+
+<p><b>수직 방향 인접 마진은 합쳐지고, 그중 큰 값 하나만 적용됩니다.</b> 이것을 <b>마진 상쇄</b>라고 합니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>일어나는 경우</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>형제 사이</b></td><td>위 요소의 아래 마진과 아래 요소의 위 마진</td></tr>
+<tr><td><b>부모와 첫/막내 자식 사이</b></td><td>부모에 <code>border</code>·<code>padding</code>이 없으면 자식의 마진이 <b>부모 밖으로 삐져나갑니다</b></td></tr>
+<tr><td><b>빈 요소</b></td><td>내용이 없는 요소의 위·아래 마진끼리도 상쇄됩니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>가로 방향에서는 일어나지 않습니다.</b> 또 다음 상황에서는 상쇄가 <b>일어나지 않습니다.</b></p>
+<ul>
+<li>부모가 <code>display: flex</code> 또는 <code>grid</code>인 경우 — <b>이것이 현대적인 해결책입니다</b></li>
+<li><code>position: absolute</code>·<code>fixed</code>인 요소</li>
+<li>부모에 <code>overflow</code>가 <code>visible</code>이 아닌 값이거나, <code>padding</code>·<code>border</code>가 있는 경우</li>
+</ul>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 마진 상쇄와 싸우지 마세요</p>
+<p style="margin-bottom:0">요즘 실무에서는 마진 상쇄를 <b>우회하는 트릭</b>을 배우기보다
+<b>애초에 겪지 않는 방식</b>으로 만듭니다.</p>
+<ul style="margin-bottom:0">
+<li>부모에 <code>display: flex; flex-direction: column; gap: 20px;</code>을 주면 간격이 정확히 20px입니다. 상쇄가 없습니다.</li>
+<li>또는 <b>마진을 한 방향으로만</b> 씁니다. "모든 요소는 <code>margin-bottom</code>만 쓴다" 같은 팀 규칙을 정하면 대부분 해결됩니다.</li>
+</ul>
+</div>
+
+<h2 id="overflow">overflow</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>값</th><th>동작</th></tr></thead>
+<tbody>
+<tr><td><code>visible</code> (기본)</td><td>상자 밖으로 그냥 넘쳐 나옵니다</td></tr>
+<tr><td><code>hidden</code></td><td>넘친 부분을 잘라냅니다. <b>스크롤도 불가</b>하므로 내용 손실에 주의</td></tr>
+<tr><td><code>scroll</code></td><td>항상 스크롤바 표시</td></tr>
+<tr><td><code>auto</code></td><td>필요할 때만 스크롤바. <b>대부분 이것이 정답</b></td></tr>
+<tr><td><code>clip</code></td><td>hidden과 비슷하되 프로그램적 스크롤도 막습니다</td></tr>
+</tbody>
+</table>
+</div>
+<p><code>overflow-x</code>·<code>overflow-y</code>로 방향별 지정도 가능합니다.
+넓은 표를 감쌀 때 <code>overflow-x: auto</code>를 쓰면 <b>페이지 전체가 가로로 밀리지 않고 표만 스크롤</b>됩니다.
+모바일 대응에서 자주 쓰는 기법입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>overflow: hidden</code>은 만능 해결책이 아닙니다</p>
+<p style="margin-bottom:0">레이아웃이 삐져나올 때 습관적으로 붙이는 경우가 많은데,
+<b>내용이 잘려 나가 사용자가 볼 수 없게 되는</b> 부작용이 있습니다.
+글자 크기를 키워 쓰는 사용자, 긴 번역문이 들어간 다국어 화면에서 특히 위험합니다.
+근본 원인(고정 높이, 넘치는 너비)을 먼저 찾으세요.</p>
+</div>
+
+<h2 id="sizing">크기 관련 속성</h2>
+<div class="codeblock">
+<pre><code data-lang="css">.box {
+  width: 100%;
+  max-width: 600px;   /* 아무리 커져도 600px까지만 → 반응형의 핵심 */
+  min-height: 200px;  /* 내용이 적어도 최소 200px */
+  aspect-ratio: 16 / 9;  /* 가로세로 비율 고정 */
+}</code></pre>
+</div>
+<p><code>width: 100%; max-width: 600px;</code> 조합은 <b>반응형 레이아웃의 가장 기본 패턴</b>입니다.
+좁은 화면에서는 화면을 꽉 채우고, 넓은 화면에서는 600px에서 멈춥니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>모든 요소는 <b>content → padding → border → margin</b> 네 겹의 상자다.</li>
+<li><code>padding</code>에는 배경이 칠해지고, <code>margin</code>은 항상 투명하다.</li>
+<li><b><code>*, *::before, *::after { box-sizing: border-box; }</code></b> 는 사실상 필수 초기화.</li>
+<li>인라인 요소는 <b>너비·높이·상하 마진이 적용되지 않는다.</b></li>
+<li><b>수직 마진은 상쇄된다.</b> flex·grid를 쓰거나 마진을 한 방향으로만 쓰면 겪지 않는다.</li>
+<li>넘치는 내용은 <code>overflow: auto</code>가 대체로 정답. <code>hidden</code>은 내용을 없앤다.</li>
+<li><code>width: 100%; max-width: …;</code>가 반응형의 기본 패턴.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/Styling_basics/Box_model" target="_blank" rel="noopener">MDN — 박스 모델</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/box-sizing" target="_blank" rel="noopener">MDN — box-sizing</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_model/Mastering_margin_collapsing" target="_blank" rel="noopener">MDN — 마진 상쇄 완전 이해</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/display" target="_blank" rel="noopener">MDN — display</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>box-sizing: content-box</code>(기본값) 상태에서 <code>width:300px; padding:20px; border:5px solid;</code> 인 요소가 실제로 차지하는 가로 폭은?",
+    o: ["300px", "325px", "350px", "345px"],
+    a: 2,
+    e: "content-box에서는 <code>width</code>가 <b>내용 영역만</b>을 뜻합니다. 좌우 padding 20+20, 좌우 border 5+5가 더해져 <b>300+40+10 = 350px</b>입니다. <code>border-box</code>였다면 전체가 300px로 유지되고 내용 영역이 250px로 줄어듭니다."
+  },
+  {
+    q: "<code>&lt;span&gt;</code>에 <code>width: 200px; height: 100px;</code> 을 줬는데 아무 변화가 없습니다. 이유는?",
+    o: [
+      "span은 CSS를 지원하지 않아서",
+      "인라인 요소는 너비·높이가 적용되지 않기 때문. <code>display: inline-block</code> 등으로 바꿔야 한다",
+      "px 단위를 쓰면 안 되기 때문",
+      "부모에 position이 없기 때문"
+    ],
+    a: 1,
+    e: "인라인 요소는 <b>내용 크기만큼만</b> 차지하도록 설계되어 <code>width</code>·<code>height</code>와 상하 <code>margin</code>이 적용되지 않습니다. 크기를 지정하려면 <code>inline-block</code>이나 <code>block</code>, 또는 flex·grid 아이템으로 만들어야 합니다."
+  },
+  {
+    q: "위 요소에 <code>margin-bottom: 30px</code>, 아래 요소에 <code>margin-top: 20px</code>을 줬는데 간격이 30px입니다. 이 현상의 이름과 성격은?",
+    o: [
+      "브라우저 버그이며 <code>!important</code>로 해결한다",
+      "마진 상쇄. 명세에 정의된 정상 동작이며 인접한 수직 마진은 큰 값 하나만 적용된다",
+      "box-sizing 설정 오류",
+      "margin은 px 단위를 지원하지 않아 생기는 문제"
+    ],
+    a: 1,
+    e: "<b>마진 상쇄</b>는 명세에 정의된 동작입니다. 수직으로 인접한 마진은 합쳐져 <b>큰 값 하나</b>만 남습니다. 부모를 <code>display: flex</code>로 만들거나 <code>gap</code>을 쓰면 상쇄가 일어나지 않아 실무에서는 이 방식을 선호합니다."
+  },
+  {
+    q: "화면 폭이 좁을 때는 꽉 차고, 넓을 때는 최대 600px에서 멈추게 하려면?",
+    o: [
+      "<code>width: 600px;</code>",
+      "<code>width: 100%; max-width: 600px;</code>",
+      "<code>min-width: 600px;</code>",
+      "<code>width: auto; height: 600px;</code>"
+    ],
+    a: 1,
+    e: "<code>width: 100%</code>가 부모를 꽉 채우고, <code>max-width: 600px</code>가 상한을 정합니다. 이 조합은 반응형 레이아웃의 가장 기본 패턴입니다. <code>width: 600px</code>만 쓰면 좁은 화면에서 넘쳐 가로 스크롤이 생깁니다."
+  },
+  {
+    q: "레이아웃이 삐져나올 때 <code>overflow: hidden</code>을 습관적으로 붙이는 것의 위험은?",
+    o: [
+      "페이지 로딩이 느려진다",
+      "넘친 내용이 잘려 사용자가 볼 수 없게 되며, 글자 크기를 키우는 사용자나 긴 번역문에서 정보 손실이 생긴다",
+      "해당 요소의 배경색이 사라진다",
+      "자식 요소가 삭제된다"
+    ],
+    a: 1,
+    e: "<code>hidden</code>은 넘친 부분을 <b>잘라내고 스크롤도 허용하지 않습니다</b>. 화면이 깔끔해 보여도 정보가 사라진 것입니다. 대개 <code>auto</code>가 낫고, 근본 원인인 고정 높이나 과도한 너비를 먼저 확인해야 합니다."
+  }
+]);
+</script>

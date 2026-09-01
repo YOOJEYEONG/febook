@@ -1,0 +1,334 @@
+<!--desc: Partial·Pick·Omit·Record 등 내장 유틸리티 타입, keyof와 typeof, 매핑드 타입과 조건부 타입까지 타입을 계산하는 방법을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>자주 쓰는 <b>내장 유틸리티 타입</b> 전부</li>
+  <li><code>keyof</code>·<code>typeof</code>로 <b>기존 것에서 타입 뽑아내기</b></li>
+  <li><b>매핑드 타입</b>과 <b>조건부 타입</b> 읽는 법</li>
+  <li><b>타입을 복사하지 말고 파생시키는</b> 원칙</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분</p>
+
+<h2 id="derive">핵심 원칙: 복사하지 말고 파생시키세요</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">interface User {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  createdAt: Date;
+}
+
+// ❌ 손으로 다시 씁니다 — User가 바뀌면 여기도 고쳐야 합니다
+interface UserProfile {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// ✅ User에서 파생시킵니다 — 자동으로 따라옵니다
+type UserProfile = Omit&lt;User, "password"&gt;;
+type UserSummary = Pick&lt;User, "id" | "name"&gt;;
+type UserDraft = Partial&lt;User&gt;;</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔗</span> 이것이 유틸리티 타입의 존재 이유입니다</p>
+<p style="margin-bottom:0">타입을 손으로 복사하면 <b>원본이 바뀔 때 조용히 어긋납니다.</b>
+파생시켜 두면 <code>User</code>에 속성을 추가하는 순간
+관련된 모든 타입이 <b>자동으로 갱신되고</b>, 맞지 않는 코드가 즉시 오류로 드러납니다.</p>
+</div>
+
+<h2 id="builtin">내장 유틸리티 타입</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>타입</th><th>하는 일</th></tr></thead>
+<tbody>
+<tr><td><code>Partial&lt;T&gt;</code></td><td>모든 속성을 <b>선택적</b>으로. 수정 폼, PATCH 요청에</td></tr>
+<tr><td><code>Required&lt;T&gt;</code></td><td>모든 속성을 <b>필수</b>로</td></tr>
+<tr><td><code>Readonly&lt;T&gt;</code></td><td>모든 속성을 <b>읽기 전용</b>으로</td></tr>
+<tr><td><code>Pick&lt;T, K&gt;</code></td><td>일부 속성만 <b>골라내기</b></td></tr>
+<tr><td><code>Omit&lt;T, K&gt;</code></td><td>일부 속성을 <b>빼기</b></td></tr>
+<tr><td><code>Record&lt;K, V&gt;</code></td><td>키·값 타입으로 객체 만들기</td></tr>
+<tr><td><code>Exclude&lt;T, U&gt;</code></td><td>유니온에서 <b>제거</b></td></tr>
+<tr><td><code>Extract&lt;T, U&gt;</code></td><td>유니온에서 <b>추출</b></td></tr>
+<tr><td><code>NonNullable&lt;T&gt;</code></td><td><code>null</code>·<code>undefined</code> 제거</td></tr>
+<tr><td><code>ReturnType&lt;F&gt;</code></td><td>함수의 <b>반환 타입</b></td></tr>
+<tr><td><code>Parameters&lt;F&gt;</code></td><td>함수의 <b>매개변수 타입들</b>(튜플)</td></tr>
+<tr><td><code>Awaited&lt;P&gt;</code></td><td><code>Promise</code>가 풀린 타입</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">실제 사용 예</span>
+<pre><code data-lang="ts">interface User {
+  id: number; name: string; email: string; password: string; createdAt: Date;
+}
+
+// 생성할 때는 서버가 정하는 값이 없습니다
+type CreateUserInput = Omit&lt;User, "id" | "createdAt"&gt;;
+
+// 수정할 때는 일부만 보냅니다
+type UpdateUserInput = Partial&lt;Omit&lt;User, "id" | "createdAt"&gt;&gt;;
+
+// 화면에 보여줄 때는 비밀번호를 뺍니다
+type PublicUser = Omit&lt;User, "password"&gt;;
+
+// 목록에는 최소한만
+type UserListItem = Pick&lt;User, "id" | "name"&gt;;
+
+// 상태별 라벨
+type Status = "idle" | "loading" | "error";
+const labels: Record&lt;Status, string&gt; = {
+  idle: "대기", loading: "불러오는 중", error: "오류"
+};
+// 상태를 하나 추가하면 여기서 "누락됐다"고 오류가 납니다 ✅
+
+// 함수에서 타입 뽑기
+function createUser(input: CreateUserInput) { return { id: 1, ...input }; }
+type CreatedUser = ReturnType&lt;typeof createUser&gt;;
+type CreateArgs = Parameters&lt;typeof createUser&gt;[0];
+
+// 비동기 함수의 결과
+async function fetchUsers(): Promise&lt;User[]&gt; { return []; }
+type Users = Awaited&lt;ReturnType&lt;typeof fetchUsers&gt;&gt;;    // User[]</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>Omit</code>은 오타를 잡아 주지 않습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">type A = Omit&lt;User, "passwrod"&gt;;   // 오타인데 오류가 안 납니다
+// 결과: User와 똑같은 타입 (아무것도 안 빠짐)
+
+type B = Pick&lt;User, "passwrod"&gt;;   // ❌ Pick은 오타를 잡습니다</code></pre>
+</div>
+<p style="margin-bottom:0"><code>Omit</code>은 키가 존재하지 않아도 허용하도록 정의되어 있습니다.
+안전하게 하려면 <code>Omit&lt;User, keyof User &amp; "password"&gt;</code>처럼 제약을 걸거나,
+직접 만든 엄격한 버전을 쓰기도 합니다.</p>
+</div>
+
+<h2 id="keyof-typeof">keyof와 typeof</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">interface User { id: number; name: string; }
+
+type UserKeys = keyof User;         // "id" | "name"
+type IdType = User["id"];           // number
+type AnyValue = User[keyof User];   // number | string
+
+// typeof — '값'에서 '타입'을 뽑습니다
+const defaultConfig = {
+  theme: "dark",
+  fontSize: 16,
+  features: { search: true }
+};
+type Config = typeof defaultConfig;
+// { theme: string; fontSize: number; features: { search: boolean } }
+
+// as const 와 조합 (51장)
+const ROLES = ["admin", "editor", "viewer"] as const;
+type Role = typeof ROLES[number];    // "admin" | "editor" | "viewer"
+
+// 배열 하나로 값과 타입을 함께 관리합니다
+ROLES.forEach(role =&gt; { /* role: "admin" | "editor" | "viewer" */ });</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔄</span> <code>typeof</code>가 두 가지 뜻인 이유</p>
+<p style="margin-bottom:0">JavaScript의 <code>typeof</code>는 <b>값의 타입 이름을 문자열로</b> 돌려주는 <b>연산자</b>입니다(25장).
+TypeScript의 <code>typeof</code>는 <b>타입을 쓰는 자리에서</b>만 쓰이며
+<b>값으로부터 타입을 얻는</b> 다른 기능입니다.
+헷갈리지만 <b>위치로 구분</b>됩니다. 타입 자리에 있으면 후자입니다.</p>
+</div>
+
+<h2 id="mapped">매핑드 타입 — 유틸리티는 이렇게 만들어졌습니다</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// Partial의 실제 정의
+type MyPartial&lt;T&gt; = {
+  [K in keyof T]?: T[K];
+};
+//  ↑ T의 모든 키를 순회하며 각 속성을 선택적으로 만듭니다
+
+// Readonly
+type MyReadonly&lt;T&gt; = {
+  readonly [K in keyof T]: T[K];
+};
+
+// 수식어 제거는 앞에 마이너스
+type Mutable&lt;T&gt; = {
+  -readonly [K in keyof T]: T[K];
+};
+type Concrete&lt;T&gt; = {
+  [K in keyof T]-?: T[K];      // 선택적 제거
+};
+
+// 키 이름 바꾸기 (as)
+type Getters&lt;T&gt; = {
+  [K in keyof T as `get${Capitalize&lt;string &amp; K&gt;}`]: () =&gt; T[K];
+};
+
+type UserGetters = Getters&lt;{ name: string; age: number }&gt;;
+// { getName: () =&gt; string; getAge: () =&gt; number }</code></pre>
+</div>
+
+<h2 id="conditional">조건부 타입</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// T가 U에 할당 가능하면 X, 아니면 Y
+type IsString&lt;T&gt; = T extends string ? true : false;
+
+type A = IsString&lt;"hello">;   // true
+type B = IsString&lt;42&gt;;        // false
+
+// infer — 타입 안에서 값을 '꺼냅니다'
+type ElementOf&lt;T&gt; = T extends (infer E)[] ? E : never;
+type C = ElementOf&lt;string[]&gt;;   // string
+
+// ReturnType의 실제 정의
+type MyReturnType&lt;T&gt; = T extends (...args: any[]) =&gt; infer R ? R : never;
+
+// 유니온에 적용하면 각 항목에 따로 적용됩니다 (분배 조건부 타입)
+type ToArray&lt;T&gt; = T extends any ? T[] : never;
+type D = ToArray&lt;string | number&gt;;   // string[] | number[]</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧩</span> 여기부터는 몰라도 됩니다</p>
+<p style="margin-bottom:0">매핑드·조건부 타입은 <b>주로 라이브러리를 만드는 사람의 도구</b>입니다.
+애플리케이션 개발에서는 <b>내장 유틸리티만으로 거의 다 해결됩니다.</b><br>
+다만 <b>읽을 수는 있어야</b> 합니다. 라이브러리 타입 정의를 보다가
+이런 문법을 만났을 때 "아 이건 조건부 타입이구나" 정도만 알아보면 충분합니다.
+<b>지금 당장 외우려 하지 마세요.</b></p>
+</div>
+
+<h2 id="practice">실무에서 자주 쓰는 조합</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// ① 폼 상태 — 각 필드의 에러 메시지
+type FormErrors&lt;T&gt; = Partial&lt;Record&lt;keyof T, string&gt;&gt;;
+const errors: FormErrors&lt;User&gt; = { email: "형식이 올바르지 않습니다" };
+
+// ② 최소 하나는 필수
+type AtLeastOne&lt;T, K extends keyof T = keyof T&gt; =
+  Omit&lt;T, K&gt; &amp; { [P in K]-?: Required&lt;Pick&lt;T, P&gt;&gt; }[K];
+
+// ③ 깊은 읽기 전용
+type DeepReadonly&lt;T&gt; = {
+  readonly [K in keyof T]: T[K] extends object ? DeepReadonly&lt;T[K]&gt; : T[K];
+};
+
+// ④ API 경로별 응답 타입 매핑
+type ApiRoutes = {
+  "/users": User[];
+  "/users/:id": User;
+  "/posts": Post[];
+};
+function apiGet&lt;P extends keyof ApiRoutes&gt;(path: P): Promise&lt;ApiRoutes[P]&gt; {
+  return fetch(path).then(r =&gt; r.json());
+}
+const users = await apiGet("/users");   // User[] 로 추론됩니다</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 타입이 복잡해지면</p>
+<ol>
+<li><b>추론 결과를 확인하세요.</b> 편집기에서 타입 이름 위에 마우스를 올리면 펼쳐진 결과가 보입니다.
+Playground에서 실험하는 것이 가장 빠릅니다.</li>
+<li><b>중간 타입에 이름을 붙이세요.</b> 한 줄에 다 넣지 말고 단계로 나누면 읽기 쉽고 오류 메시지도 명확해집니다.</li>
+<li><b>복잡한 타입은 대개 설계 문제의 신호입니다.</b>
+타입 곡예로 억지로 맞추기 전에 <b>데이터 구조 자체를 단순하게</b> 바꿀 수 있는지 보세요.</li>
+<li><b><code>type-fest</code></b> 같은 라이브러리에 잘 만들어진 유틸리티가 많습니다. 직접 만들기 전에 찾아보세요.</li>
+</ol>
+<p style="margin-bottom:0"><b>타입 실력의 목표는 화려한 타입을 만드는 것이 아닙니다.</b>
+<b>동료가 5초 안에 읽을 수 있는 타입</b>이 좋은 타입입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>타입을 복사하지 말고 파생</b>시킨다. 원본이 바뀌면 자동으로 따라온다.</li>
+<li>자주 쓰는 것: <b><code>Partial</code>·<code>Pick</code>·<code>Omit</code>·<code>Record</code>·<code>ReturnType</code></b>.</li>
+<li><code>Record&lt;유니온, T&gt;</code>는 <b>모든 경우를 처리했는지</b> 검사해 준다.</li>
+<li><b><code>Omit</code>은 오타를 잡아 주지 않는다.</b> <code>Pick</code>은 잡는다.</li>
+<li><code>keyof</code>는 키를, <b><code>typeof</code>는 값에서 타입</b>을 뽑는다.</li>
+<li><code>as const</code> + <code>typeof X[number]</code>로 <b>값과 타입을 한 곳에서</b> 관리한다.</li>
+<li>매핑드·조건부 타입은 <b>읽을 수만 있으면 충분</b>하다.</li>
+<li><b>동료가 읽을 수 있는 타입</b>이 좋은 타입이다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://www.typescriptlang.org/docs/handbook/utility-types.html" target="_blank" rel="noopener">TypeScript 핸드북 — 유틸리티 타입 전체</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/mapped-types.html" target="_blank" rel="noopener">핸드북 — 매핑드 타입</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/conditional-types.html" target="_blank" rel="noopener">핸드북 — 조건부 타입</a></li>
+<li><a href="https://github.com/sindresorhus/type-fest" target="_blank" rel="noopener">type-fest</a> — 실용적인 타입 모음</li>
+<li><a href="https://github.com/type-challenges/type-challenges" target="_blank" rel="noopener">Type Challenges</a> — 타입 문제 풀이로 연습</li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>User</code> 인터페이스에서 <code>password</code>만 제외한 타입이 필요합니다. 가장 좋은 방법은?",
+    o: [
+      "속성을 손으로 다시 나열해 새 인터페이스를 만든다",
+      "<code>type PublicUser = Omit&lt;User, \"password\"&gt;</code> 로 파생시킨다",
+      "User에서 password를 지운다",
+      "any를 쓴다"
+    ],
+    a: 1,
+    e: "손으로 복사하면 <code>User</code>에 속성이 추가될 때 <b>조용히 어긋납니다</b>. <code>Omit</code>으로 파생시키면 원본 변경이 자동으로 반영되고, 맞지 않는 코드는 즉시 오류로 드러납니다."
+  },
+  {
+    q: "<code>const labels: Record&lt;Status, string&gt;</code> 로 상태별 라벨을 정의했을 때의 이점은?",
+    o: [
+      "런타임 검증이 된다",
+      "Status에 새 값을 추가하면 라벨 객체에서 누락된 키가 컴파일 오류로 잡힌다",
+      "객체가 자동 생성된다",
+      "번들 크기가 줄어든다"
+    ],
+    a: 1,
+    e: "<code>Record</code>는 <b>유니온의 모든 멤버를 키로 요구</b>합니다. 상태를 하나 추가하면 라벨을 안 만든 것을 컴파일러가 알려 주므로 \"새 상태인데 화면에 아무것도 안 나오는\" 버그가 사라집니다."
+  },
+  {
+    q: "<code>Omit&lt;User, \"passwrod\"&gt;</code> 처럼 키 이름에 오타가 있으면?",
+    o: [
+      "컴파일 오류가 난다",
+      "오류 없이 통과하며 결과적으로 아무것도 제외되지 않는다. Pick은 반대로 오타를 잡아 준다",
+      "any가 된다",
+      "User가 삭제된다"
+    ],
+    a: 1,
+    e: "<code>Omit</code>은 두 번째 인자를 <code>keyof T</code>로 제한하지 않도록 정의되어 있어 <b>존재하지 않는 키도 허용</b>합니다. 그래서 오타가 조용히 지나갑니다. <code>Pick</code>은 <code>K extends keyof T</code>라 즉시 오류가 납니다."
+  },
+  {
+    q: "<code>const ROLES = [\"admin\", \"editor\"] as const; type Role = typeof ROLES[number]</code> 의 결과는?",
+    o: [
+      "string[]",
+      "\"admin\" | \"editor\" — 값 배열 하나로 값과 타입을 함께 관리할 수 있다",
+      "number",
+      "readonly string[]"
+    ],
+    a: 1,
+    e: "<code>as const</code>가 리터럴 타입을 고정하고, <code>typeof ROLES</code>가 값에서 타입을 얻고, <code>[number]</code>가 <b>배열 요소들의 유니온</b>을 뽑습니다. 목록을 한 곳에서 관리하면서 반복 순회와 타입 제약을 동시에 얻는 실용적인 패턴입니다."
+  },
+  {
+    q: "타입이 지나치게 복잡해질 때 가장 먼저 고려해야 할 것은?",
+    o: [
+      "any로 전환한다",
+      "조건부 타입으로 더 정교하게 만든다",
+      "타입 곡예로 맞추기 전에 데이터 구조 자체를 단순하게 바꿀 수 있는지 검토한다",
+      "타입 검사를 끈다"
+    ],
+    a: 2,
+    e: "복잡한 타입은 <b>대개 설계 문제의 증상</b>입니다. 판별 유니온으로 상태를 나누거나 객체 구조를 평평하게 만들면 타입이 저절로 단순해지는 경우가 많습니다. 목표는 화려한 타입이 아니라 <b>동료가 즉시 읽을 수 있는 타입</b>입니다."
+  }
+]);
+</script>

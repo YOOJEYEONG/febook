@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>용어 사전 — 프엔북</title>
+<meta name="description" content="프론트엔드 개발 용어를 비전공자 눈높이로 풀어 쓴 사전.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="assets/css/book.css">
+</head>
+<body data-base="" data-page="glossary">
+<div id="app-header"></div>
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+  <main class="page">
+    <h1>용어 사전</h1>
+    <p class="ch-meta">모르는 단어가 나오면 여기서 찾으세요. 전문 용어를 다른 전문 용어로 설명하지 않는 것이 원칙입니다.</p>
+    <input type="search" class="gloss-search" id="gs" placeholder="용어 검색 (한글·영문 모두 가능)" aria-label="용어 검색">
+    <p class="gloss-count" id="gc"></p>
+    <div class="gloss-list" id="gl"></div>
+  </main>
+  <aside class="pagetoc" id="pagetoc"></aside>
+</div>
+
+<script src="assets/data/toc.js"></script>
+<script src="assets/data/glossary-data.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  var G = window.BOOK_GLOSSARY || {};
+  var FB = window.FB;
+  // 한글 용어를 먼저, 그다음 영문·기호 순으로 정렬
+  function sortKey(k) {
+    var name = G[k].ko || k;
+    var isHangul = /^[가-힣]/.test(name);
+    return { group: isHangul ? 0 : 1, name: name };
+  }
+  var keys = Object.keys(G).sort(function (a, b) {
+    var ka = sortKey(a), kb = sortKey(b);
+    if (ka.group !== kb.group) return ka.group - kb.group;
+    return ka.name.localeCompare(kb.name, "ko");
+  });
+  var listEl = document.getElementById("gl");
+  var countEl = document.getElementById("gc");
+  var input = document.getElementById("gs");
+
+  function draw(q) {
+    q = (q || "").trim().toLowerCase();
+    var hits = keys.filter(function (k) {
+      if (!q) return true;
+      var e = G[k];
+      return (e.ko || "").toLowerCase().indexOf(q) >= 0 ||
+             (e.en || "").toLowerCase().indexOf(q) >= 0 ||
+             k.toLowerCase().indexOf(q) >= 0 ||
+             (e.def || "").toLowerCase().indexOf(q) >= 0;
+    });
+    countEl.textContent = q ? hits.length + "개 결과 (전체 " + keys.length + "개)" : "총 " + keys.length + "개 용어";
+    if (!hits.length) { listEl.innerHTML = '<div class="gloss-empty">일치하는 용어가 없습니다.</div>'; return; }
+    listEl.innerHTML = hits.map(function (k) {
+      var e = G[k];
+      var ch = e.ch ? window.BOOK_FLAT.find(function (c) { return c.id === e.ch; }) : null;
+      return '<article class="gloss-item" id="term-' + FB.esc(k) + '">' +
+        '<h3>' + FB.esc(e.ko || k) +
+          (e.en && e.en !== e.ko ? '<span class="en">' + FB.esc(e.en) + '</span>' : "") + '</h3>' +
+        '<p>' + e.def + '</p>' +
+        (ch ? '<a class="goto" href="ch/' + ch.id + '.html">' + ch.n + '장 · ' + FB.esc(ch.title) + ' 에서 자세히 →</a>' : "") +
+      '</article>';
+    }).join("");
+  }
+
+  input.addEventListener("input", function () { draw(input.value); });
+  var q = new URLSearchParams(location.search).get("q");
+  if (q) { input.value = q; }
+  draw(q || "");
+  if (location.hash.indexOf("#term-") === 0) {
+    var t = document.getElementById(location.hash.slice(1));
+    if (t) t.scrollIntoView();
+  }
+})();
+</script>
+</body>
+</html>

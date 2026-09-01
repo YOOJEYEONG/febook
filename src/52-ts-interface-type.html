@@ -1,0 +1,321 @@
+<!--desc: interface와 type alias의 차이와 선택 기준, 확장과 교차, 선언 병합, 그리고 구조적 타이핑이라는 TypeScript의 핵심 원리를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>interface</code>와 <code>type</code>의 <b>실제 차이</b></li>
+  <li>확장(<code>extends</code>)과 교차(<code>&amp;</code>)</li>
+  <li><b>선언 병합</b> — <code>interface</code>만의 기능</li>
+  <li><b>구조적 타이핑</b> — 이름이 아니라 모양으로 판단합니다</li>
+  <li>실무에서 무엇을 고를지</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분</p>
+
+<h2 id="both">둘 다 거의 같은 일을 합니다</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">interface User {
+  id: number;
+  name: string;
+}
+
+type User2 = {
+  id: number;
+  name: string;
+};
+
+// 두 정의는 사실상 같습니다. 서로 바꿔 써도 됩니다.
+const a: User = { id: 1, name: "홍길동" };
+const b: User2 = a;    // ✅ 문제없습니다</code></pre>
+</div>
+
+<h2 id="diff">차이점</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th><code>interface</code></th><th><code>type</code></th></tr></thead>
+<tbody>
+<tr><td>객체 모양 정의</td><td>가능</td><td>가능</td></tr>
+<tr><td>확장</td><td><code>extends</code></td><td><code>&amp;</code> (교차 타입)</td></tr>
+<tr><td><b>선언 병합</b></td><td><b>가능</b></td><td><b>불가</b> — 같은 이름 재선언 시 오류</td></tr>
+<tr><td><b>유니온</b></td><td><b>불가</b></td><td><b>가능</b> — <code>type A = B | C</code></td></tr>
+<tr><td>원시 타입에 별명</td><td>불가</td><td><b>가능</b> — <code>type ID = string</code></td></tr>
+<tr><td>튜플</td><td>불편</td><td><b>가능</b></td></tr>
+<tr><td>매핑드·조건부 타입(55장)</td><td>불가</td><td><b>가능</b></td></tr>
+<tr><td>오류 메시지</td><td>이름이 그대로 나와 <b>읽기 좋음</b></td><td>펼쳐져서 길어질 수 있음</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="type-only">type만 할 수 있는 것</h3>
+<div class="codeblock">
+<pre><code data-lang="ts">type Status = "idle" | "loading" | "error";      // 유니온
+type ID = string | number;                        // 원시 타입 조합
+type Point = [number, number];                    // 튜플
+type Handler = (e: Event) =&gt; void;                // 함수 (interface로도 가능하지만 어색)
+type Nullable&lt;T&gt; = T | null;                      // 제네릭 유틸리티 (53장)
+type Keys = keyof User;                           // 타입 연산 (55장)</code></pre>
+</div>
+
+<h3 id="interface-only">interface만 할 수 있는 것 — 선언 병합</h3>
+<div class="codeblock">
+<pre><code data-lang="ts">interface Window {
+  myAppVersion: string;
+}
+// 브라우저가 이미 정의한 Window에 '내 속성을 추가'합니다
+window.myAppVersion = "1.0.0";     // ✅
+
+// type으로는 불가능합니다
+type Window2 = { a: string };
+type Window2 = { b: string };      // ❌ 중복 식별자 오류</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔌</span> 선언 병합이 필요한 곳</p>
+<p style="margin-bottom:0">직접 만든 코드에서는 거의 쓸 일이 없습니다.
+하지만 <b>라이브러리의 타입을 확장</b>할 때는 이것이 유일한 방법입니다.
+예를 들어 스타일 라이브러리의 테마 타입에 내 색상을 추가하거나,
+<code>window</code>에 전역 값을 붙일 때 씁니다.<br>
+반대로 말하면 <b>남이 내 타입을 몰래 바꿀 수 있다</b>는 뜻이기도 해서,
+"닫혀 있어야 하는" 타입에는 <code>type</code>이 나을 수 있습니다.</p>
+</div>
+
+<h2 id="extend">확장하기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// interface — extends
+interface Animal {
+  name: string;
+}
+interface Dog extends Animal {
+  breed: string;
+}
+
+// type — 교차 타입(&amp;)
+type Animal2 = { name: string };
+type Dog2 = Animal2 &amp; { breed: string };
+
+// 여러 개도 가능합니다
+interface A extends B, C { }
+type D = B &amp; C &amp; { extra: string };</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚔️</span> 충돌할 때 동작이 다릅니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">// interface — 충돌하면 즉시 오류. 실수를 바로 알려 줍니다
+interface A { value: string }
+interface B extends A { value: number }
+// ❌ Interface 'B' incorrectly extends interface 'A'.
+
+// type — 조용히 never가 됩니다
+type C = { value: string };
+type D = C &amp; { value: number };
+// D의 value는 string &amp; number = never
+// 오류가 나지 않고, 나중에 값을 넣으려 할 때야 이상함을 알게 됩니다</code></pre>
+</div>
+</div>
+
+<h2 id="structural">구조적 타이핑 — TypeScript의 핵심 원리</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🦆</span> 이름이 아니라 <b>모양</b>으로 판단합니다</p>
+<p style="margin-bottom:0">"오리처럼 걷고 오리처럼 울면 오리다"라는 오리 타이핑과 같은 원리입니다.
+Java·C# 같은 언어는 <b>"이 클래스를 상속했는가"</b>를 보지만,
+TypeScript는 <b>"필요한 속성을 갖고 있는가"</b>만 봅니다.</p>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="ts">interface Point { x: number; y: number; }
+
+function draw(point: Point) { }
+
+// 아무 관계도 선언하지 않았지만 통과합니다
+const coord = { x: 1, y: 2 };
+draw(coord);              // ✅ 모양이 맞으므로
+
+// 속성이 더 많아도 통과합니다
+const point3d = { x: 1, y: 2, z: 3 };
+draw(point3d);            // ✅
+
+// 하지만 객체 리터럴을 '직접' 넘기면 다릅니다
+draw({ x: 1, y: 2, z: 3 });
+// ❌ Object literal may only specify known properties, and 'z' does not exist
+//    → 초과 속성 검사(excess property check)</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔍</span> 초과 속성 검사는 왜 있나</p>
+<p style="margin-bottom:0">변수를 거치면 통과하는데 리터럴을 직접 넘기면 막히는 것이 이상해 보입니다.
+이유는 <b>오타를 잡기 위해서</b>입니다.</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">interface Options { color?: string; }
+setOptions({ colour: "red" });    // ❌ 영국식 철자 오타를 잡아 줍니다</code></pre>
+</div>
+<p style="margin-bottom:0">이 검사가 없으면 <code>colour</code>는 그냥 무시되고
+색이 안 바뀌는 이유를 한참 찾게 됩니다.</p>
+</div>
+
+<h2 id="practice">실전 패턴</h2>
+
+<div class="codeblock">
+<span class="cb-label">API 응답 타입 설계</span>
+<pre><code data-lang="ts">interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// 목록 응답
+interface UserListResponse {
+  items: User[];
+  total: number;
+  page: number;
+}
+
+// 공통 응답 껍데기 (제네릭 — 53장)
+interface ApiResponse&lt;T&gt; {
+  data: T;
+  message: string;
+  timestamp: string;
+}
+
+type UsersResponse = ApiResponse&lt;User[]&gt;;</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">판별 유니온 — 상태 관리의 정석</span>
+<pre><code data-lang="ts">type RequestState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: User[] }
+  | { status: "error"; error: string };
+
+function render(state: RequestState) {
+  switch (state.status) {
+    case "loading":
+      return "불러오는 중…";
+    case "success":
+      return state.data.length + "명";   // ✅ data가 있다는 것이 보장됩니다
+    case "error":
+      return state.error;                 // ✅ error가 있다는 것이 보장됩니다
+    case "idle":
+      return "";
+  }
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⭐</span> 판별 유니온이 막아 주는 실수</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">// ❌ 이렇게 하면 불가능한 상태가 표현됩니다
+interface BadState {
+  isLoading: boolean;
+  data?: User[];
+  error?: string;
+}
+// isLoading: true 이면서 error도 있는 상태? data와 error가 동시에 있는 상태?
+// 코드로는 만들 수 있지만 논리적으로 말이 안 됩니다</code></pre>
+</div>
+<p style="margin-bottom:0">판별 유니온은 <b>불가능한 상태를 표현할 수 없게</b> 만듭니다.
+그러면 "로딩 중인데 에러도 뜬" 같은 버그가 <b>애초에 발생할 수 없습니다.</b>
+React의 상태 설계에서 매우 강력한 도구입니다(59·67장).</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 무엇을 쓸까</p>
+<p><b>솔직히 대부분의 경우 아무거나 써도 됩니다.</b> 다만 팀이 하나로 통일하는 것이 중요합니다.
+널리 쓰이는 기준은 이렇습니다.</p>
+<ul style="margin-bottom:0">
+<li><b>객체 모양</b>을 정의한다 → <code>interface</code> (오류 메시지가 읽기 좋습니다)</li>
+<li><b>유니온·튜플·타입 연산</b>이 필요하다 → <code>type</code></li>
+<li><b>라이브러리 타입을 확장</b>해야 한다 → <code>interface</code> (선언 병합)</li>
+<li><b>React props</b> → 둘 다 널리 쓰입니다. 프로젝트 규칙을 따르세요</li>
+</ul>
+<p style="margin-bottom:0"><b>이 선택으로 고민하는 시간이 아깝습니다.</b>
+훨씬 중요한 것은 <b>판별 유니온으로 상태를 설계하는 것</b>과
+<b>타입을 실제 데이터 구조에 맞게 정확히 쓰는 것</b>입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>객체 모양 정의는 <b>둘 다 가능</b>하고 서로 호환된다.</li>
+<li><code>type</code>만 가능: <b>유니온·튜플·원시 별명·타입 연산</b>.</li>
+<li><code>interface</code>만 가능: <b>선언 병합</b>(라이브러리 타입 확장에 필수).</li>
+<li>확장 충돌 시 <code>interface</code>는 <b>오류</b>, <code>type</code>은 조용히 <code>never</code>.</li>
+<li>TypeScript는 <b>구조적 타이핑</b> — 이름이 아니라 <b>모양</b>으로 호환을 판단한다.</li>
+<li><b>초과 속성 검사</b>는 객체 리터럴을 직접 넘길 때만 작동하며 오타를 잡아 준다.</li>
+<li><b>판별 유니온</b>으로 불가능한 상태를 만들 수 없게 설계한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces" target="_blank" rel="noopener">핸드북 — type과 interface의 차이</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions" target="_blank" rel="noopener">핸드북 — 판별 유니온</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/type-compatibility.html" target="_blank" rel="noopener">핸드북 — 타입 호환성(구조적 타이핑)</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/declaration-merging.html" target="_blank" rel="noopener">핸드북 — 선언 병합</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>type</code>으로는 가능하지만 <code>interface</code>로는 <b>불가능한</b> 것은?",
+    o: [
+      "객체 모양 정의",
+      "유니온 타입 정의 (<code>type A = B | C</code>)",
+      "다른 타입 확장",
+      "제네릭 사용"
+    ],
+    a: 1,
+    e: "<code>interface</code>는 <b>객체 모양</b>을 정의하는 문법이라 유니온을 표현할 수 없습니다. 튜플·원시 타입 별명·매핑드/조건부 타입도 <code>type</code>의 영역입니다. 반대로 <b>선언 병합</b>은 <code>interface</code>만 가능합니다."
+  },
+  {
+    q: "\"구조적 타이핑\"이 뜻하는 것은?",
+    o: [
+      "클래스를 상속해야만 타입이 호환된다",
+      "타입 이름이 아니라 속성 구조(모양)가 맞으면 호환된다고 판단한다",
+      "타입을 구조체로만 정의할 수 있다",
+      "런타임에 구조를 검사한다"
+    ],
+    a: 1,
+    e: "TypeScript는 <b>\"필요한 속성을 갖고 있는가\"</b>만 봅니다. 그래서 <code>interface Point</code>를 명시적으로 구현하지 않은 객체라도 <code>x</code>·<code>y</code>가 있으면 통과합니다. Java·C#의 명목적 타이핑과 다른 점입니다."
+  },
+  {
+    q: "<code>draw({ x: 1, y: 2, z: 3 })</code> 는 오류인데 <code>const p = { x:1, y:2, z:3 }; draw(p)</code> 는 통과합니다. 이유는?",
+    o: [
+      "TypeScript 버그다",
+      "객체 리터럴을 직접 넘길 때만 적용되는 초과 속성 검사 때문이며, 오타를 잡기 위한 장치다",
+      "변수는 타입 검사를 하지 않기 때문",
+      "z가 선택적 속성이기 때문"
+    ],
+    a: 1,
+    e: "구조적 타이핑상 속성이 더 많은 것은 문제가 아닙니다. 다만 <b>리터럴을 직접 넘길 때</b>는 <code>colour</code> 같은 오타일 가능성이 크므로 별도 검사를 합니다. 의도적으로 더 넘기려면 변수에 담거나 타입 단언을 씁니다."
+  },
+  {
+    q: "로딩 상태를 <code>{ isLoading: boolean; data?: T; error?: string }</code> 대신 판별 유니온으로 설계하면 좋은 이유는?",
+    o: [
+      "코드가 짧아져서",
+      "\"로딩 중인데 에러도 있는\" 같은 불가능한 상태를 타입 수준에서 표현할 수 없게 되어 그런 버그가 애초에 생기지 않기 때문",
+      "런타임 성능이 좋아져서",
+      "JSON 변환이 쉬워져서"
+    ],
+    a: 1,
+    e: "선택적 속성 방식은 <b>논리적으로 불가능한 조합</b>도 타입상 허용합니다. 판별 유니온은 각 상태에 필요한 데이터만 묶으므로, <code>status === \"success\"</code>일 때 <code>data</code>가 반드시 존재함이 보장되고 잘못된 조합은 만들 수조차 없습니다."
+  },
+  {
+    q: "<code>type D = { value: string } &amp; { value: number }</code> 에서 <code>D[\"value\"]</code>의 타입은?",
+    o: [
+      "string",
+      "string | number",
+      "never — 두 타입을 동시에 만족하는 값이 없기 때문",
+      "컴파일 오류"
+    ],
+    a: 2,
+    e: "교차 타입(<code>&amp;</code>)은 <b>모두 만족</b>해야 한다는 뜻입니다. <code>string</code>이면서 동시에 <code>number</code>인 값은 없으므로 <code>never</code>가 됩니다. <b>선언 시점에는 오류가 나지 않아</b> 나중에 값을 넣으려 할 때야 문제를 알게 되는데, <code>interface extends</code>는 이 경우 즉시 오류를 냅니다."
+  }
+]);
+</script>

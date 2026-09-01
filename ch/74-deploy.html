@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>74장. 배포와 환경 변수 — 프엔북</title>
+<meta name="description" content="빌드와 배포의 개념, 환경 변수 관리, Vercel 등 호스팅 선택, 미리보기 배포와 CI/CD, 배포 후 확인 항목을 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="74장. 배포와 환경 변수 — 프엔북">
+<meta property="og:description" content="빌드와 배포의 개념, 환경 변수 관리, Vercel 등 호스팅 선택, 미리보기 배포와 CI/CD, 배포 후 확인 항목을 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="74-deploy">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">9부 · Next.js와 렌더링 전략</p>
+    <h1>74장. 배포와 환경 변수</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>빌드와 배포</b>가 실제로 무슨 일인지</li>
+  <li><b>환경 변수</b>를 환경별로 관리하기</li>
+  <li><span class="term" data-term="hosting">호스팅</span> 선택과 <b>미리보기 배포</b></li>
+  <li>CI/CD 기본 구성</li>
+  <li><b>배포 후 반드시 확인할 것</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 만든 것을 세상에 내놓는 단계입니다</p>
+
+<h2 id="build">빌드</h2>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm run build     # 배포용 결과물 생성
+npm run start     # 그 결과물로 서버 실행 (개발 서버와 다릅니다)</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>빌드가 하는 일 (47장)</th></tr></thead>
+<tbody>
+<tr><td><span <span class="term" data-term="class">class</span>="term" data-term="typescript">TypeScript</span>·<span class="term" data-term="jsx">JSX</span>를 <span class="term" data-term="browser">브라우저</span>가 이해하는 <span class="term" data-term="javascript">JavaScript</span>로 변환</td></tr>
+<tr><td>모듈을 묶고 <b>안 쓰는 코드 제거</b>(<span class="term" data-term="tree-shaking">트리 셰이킹</span>)</td></tr>
+<tr><td><span class="term" data-term="minify">압축</span>하고 <b>내용 기반 해시</b>를 붙여 캐시 문제 해결</td></tr>
+<tr><td>정적 페이지를 미리 생성(<span class="term" data-term="ssg">SSG</span>·<span class="term" data-term="isr">ISR</span>, 70장)</td></tr>
+<tr><td>이미지·폰트 최적화(73장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧪</span> 배포 전에 반드시 로컬에서 빌드해 보세요</p>
+<p style="margin-bottom:0"><b>개발 서버에서는 잘 되는데 빌드에서 실패하는 경우가 많습니다.</b></p>
+<ul style="margin-bottom:0">
+<li>타입 오류 — 개발 중에는 경고로 넘어가지만 빌드는 실패합니다</li>
+<li>서버에 없는 <span class="term" data-term="api">API</span> 사용 — <code>window</code>, <code>document</code>(70장)</li>
+<li>환경 변수 누락</li>
+<li>대소문자 — <b>macOS는 구분하지 않고 리눅스 서버는 구분합니다.</b>
+<code>import Button from "./button"</code>이 로컬에서만 되는 전형적인 사고입니다</li>
+</ul>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">빌드 출력 읽기</span>
+<pre><code data-lang="text">Route (app)                    Size     First Load JS
+┌ ○ /                          1.2 kB        89 kB
+├ ● /blog/[slug]               2.1 kB        92 kB
+└ ƒ /dashboard                 15 kB        142 kB   ← 큽니다. 확인 필요
+
+○ 정적    ● SSG    ƒ 동적(SSR)</code></pre>
+</div>
+<p><b>First Load JS</b>가 그 페이지를 열 때 받아야 하는 총 JS 용량입니다.
+어떤 페이지가 유난히 크다면 <b>동적 임포트로 나눌 수 있는지</b> 확인하세요(47·68장).
+그리고 각 라우트가 <b>정적인지 동적인지</b>가 여기 표시되므로,
+72장에서 말한 "실수로 동적이 된 페이지"를 여기서 발견할 수 있습니다.</p>
+
+<h2 id="env">환경 변수</h2>
+
+<div class="codeblock">
+<span class="cb-label">파일 구분</span>
+<pre><code data-lang="text">.env                 모든 환경 공통 (커밋함 — 비밀 없는 값만)
+.env.local           내 컴퓨터 전용 (⚠️ 반드시 .gitignore)
+.env.development     개발용
+.env.production      운영용
+.env.example         ⭐ 어떤 변수가 필요한지 알려주는 예시 (커밋함, 값은 비움)</code></pre>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="bash"># .env.example — 이 파일을 커밋해 두면 새 팀원이 무엇이 필요한지 압니다
+DATABASE_URL=
+NEXTAUTH_SECRET=
+NEXT_PUBLIC_API_URL=</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔓</span> 접두사가 붙으면 <b>공개됩니다</b></p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="bash">DATABASE_URL=postgres://…              # 서버에서만 — 안전
+NEXT_PUBLIC_API_URL=https://api.…      # 브라우저 코드에 박힙니다 — 공개</code></pre>
+</div>
+<p style="margin-bottom:0">47장에서 말한 그대로입니다.
+<code>NEXT_PUBLIC_</code>(<span class="term" data-term="vite">Vite</span>는 <code>VITE_</code>)이 붙은 값은 <b>빌드 결과물에 문자열로 들어갑니다.</b>
+<span class="term" data-term="devtools">개발자 도구</span>로 누구나 볼 수 있습니다.
+<b>비밀 키에 이 접두사를 붙이는 것</b>이 실제로 자주 일어나는 사고입니다.</p>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✅</span> 환경 변수를 시작할 때 검증하세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">// env.ts — 54장의 Zod 활용
+import { z } from "zod";
+
+const schema = z.object({
+  DATABASE_URL: z.string().url(),
+  NEXTAUTH_SECRET: z.string().min(32),
+  NEXT_PUBLIC_API_URL: z.string().url()
+});
+
+export const env = schema.parse(process.env);
+// 변수가 없거나 형식이 틀리면 '시작하자마자' 명확한 오류가 납니다</code></pre>
+</div>
+<p style="margin-bottom:0">검증하지 않으면 <b>배포 후 사용자가 특정 기능을 눌렀을 때</b>
+<code>undefined</code> 때문에 터집니다. 그때는 원인 찾기가 훨씬 어렵습니다.</p>
+</div>
+
+<h2 id="hosting">호스팅 선택</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>종류</th><th>적합한 경우</th></tr></thead>
+<tbody>
+<tr><td><b>정적 호스팅</b><br>(<span class="term" data-term="github"><span class="term" data-term="git">Git</span>Hub</span> Pages, Cloudflare Pages 등)</td><td>순수 정적 사이트(3장). 무료이거나 매우 저렴합니다. <b>이 책 같은 결과물</b>에 적합</td></tr>
+<tr><td><b><span class="term" data-term="frontend">프론트엔드</span> 플랫폼</b><br>(Vercel, Netlify 등)</td><td><span class="term" data-term="nextjs">Next.js</span>·<span class="term" data-term="react">React</span> 앱. Git 연동, 미리보기 배포, <span class="term" data-term="cdn">CDN</span>, 서버리스 함수가 통합되어 있습니다</td></tr>
+<tr><td><b>클라우드 서버</b><br>(AWS, GCP 등)</td><td>세밀한 제어가 필요하거나 이미 그 환경을 쓰는 경우. 설정할 것이 많습니다</td></tr>
+<tr><td><b>컨테이너</b><br>(Docker + 오케스트레이션)</td><td>여러 서비스를 함께 운영하는 큰 조직</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">가장 간단한 배포 흐름</span>
+<pre><code data-lang="bash"># ① GitHub에 저장소를 만들고 코드를 올립니다 (45장)
+git push origin main
+
+# ② 호스팅 서비스에서 저장소를 연결하면
+#    이후 push할 때마다 자동으로 빌드·배포됩니다
+
+# 또는 CLI로 직접
+npx vercel</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔍</span> 미리보기 배포가 협업을 바꿉니다</p>
+<p style="margin-bottom:0">PR을 올리면 <b>그 <span class="term" data-term="branch">브랜치</span>만의 실제 <span class="term" data-term="url">URL</span></b>이 자동 생성됩니다(45장).</p>
+<ul style="margin-bottom:0">
+<li>리뷰어가 <b>코드가 아니라 실제 화면</b>을 보고 확인합니다</li>
+<li>기획자·디자이너가 <b>개발 환경 없이</b> 결과를 봅니다</li>
+<li>모바일 <b>실기기에서 바로</b> 테스트할 수 있습니다(49장)</li>
+</ul>
+<p style="margin-bottom:0">"제 컴퓨터에서는 되는데요"가 사라지는 가장 효과적인 장치입니다.</p>
+</div>
+
+<h2 id="cicd">CI/CD</h2>
+
+<div class="codeblock">
+<span class="cb-label">.github/workflows/ci.yml</span>
+<pre><code data-lang="yaml">name: CI
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci               # lock 파일 그대로 설치 (46장)
+      - run: npm run lint         # 48장
+      - run: npx tsc --noEmit     # 50장 — 타입 검사
+      - run: npm test             # 75장
+      - run: npm run build        # 빌드가 되는지 확인</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🚦</span> CI가 최종 방어선입니다</p>
+<p style="margin-bottom:0">48장에서 말했듯 <span class="term" data-term="git-hook">Git 훅</span>은 <b>우회할 수 있습니다.</b>
+CI는 <b>모든 PR에서 반드시 실행</b>되고, 실패하면 <span class="term" data-term="merge">머지</span>를 막을 수 있습니다.<br>
+<b>검사 순서도 중요합니다.</b> 빠른 것(린트·타입)을 먼저 돌려
+<b>몇 초 만에 실패</b>하게 하면 피드백이 빨라집니다.</p>
+</div>
+
+<h2 id="after">배포 후 확인</h2>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">✅</span> 배포 직후 점검표</p>
+<ol>
+<li><b>실제 주소로 접속</b>해 봅니다. 로컬이 아니라 진짜 URL로.</li>
+<li><b>주요 흐름을 직접 해 봅니다.</b> 회원가입 → 로그인 → 핵심 기능.</li>
+<li><b>새로고침</b>해 봅니다. 하위 경로에서 404가 나면 서버 폴백 설정 문제입니다(68장).</li>
+<li><b>모바일 실기기</b>로 열어 봅니다(49장).</li>
+<li><b>콘솔에 오류가 없는지</b> 확인합니다.</li>
+<li><b>느린 네트워크</b>로 테스트합니다(49장).</li>
+<li><b>OG 미리보기</b>를 실제로 링크를 붙여 확인합니다(10·73장).</li>
+<li><b><span class="term" data-term="lighthouse">Lighthouse</span></b>를 운영 주소에서 돌립니다. 개발 서버와 결과가 다릅니다.</li>
+<li><b>404 페이지</b>가 제대로 나오는지 봅니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>"배포했으니 끝"이 아닙니다.</b>
+개발 환경과 운영 환경은 <b>항상 다릅니다.</b>
+캐시, 환경 변수, <span class="term" data-term="https"><span class="term" data-term="http">HTTP</span>S</span>, <span class="term" data-term="domain">도메인</span>, CDN — 로컬에는 없던 것들이 전부 개입합니다.</p>
+</div>
+
+<h2 id="rollback">문제가 생기면</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상황</th><th>대응</th></tr></thead>
+<tbody>
+<tr><td>배포 후 심각한 오류</td><td><b>즉시 이전 버전으로 롤백.</b> 원인 분석은 그다음입니다</td></tr>
+<tr><td>일부 사용자만 문제</td><td>브라우저·기기·캐시 상태를 확인. 79장의 오류 추적 도구가 알려 줍니다</td></tr>
+<tr><td>옛 화면이 계속 보임</td><td>CDN·브라우저 캐시(3장). 해시 파일명이 제대로 적용됐는지 확인</td></tr>
+<tr><td>환경 변수 문제</td><td>호스팅 대시보드에서 값을 확인하고 <b>재배포</b>. 변수만 바꾸면 반영되지 않는 경우가 많습니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">↩️</span> 롤백이 가능한 것이 큰 가치입니다</p>
+<p style="margin-bottom:0">현대 호스팅 플랫폼은 <b>이전 배포를 그대로 보관</b>하고
+버튼 하나로 되돌릴 수 있습니다.
+"고치려고 급하게 코드를 수정해 다시 배포"하는 것보다
+<b>일단 되돌리고 침착하게 원인을 찾는 것</b>이 항상 낫습니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔐</span> 배포 관련 보안 기본</p>
+<ul style="margin-bottom:0">
+<li><b>HTTPS는 필수</b>입니다. 요즘은 대부분 자동으로 설정됩니다(4장)</li>
+<li><b><span class="term" data-term="source-map">소스맵</span>을 공개 배포에 포함할지</b> 결정하세요(47장)</li>
+<li><b>오류 화면에 서버 내부 정보를 노출하지</b> 마세요(33장)</li>
+<li><b>보안 헤더</b>(<span class="term" data-term="csp">CSP</span> 등)를 설정하세요(78장)</li>
+<li><b>관리자 페이지는 서버에서 권한을 검사</b>하세요. 라우트 가드만으로는 부족합니다(68장)</li>
+</ul>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>배포 전에 반드시 로컬 빌드</b>를 돌린다. 대소문자·타입·서버 API 문제가 여기서 드러난다.</li>
+<li>빌드 출력에서 <b>라우트별 크기와 정적/동적 여부</b>를 확인한다.</li>
+<li><code>.env.local</code>은 <b>절대 <span class="term" data-term="commit">커밋</span>하지 않고</b>, <code>.env.example</code>은 커밋한다.</li>
+<li><b><code>NEXT_PUBLIC_</code>이 붙으면 공개</b>된다. 비밀 키에 붙이지 않는다.</li>
+<li>환경 변수를 <b>시작 시점에 검증</b>하면 문제를 일찍 발견한다.</li>
+<li><b>미리보기 배포</b>가 협업 방식을 바꾼다.</li>
+<li><b>CI가 최종 방어선</b>이다. 빠른 검사를 먼저 돌린다.</li>
+<li>배포 후 <b>실제 주소·실기기·느린 네트워크</b>로 확인한다.</li>
+<li>문제가 생기면 <b>먼저 롤백</b>하고 원인은 그다음에 찾는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://nextjs.org/docs/app/getting-started/deploying" target="_blank" rel="noopener">Next.js — 배포하기</a></li>
+<li><a href="https://vercel.com/docs" target="_blank" rel="noopener">Vercel 문서</a></li>
+<li><a href="https://docs.github.com/ko/actions" target="_blank" rel="noopener">GitHub Actions (한국어)</a></li>
+<li><a href="https://nextjs.org/docs/app/guides/environment-variables" target="_blank" rel="noopener">Next.js — 환경 변수</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "로컬(macOS)에서는 잘 되는데 배포 후 \"모듈을 찾을 수 없다\"는 오류가 납니다. 흔한 원인은?",
+    o: [
+      "네트워크 문제",
+      "import 경로의 대소문자 불일치. macOS는 파일명 대소문자를 구분하지 않지만 리눅스 서버는 구분한다",
+      "node_modules를 커밋하지 않아서",
+      "TypeScript 버전 차이"
+    ],
+    a: 1,
+    e: "<code>./Button</code>과 <code>./button</code>이 macOS에서는 같은 파일이지만 리눅스에서는 다릅니다. 배포 서버는 대부분 리눅스이므로 <b>로컬 빌드에서는 통과하고 배포에서만 실패</b>합니다. CI에서 리눅스로 빌드를 돌리면 미리 잡을 수 있습니다."
+  },
+  {
+    q: "<code>NEXT_PUBLIC_</code> 접두사가 붙은 환경 변수의 특징은?",
+    o: [
+      "서버에서만 접근 가능하다",
+      "빌드 시 클라이언트 번들에 문자열로 포함되어 브라우저에서 누구나 볼 수 있다",
+      "자동으로 암호화된다",
+      "개발 환경에서만 동작한다"
+    ],
+    a: 1,
+    e: "접두사는 <b>\"이 값은 공개된다\"는 명시적 선언</b>입니다(47장). API 주소처럼 공개돼도 되는 값에만 씁니다. 비밀 키에 이 접두사를 붙이는 것은 <b>실제로 자주 일어나는 사고</b>이며, 붙이는 순간 유출된 것으로 봐야 합니다."
+  },
+  {
+    q: "미리보기 배포(Preview Deployment)의 가장 큰 이점은?",
+    o: [
+      "빌드 속도가 빨라진다",
+      "PR마다 실제 동작하는 URL이 생겨 리뷰어·기획자·디자이너가 코드를 읽지 않고도 결과를 확인하고 실기기 테스트도 가능하다",
+      "테스트를 자동으로 작성해 준다",
+      "환경 변수가 필요 없어진다"
+    ],
+    a: 1,
+    e: "코드 리뷰에서 <b>\"실제로 어떻게 보이는지\"</b>를 확인하는 것은 매우 어렵습니다. 브랜치마다 실제 URL이 생기면 개발 환경 설정 없이 누구나 확인할 수 있고, 모바일 실기기 테스트도 링크 하나로 끝납니다."
+  },
+  {
+    q: "환경 변수를 앱 시작 시점에 스키마로 검증하는 이유는?",
+    o: [
+      "타입스크립트 문법 때문에",
+      "누락되거나 형식이 틀린 변수를 즉시 명확한 오류로 알 수 있어, 배포 후 사용자가 특정 기능을 쓸 때 undefined로 터지는 상황을 막기 때문",
+      "환경 변수를 암호화하기 위해",
+      "빌드 속도를 높이기 위해"
+    ],
+    a: 1,
+    e: "검증이 없으면 <b>그 변수를 실제로 쓰는 코드가 실행될 때까지</b> 문제를 모릅니다. 결제 기능처럼 드물게 실행되는 경로라면 며칠 뒤에 발견될 수도 있습니다. 시작 시점 검증은 문제를 <b>가장 이른 시점</b>으로 당깁니다."
+  },
+  {
+    q: "배포 직후 심각한 오류가 발견되었습니다. 가장 먼저 할 일은?",
+    o: [
+      "원인을 분석하고 코드를 수정해 다시 배포한다",
+      "이전 버전으로 롤백해 사용자 영향을 끊고, 그다음 침착하게 원인을 찾는다",
+      "서버를 재시작한다",
+      "사용자에게 공지만 올린다"
+    ],
+    a: 1,
+    e: "장애 상황에서 급하게 수정한 코드는 <b>또 다른 문제를 만들기 쉽습니다</b>. 현대 호스팅 플랫폼은 이전 배포를 보관하므로 버튼 하나로 되돌릴 수 있습니다. <b>먼저 피해를 멈추고</b> 원인 분석은 안정된 상태에서 하는 것이 원칙입니다."
+  }
+]);
+</script>
+</body>
+</html>

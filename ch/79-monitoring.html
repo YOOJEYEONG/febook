@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>79장. 에러 추적과 모니터링 — 프엔북</title>
+<meta name="description" content="에러 추적과 성능 모니터링, 로그 설계, 소스맵과 사용자 식별, 알림 설정까지 운영 중인 서비스를 관찰하는 방법을 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="79장. 에러 추적과 모니터링 — 프엔북">
+<meta property="og:description" content="에러 추적과 성능 모니터링, 로그 설계, 소스맵과 사용자 식별, 알림 설정까지 운영 중인 서비스를 관찰하는 방법을 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="79-monitoring">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">10부 · 품질, 성능, 보안</p>
+    <h1>79장. 에러 추적과 모니터링</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>사용자가 겪은 오류를 개발자가 아는</b> 방법</li>
+  <li>에러 추적 도구 설정과 <b><span class="term" data-term="source-map">소스맵</span></b></li>
+  <li><b>실제 사용자 성능 모니터링</b></li>
+  <li>알림을 <b>무시하지 않게</b> 만드는 법</li>
+  <li>개인정보를 지키면서 관찰하기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분 · 10부의 마지막입니다</p>
+
+<h2 id="why">가장 위험한 상태</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🕳️</span> "사용자는 겪었는데 개발자는 모르는 오류"</p>
+<p style="margin-bottom:0">개발자의 컴퓨터에서는 잘 됩니다.
+QA도 통과했습니다. 그런데 <b>특정 <span class="term" data-term="browser">브라우저</span>·특정 데이터·특정 순서</b>에서만 터집니다.<br>
+사용자는 대부분 <b>신고하지 않습니다.</b> 그냥 떠납니다.
+그래서 <b>모니터링이 없으면 문제가 있다는 사실조차 모릅니다.</b></p>
+</div>
+
+<h2 id="error">에러 추적</h2>
+
+<div class="codeblock">
+<span class="cb-label">직접 만들면 (33장)</span>
+<pre><code data-lang="js">window.addEventListener("error", (event) =&gt; {
+  report({ message: event.message, file: event.filename, line: event.lineno });
+});
+
+window.addEventListener("unhandledrejection", (event) =&gt; {
+  report({ reason: String(event.reason) });
+});</code></pre>
+</div>
+
+<p>여기에 <b>그룹화, 중복 제거, 발생 빈도, 사용자 수, 스택 복원, 알림</b>을 더하면
+결국 전용 도구가 됩니다. 그래서 실무에서는 Sentry 같은 서비스를 씁니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">Sentry 예</span>
+<pre><code data-lang="js">import * as Sentry from "@sentry/react";
+
+Sentry.init({
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  environment: process.env.NODE_ENV,
+  release: process.env.NEXT_PUBLIC_VERSION,     // ⭐ 어느 배포에서 났는지
+  tracesSampleRate: 0.1,                         // 성능 추적은 10%만
+  replaysOnErrorSampleRate: 1.0,                 // 오류 시에는 재현 기록
+  beforeSend(event) {
+    // ⭐ 개인정보 제거
+    if (event.request?.cookies) delete event.request.cookies;
+    return event;
+  }
+});</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구가 해 주는 것</th></tr></thead>
+<tbody>
+<tr><td><b>같은 오류를 묶어</b> 보여줍니다 — 1000건이 아니라 "1개 오류, 1000회 발생, 사용자 340명"</td></tr>
+<tr><td><b>스택 트레이스를 원본 코드로</b> 복원합니다 (소스맵)</td></tr>
+<tr><td><b>발생 환경</b> — 브라우저, OS, 화면 크기, 이전 동작 기록</td></tr>
+<tr><td><b>세션 재현</b> — 사용자가 무엇을 눌렀는지 영상처럼 재생</td></tr>
+<tr><td><b>배포 연결</b> — 어느 버전부터 발생했는지, 회귀인지</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🗺️</span> 소스맵을 반드시 올리세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="text">소스맵 없음:  at t (main.a3f9.js:1:48291)     ← 아무 정보 없음
+소스맵 있음:  at handleSubmit (LoginForm.tsx:42)  ← 바로 찾아갑니다</code></pre>
+</div>
+<p style="margin-bottom:0">47장에서 말한 방식이 여기서 쓰입니다.
+<b>소스맵을 생성하되 공개 배포에는 포함하지 않고, 오류 추적 서비스에만 업로드</b>합니다.
+그러면 코드는 노출되지 않으면서 디버깅은 편해집니다.</p>
+</div>
+
+<h2 id="context">맥락을 남기세요</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// 사용자 식별 — ⚠️ 개인정보는 최소한으로
+Sentry.setUser({ id: user.id });          // 이름·이메일은 넣지 마세요
+
+// 사용자 행동 기록 (빵부스러기)
+Sentry.addBreadcrumb({
+  category: "cart",
+  message: "상품 추가",
+  data: { productId, quantity }
+});
+
+// 추가 맥락
+Sentry.setContext("checkout", { step: 3, method: "card" });
+
+// 직접 보고 (33장의 catch 안에서)
+try {
+  await submitOrder(order);
+} catch (error) {
+  Sentry.captureException(error, { tags: { feature: "checkout" } });
+  showToast("주문에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🍞</span> "무엇을 하다가 터졌는가"가 절반입니다</p>
+<p style="margin-bottom:0">스택 트레이스만으로는 재현이 안 되는 경우가 많습니다.
+<b>어떤 화면에서, 무엇을 누르고, 어떤 데이터였는지</b>가 있어야 원인을 찾습니다.
+빵부스러기(breadcrumb)와 태그를 잘 남기면 <b>디버깅 시간이 몇 배로 줄어듭니다.</b></p>
+</div>
+
+<h2 id="privacy">개인정보</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔒</span> 모니터링 도구가 개인정보 유출 경로가 될 수 있습니다</p>
+<ul style="margin-bottom:0">
+<li><b><span class="term" data-term="url">URL</span>에 담긴 정보</b> — <code>/orders?email=hong@example.com</code> 같은 주소가 그대로 전송됩니다</li>
+<li><b>폼 입력값</b> — 세션 재현 기능이 <b>비밀번호·카드번호까지 녹화</b>할 수 있습니다</li>
+<li><b>오류 메시지 안의 데이터</b> — "사용자 홍길동(010-…)를 찾을 수 없음"</li>
+<li><b><span class="term" data-term="cookie">쿠키</span>·헤더</b> — 토큰이 그대로 전송될 수 있습니다</li>
+</ul>
+<p style="margin-bottom:0"><b>대응</b>: 세션 재현에서 <b>입력값 마스킹을 기본으로</b> 켜고,
+<code>beforeSend</code>로 민감한 필드를 제거하고,
+URL 파라미터를 정제하고, 법적 요구사항(개인정보 처리방침, 동의)을 확인하세요.
+<b>"오류를 잘 잡으려고" 개인정보를 수집하는 것은 정당화되지 않습니다.</b></p>
+</div>
+
+<h2 id="perf">성능 모니터링</h2>
+
+<div class="codeblock">
+<span class="cb-label">76장의 <span <span class="term" data-term="class">class</span>="term" data-term="field-data">실제 사용자 데이터</span> 수집</span>
+<pre><code data-lang="js">import { onLCP, onINP, onCLS, onTTFB } from "web-vitals";
+
+function send(metric) {
+  navigator.sendBeacon("/api/vitals", JSON.stringify({
+    name: metric.name,
+    value: metric.value,
+    rating: metric.rating,          // "good" | "needs-improvement" | "poor"
+    path: location.pathname,
+    connection: navigator.connection?.effectiveType
+  }));
+}
+[onLCP, onINP, onCLS, onTTFB].forEach(fn =&gt; fn(send));</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📊</span> 평균이 아니라 <b>백분위</b>를 보세요</p>
+<p style="margin-bottom:0">"평균 <span class="term" data-term="lcp">LCP</span> 1.8초"는 <b>거의 쓸모없는 숫자</b>입니다.
+사용자 대부분이 0.5초인데 10%가 15초여도 평균은 좋게 나옵니다.<br>
+<b>p75</b>(상위 25%가 이보다 느림)를 보세요.
+구글의 Core Web Vitals 평가 기준도 <b>p75</b>입니다.
+"우리 사용자 4명 중 1명은 LCP가 4초를 넘는다"가 행동으로 이어지는 정보입니다.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>함께 보면 좋은 것</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td><b>페이지별</b> 지표</td><td>전체 평균은 문제를 감춥니다</td></tr>
+<tr><td><b>기기·네트워크별</b></td><td>저사양 기기에서만 나쁜 경우가 많습니다</td></tr>
+<tr><td><b>배포 전후 비교</b></td><td>어느 변경이 성능을 떨어뜨렸는지</td></tr>
+<tr><td><b>비즈니스 지표와 연결</b></td><td>"LCP가 1초 늘면 이탈률이 얼마나 오르는가"</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="logging">로그 설계</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ❌ 아무 정보가 없습니다
+console.log("에러");
+console.log(data);
+
+// ✅ 무엇을·어디서·어떤 값으로
+console.error("[checkout] 결제 요청 실패", {
+  orderId, amount, step: "payment", errorCode: error.code
+});</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>수준</th><th>언제</th></tr></thead>
+<tbody>
+<tr><td><code>error</code></td><td><b>사용자가 실패를 겪음.</b> 즉시 확인 필요</td></tr>
+<tr><td><code>warn</code></td><td>비정상이지만 동작함. 예: 재시도 후 성공</td></tr>
+<tr><td><code>info</code></td><td>중요한 사건. 로그인, 결제 완료</td></tr>
+<tr><td><code>debug</code></td><td>개발용. <b>운영에서는 끕니다</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🗑️</span> <code>console.log</code>를 <span class="term" data-term="commit">커밋</span>하지 마세요</p>
+<p style="margin-bottom:0">디버깅용 로그가 운영에 남으면 <b>콘솔이 시끄러워져 진짜 오류가 묻힙니다.</b>
+그리고 <b>민감한 데이터가 노출</b>될 수 있습니다.
+48장의 <span class="term" data-term="eslint">ESLint</span> <code>no-console</code> 규칙으로 막고,
+빌드 설정에서 자동 제거하기도 합니다.</p>
+</div>
+
+<h2 id="alert">알림</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔔</span> 알림 피로 — 가장 흔한 실패</p>
+<p style="margin-bottom:0">모든 오류에 알림을 걸면 <b>하루에 수백 개</b>가 옵니다.
+그러면 <b>아무도 안 봅니다.</b> 그리고 <b>진짜 장애를 놓칩니다.</b><br>
+<b>알림은 "지금 사람이 행동해야 하는 것"에만</b> 걸어야 합니다.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>알림을 걸 것</th><th>대시보드로만 볼 것</th></tr></thead>
+<tbody>
+<tr><td>
+<b>새로운 오류</b>가 처음 등장<br>
+오류 발생률이 <b>급증</b><br>
+<b>결제·로그인</b> 등 핵심 흐름의 실패<br>
+성능 지표의 <b>급격한 악화</b>
+</td><td>
+알려진 오류의 일상적 발생<br>
+개별 사용자의 네트워크 오류<br>
+브라우저 확장 프로그램이 일으키는 오류<br>
+전체적인 추세
+</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧹</span> 잡음 걸러내기</p>
+<p style="margin-bottom:0">실제 운영을 하면 <b>우리 코드와 무관한 오류</b>가 대량으로 들어옵니다.
+브라우저 확장 프로그램, 광고 차단기, 봇, 아주 오래된 브라우저.
+<b>이것들을 필터로 걸러내지 않으면</b> 진짜 문제가 묻힙니다.
+Sentry 등에는 무시 목록 기능이 있으니 초기에 정리해 두세요.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 운영을 시작할 때</p>
+<ol>
+<li><b>에러 추적부터</b> 붙이세요. 성능보다 먼저입니다. 오류는 사용자가 <b>바로 이탈</b>하는 원인입니다.</li>
+<li><b>소스맵을 올리세요.</b> 없으면 오류 정보가 거의 쓸모없습니다.</li>
+<li><b>배포 버전을 태그</b>하세요. "언제부터"를 알아야 원인을 좁힙니다.</li>
+<li><b>알림은 최소로 시작</b>해서 필요할 때 늘리세요. 반대로 하면 무시하게 됩니다.</li>
+<li><b>개인정보 처리를 먼저</b> 확인하세요. 나중에 정리하기 어렵습니다.</li>
+<li><b>주기적으로 오류 목록을 보세요.</b> 알림이 안 왔어도 쌓이는 오류가 있습니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>"오류가 0건"이 목표가 아닙니다.</b>
+목표는 <b>"오류가 나면 안다"</b>와 <b>"무엇이 문제인지 안다"</b>입니다.
+관찰할 수 없는 시스템은 고칠 수도 없습니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>가장 위험한 것은 <b>사용자만 겪고 개발자는 모르는 오류</b>다. 대부분 신고하지 않는다.</li>
+<li>에러 추적 도구가 <b>그룹화·스택 복원·환경 정보·세션 재현</b>을 제공한다.</li>
+<li><b>소스맵을 서비스에 업로드</b>하되 공개 배포에는 포함하지 않는다.</li>
+<li><b>빵부스러기와 태그</b>로 "무엇을 하다 터졌는가"를 남긴다.</li>
+<li><b>모니터링이 개인정보 유출 경로</b>가 될 수 있다. 마스킹과 필터링이 필수다.</li>
+<li>성능은 <b>평균이 아니라 p75</b>로 본다.</li>
+<li>로그에는 <b>무엇을·어디서·어떤 값으로</b>를 남긴다. <code>console.log</code>를 커밋하지 않는다.</li>
+<li><b>알림은 지금 행동해야 하는 것에만.</b> 알림 피로가 가장 흔한 실패다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://docs.sentry.io/platforms/javascript/" target="_blank" rel="noopener">Sentry — JavaScript 문서</a></li>
+<li><a href="https://github.com/GoogleChrome/web-vitals" target="_blank" rel="noopener">web-vitals 라이브러리</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Navigator/sendBeacon" target="_blank" rel="noopener">MDN — sendBeacon</a></li>
+<li><a href="https://web.dev/articles/vitals-field-measurement-best-practices" target="_blank" rel="noopener">web.dev — 실제 사용자 측정 모범 사례</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "운영 중인 서비스에 에러 추적 도구가 필요한 가장 큰 이유는?",
+    o: [
+      "코드 품질을 자동으로 개선해 주기 때문",
+      "사용자는 오류를 겪어도 대부분 신고하지 않고 이탈하므로, 도구가 없으면 문제가 있다는 사실조차 알 수 없기 때문",
+      "테스트를 대체할 수 있기 때문",
+      "성능이 좋아지기 때문"
+    ],
+    a: 1,
+    e: "특정 브라우저·특정 데이터·특정 순서에서만 나는 오류는 개발과 QA에서 잡히지 않습니다. 그리고 사용자는 <b>불편하면 그냥 떠납니다</b>. 관찰할 수 없는 시스템은 고칠 수도 없습니다."
+  },
+  {
+    q: "오류 추적 서비스에 소스맵을 업로드해야 하는 이유는?",
+    o: [
+      "번들 크기가 줄어들기 때문",
+      "압축된 코드의 스택 트레이스(<code>t (main.a3f9.js:1:48291)</code>)를 원본 파일과 줄 번호로 복원해야 원인을 찾을 수 있기 때문",
+      "보안이 강화되기 때문",
+      "빌드가 빨라지기 때문"
+    ],
+    a: 1,
+    e: "소스맵이 없으면 오류 정보가 <b>거의 쓸모없습니다</b>. 다만 공개 배포에 포함하면 원본 코드가 노출되므로(47장), <b>생성하되 서비스에만 업로드</b>하는 방식이 표준입니다."
+  },
+  {
+    q: "성능 지표를 평균이 아니라 p75로 봐야 하는 이유는?",
+    o: [
+      "평균 계산이 어려워서",
+      "평균은 소수의 매우 느린 사용자를 감춘다. p75는 \"4명 중 1명이 이보다 느리다\"를 알려 주며 구글의 평가 기준도 p75다",
+      "p75가 항상 더 좋은 숫자라서",
+      "평균은 브라우저마다 다르게 계산되어서"
+    ],
+    a: 1,
+    e: "대부분이 0.5초여도 10%가 15초면 평균은 좋게 나옵니다. 하지만 <b>그 10%는 실제로 서비스를 못 쓰는 사람들</b>입니다. 백분위를 보면 \"얼마나 많은 사용자가 나쁜 경험을 하는지\"가 드러납니다."
+  },
+  {
+    q: "모든 오류에 알림을 설정하면 생기는 문제는?",
+    o: [
+      "서버 비용이 증가한다",
+      "하루에 수백 건이 와서 아무도 보지 않게 되고, 결국 진짜 장애를 놓친다",
+      "오류가 더 많이 발생한다",
+      "알림 서비스가 차단된다"
+    ],
+    a: 1,
+    e: "<b>알림 피로</b>는 모니터링 실패의 가장 흔한 형태입니다. 알림은 <b>지금 사람이 행동해야 하는 것</b>(새 오류 등장, 발생률 급증, 핵심 흐름 실패)에만 걸고, 나머지는 대시보드로 주기적으로 확인하는 것이 옳습니다."
+  },
+  {
+    q: "세션 재현(session replay) 기능을 켤 때 반드시 확인해야 할 것은?",
+    o: [
+      "녹화 화질 설정",
+      "비밀번호·카드번호 같은 입력값이 마스킹되는지. 그러지 않으면 모니터링 도구가 개인정보 유출 경로가 된다",
+      "재생 속도",
+      "저장 기간"
+    ],
+    a: 1,
+    e: "세션 재현은 사용자가 입력한 내용을 그대로 기록할 수 있습니다. 입력값 마스킹을 기본으로 켜고, <code>beforeSend</code>로 쿠키·URL 파라미터의 민감 정보를 제거하며, 개인정보 처리 요구사항을 확인해야 합니다. <b>\"디버깅을 위해\"가 개인정보 수집을 정당화하지 않습니다.</b>"
+  }
+]);
+</script>
+</body>
+</html>

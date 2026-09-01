@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>47장. 번들러와 빌드 도구 — 프엔북</title>
+<meta name="description" content="번들러가 왜 필요한지, 트랜스파일과 폴리필, 트리 셰이킹과 코드 분할, 소스맵, Vite의 동작 원리와 환경 변수까지 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="47장. 번들러와 빌드 도구 — 프엔북">
+<meta property="og:description" content="번들러가 왜 필요한지, 트랜스파일과 폴리필, 트리 셰이킹과 코드 분할, 소스맵, Vite의 동작 원리와 환경 변수까지 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="47-bundler">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">6부 · 개발 환경과 도구</p>
+    <h1>47장. 번들러와 빌드 도구</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>번들러가 <b>정확히 무슨 문제를 푸는지</b></li>
+  <li><b>트랜스파일</b>과 <b>폴리필</b>의 차이</li>
+  <li>트리 셰이킹 · 코드 분할 · 소스맵 · 해시</li>
+  <li>Vite가 빠른 이유</li>
+  <li><span class="term" data-term="env-var">환경 변수</span>를 안전하게 다루기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분</p>
+
+<h2 id="why">번들러가 푸는 문제</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>문제</th><th>번들러가 하는 일</th></tr></thead>
+<tbody>
+<tr><td><b>파일이 너무 많다</b></td><td>수백 개의 모듈을 <b>몇 개의 파일로</b> 묶습니다</td></tr>
+<tr><td><b><span class="term" data-term="browser">브라우저</span>가 <code>node_modules</code>를 모른다</b></td><td><code>import "react"</code>를 <b>실제 경로로</b> 바꿔 줍니다</td></tr>
+<tr><td><b>최신 문법을 못 쓴다</b></td><td>구형 브라우저용 문법으로 <b>변환</b>합니다</td></tr>
+<tr><td><b>JS가 아닌 것도 import 하고 싶다</b></td><td><span class="term" data-term="css">CSS</span>·이미지·SVG를 다룰 수 있게 합니다</td></tr>
+<tr><td><b>안 쓰는 코드가 들어간다</b></td><td><b>제거</b>합니다 (트리 셰이킹)</td></tr>
+<tr><td><b>파일이 크다</b></td><td>공백·주석 제거, 이름 축약 (<b>압축</b>)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🌐</span> 브라우저는 <code>import "react"</code>를 이해하지 못합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">import React from "react";              // ❌ 브라우저: 어디 있는 파일인지 모름
+import React from "/node_modules/react/index.js";   // ✅ 이렇게 바꿔 줘야 함</code></pre>
+</div>
+<p style="margin-bottom:0">34장에서 <b>확장자를 생략할 수 없다</b>고 한 이유가 이것입니다.
+번들러가 <code>"react"</code> 같은 <b>패키지 이름(bare specifier)</b>을 실제 경로로 해석해 줍니다.</p>
+</div>
+
+<h2 id="tools">주요 도구</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>도구</th><th>위치</th></tr></thead>
+<tbody>
+<tr><td><b>Vite</b></td><td><b>현재 사실상 표준.</b> 개발 서버가 매우 빠르고 설정이 간단합니다</td></tr>
+<tr><td><b>webpack</b></td><td>오래된 강자. 기존 프로젝트에 많고, 설정이 복잡한 대신 유연합니다</td></tr>
+<tr><td><b>Turbopack</b></td><td><span <span class="term" data-term="class">class</span>="term" data-term="nextjs">Next.js</span>에 통합된 번들러. Rust로 작성되어 빠릅니다</td></tr>
+<tr><td><b>esbuild / SWC / Rolldown</b></td><td>Go·Rust로 만든 <b>초고속 변환·번들 엔진</b>. 위 도구들의 내부에서 쓰입니다</td></tr>
+<tr><td><b>Babel</b></td><td>번들러가 아니라 <b>트랜스파일러</b>. 최신 문법을 구형 문법으로 바꿉니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚡</span> Vite가 빠른 이유</p>
+<ul style="margin-bottom:0">
+<li><b>개발 중에는 번들하지 않습니다.</b> 브라우저의 <b>네이티브 <span class="term" data-term="esm">ES 모듈</span></b>(34장)을 그대로 씁니다.
+파일을 고치면 <b>그 파일 하나만</b> 다시 보내면 됩니다. 프로젝트가 커져도 시작 속도가 거의 그대로입니다.</li>
+<li>변환은 Go로 만든 <b>esbuild</b>가 담당해 <span class="term" data-term="javascript">JavaScript</span>로 만든 도구보다 훨씬 빠릅니다.</li>
+<li><b>배포용 빌드에서만</b> 실제로 번들합니다. (Rollup 계열 엔진 사용)</li>
+</ul>
+<p style="margin-bottom:0">webpack은 개발 중에도 전체를 번들해서 시작이 느렸습니다. 이것이 체감 차이의 핵심입니다.</p>
+</div>
+
+<h2 id="transpile">트랜스파일과 폴리필 — 다른 것입니다</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>트랜스파일 (transpile)</th><th>폴리필 (polyfill)</th></tr></thead>
+<tbody>
+<tr><td>대상</td><td><b>문법</b></td><td><b>기능(<span class="term" data-term="api">API</span>)</b></td></tr>
+<tr><td>예</td><td><span class="term" data-term="arrow-function">화살표 함수</span> → <code>function</code><br><span class="term" data-term="optional-chaining">옵셔널 체이닝</span> → <code>&amp;&amp;</code> 체인</td><td><code>Array.prototype.at</code><br><code>Promise</code>, <code>fetch</code></td></tr>
+<tr><td>방법</td><td>코드를 <b>다시 씁니다</b></td><td>없는 기능을 <b>직접 구현해 채워 넣습니다</b></td></tr>
+<tr><td>용량</td><td>거의 안 늘어남</td><td><b>늘어납니다</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">트랜스파일 예</span>
+<pre><code data-lang="js">// 원본
+const add = (a, b) =&gt; a + b;
+const name = user?.profile?.name;
+
+// 구형 브라우저용으로 변환된 결과
+var add = function (a, b) { return a + b; };
+var name = user === null || user === void 0 ? void 0 : ...;</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎯</span> 어디까지 지원할지 정해야 합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="json">// package.json 또는 .browserslistrc
+{
+  "browserslist": ["&gt;0.5%", "last 2 versions", "not dead"]
+}</code></pre>
+</div>
+<p style="margin-bottom:0">지원 범위를 넓게 잡을수록 <b>변환과 폴리필이 늘어 파일이 커지고 느려집니다.</b>
+<b>실제 사용자 통계</b>를 보고 정하세요. 아무도 쓰지 않는 브라우저를 위해
+모든 사용자에게 무거운 코드를 보내는 것은 손해입니다.
+<span class="term" data-term="internet">Internet</span> Explorer는 <b>2022년에 지원이 종료되었으므로</b> 더 이상 대상이 아닙니다.</p>
+</div>
+
+<h2 id="optimize">최적화 기법</h2>
+
+<h3 id="treeshaking">트리 셰이킹</h3>
+<div class="codeblock">
+<pre><code data-lang="js">// utils.js — 함수가 50개 있다고 합시다
+export function formatDate() { }
+export function formatPrice() { }
+// … 48개 더
+
+// main.js
+import { formatPrice } from "./utils.js";
+// → 번들에는 formatPrice 만 포함됩니다. 나머지 49개는 제거</code></pre>
+</div>
+<p>34장에서 말한 <b>"ESM만 트리 셰이킹이 가능한"</b> 이유가 이것입니다.
+<code>import</code>는 <b>정적으로 분석</b>할 수 있어 번들러가 실행 전에 무엇이 쓰이는지 알 수 있습니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🌳</span> 트리 셰이킹이 안 되는 경우</p>
+<ul style="margin-bottom:0">
+<li><b><span class="term" data-term="commonjs">CommonJS</span> 패키지</b> — <code>require</code>는 실행 시점에 결정되어 분석할 수 없습니다.</li>
+<li><b><span class="term" data-term="side-effect">부수 효과</span>가 있는 모듈</b> — 불러오기만 해도 무언가 실행되는 코드는 지울 수 없습니다.
+(<code>package.json</code>의 <code>"sideEffects": false</code>로 "안전하다"고 알릴 수 있습니다.)</li>
+<li><b>전체를 가져오는 import</b> — <code>import * as _ from "lodash"</code>보다
+<code>import debounce from "lodash/debounce"</code>가 훨씬 가볍습니다.</li>
+</ul>
+</div>
+
+<h3 id="split">코드 분할</h3>
+<div class="codeblock">
+<pre><code data-lang="js">// 34장의 동적 import가 분할 지점이 됩니다
+const { Chart } = await import("./chart.js");
+
+// React에서
+const AdminPage = lazy(() =&gt; import("./AdminPage"));</code></pre>
+</div>
+<p>번들러는 이 지점을 인식해 <b>별도 파일로 분리</b>하고,
+그 코드가 실제로 필요할 때 내려받습니다.
+관리자 페이지 코드를 일반 사용자에게 보내지 않는 것만으로 초기 로딩이 크게 줄어듭니다.</p>
+
+<h3 id="hash">파일 이름 해시</h3>
+<div class="codeblock">
+<pre><code data-lang="text">main.a3f19c2b.js
+style.7e2d81f0.css</code></pre>
+</div>
+<p>파일 내용이 바뀌면 <b>이름도 바뀝니다.</b>
+그러면 브라우저와 <span class="term" data-term="cdn"><span class="term" data-term="cd">CD</span>N</span>이 <b>"새 파일"로 인식해 반드시 새로 받습니다</b>(3장 캐시 문제).
+반대로 내용이 그대로면 이름도 그대로라 <b>캐시를 계속 씁니다.</b>
+"배포했는데 옛 화면이 보여요"를 구조적으로 해결하는 방법입니다.</p>
+
+<h3 id="sourcemap">소스맵</h3>
+<p>압축된 코드는 사람이 읽을 수 없습니다.
+<b>소스맵</b>은 "압축된 코드의 이 위치는 원본의 몇 번째 줄"이라는 대응표입니다.
+덕분에 <span class="term" data-term="devtools">개발자 도구</span>에서 <b>원본 코드로 디버깅</b>할 수 있습니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔍</span> 운영 환경의 소스맵</p>
+<p style="margin-bottom:0">소스맵을 함께 배포하면 <b>누구나 원본 코드를 볼 수 있습니다.</b>
+<span class="term" data-term="frontend">프론트엔드</span> 코드는 어차피 공개되지만(1장), 주석과 변수명까지 그대로 노출되는 것이 부담일 수 있습니다.
+실무에서는 <b>소스맵을 생성하되 공개 배포에는 포함하지 않고, 오류 추적 서비스에만 올리는</b>
+방식을 자주 씁니다(79장).</p>
+</div>
+
+<h2 id="env">환경 변수</h2>
+
+<div class="codeblock">
+<span class="cb-label">.env — <span class="term" data-term="gitignore">.gitignore</span>에 반드시 추가</span>
+<pre><code data-lang="bash">VITE_API_URL=https://api.example.com
+VITE_APP_NAME=내 서비스
+
+# 접두사(VITE_)가 없는 것은 클라이언트 코드에 주입되지 않습니다
+DATABASE_PASSWORD=secret</code></pre>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="js">// Vite
+console.log(import.meta.env.VITE_API_URL);
+
+// Next.js는 NEXT_PUBLIC_ 접두사를 씁니다
+console.log(process.env.NEXT_PUBLIC_API_URL);</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔓</span> 프론트엔드 환경 변수는 <b>비밀이 아닙니다</b></p>
+<p style="margin-bottom:0">빌드 시점에 <b>값이 코드에 그대로 박힙니다.</b>
+번들 파일을 열면 누구나 볼 수 있습니다. 1장의 원칙 그대로입니다.<br>
+<code>VITE_</code>·<code>NEXT_PUBLIC_</code> 같은 <b>접두사 규칙</b>이 있는 이유가 바로 이것입니다.
+"이 값은 공개된다는 것을 알고 넣는다"는 명시적 선언입니다.
+<b>비밀 키는 서버에만</b> 두고, 프론트엔드는 서버를 경유해 호출해야 합니다(37·78장).</p>
+</div>
+
+<h2 id="analyze">번들 분석</h2>
+<div class="codeblock">
+<pre><code data-lang="bash">npm run build         # 결과 파일과 크기가 출력됩니다
+npx vite-bundle-visualizer     # 무엇이 용량을 차지하는지 시각화</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 번들이 클 때 확인 순서</p>
+<ol style="margin-bottom:0">
+<li><b>분석 도구로 먼저 봅니다.</b> 추측하지 마세요. 대개 특정 패키지 하나가 범인입니다.</li>
+<li><b>전체를 가져오는 import</b>를 찾습니다. 필요한 함수만 가져오세요.</li>
+<li><b>첫 화면에 필요 없는 것</b>을 <span class="term" data-term="dynamic-import">동적 import</span>로 분리합니다.</li>
+<li><b>중복 설치된 패키지</b>를 확인합니다. 같은 라이브러리의 다른 버전이 두 벌 들어가 있는 경우가 있습니다(<code>npm ls</code>).</li>
+<li><b>browserslist를 좁힙니다.</b> 폴리필이 줄어듭니다.</li>
+</ol>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🚀</span> 처음 시작할 때</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="bash">npm create vite@latest my-app
+cd my-app
+npm install
+npm run dev</code></pre>
+</div>
+<p style="margin-bottom:0">설정 파일을 직접 만들 필요가 없습니다.
+<b>번들러 설정을 깊이 파는 것은 나중 일</b>이고, 대부분의 프로젝트는 기본값으로 충분합니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>번들러는 <b>모듈 해석·변환·최적화</b>를 담당한다. 브라우저는 <code>import "react"</code>를 모른다.</li>
+<li><b>트랜스파일은 문법 변환, 폴리필은 없는 기능 채우기.</b> 폴리필은 용량을 늘린다.</li>
+<li><b>트리 셰이킹</b>은 ESM에서만 제대로 동작한다. 전체 import를 피한다.</li>
+<li><b>코드 분할</b>은 동적 <code>import()</code>가 지점이 된다.</li>
+<li><b>파일 이름 해시</b>가 캐시 문제를 구조적으로 해결한다.</li>
+<li><b>소스맵</b>으로 압축 코드를 원본으로 디버깅한다. 공개 배포 여부는 신중히.</li>
+<li><b>프론트엔드 환경 변수는 비밀이 아니다.</b> 빌드 시 코드에 박힌다.</li>
+<li>Vite는 개발 중 <b>번들하지 않고 네이티브 ESM</b>을 써서 빠르다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.vite.dev/guide/" target="_blank" rel="noopener">Vite 공식 가이드 (한국어)</a></li>
+<li><a href="https://webpack.kr/concepts/" target="_blank" rel="noopener">webpack 개념 (한국어)</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" target="_blank" rel="noopener">MDN 용어사전 — 폴리필</a></li>
+<li><a href="https://browsersl.ist/" target="_blank" rel="noopener">Browserslist</a> — 지원 범위 설정 확인</li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Glossary/Tree_shaking" target="_blank" rel="noopener">MDN 용어사전 — 트리 셰이킹</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "브라우저가 <code>import React from \"react\"</code> 를 그대로 실행하지 못하는 이유는?",
+    o: [
+      "React가 너무 커서",
+      "\"react\"는 패키지 이름일 뿐 파일 경로가 아니라, 브라우저가 어느 파일을 가져올지 알 수 없기 때문",
+      "import 문법을 지원하지 않아서",
+      "CORS 때문에"
+    ],
+    a: 1,
+    e: "브라우저의 ESM은 <b>실제 경로</b>(<code>./x.js</code> 또는 URL)만 이해합니다. <code>\"react\"</code> 같은 패키지 이름을 <code>node_modules</code> 안의 실제 파일로 해석해 주는 것이 번들러(또는 import map)의 역할입니다."
+  },
+  {
+    q: "트랜스파일과 폴리필의 차이는?",
+    o: [
+      "같은 말이다",
+      "트랜스파일은 문법을 구형 문법으로 다시 쓰는 것이고, 폴리필은 없는 API를 직접 구현해 채워 넣는 것이다",
+      "트랜스파일은 용량을 늘리고 폴리필은 줄인다",
+      "폴리필은 CSS 전용이다"
+    ],
+    a: 1,
+    e: "화살표 함수를 <code>function</code>으로 바꾸는 것은 <b>문법</b> 변환이라 트랜스파일입니다. <code>Promise</code>나 <code>Array.prototype.at</code>처럼 <b>기능 자체가 없는</b> 경우는 구현체를 넣어 줘야 하며 이것이 폴리필입니다. 폴리필은 코드가 추가되므로 용량이 늘어납니다."
+  },
+  {
+    q: "빌드 결과 파일 이름에 <code>main.a3f19c2b.js</code> 처럼 해시를 붙이는 이유는?",
+    o: [
+      "보안을 위해",
+      "내용이 바뀌면 파일 이름도 바뀌어 브라우저·CDN 캐시가 반드시 새 파일을 받게 하고, 안 바뀌면 캐시를 계속 쓰게 하기 위해",
+      "파일 크기를 줄이기 위해",
+      "정렬을 위해"
+    ],
+    a: 1,
+    e: "캐시는 <b>URL 단위</b>로 동작합니다. 이름이 그대로면 옛 파일을 계속 씁니다. 내용 기반 해시를 붙이면 변경 시에만 새 URL이 되어 <b>\"배포했는데 옛 화면이 보이는\"</b> 문제가 구조적으로 사라집니다."
+  },
+  {
+    q: "<code>VITE_API_KEY=secret123</code> 을 <code>.env</code>에 넣고 프론트엔드 코드에서 사용했습니다. 안전한가요?",
+    o: [
+      "안전하다. .env는 커밋되지 않으므로",
+      "안전하지 않다. 빌드 시점에 값이 번들 코드에 그대로 박혀 누구나 볼 수 있다",
+      "HTTPS를 쓰면 안전하다",
+      "접두사가 VITE_라서 자동으로 암호화된다"
+    ],
+    a: 1,
+    e: "프론트엔드 환경 변수는 <b>빌드 결과물에 문자열로 삽입</b>됩니다. <code>VITE_</code>·<code>NEXT_PUBLIC_</code> 접두사는 \"이 값은 공개된다\"는 <b>명시적 표시</b>일 뿐 보호 장치가 아닙니다. 비밀 키는 서버에 두고 서버를 경유해 호출해야 합니다."
+  },
+  {
+    q: "번들 크기를 줄이려 할 때 <b>가장 먼저</b> 해야 할 일은?",
+    o: [
+      "모든 이미지를 압축한다",
+      "번들 분석 도구로 무엇이 용량을 차지하는지 확인한다",
+      "browserslist를 최신 브라우저만으로 좁힌다",
+      "라이브러리를 전부 제거한다"
+    ],
+    a: 1,
+    e: "추측으로 최적화하면 시간만 낭비합니다. 분석 도구를 돌리면 대개 <b>특정 패키지 하나</b>가 범인임을 바로 알 수 있습니다. 그다음 전체 import 제거, 동적 import 분리, 중복 패키지 정리 순으로 접근합니다."
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!--desc: 원시 타입 7가지와 객체, typeof의 함정, 0.1+0.2가 0.3이 아닌 이유, 값 복사와 참조 복사의 차이, ==와 ===를 정확히 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>원시 타입 7가지와 객체</li>
+  <li><code>typeof null</code>이 <code>"object"</code>인 이유</li>
+  <li><b><code>0.1 + 0.2 !== 0.3</code></b> — 버그가 아니라 컴퓨터의 한계</li>
+  <li><b>값 복사와 참조 복사</b> — 초보자 버그의 최대 원인</li>
+  <li><code>==</code>와 <code>===</code>, 그리고 falsy 값</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 이 챕터를 대충 넘기면 나중에 비싼 대가를 치릅니다</p>
+
+<h2 id="types">타입 8가지</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>타입</th><th>예</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><code>string</code></td><td><code>"안녕"</code>, <code>'hi'</code>, <code>`템플릿`</code></td><td>문자열. <b>변경 불가능</b>합니다</td></tr>
+<tr><td><code>number</code></td><td><code>42</code>, <code>3.14</code>, <code>-0.5</code></td><td>정수·소수 구분 없이 <b>하나의 타입</b></td></tr>
+<tr><td><code>boolean</code></td><td><code>true</code>, <code>false</code></td><td>참·거짓</td></tr>
+<tr><td><code>undefined</code></td><td><code>undefined</code></td><td><b>아직 값이 없음</b> — 시스템이 만든 빈 상태</td></tr>
+<tr><td><code>null</code></td><td><code>null</code></td><td><b>의도적으로 비움</b> — 개발자가 명시한 빈 상태</td></tr>
+<tr><td><code>symbol</code></td><td><code>Symbol("id")</code></td><td>유일한 식별자(41장)</td></tr>
+<tr><td><code>bigint</code></td><td><code>9007199254740993n</code></td><td>아주 큰 정수</td></tr>
+<tr><td><b><code>object</code></b></td><td><code>{}</code>, <code>[]</code>, 함수, <code>Date</code></td><td><b>위 7가지가 아닌 모든 것</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>앞의 7개를 <b>원시 타입(primitive)</b>, 마지막을 <b>객체 타입(reference)</b>이라고 부릅니다.
+이 구분이 이 챕터의 핵심입니다.</p>
+
+<h3 id="null-undefined">null과 undefined</h3>
+<div class="codeblock">
+<pre><code data-lang="js">let a;                       // 선언만 → undefined
+console.log(a);              // undefined
+
+const user = { name: "홍길동" };
+console.log(user.age);       // undefined — 없는 속성
+
+function f() {}
+console.log(f());            // undefined — 반환값이 없는 함수
+
+let b = null;                // "지금은 값이 없다"고 개발자가 명시</code></pre>
+</div>
+<p>실무 관례: <b>"값이 없음"을 표현할 때는 <code>null</code></b>을 쓰고,
+<code>undefined</code>는 <b>시스템이 알아서 만들게</b> 둡니다. 직접 대입하지 않습니다.</p>
+
+<h2 id="typeof">typeof의 함정</h2>
+
+<div class="runner" data-lang="js" data-title="typeof 결과 확인" data-note="typeof는 원시 타입을 구분할 때만 믿을 수 있습니다.">
+<textarea class="rn-src">
+console.log(typeof "문자열");      // "string"
+console.log(typeof 42);            // "number"
+console.log(typeof true);          // "boolean"
+console.log(typeof undefined);     // "undefined"
+console.log(typeof Symbol());      // "symbol"
+console.log(typeof 10n);           // "bigint"
+console.log(typeof {});            // "object"
+console.log(typeof function () {}); // "function"  ← 객체인데 특별 취급
+
+console.log("--- 함정 ---");
+console.log(typeof null);          // "object"  ← 버그입니다 (아래 설명)
+console.log(typeof []);            // "object"  ← 배열도 객체
+console.log(typeof new Date());    // "object"
+
+console.log("--- 정확한 판별법 ---");
+console.log("배열인가?", Array.isArray([]));           // true
+console.log("null인가?", null === null);               // true
+// 모든 타입을 정확히 구분하는 방법
+function typeOf(value) {
+  return Object.prototype.toString.call(value).slice(8, -1);
+}
+console.log(typeOf(null));      // "Null"
+console.log(typeOf([]));        // "Array"
+console.log(typeOf(new Date()));// "Date"
+console.log(typeOf(/regex/));   // "RegExp"
+</textarea>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🐛</span> <code>typeof null === "object"</code>는 <b>고칠 수 없는 버그</b></p>
+<span class="mythline">JavaScript 최초 구현에서 값의 타입을 하위 비트로 표시했는데,
+객체는 <code>000</code>으로 시작했고 <code>null</code>은 <b>전부 0</b>인 포인터였습니다.
+그래서 <code>null</code>이 객체로 판정됩니다.</span>
+<span class="mythline">고치자는 제안이 있었지만 <b>기존 웹의 수많은 코드가 깨지기 때문에</b> 거부되었습니다.
+지금은 언어의 영구적인 특징입니다. <code>null</code> 검사는 <code>value === null</code>로 하세요.</span>
+</div>
+
+<h2 id="number">숫자 — 컴퓨터가 소수를 다루는 방식</h2>
+
+<div class="runner" data-lang="js" data-title="0.1 + 0.2 문제" data-note="이것은 JavaScript만의 문제가 아닙니다. Python·Java·C도 똑같습니다.">
+<textarea class="rn-src">
+console.log(0.1 + 0.2);              // 0.30000000000000004
+console.log(0.1 + 0.2 === 0.3);      // false
+
+// 왜?
+// 컴퓨터는 2진법을 씁니다. 10진법 0.1은 2진법으로 나타내면
+// 0.000110011001100... 처럼 무한히 반복됩니다.
+// 10진법에서 1/3을 0.3333...으로 정확히 못 쓰는 것과 같은 이치입니다.
+// 저장 공간이 유한하므로 어딘가에서 잘리고, 그 오차가 드러난 것입니다.
+
+console.log("--- 해결책 1: 반올림 비교 ---");
+console.log((0.1 + 0.2).toFixed(2));            // "0.30" (문자열!)
+console.log(Number((0.1 + 0.2).toFixed(2)));    // 0.3
+
+console.log("--- 해결책 2: 오차 허용 범위 ---");
+const almostEqual = Math.abs((0.1 + 0.2) - 0.3) < Number.EPSILON;
+console.log("사실상 같은가?", almostEqual);      // true
+
+console.log("--- 해결책 3: 돈은 정수로 ---");
+// 금액은 소수로 다루지 말고 "원 단위 정수"로 계산합니다.
+const price = 1000;   // 1000원
+const tax = 100;      // 100원
+console.log("합계:", price + tax, "원");
+
+console.log("--- 특수한 숫자들 ---");
+console.log(1 / 0);                  // Infinity
+console.log(-1 / 0);                 // -Infinity
+console.log("abc" * 2);              // NaN (Not a Number)
+console.log(typeof NaN);             // "number"  ← NaN도 숫자 타입
+
+console.log("--- NaN의 이상한 성질 ---");
+console.log(NaN === NaN);            // false! 자기 자신과도 다름
+console.log(Number.isNaN(NaN));      // true  ← 이걸 쓰세요
+console.log(isNaN("abc"));           // true  ← 옛 함수. 형변환을 해서 위험
+console.log(Number.isNaN("abc"));    // false ← 문자열은 NaN이 아니므로 정확
+
+console.log("--- 안전한 정수 범위 ---");
+console.log(Number.MAX_SAFE_INTEGER);        // 9007199254740991
+console.log(9007199254740992 === 9007199254740993);  // true (!) 정밀도 한계
+console.log(9007199254740992n === 9007199254740993n); // false (BigInt는 정확)
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💰</span> 돈 계산에 소수를 쓰지 마세요</p>
+<p style="margin-bottom:0">누적되면 1원, 10원씩 어긋나기 시작합니다.
+<b>가장 작은 단위(원, 센트)를 정수로</b> 다루고, 화면에 보여줄 때만 나눠서 표시하세요.
+더 엄격한 정확도가 필요하면 <code>decimal.js</code> 같은 전용 라이브러리를 씁니다.</p>
+</div>
+
+<h2 id="reference">값 복사 vs 참조 복사 — 가장 중요한 개념</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📄</span> 종이와 주소 쪽지</p>
+<p style="margin-bottom:0"><b>원시 값</b>은 <b>종이에 적은 내용</b>입니다. 복사하면 <b>내용이 복사</b>되어
+두 장이 서로 무관해집니다.<br>
+<b>객체</b>는 <b>집 주소를 적은 쪽지</b>입니다. 복사하면 <b>주소만 복사</b>됩니다.
+쪽지는 두 장이지만 <b>가리키는 집은 하나</b>입니다. 한쪽에서 가구를 옮기면 다른 쪽에서도 바뀐 것이 보입니다.</p>
+</div>
+
+<div class="runner" data-lang="js" data-title="복사의 두 가지 방식" data-note="이 챕터에서 가장 중요한 예제입니다. 결과를 반드시 확인하세요.">
+<textarea class="rn-src">
+console.log("=== 원시 값: 내용이 복사된다 ===");
+let a = 10;
+let b = a;     // 값 자체를 복사
+b = 20;
+console.log("a =", a);   // 10 — 영향 없음
+console.log("b =", b);   // 20
+
+console.log("=== 객체: 주소가 복사된다 ===");
+const obj1 = { count: 10 };
+const obj2 = obj1;       // 주소를 복사 (같은 객체를 가리킴)
+obj2.count = 20;
+console.log("obj1 =", obj1);   // { count: 20 }  ← 같이 바뀜!
+console.log("obj2 =", obj2);   // { count: 20 }
+console.log("같은 객체인가?", obj1 === obj2);   // true
+
+console.log("=== 내용이 같아도 다른 객체 ===");
+console.log({ a: 1 } === { a: 1 });   // false — 주소가 다름
+console.log([1, 2] === [1, 2]);       // false
+console.log("문자열" === "문자열");     // true — 원시 값은 내용 비교
+
+console.log("=== 얕은 복사 ===");
+const original = { name: "홍길동", address: { city: "서울" } };
+const shallow = { ...original };        // 전개 구문 (28장)
+shallow.name = "김철수";
+console.log("원본 name:", original.name);        // "홍길동" ✅ 안 바뀜
+shallow.address.city = "부산";
+console.log("원본 city:", original.address.city); // "부산" ❌ 바뀜!
+// 얕은 복사는 "한 겹만" 복사합니다.
+// 안쪽 객체(address)는 여전히 주소를 공유합니다.
+
+console.log("=== 깊은 복사 ===");
+const source = { name: "홍길동", address: { city: "서울" } };
+const deep = structuredClone(source);   // 모든 겹을 새로 만듦
+deep.address.city = "제주";
+console.log("원본 city:", source.address.city);  // "서울" ✅ 안전
+</textarea>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>복사 방법</th><th>깊이</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td><code>{ ...obj }</code>, <code>Object.assign({}, obj)</code></td><td><b>한 겹</b></td><td>가장 많이 씁니다. 대부분 이걸로 충분합니다</td></tr>
+<tr><td><code>[...arr]</code>, <code>arr.slice()</code></td><td><b>한 겹</b></td><td>배열용</td></tr>
+<tr><td><code>structuredClone(obj)</code></td><td><b>전부</b></td><td><b>표준 내장 함수.</b> 순환 참조, Date, Map, Set도 처리합니다. <b>함수는 복사 못 합니다</b></td></tr>
+<tr><td><code>JSON.parse(JSON.stringify(obj))</code></td><td>전부</td><td><b>옛 방식.</b> <code>undefined</code>·함수·<code>Date</code>가 손상됩니다. 지금은 쓸 이유가 없습니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><code>structuredClone</code>은 Chrome 98+, Safari 15.4+, Firefox 94+, Node 17+에서 지원됩니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — React 초보자가 겪는 대표 버그</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 화면이 안 바뀝니다
+const newList = list;
+newList.push(item);
+setList(newList);
+// 같은 객체를 가리키므로 React가 "안 바뀌었다"고 판단합니다(59장)
+
+// ✅ 새 배열을 만듭니다
+setList([...list, item]);</code></pre>
+</div>
+<p style="margin-bottom:0">이 문제의 뿌리가 바로 <b>참조 복사</b>입니다.
+8부에서 React를 배울 때 이 챕터를 떠올리게 됩니다.</p>
+</div>
+
+<h2 id="equality">==와 ===</h2>
+
+<div class="runner" data-lang="js" data-title="느슨한 비교의 함정" data-note="== 의 결과들이 왜 저렇게 나오는지는 외울 필요 없습니다. === 를 쓰면 됩니다.">
+<textarea class="rn-src">
+console.log("=== 엄격한 비교 (===) : 타입까지 같아야 함 ===");
+console.log(1 === 1);          // true
+console.log(1 === "1");        // false
+console.log(null === undefined); // false
+
+console.log("=== 느슨한 비교 (==) : 타입을 맞춰본 뒤 비교 ===");
+console.log(1 == "1");         // true
+console.log(0 == false);       // true
+console.log("" == false);      // true
+console.log(null == undefined);// true
+console.log([] == false);      // true   ← ?
+console.log([] == "");         // true   ← ??
+console.log("0" == false);     // true
+console.log("0" == 0);         // true
+console.log(null == 0);        // false  ← 규칙이 일관되지 않습니다
+
+console.log("=== falsy 값 8가지 ===");
+// if 문에서 거짓으로 취급되는 값들
+const falsyValues = [false, 0, -0, 0n, "", null, undefined, NaN];
+falsyValues.forEach(function (v) {
+  // BigInt는 JSON.stringify가 처리하지 못하므로 String()을 씁니다
+  const label = typeof v === "string" ? '""' : String(v);
+  console.log(label + " → " + Boolean(v));
+});
+
+console.log("=== 헷갈리는 truthy 값들 ===");
+console.log("빈 배열 []:", Boolean([]));         // true!
+console.log("빈 객체 {}:", Boolean({}));         // true!
+console.log('문자열 "0":', Boolean("0"));        // true!
+console.log('문자열 "false":', Boolean("false"));// true!
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚖️</span> 규칙: 항상 <code>===</code></p>
+<p style="margin-bottom:0"><code>==</code>는 타입을 자동으로 맞춘 뒤 비교하는데,
+<b>그 규칙이 복잡하고 일관되지 않습니다.</b> 위 예제의 결과를 예측할 수 있는 사람은 드뭅니다.<br>
+<b>단 하나의 예외</b>는 <code>value == null</code>입니다.
+이것은 <b><code>null</code>이거나 <code>undefined</code>일 때</b> 참이 되므로
+"값이 비었는지" 한 번에 확인하는 관용구로 널리 쓰입니다.
+(이 관용구를 쓰지 않겠다면 <code>value === null || value === undefined</code>로 명시하세요.)</p>
+</div>
+
+<h3 id="nullish">?? 와 ||</h3>
+<div class="codeblock">
+<pre><code data-lang="js">// || 는 falsy 값 전부에 반응합니다
+const count1 = 0 || 10;          // 10  ← 0은 유효한 값인데 무시됨!
+const name1 = "" || "익명";      // "익명" ← 빈 문자열도 무시됨
+
+// ?? 는 null·undefined 에만 반응합니다
+const count2 = 0 ?? 10;          // 0   ✅ 0을 그대로 씁니다
+const name2 = "" ?? "익명";      // ""  ✅
+const value = undefined ?? "기본값";  // "기본값"</code></pre>
+</div>
+<p><b>"값이 없을 때만 기본값"</b>이 필요하다면 <code>??</code>(널 병합 연산자)를 쓰세요.
+숫자 <code>0</code>과 빈 문자열이 유효한 값인 상황에서 <code>||</code>를 쓰면 <b>조용한 버그</b>가 생깁니다.</p>
+
+<h2 id="string-immutable">문자열은 바꿀 수 없습니다</h2>
+<div class="codeblock">
+<pre><code data-lang="js">let str = "hello";
+str[0] = "H";          // 아무 일도 일어나지 않습니다 (오류도 안 남)
+console.log(str);      // "hello"
+
+str = "H" + str.slice(1);   // 새 문자열을 만들어 다시 대입해야 합니다
+console.log(str);      // "Hello"</code></pre>
+</div>
+<p>모든 문자열 메서드(<code>toUpperCase</code>, <code>replace</code>, <code>trim</code> 등)는
+<b>원본을 바꾸지 않고 새 문자열을 반환</b>합니다. 반환값을 받지 않으면 아무 일도 일어나지 않습니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>원시 타입 7가지(<code>string</code>·<code>number</code>·<code>boolean</code>·<code>undefined</code>·<code>null</code>·<code>symbol</code>·<code>bigint</code>) + 객체.</li>
+<li><code>typeof null === "object"</code>는 <b>고칠 수 없는 역사적 버그</b>. 배열은 <code>Array.isArray()</code>로 판별.</li>
+<li><b><code>0.1 + 0.2 !== 0.3</code></b>은 2진 부동소수점의 한계다. <b>돈은 정수로</b> 계산한다.</li>
+<li><code>NaN !== NaN</code>. 판별은 <code>Number.isNaN()</code>.</li>
+<li><b>원시 값은 내용이, 객체는 주소가 복사된다.</b> 이 차이가 초보자 버그의 최대 원인.</li>
+<li>얕은 복사는 <b>한 겹</b>만. 전부 복사하려면 <code>structuredClone()</code>.</li>
+<li><b>항상 <code>===</code></b>. 예외는 <code>== null</code> 관용구뿐.</li>
+<li>기본값에는 <code>||</code>가 아니라 <b><code>??</code></b>를 우선 고려한다.</li>
+<li>문자열은 <b>변경 불가능</b>하다. 메서드는 항상 새 문자열을 반환한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Data_structures" target="_blank" rel="noopener">MDN — JavaScript 자료형과 자료구조</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Equality" target="_blank" rel="noopener">MDN — 동등 비교(==)의 정확한 규칙</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone" target="_blank" rel="noopener">MDN — structuredClone()</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing" target="_blank" rel="noopener">MDN — 널 병합 연산자 ??</a></li>
+<li><a href="https://0.30000000000000004.com/" target="_blank" rel="noopener">0.30000000000000004.com</a> — 여러 언어의 같은 현상 비교</li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>const a = { x: 1 }; const b = a; b.x = 99;</code> 이후 <code>a.x</code>의 값은?",
+    o: ["1", "99", "undefined", "오류가 발생한다"],
+    a: 1,
+    e: "객체를 대입하면 <b>주소가 복사</b>됩니다. <code>a</code>와 <code>b</code>는 <b>같은 객체</b>를 가리키므로 어느 쪽으로 바꿔도 같은 결과가 보입니다. 독립적인 사본이 필요하면 <code>{ ...a }</code>나 <code>structuredClone(a)</code>를 써야 합니다."
+  },
+  {
+    q: "<code>0.1 + 0.2 === 0.3</code> 이 <code>false</code>인 이유는?",
+    o: [
+      "JavaScript의 버그다",
+      "10진 소수를 2진 부동소수점으로 정확히 표현할 수 없어 미세한 오차가 생기기 때문이며, 대부분의 언어에서 동일하다",
+      "0.1과 0.2가 문자열로 처리되기 때문",
+      "덧셈 순서 때문에 생기는 문제로 순서를 바꾸면 해결된다"
+    ],
+    a: 1,
+    e: "10진법의 0.1은 2진법으로 무한소수라 유한한 비트에 담을 때 잘립니다. 10진법에서 1/3을 정확히 못 쓰는 것과 같은 원리이고, Python·Java·C에서도 동일합니다. 금액은 <b>최소 단위 정수</b>로 다루는 것이 정석입니다."
+  },
+  {
+    q: "얕은 복사(<code>{ ...obj }</code>)의 한계는?",
+    o: [
+      "아무것도 복사되지 않는다",
+      "최상위 속성만 복사되고 중첩된 객체는 여전히 원본과 주소를 공유한다",
+      "숫자만 복사되고 문자열은 복사되지 않는다",
+      "원본이 변경된다"
+    ],
+    a: 1,
+    e: "전개 구문은 <b>한 겹만</b> 복사합니다. 중첩 객체의 값은 <b>주소</b>이므로 그 주소가 그대로 복사되어 원본과 같은 객체를 가리킵니다. 모든 겹을 복사하려면 <code>structuredClone()</code>을 씁니다."
+  },
+  {
+    q: "사용자가 입력한 수량이 <code>0</code>일 때도 그 값을 그대로 쓰고, 값이 없을 때만 기본값 10을 쓰려면?",
+    o: [
+      "<code>const qty = input || 10;</code>",
+      "<code>const qty = input ?? 10;</code>",
+      "<code>const qty = input == 10;</code>",
+      "<code>const qty = Boolean(input) ? input : 10;</code>"
+    ],
+    a: 1,
+    e: "<code>||</code>는 <b>모든 falsy 값</b>(0, \"\", false, NaN 포함)에 반응해 <code>0</code>을 기본값으로 바꿔 버립니다. <code>??</code>는 <b><code>null</code>과 <code>undefined</code>에만</b> 반응하므로 0을 그대로 유지합니다."
+  },
+  {
+    q: "<code>typeof</code>로 배열을 판별할 수 없는 이유와 올바른 방법은?",
+    o: [
+      "typeof []는 \"array\"를 반환하므로 그대로 쓰면 된다",
+      "typeof []는 \"object\"를 반환하므로 <code>Array.isArray()</code>를 써야 한다",
+      "배열은 판별할 방법이 없다",
+      "<code>[] instanceof Object</code>로 판별한다"
+    ],
+    a: 1,
+    e: "배열도 객체의 한 종류라 <code>typeof</code>는 <code>\"object\"</code>를 반환합니다. <code>Array.isArray()</code>가 정확한 판별 방법이며, 더 넓게는 <code>Object.prototype.toString.call(value)</code>로 <code>[object Array]</code>·<code>[object Date]</code> 등을 구분할 수 있습니다."
+  },
+  {
+    q: "<code>NaN === NaN</code> 의 결과와 그 이유는?",
+    o: [
+      "true — 같은 값이므로",
+      "false — NaN은 '수가 아님'을 나타내는 특수 값이라 자기 자신과도 같지 않도록 정의되어 있다",
+      "오류가 발생한다",
+      "undefined를 반환한다"
+    ],
+    a: 1,
+    e: "<code>NaN</code>은 명세상 <b>어떤 값과도 같지 않으며 자기 자신과도 같지 않습니다</b>. 그래서 <code>===</code>로 판별할 수 없고 <code>Number.isNaN()</code>을 써야 합니다. 옛 전역 함수 <code>isNaN()</code>은 인자를 숫자로 변환한 뒤 검사해 <code>isNaN(\"abc\")</code>가 true가 되므로 피하는 편이 좋습니다."
+  }
+]);
+</script>

@@ -1,0 +1,363 @@
+<!--desc: 뷰포트 메타 태그, 모바일 퍼스트 미디어 쿼리, 브레이크포인트 정하는 법, 컨테이너 쿼리, 사용자 환경 설정 감지까지 반응형의 전부를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>뷰포트 메타 태그가 실제로 하는 일</li>
+  <li><b>모바일 퍼스트</b>로 미디어 쿼리 쓰는 법과 그 이유</li>
+  <li>브레이크포인트를 기기 목록이 아니라 <b>콘텐츠</b>로 정하는 법</li>
+  <li><b>컨테이너 쿼리</b> — 화면이 아니라 <b>부모 크기</b>에 반응하기</li>
+  <li>다크 모드·모션 최소화 같은 사용자 설정 존중하기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분</p>
+
+<h2 id="viewport">뷰포트 메타 태그</h2>
+
+<div class="codeblock">
+<pre><code data-lang="html">&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</code></pre>
+</div>
+
+<p>이 한 줄이 없으면 모바일 브라우저는 <b>가상의 넓은 화면(보통 980px)</b>에 페이지를 그린 뒤
+통째로 축소해서 보여 줍니다. PC 화면을 멀리서 보는 것처럼 글자가 개미만 해집니다.
+<code>width=device-width</code>는 <b>"실제 기기 너비를 기준으로 그려라"</b>는 지시입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔍</span> 확대를 막지 마세요</p>
+<p style="margin-bottom:0"><code>user-scalable=no</code>나 <code>maximum-scale=1</code>은
+<b>사용자가 손가락으로 확대하는 것을 막습니다.</b>
+저시력 사용자에게는 사이트를 못 쓰게 만드는 조치이고, WCAG 위반이기도 합니다.
+"디자인이 깨져서"는 이유가 되지 않습니다. 확대해도 깨지지 않게 만드는 것이 우리 일입니다.
+(다행히 iOS Safari는 오래전부터 이 지시를 무시하고 확대를 허용합니다.)</p>
+</div>
+
+<h2 id="mobile-first">모바일 퍼스트</h2>
+
+<p>미디어 쿼리는 두 방향으로 쓸 수 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">두 가지 방식</span>
+<pre><code data-lang="css">/* ① 데스크톱 퍼스트 — 큰 화면 기본, 작아지면 덮어쓰기 */
+.card { width: 33%; }
+@media (max-width: 768px) { .card { width: 100%; } }
+
+/* ② 모바일 퍼스트 — 작은 화면 기본, 커지면 덮어쓰기  ← 권장 */
+.card { width: 100%; }
+@media (min-width: 768px) { .card { width: 33%; } }</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📱</span> 모바일 퍼스트가 나은 세 가지 이유</p>
+<ol style="margin-bottom:0">
+<li><b>기본 스타일이 단순해집니다.</b> 좁은 화면은 대부분 "한 줄로 쌓기"라 덮어쓸 것이 적습니다.</li>
+<li><b>성능.</b> 모바일 기기가 처리해야 할 규칙이 줄어듭니다.</li>
+<li><b>사고 순서가 맞습니다.</b> 좁은 화면에서 무엇이 진짜 필요한지 먼저 정하면 자연스럽게 우선순위가 잡힙니다. 넓은 화면부터 만들면 "다 넣고 나중에 숨기는" 설계가 되기 쉽습니다.</li>
+</ol>
+</div>
+
+<h2 id="media">미디어 쿼리 문법</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">/* 기본 */
+@media (min-width: 768px) { … }
+
+/* 범위 (구문법) */
+@media (min-width: 768px) and (max-width: 1023px) { … }
+
+/* 범위 (신문법 — Chrome 104+, Safari 16.4+, Firefox 102+) */
+@media (768px &lt;= width &lt; 1024px) { … }
+
+/* 화면 방향 */
+@media (orientation: landscape) { … }
+
+/* 인쇄용 */
+@media print { .no-print { display: none; } }
+
+/* 마우스처럼 정밀한 입력 장치가 있는가 */
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { transform: translateY(-4px); }
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">👆</span> <code>:hover</code>만으로 기능을 만들지 마세요</p>
+<p style="margin-bottom:0">터치 기기에는 <b>마우스 오버라는 개념이 없습니다.</b>
+호버로만 나타나는 메뉴는 휴대폰에서 아예 열 수 없거나,
+"한 번 눌러야 나타나고 다시 눌러야 이동하는" 이상한 동작이 됩니다.
+호버는 <b>보조적인 시각 효과</b>로만 쓰고, 필요한 기능은 <b>클릭·탭</b>으로도 되게 만드세요.
+꼭 호버 효과를 주고 싶다면 위 예처럼 <code>@media (hover: hover)</code> 안에 넣습니다.</p>
+</div>
+
+<h3 id="breakpoints">브레이크포인트 정하기</h3>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">📏</span> 기기 목록으로 정하지 마세요</p>
+<span class="mythline"><b class="no">나쁜 방식</b> — "아이폰 15는 393px, 아이패드는 768px이니까…"
+기기는 매년 새로 나오고 크기도 제각각입니다. 따라잡을 수 없습니다.</span>
+<span class="mythline"><b class="yes">좋은 방식</b> — 브라우저 창을 천천히 넓혀 보면서
+<b>레이아웃이 어색해지는 지점</b>에서 브레이크포인트를 넣습니다.
+"글줄이 너무 길어졌다", "카드가 찌그러졌다" 하는 그 지점이 정답입니다.
+<b>콘텐츠가 브레이크포인트를 정하게 하세요.</b></span>
+</div>
+
+<p>그럼에도 팀에 기준이 필요하니, 널리 쓰이는 출발점을 참고할 수는 있습니다.
+아래는 Tailwind CSS의 기본값이며 <b>절대적인 기준이 아닙니다.</b></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>이름</th><th>최소 너비</th><th>대략</th></tr></thead>
+<tbody>
+<tr><td>(기본)</td><td>—</td><td>휴대폰 세로</td></tr>
+<tr><td><code>sm</code></td><td>640px</td><td>큰 휴대폰, 세로 태블릿</td></tr>
+<tr><td><code>md</code></td><td>768px</td><td>태블릿</td></tr>
+<tr><td><code>lg</code></td><td>1024px</td><td>작은 노트북</td></tr>
+<tr><td><code>xl</code></td><td>1280px</td><td>데스크톱</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="no-mq">미디어 쿼리가 필요 없는 경우도 많습니다</h2>
+
+<p>현대 CSS에서는 상당수의 반응형이 <b>미디어 쿼리 없이</b> 해결됩니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">쿼리 없는 반응형 4종</span>
+<pre><code data-lang="css">/* ① 폭 제한 */
+.container { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 16px; }
+
+/* ② 자동 줄바꿈 격자 (16장) */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+/* ③ 유동 타이포그래피 (14장) */
+h1 { font-size: clamp(1.75rem, 4vw, 3rem); }
+
+/* ④ 자동 줄바꿈되는 Flex */
+.row { display: flex; flex-wrap: wrap; gap: 16px; }
+.row > * { flex: 1 1 260px; }</code></pre>
+</div>
+
+<h2 id="container-query">컨테이너 쿼리</h2>
+
+<p>미디어 쿼리에는 근본적인 한계가 있습니다. <b>화면 크기만 볼 수 있다</b>는 점입니다.</p>
+
+<p>같은 카드 컴포넌트가 <b>넓은 본문 영역</b>에 놓일 때와 <b>좁은 사이드바</b>에 놓일 때는
+다르게 보여야 합니다. 하지만 화면 크기는 두 경우 모두 같습니다.
+미디어 쿼리로는 이것을 구분할 수 없습니다.</p>
+
+<p><b>컨테이너 쿼리</b>는 <b>부모 요소의 크기</b>를 기준으로 삼습니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">/* ① 부모를 "측정 대상"으로 선언 */
+.card-wrapper {
+  container-type: inline-size;   /* 가로 크기를 기준으로 */
+  container-name: card;          /* 이름은 선택 사항 */
+}
+
+/* ② 부모 크기에 따라 자식 스타일을 바꾼다 */
+@container card (min-width: 400px) {
+  .card { display: grid; grid-template-columns: 120px 1fr; gap: 16px; }
+}</code></pre>
+</div>
+
+<p>Chrome 105+, Safari 16+, Firefox 110+에서 지원되어 지금은 실무에서 쓸 수 있습니다.</p>
+
+<div class="runner" data-lang="html" data-title="컨테이너 쿼리 — 같은 카드, 다른 배치" data-note="두 카드의 HTML과 CSS 클래스는 완전히 같습니다. 부모 폭만 다릅니다. .narrow의 width를 420px로 바꿔 보세요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; }
+  .wide   { width: 100%; margin-bottom: 16px; }
+  .narrow { width: 220px; }
+
+  /* 부모를 측정 대상으로 선언 */
+  .wide, .narrow { container-type: inline-size; }
+
+  .card {
+    border: 2px solid #1f5f4f; border-radius: 8px;
+    padding: 12px; background: #f4f8f6;
+  }
+  .card .thumb {
+    background: #1f5f4f; border-radius: 6px; height: 70px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 11px; margin-bottom: 8px;
+  }
+  .card h4 { margin: 0 0 4px; font-size: 14px; }
+  .card p { margin: 0; color: #555; font-size: 12px; }
+
+  /* 부모(컨테이너)가 380px 이상이면 가로 배치로 전환 */
+  @container (min-width: 380px) {
+    .card { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; }
+    .card .thumb { margin-bottom: 0; height: 100%; min-height: 70px; }
+  }
+
+  .label { font-size: 11px; color: #888; margin-bottom: 4px; }
+</style>
+
+<p class="label">넓은 부모 (100%)</p>
+<div class="wide">
+  <article class="card">
+    <div class="thumb">이미지</div>
+    <div>
+      <h4>컨테이너 쿼리</h4>
+      <p>부모가 넓으니 가로로 배치됩니다.</p>
+    </div>
+  </article>
+</div>
+
+<p class="label">좁은 부모 (220px)</p>
+<div class="narrow">
+  <article class="card">
+    <div class="thumb">이미지</div>
+    <div>
+      <h4>컨테이너 쿼리</h4>
+      <p>부모가 좁으니 세로로 쌓입니다.</p>
+    </div>
+  </article>
+</div>
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧩</span> 왜 이게 중요한가</p>
+<p style="margin-bottom:0">컴포넌트 기반 개발(React 등)에서는 <b>같은 컴포넌트가 어디에 놓일지 미리 알 수 없습니다.</b>
+미디어 쿼리는 "화면이 넓으면"이라고밖에 말할 수 없어서,
+컴포넌트가 자기 상황을 스스로 판단할 수 없었습니다.
+컨테이너 쿼리는 컴포넌트를 <b>진짜로 독립적</b>으로 만들어 줍니다.
+CSS에서 가장 오래 요청되어 온 기능이 마침내 실현된 것입니다.</p>
+</div>
+
+<h2 id="prefers">사용자 환경 설정 존중하기</h2>
+
+<div class="codeblock">
+<pre><code data-lang="css">/* 시스템이 다크 모드일 때 */
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14161a; --text: #e6e6e4; }
+}
+
+/* 동작 줄이기를 켠 사용자 — 전정기관 질환자에게는 실제 어지럼증을 유발합니다 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 대비 높이기를 켠 사용자 */
+@media (prefers-contrast: more) { … }</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🌀</span> <code>prefers-reduced-motion</code>은 선택 사항이 아닙니다</p>
+<p style="margin-bottom:0">화면이 크게 움직이는 애니메이션은 전정기관 장애가 있는 사람에게
+<b>실제로 어지럼증과 메스꺼움을 유발</b>합니다. 취향의 문제가 아닙니다.
+운영체제에서 "동작 줄이기"를 켠 사용자에게는 <b>반드시</b> 애니메이션을 줄여야 합니다.
+위 코드 블록을 프로젝트 초기 설정에 넣어 두는 것을 권합니다.</p>
+</div>
+
+<h2 id="touch">터치 대상 크기</h2>
+<p>손가락은 마우스 포인터보다 훨씬 굵습니다. 작은 버튼은 누르기 어렵고 오작동을 일으킵니다.
+WCAG 2.2는 터치 대상 최소 크기로 <b>24×24 CSS 픽셀</b>(AA 기준)을 요구하고,
+더 높은 수준(AAA)에서는 <b>44×44</b>를 권장합니다.
+실무에서는 <b>44px 이상</b>을 목표로 잡는 편이 안전합니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">.icon-button {
+  min-width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;   /* 아이콘은 작아도 누를 수 있는 영역은 넓게 */
+}</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 반응형 점검 순서</p>
+<ol style="margin-bottom:0">
+<li>개발자 도구에서 폭을 <b>320px까지</b> 줄여 봅니다. 가로 스크롤이 생기면 어딘가 고정 너비가 있는 것입니다.</li>
+<li>가로 스크롤 범인 찾기: <code>* { outline: 1px solid red; }</code>를 잠깐 넣거나, 콘솔에서 넘치는 요소를 찾습니다.</li>
+<li>글자 크기를 200%로 키워 봅니다. 잘리는 곳이 없어야 합니다.</li>
+<li>실제 휴대폰에서 확인합니다. <b>시뮬레이터와 실기기는 다릅니다</b> — 특히 스크롤 감각, 폰트 렌더링, 주소창 동작.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>뷰포트 메타 태그가 없으면 모바일에서 축소되어 보인다. <b>확대는 막지 않는다.</b></li>
+<li><b>모바일 퍼스트</b>(<code>min-width</code>)가 기본. 코드가 단순해지고 사고 순서가 맞다.</li>
+<li>브레이크포인트는 <b>기기 목록이 아니라 콘텐츠가 깨지는 지점</b>으로 정한다.</li>
+<li><code>max-width</code>, <code>auto-fit</code>, <code>clamp()</code>, <code>flex-wrap</code>이면 상당수는 <b>미디어 쿼리 없이</b> 해결된다.</li>
+<li><b>컨테이너 쿼리</b>는 화면이 아니라 <b>부모 크기</b>를 본다. 컴포넌트를 진짜 독립적으로 만든다.</li>
+<li><code>prefers-reduced-motion</code>은 <b>건강 문제</b>다. 반드시 대응한다.</li>
+<li>터치 대상은 <b>44×44px 이상</b>을 목표로.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/CSS_layout/Responsive_Design" target="_blank" rel="noopener">MDN — 반응형 디자인</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_media_queries/Using_media_queries" target="_blank" rel="noopener">MDN — 미디어 쿼리 사용하기</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_containment/Container_queries" target="_blank" rel="noopener">MDN — 컨테이너 쿼리</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion" target="_blank" rel="noopener">MDN — prefers-reduced-motion</a></li>
+<li><a href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html" target="_blank" rel="noopener">WCAG 2.2 — 타깃 크기(최소)</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>&lt;meta name=\"viewport\"&gt;</code> 태그를 빠뜨리면 모바일에서 어떤 일이 생기나요?",
+    o: [
+      "페이지가 열리지 않는다",
+      "브라우저가 가상의 넓은 화면(보통 980px)에 그린 뒤 축소해 보여줘서 글자가 아주 작아진다",
+      "CSS가 전부 무시된다",
+      "가로 모드로만 표시된다"
+    ],
+    a: 1,
+    e: "이 태그가 없으면 모바일 브라우저는 데스크톱용 페이지라고 가정하고 넓은 가상 뷰포트에 그린 뒤 전체를 축소합니다. <code>width=device-width</code>가 \"실제 기기 너비를 기준으로 그려라\"라고 알려 줍니다."
+  },
+  {
+    q: "모바일 퍼스트 방식으로 미디어 쿼리를 쓸 때 사용하는 조건은?",
+    o: [
+      "<code>@media (max-width: …)</code>",
+      "<code>@media (min-width: …)</code>",
+      "<code>@media (orientation: portrait)</code>",
+      "<code>@media print</code>"
+    ],
+    a: 1,
+    e: "모바일 퍼스트는 <b>좁은 화면을 기본</b>으로 두고 <b>화면이 커질 때</b> 규칙을 덮어씁니다. 따라서 <code>min-width</code>를 씁니다. 기본 스타일이 단순해지고, 모바일 기기가 처리할 규칙도 줄어듭니다."
+  },
+  {
+    q: "같은 카드 컴포넌트를 넓은 본문과 좁은 사이드바 양쪽에 넣습니다. 각 위치에서 다르게 보이게 하려면?",
+    o: [
+      "미디어 쿼리로 화면 크기를 판별한다",
+      "컨테이너 쿼리(<code>container-type</code> + <code>@container</code>)로 부모 요소의 크기를 기준으로 삼는다",
+      "JavaScript로 화면 너비를 계산해 클래스를 붙인다",
+      "사이드바용 컴포넌트를 따로 하나 더 만든다"
+    ],
+    a: 1,
+    e: "미디어 쿼리는 <b>화면 크기</b>만 알 수 있는데, 이 경우 두 위치의 화면 크기는 같습니다. 컨테이너 쿼리는 <b>부모 요소의 크기</b>를 기준으로 하므로 컴포넌트가 자기 상황을 스스로 판단할 수 있습니다. Chrome 105+, Safari 16+, Firefox 110+에서 지원됩니다."
+  },
+  {
+    q: "<code>user-scalable=no</code>를 뷰포트 메타에 추가하면 안 되는 이유는?",
+    o: [
+      "페이지 로딩이 느려져서",
+      "저시력 사용자가 확대해서 볼 수 없게 되며 접근성 기준 위반이기 때문",
+      "구형 브라우저에서 오류가 나서",
+      "검색 순위가 떨어져서"
+    ],
+    a: 1,
+    e: "확대는 저시력 사용자에게 <b>필수 기능</b>입니다. 이를 막는 것은 접근성 기준 위반입니다. \"디자인이 깨진다\"면 확대해도 깨지지 않도록 만드는 것이 올바른 해결책이고, 실제로 iOS Safari는 이 지시를 무시하고 확대를 허용합니다."
+  },
+  {
+    q: "<code>prefers-reduced-motion: reduce</code>에 대응해야 하는 이유는?",
+    o: [
+      "애니메이션이 배터리를 많이 소모해서",
+      "화면이 크게 움직이는 애니메이션이 전정기관 장애가 있는 사용자에게 실제 어지럼증과 메스꺼움을 유발할 수 있어서",
+      "구형 기기에서 애니메이션이 끊겨서",
+      "검색엔진이 애니메이션을 싫어해서"
+    ],
+    a: 1,
+    e: "이것은 취향이 아니라 <b>건강 문제</b>입니다. 패럴랙스, 큰 확대·축소, 화면 전환 애니메이션은 전정기관 질환자에게 실제 신체 증상을 일으킵니다. 운영체제에서 \"동작 줄이기\"를 켠 사용자에게는 반드시 애니메이션을 최소화해야 합니다."
+  }
+]);
+</script>

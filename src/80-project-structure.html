@@ -1,0 +1,324 @@
+<!--desc: 프로젝트 폴더 구조 설계, 계층 분리, 의존성 방향, 네이밍 규칙, 그리고 구조를 점진적으로 발전시키는 방법을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>규모에 따른 <b>폴더 구조</b> 선택</li>
+  <li><b>의존성 방향</b> — 구조가 무너지는 진짜 원인</li>
+  <li>계층 분리 (UI / 도메인 / 인프라)</li>
+  <li>이름 짓기 규칙</li>
+  <li><b>구조를 점진적으로 키우는</b> 방법</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 63장의 확장편입니다</p>
+
+<h2 id="scale">규모에 맞는 구조</h2>
+
+<div class="codeblock">
+<span class="cb-label">① 아주 작을 때 — 파일 20개 이하</span>
+<pre><code data-lang="text">src/
+├── components/
+├── hooks/
+├── utils/
+├── App.tsx
+└── main.tsx</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">② 중간 — 기능이 여럿일 때 (63장)</span>
+<pre><code data-lang="text">src/
+├── features/
+│   ├── auth/
+│   │   ├── components/    LoginForm, SignupForm
+│   │   ├── hooks/         useAuth, useLogin
+│   │   ├── api.ts
+│   │   ├── types.ts
+│   │   └── index.ts       ← 이 기능이 밖으로 공개하는 것만
+│   └── products/
+├── shared/
+│   ├── ui/                Button, Input, Modal
+│   ├── hooks/             useDebounce, useLocalStorage
+│   ├── lib/               formatDate, apiClient
+│   └── config/
+├── pages/
+└── app/                   전역 설정, 프로바이더, 라우터</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📦</span> <code>index.ts</code>로 공개 범위를 정합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">// features/auth/index.ts — 밖에서 쓸 것만 내보냅니다
+export { LoginForm } from "./components/LoginForm";
+export { useAuth } from "./hooks/useAuth";
+// 내부 구현은 내보내지 않습니다
+
+// 다른 곳에서
+import { useAuth } from "@/features/auth";           // ✅
+import { validate } from "@/features/auth/internal"; // ❌ 하지 않기로 약속</code></pre>
+</div>
+<p style="margin-bottom:0">34장에서 말한 <b>배럴 파일</b>입니다.
+<b>기능의 경계에서만</b> 쓰고 남용하지 마세요. 순환 참조와 번들 문제를 만듭니다.</p>
+</div>
+
+<h2 id="direction">의존성 방향 — 가장 중요한 규칙</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">➡️</span> 구조가 무너지는 진짜 원인</p>
+<p style="margin-bottom:0">폴더를 아무리 잘 나눠도 <b>서로 마구 참조하면</b> 의미가 없습니다.
+<b>"A를 고치려면 B를 봐야 하고, B를 보려면 C를 봐야 하는"</b> 상태가 되면
+폴더 이름은 장식일 뿐입니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">허용되는 방향</span>
+<pre><code data-lang="text">app  →  pages  →  features  →  shared
+                     ↓            ↑
+                  (기능끼리 직접 참조 금지)
+
+✅ features/auth 가 shared/ui/Button 을 쓴다
+✅ pages/LoginPage 가 features/auth 를 쓴다
+❌ shared/ui/Button 이 features/auth 를 쓴다     ← 재사용 불가능해집니다
+❌ features/products 가 features/auth 의 내부를 직접 쓴다</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔀</span> 기능끼리 연결이 필요하면</p>
+<ul style="margin-bottom:0">
+<li><b>공개 인터페이스(<code>index.ts</code>)를 통해서만</b> 참조합니다</li>
+<li>양쪽이 쓰는 공통 부분은 <b><code>shared</code>로 올립니다</b></li>
+<li>조합은 <b>더 위 계층(<code>pages</code>)에서</b> 합니다</li>
+</ul>
+<p style="margin-bottom:0">두 기능이 서로를 참조하기 시작하면 <b>둘을 나눈 의미가 사라집니다.</b>
+그럴 바에는 <b>하나로 합치는 것</b>이 정직합니다.</p>
+</div>
+
+<h2 id="layers">계층 분리</h2>
+
+<div class="codeblock">
+<span class="cb-label">하나의 기능 안에서도 역할을 나눕니다</span>
+<pre><code data-lang="text">features/orders/
+├── components/         화면 — 데이터를 받아 그리기만
+├── hooks/              연결 — 화면과 로직을 잇기
+├── model/              ⭐ 도메인 로직 — 순수 함수 (27장)
+│   ├── calculate.ts       주문 금액 계산, 할인 적용
+│   └── validate.ts        주문 유효성 규칙
+├── api/                인프라 — 서버 통신 (37장)
+└── types.ts</code></pre>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// model/calculate.ts — React를 전혀 모릅니다. 그래서 테스트가 쉽습니다 (75장)
+export function calculateOrderTotal(items: OrderItem[], coupon?: Coupon): number {
+  const subtotal = items.reduce((sum, i) =&gt; sum + i.price * i.quantity, 0);
+  const discount = coupon ? applyCoupon(subtotal, coupon) : 0;
+  return Math.max(0, subtotal - discount);
+}
+
+// hooks/useOrder.ts — 화면과 로직을 잇습니다
+export function useOrder(orderId: string) {
+  const { data } = useQuery({ queryKey: ["order", orderId], queryFn: fetchOrder });
+  const total = data ? calculateOrderTotal(data.items, data.coupon) : 0;
+  return { order: data, total };
+}
+
+// components/OrderSummary.tsx — 받아서 그리기만 합니다
+export function OrderSummary({ total }: { total: number }) {
+  return &lt;p&gt;합계: {total.toLocaleString()}원&lt;/p&gt;;
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧠</span> 도메인 로직을 프레임워크에서 떼어내세요</p>
+<p style="margin-bottom:0"><b>"할인은 어떻게 계산되는가"</b>는 React와 아무 상관이 없습니다.
+이것을 컴포넌트 안에 두면 <b>테스트하기 어렵고, 재사용할 수 없고, 프레임워크를 바꾸면 다시 써야</b> 합니다.<br>
+<b>순수 함수로 분리해 두면</b> 테스트가 쉽고(75장), 서버에서도 쓸 수 있고,
+비즈니스 규칙이 <b>한곳에 모여</b> 읽기 좋습니다.
+프로젝트가 커질수록 이 분리의 가치가 커집니다.</p>
+</div>
+
+<h2 id="naming">이름 짓기</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>대상</th><th>규칙</th><th>예</th></tr></thead>
+<tbody>
+<tr><td>컴포넌트 파일</td><td>파스칼케이스</td><td><code>UserCard.tsx</code></td></tr>
+<tr><td>훅 파일</td><td><code>use</code> + 카멜케이스</td><td><code>useUserData.ts</code></td></tr>
+<tr><td>유틸 파일</td><td>카멜케이스</td><td><code>formatDate.ts</code></td></tr>
+<tr><td>상수</td><td>대문자 + 밑줄</td><td><code>MAX_RETRY_COUNT</code></td></tr>
+<tr><td>타입·인터페이스</td><td>파스칼케이스</td><td><code>OrderItem</code></td></tr>
+<tr><td>폴더</td><td>케밥케이스 또는 카멜케이스 — <b>팀에서 통일</b></td><td><code>user-profile/</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔠</span> 대소문자를 정확히 맞추세요</p>
+<p style="margin-bottom:0">74장에서 말한 그대로입니다.
+<b>macOS는 파일명 대소문자를 구분하지 않고 리눅스 서버는 구분합니다.</b>
+<code>import Button from "./button"</code>이 로컬에서만 되는 사고가 매우 흔합니다.
+<b>규칙을 정하고 린터로 강제</b>하세요.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">경로 별칭 — 상대 경로 지옥 피하기</span>
+<pre><code data-lang="ts">// ❌
+import { Button } from "../../../shared/ui/Button";
+
+// ✅ tsconfig.json의 paths 설정 (50장)
+import { Button } from "@/shared/ui/Button";</code></pre>
+</div>
+
+<h2 id="evolve">구조는 자라는 것입니다</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🌱</span> 처음부터 완벽한 구조를 만들지 마세요</p>
+<p style="margin-bottom:0"><b>파일 5개짜리 프로젝트에 계층 구조를 만드는 것</b>은
+쓸데없는 복잡도만 더합니다.<br>
+<b>실제 순서</b>는 이렇습니다.</p>
+<ol style="margin-bottom:0">
+<li>한 파일에 다 쓴다</li>
+<li>길어지면 나눈다</li>
+<li>같은 것이 반복되면 <code>shared</code>로 올린다 (63장 — 세 번째 복사할 때)</li>
+<li>기능이 여러 개가 되면 <code>features</code>로 묶는다</li>
+<li>기능 안이 복잡해지면 계층을 나눈다</li>
+</ol>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🏗️</span> 구조를 바꿔야 하는 신호</p>
+<ul style="margin-bottom:0">
+<li>파일 하나를 고치려고 <b>폴더 다섯 개를 오갑니다</b></li>
+<li>어디에 넣을지 <b>매번 고민</b>합니다</li>
+<li><code>utils.ts</code>가 <b>1000줄</b>이 되었습니다</li>
+<li>기능을 <b>삭제하려는데 무엇을 지워야 할지</b> 모릅니다</li>
+<li>새 팀원이 <b>파일을 못 찾습니다</b></li>
+</ul>
+<p style="margin-bottom:0"><b>기능을 통째로 지우기 쉬운 구조</b>가 좋은 구조입니다.
+"이 기능 폴더를 지우면 끝"이라면 잘 나뉜 것이고,
+"여기저기 흩어져 있어서 못 지운다"면 잘못 나뉜 것입니다.</p>
+</div>
+
+<h2 id="config">설정 파일 정리</h2>
+<div class="codeblock">
+<pre><code data-lang="text">프로젝트 루트/
+├── src/
+├── public/                정적 파일
+├── .env.example           74장
+├── .gitignore             45장
+├── eslint.config.js       48장
+├── .prettierrc            48장
+├── tsconfig.json          50장
+├── vite.config.ts         47장
+├── package.json           46장
+└── README.md              ⭐ 아래 참고</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📖</span> README에 반드시 넣을 것</p>
+<ul style="margin-bottom:0">
+<li><b>이 프로젝트가 무엇인지</b> 한 문단</li>
+<li><b>실행 방법</b> — 필요한 Node 버전, 설치, 실행 명령</li>
+<li><b>환경 변수</b> — 어떤 것이 필요한지(값은 쓰지 않습니다)</li>
+<li><b>폴더 구조</b> 간단 설명</li>
+<li><b>주요 스크립트</b> — 빌드·테스트·린트</li>
+</ul>
+<p style="margin-bottom:0"><b>새 팀원이 30분 안에 실행할 수 있는가</b>가 기준입니다.
+포트폴리오라면 README가 <b>가장 먼저 읽히는 문서</b>입니다(83장).</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 구조에 대한 현실적인 조언</p>
+<ol>
+<li><b>정답은 없습니다.</b> 팀이 이해하고 지킬 수 있으면 좋은 구조입니다.</li>
+<li><b>일관성이 완벽함보다 중요합니다.</b> 규칙이 조금 아쉬워도 <b>전체가 같은 규칙</b>이면 읽을 수 있습니다.</li>
+<li><b>기존 프로젝트에 들어가면 그 규칙을 따르세요.</b> 혼자 다른 방식으로 쓰는 것이 최악입니다.</li>
+<li><b>구조 논쟁에 시간을 너무 쓰지 마세요.</b> 실제 가치는 코드 자체에서 나옵니다.</li>
+<li><b>ESLint로 의존성 방향을 강제</b>할 수 있습니다(<code>import/no-restricted-paths</code> 등).
+사람의 의지에만 맡기면 결국 무너집니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>규모에 맞는 구조를 쓴다. <b>작으면 단순하게.</b></li>
+<li><b>기능 단위</b>로 묶어 함께 바뀌는 것을 함께 둔다.</li>
+<li><b>의존성 방향</b>이 구조의 핵심이다. <code>shared</code>가 <code>features</code>를 참조하면 안 된다.</li>
+<li>기능끼리는 <b>공개 인터페이스를 통해서만</b> 연결한다.</li>
+<li><b>도메인 로직을 순수 함수로</b> 분리하면 테스트·재사용이 쉬워진다.</li>
+<li>파일명 <b>대소문자를 정확히</b> 맞춘다. 배포 후에야 터진다.</li>
+<li><b>경로 별칭</b>으로 상대 경로 지옥을 피한다.</li>
+<li><b>기능을 통째로 지우기 쉬운 구조</b>가 좋은 구조다.</li>
+<li><b>일관성이 완벽함보다 중요</b>하다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://feature-sliced.design/kr/" target="_blank" rel="noopener">Feature-Sliced Design (한국어)</a></li>
+<li><a href="https://ko.react.dev/learn/thinking-in-react" target="_blank" rel="noopener">React로 사고하기</a></li>
+<li><a href="https://github.com/alan2207/bulletproof-react" target="_blank" rel="noopener">bulletproof-react</a> — 실용적인 React 프로젝트 구조 예시</li>
+<li><a href="https://www.typescriptlang.org/tsconfig/#paths" target="_blank" rel="noopener">TypeScript — paths 설정</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "폴더를 잘 나눴는데도 구조가 무너지는 가장 큰 원인은?",
+    o: [
+      "파일 이름이 길어서",
+      "폴더끼리 서로 자유롭게 참조해 의존성이 얽히기 때문. shared가 features를 참조하는 식이면 재사용이 불가능해진다",
+      "폴더 깊이가 깊어서",
+      "TypeScript를 쓰지 않아서"
+    ],
+    a: 1,
+    e: "폴더는 <b>이름표</b>일 뿐이고 실제 구조는 <b>import 관계</b>가 결정합니다. 하위 계층이 상위 계층을 참조하기 시작하면 어디서든 모든 것을 봐야 하는 상태가 됩니다. ESLint 규칙으로 방향을 강제하는 것이 실용적입니다."
+  },
+  {
+    q: "주문 금액 계산 로직을 컴포넌트가 아니라 별도의 순수 함수로 분리하면 얻는 것은?",
+    o: [
+      "렌더링 성능이 좋아진다",
+      "React 없이 테스트할 수 있고, 서버에서도 재사용할 수 있으며, 비즈니스 규칙이 한곳에 모여 읽기 좋아진다",
+      "번들 크기가 줄어든다",
+      "타입 추론이 정확해진다"
+    ],
+    a: 1,
+    e: "\"할인은 어떻게 계산되는가\"는 <b>프레임워크와 무관한 도메인 지식</b>입니다. 순수 함수로 두면 입력·출력만 확인하면 되고(75장), 프레임워크를 바꿔도 그대로 살아남습니다."
+  },
+  {
+    q: "기능 폴더에 <code>index.ts</code>를 두는 목적은?",
+    o: [
+      "빌드 속도를 높이려고",
+      "그 기능이 외부에 공개할 것만 내보내 내부 구현을 감추고, 기능 간 결합을 공개 인터페이스로 제한하기 위해",
+      "파일 개수를 줄이려고",
+      "TypeScript 설정 때문에"
+    ],
+    a: 1,
+    e: "<code>index.ts</code>는 <b>기능의 경계</b>를 표시합니다. 밖에서는 이 파일이 내보내는 것만 쓴다는 약속이 있으면 내부를 자유롭게 리팩터링할 수 있습니다. 다만 <b>모든 폴더에 남발하면</b> 순환 참조와 번들 문제가 생깁니다(34장)."
+  },
+  {
+    q: "\"좋은 구조\"를 판별하는 실용적인 기준은?",
+    o: [
+      "폴더 깊이가 얕은가",
+      "기능 하나를 통째로 삭제하기 쉬운가. 관련 파일이 한곳에 모여 있으면 잘 나뉜 것이고, 여기저기 흩어져 있으면 잘못 나뉜 것이다",
+      "파일 개수가 적은가",
+      "유명한 방법론을 따랐는가"
+    ],
+    a: 1,
+    e: "삭제 가능성은 <b>응집도의 지표</b>입니다. \"이 폴더만 지우면 끝\"이라면 관련 코드가 한곳에 모여 있다는 뜻이고, 그 상태에서는 수정·이해도 쉽습니다. 반대로 흩어져 있으면 지울 때 무엇이 깨질지 알 수 없습니다."
+  },
+  {
+    q: "기존 프로젝트에 합류했는데 폴더 구조가 자신의 선호와 다릅니다. 올바른 행동은?",
+    o: [
+      "자신이 맡은 부분만 다른 방식으로 작성한다",
+      "그 프로젝트의 규칙을 따른다. 일관성이 개인의 선호보다 중요하며, 혼재된 규칙이 가장 나쁘다",
+      "즉시 전체 구조를 변경하는 PR을 올린다",
+      "구조를 무시하고 루트에 파일을 만든다"
+    ],
+    a: 1,
+    e: "<b>혼재된 규칙이 최악</b>입니다. 두 가지 방식이 섞이면 어느 쪽도 신뢰할 수 없어 매번 확인해야 합니다. 개선이 필요하다고 판단되면 <b>팀과 합의</b>한 뒤 일괄 적용하는 것이 옳습니다."
+  }
+]);
+</script>

@@ -1,0 +1,314 @@
+<!--desc: 프론트엔드 개발자가 실제로 무슨 일을 하는지, 백엔드와 무엇이 다른지, HTML·CSS·JavaScript가 각각 어떤 역할을 맡는지 비전공자 눈높이로 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>"프론트엔드"라는 말이 정확히 무엇을 가리키는지</li>
+  <li>프론트엔드와 백엔드가 나뉘는 진짜 기준</li>
+  <li>HTML·CSS·JavaScript 세 언어가 각각 맡는 역할</li>
+  <li>이 책 84개 챕터가 어떤 순서로 쌓이는지</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 12분 · 사전 지식 필요 없음</p>
+
+<h2 id="what">프론트엔드란 무엇인가</h2>
+
+<p><b>프론트엔드(front-end)</b>는 "앞단"이라는 뜻입니다. 여기서 앞이란 <b>사용자 쪽</b>을 말합니다.
+여러분이 지금 이 글을 보고 있는 화면, 방금 누른 버튼, 스크롤할 때 부드럽게 따라오는 목차 —
+사용자가 직접 보고 만지는 모든 것이 프론트엔드입니다.</p>
+
+<p>반대말은 <b>백엔드(back-end)</b>, 즉 "뒷단"입니다. 회원 정보를 저장하는 데이터베이스,
+결제를 처리하는 로직, 주문 내역을 계산하는 코드처럼 <b>사용자에게 보이지 않는 곳에서 돌아가는 부분</b>입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🍽️</span> 식당으로 비유하면</p>
+<p><b>홀</b>이 프론트엔드입니다. 메뉴판의 디자인, 테이블 배치, 종업원이 주문을 받는 방식.
+손님이 경험하는 전부죠. <b>주방</b>이 백엔드입니다. 재료를 어디에 보관하는지, 어떤 순서로 조리하는지.
+손님은 볼 수 없지만 없으면 식당이 돌아가지 않습니다.</p>
+<p style="margin-bottom:0">홀 담당자는 요리를 못 해도 됩니다. 대신 <b>손님이 원하는 것을 정확히 주방에 전달하고,
+나온 음식을 보기 좋게 내놓는 일</b>을 잘해야 합니다. 프론트엔드 개발자가 하는 일이 정확히 그것입니다.</p>
+</div>
+
+<h3 id="where">둘을 가르는 진짜 기준: 코드가 어디서 실행되는가</h3>
+
+<p>"보이는 것 = 프론트엔드"는 이해를 돕는 설명이지 정확한 정의는 아닙니다.
+현업에서 쓰는 더 정확한 기준은 <b>코드가 어느 컴퓨터에서 실행되는가</b>입니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>프론트엔드</th><th>백엔드</th></tr></thead>
+<tbody>
+<tr><td><b>실행되는 곳</b></td><td>사용자의 기기(휴대폰·노트북)에 설치된 <span class="term" data-term="browser">브라우저</span></td><td>회사가 운영하는 <span class="term" data-term="server">서버</span> 컴퓨터</td></tr>
+<tr><td><b>주로 쓰는 언어</b></td><td>HTML, CSS, JavaScript(및 TypeScript)</td><td>제한 없음 — Java, Python, Go, Node.js, Ruby 등</td></tr>
+<tr><td><b>코드 공개 여부</b></td><td>사용자에게 <b>전부 전달된다</b>. 누구나 열어볼 수 있다</td><td>서버 안에만 있다. 외부에서 볼 수 없다</td></tr>
+<tr><td><b>대표적인 일</b></td><td>화면 구성, 상호작용, 입력 검증, 성능·접근성</td><td>데이터 저장, 인증, 결제, 비즈니스 규칙</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 지금 당장 기억할 한 가지</p>
+<p style="margin-bottom:0">프론트엔드 코드는 <b>사용자에게 통째로 전달됩니다.</b> 브라우저에서
+"페이지 소스 보기"를 누르면 남의 사이트 코드도 그대로 보입니다.
+그래서 <b>비밀번호, API 키, 결제 정보 같은 비밀은 절대 프론트엔드 코드에 넣으면 안 됩니다.</b>
+이 원칙은 78장 보안에서 다시 자세히 다룹니다.</p>
+</div>
+
+<h2 id="three">웹을 만드는 세 가지 언어</h2>
+
+<p>프론트엔드는 세 언어로 만들어집니다. 셋은 경쟁 관계가 아니라 <b>역할 분담</b>입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🏠</span> 집짓기 비유</p>
+<ul style="margin-bottom:0">
+  <li><b>HTML</b> = 뼈대와 구조. 여기가 거실, 저기가 방, 이건 문.</li>
+  <li><b>CSS</b> = 마감과 인테리어. 벽 색, 창문 크기, 가구 배치.</li>
+  <li><b>JavaScript</b> = 전기와 설비. 스위치를 누르면 불이 켜지고, 초인종을 누르면 소리가 난다.</li>
+</ul>
+</div>
+
+<h3 id="html">HTML — 구조와 의미</h3>
+<p><b>HTML</b>은 HyperText Markup Language의 약자입니다. 이름 그대로 <b>마크업(markup) 언어</b>,
+즉 "이 부분은 제목이다", "이건 문단이다", "이건 목록이다" 하고 <b>글에 표시를 달아주는</b> 언어입니다.
+계산을 하거나 조건에 따라 다르게 동작하지 않기 때문에 엄밀히는 <b>프로그래밍 언어가 아닙니다.</b></p>
+
+<div class="codeblock">
+<span class="cb-label">HTML</span>
+<pre><code data-lang="html">&lt;h1&gt;오늘의 할 일&lt;/h1&gt;
+&lt;p&gt;장을 보고 저녁을 준비합니다.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;우유&lt;/li&gt;
+  &lt;li&gt;달걀&lt;/li&gt;
+&lt;/ul&gt;</code></pre>
+</div>
+
+<p><code>&lt;h1&gt;</code>은 "heading 1", 가장 큰 제목입니다. <code>&lt;p&gt;</code>는 paragraph(문단),
+<code>&lt;ul&gt;</code>은 unordered list(순서 없는 목록), <code>&lt;li&gt;</code>는 list item(목록 항목)입니다.
+이렇게 <b>꺾쇠 괄호로 감싼 표시</b>를 <span class="term" data-term="tag">태그</span>라고 부릅니다.</p>
+
+<h3 id="css">CSS — 보이는 모습</h3>
+<p><b>CSS</b>는 Cascading Style Sheets의 약자입니다. HTML이 만든 구조에 <b>색·크기·간격·배치</b>를 입힙니다.
+1996년 <span class="term" data-term="w3c">W3C</span> 권고안으로 처음 공식화되었고, 지금까지 계속 확장되고 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">CSS</span>
+<pre><code data-lang="css">h1 {
+  color: #1f5f4f;   /* 글자색 */
+  font-size: 28px;  /* 글자 크기 */
+}</code></pre>
+</div>
+
+<h3 id="js">JavaScript — 동작</h3>
+<p><b>JavaScript</b>는 브라우저 안에서 돌아가는 <b>프로그래밍 언어</b>입니다.
+버튼을 누르면 창이 열리고, 입력값이 틀리면 경고를 띄우고, 서버에서 새 데이터를 받아오는 —
+<b>변화하는 모든 것</b>을 담당합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">JavaScript</span>
+<pre><code data-lang="js">const button = document.querySelector("button");
+button.addEventListener("click", () =&gt; {
+  alert("버튼을 눌렀습니다!");
+});</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> 자주 하는 오해</p>
+<span class="mythline"><b class="no">오해</b> — JavaScript는 Java의 간단한 버전이다.</span>
+<span class="mythline"><b class="yes">사실</b> — <b>완전히 다른 언어입니다.</b> 1995년 넷스케이프의 브렌던 아이크(Brendan Eich)가
+만들었을 때, 당시 인기 있던 Java의 유명세에 편승하려고 마케팅 차원에서 붙인 이름일 뿐입니다.
+문법도, 쓰임새도, 만든 회사도 다릅니다. "인도"와 "인도네시아"만큼 무관하다고 생각하면 됩니다.</span>
+</div>
+
+<h2 id="together">셋이 함께 동작하는 모습</h2>
+
+<p>말로 백 번 듣는 것보다 한 번 돌려보는 게 낫습니다. 아래는 세 언어를 한 파일에 담은 예제입니다.
+<b>코드를 직접 고쳐 보세요.</b> 오른쪽 결과가 바로 바뀝니다. 망가뜨려도 <b>되돌리기</b> 버튼이 있습니다.</p>
+
+<div class="runner" data-lang="html" data-title="세 언어가 함께 일하는 모습" data-note="색상 코드 #1f5f4f 를 red 로 바꿔 보세요. 인사말 목록에 여러분의 문장을 추가해도 됩니다.">
+<textarea class="rn-src">
+<!-- 1. HTML: 구조를 만든다 -->
+<h1 id="title">안녕하세요</h1>
+<button id="btn">인사말 바꾸기</button>
+
+<!-- 2. CSS: 모습을 입힌다 -->
+<style>
+  #title { color: #1f5f4f; font-size: 26px; }
+  button {
+    padding: 8px 16px;
+    font-size: 15px;
+    border: 1px solid #1f5f4f;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+  }
+</style>
+
+<!-- 3. JavaScript: 동작을 붙인다 -->
+<script>
+  const greetings = ["안녕하세요", "반갑습니다", "환영합니다", "또 오셨네요"];
+  let index = 0;
+
+  document.getElementById("btn").addEventListener("click", function () {
+    index = index + 1;
+    if (index >= greetings.length) {
+      index = 0;
+    }
+    document.getElementById("title").textContent = greetings[index];
+  });
+</script>
+</textarea>
+</div>
+
+<p>지금 이 코드가 한 줄도 이해되지 않아도 <b>전혀 문제없습니다.</b>
+지금 필요한 건 "구조를 만들고(HTML), 꾸미고(CSS), 움직이게 한다(JavaScript)"는 그림 하나뿐입니다.
+문법은 6장부터 하나씩 뜯어봅니다.</p>
+
+<h2 id="job">프론트엔드 개발자가 실제로 하는 일</h2>
+
+<p>"화면 예쁘게 만드는 사람"은 절반만 맞는 설명입니다. 실무에서 하는 일은 이렇습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>일</th><th>구체적으로</th><th>이 책에서</th></tr></thead>
+<tbody>
+<tr><td><b>화면 구현</b></td><td>디자이너가 준 시안을 실제로 동작하는 화면으로 만든다</td><td>2·3부</td></tr>
+<tr><td><b>상태 관리</b></td><td>"장바구니에 담긴 상품", "로그인 여부" 같은 <b>변하는 정보</b>를 화면과 어긋나지 않게 관리한다</td><td>8부</td></tr>
+<tr><td><b>서버 연동</b></td><td>백엔드가 만든 <span class="term" data-term="api">API</span>를 호출해 데이터를 받아 화면에 뿌린다. 로딩 중·실패 상황까지 처리한다</td><td>5·8부</td></tr>
+<tr><td><b>성능</b></td><td>페이지가 늦게 뜨면 사용자는 떠납니다. 무엇이 느린지 측정하고 고친다</td><td>10부</td></tr>
+<tr><td><b>접근성</b></td><td>눈이 보이지 않는 사용자, 마우스를 못 쓰는 사용자도 쓸 수 있게 만든다</td><td>11장·77장</td></tr>
+<tr><td><b>협업</b></td><td>Git으로 코드를 관리하고, 코드 리뷰를 하고, 기획·디자인·백엔드와 조율한다</td><td>6부·82장</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트</p>
+<p>신입 때 가장 많이 오해하는 부분: <b>코딩 실력보다 "왜 이렇게 만드는가"를 묻는 능력이 더 중요합니다.</b>
+"이 버튼을 눌렀을 때 데이터가 아직 안 왔으면 어떻게 보여줄까요?", "이 목록이 1만 개면요?" —
+이런 질문을 먼저 던지는 사람이 실무에서 훨씬 빨리 성장합니다.</p>
+<p style="margin-bottom:0">그리고 실제 업무 시간의 상당 부분은 <b>새 코드를 쓰는 게 아니라 남이 쓴 코드를 읽는 데</b> 씁니다.
+그래서 이 책은 문법뿐 아니라 "이 코드가 왜 이렇게 생겼는가"를 계속 설명합니다.</p>
+</div>
+
+<h2 id="browsers">브라우저는 하나가 아니다</h2>
+
+<p>우리가 만든 코드를 실제로 해석해서 화면에 그리는 프로그램이 <b>브라우저</b>입니다.
+브라우저의 핵심 부품을 <b>렌더링 엔진</b>이라고 부르는데, 2026년 현재 실질적으로 세 종류입니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>렌더링 엔진</th><th>쓰는 브라우저</th></tr></thead>
+<tbody>
+<tr><td><b>Blink</b></td><td>Chrome, Edge, Opera, 삼성 인터넷, 웨일 등 대다수</td></tr>
+<tr><td><b>WebKit</b></td><td>Safari (그리고 iOS에서는 오랫동안 모든 브라우저가 이 엔진을 써야 했습니다)</td></tr>
+<tr><td><b>Gecko</b></td><td>Firefox</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>엔진이 다르면 같은 코드가 미묘하게 다르게 보일 수 있습니다.
+그래서 프론트엔드 개발자는 <b>"내 크롬에서는 잘 되는데요"가 통하지 않는 직업</b>입니다.
+새 기능을 쓸 때는 <b>어느 브라우저가 지원하는지 확인하는 습관</b>이 필요하고,
+이 책은 그런 기능이 나올 때마다 지원 범위를 함께 적습니다.</p>
+
+<h2 id="roadmap">이 책의 지도</h2>
+
+<p>84개 챕터는 아무 순서가 아닙니다. <b>앞 챕터를 알아야 뒤 챕터가 이해되는 순서</b>로 쌓여 있습니다.</p>
+
+<ol>
+<li><b>1부 — 웹의 원리(2~5장).</b> 코드를 쓰기 전에, 인터넷에서 페이지 하나가 뜨기까지 무슨 일이 벌어지는지 봅니다. 이걸 건너뛰면 나중에 나오는 문제 대부분이 "마법"처럼 보입니다.</li>
+<li><b>2~3부 — HTML과 CSS(6~22장).</b> 보이는 것을 직접 만듭니다. 여기까지만 해도 간단한 웹 페이지는 혼자 만들 수 있습니다.</li>
+<li><b>4~5부 — JavaScript(23~43장).</b> 이 책에서 가장 두꺼운 부분이고, 가장 중요합니다. React를 잘 쓰는 사람과 못 쓰는 사람의 차이는 결국 JavaScript 실력에서 갈립니다.</li>
+<li><b>6~7부 — 도구와 TypeScript(44~56장).</b> 혼자 파일 하나 만들던 단계에서 벗어나, 실무 개발자의 작업 환경을 갖춥니다.</li>
+<li><b>8~9부 — React와 Next.js(57~74장).</b> 현재 채용 공고에서 가장 많이 요구하는 기술입니다.</li>
+<li><b>10부 — 품질·성능·보안(75~79장).</b> 주니어와 시니어를 가르는 영역입니다.</li>
+<li><b>11부 — 실전과 커리어(80~84장).</b> 배운 것을 결과물과 이력으로 바꿉니다.</li>
+</ol>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⏳</span> 속도에 대한 현실적인 조언</p>
+<p style="margin-bottom:0">하루에 한 챕터씩이면 약 3개월입니다. 조급해하지 마세요.
+<b>진도보다 중요한 건 예제를 직접 고쳐 보는 것</b>입니다. 읽기만 한 챕터는 대부분 일주일 안에 잊힙니다.
+코드를 한 줄이라도 바꿔 본 챕터는 남습니다. 이 책의 모든 실행기는 그래서 있습니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>프론트엔드 = <b>사용자의 브라우저에서 실행되는</b> 코드. 백엔드 = 서버에서 실행되는 코드.</li>
+<li>프론트엔드 코드는 사용자에게 전부 전달되므로 <b>비밀을 담으면 안 된다.</b></li>
+<li>HTML은 <b>구조</b>, CSS는 <b>모습</b>, JavaScript는 <b>동작</b>을 담당한다.</li>
+<li>HTML은 마크업 언어라 프로그래밍 언어가 아니다. JavaScript는 Java와 무관하다.</li>
+<li>브라우저 렌더링 엔진은 Blink·WebKit·Gecko 세 갈래이고, 결과가 다를 수 있다.</li>
+<li>실무는 화면 구현뿐 아니라 상태 관리·서버 연동·성능·접근성·협업을 포함한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTML" target="_blank" rel="noopener">MDN — HTML</a> · <a href="https://developer.mozilla.org/ko/docs/Web/CSS" target="_blank" rel="noopener">CSS</a> · <a href="https://developer.mozilla.org/ko/docs/Web/JavaScript" target="_blank" rel="noopener">JavaScript</a></li>
+<li><a href="https://html.spec.whatwg.org/multipage/" target="_blank" rel="noopener">WHATWG HTML Living Standard</a> — HTML의 현행 공식 명세</li>
+<li><a href="https://www.w3.org/Style/CSS/" target="_blank" rel="noopener">W3C CSS 홈</a></li>
+<li><a href="https://caniuse.com/" target="_blank" rel="noopener">Can I use</a> — 브라우저별 기능 지원 현황</li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "프론트엔드와 백엔드를 가르는 가장 정확한 기준은 무엇인가요?",
+    o: [
+      "화면에 보이면 프론트엔드, 안 보이면 백엔드다",
+      "코드가 사용자의 기기(브라우저)에서 실행되는지, 서버에서 실행되는지",
+      "HTML로 만들면 프론트엔드, 다른 언어로 만들면 백엔드다",
+      "디자이너가 만들면 프론트엔드, 개발자가 만들면 백엔드다"
+    ],
+    a: 1,
+    e: "\"보이는가\"는 이해를 돕는 비유일 뿐입니다. 실제 기준은 <b>실행 위치</b>입니다. 프론트엔드 코드는 사용자의 브라우저로 내려가 그 기기에서 실행되고, 백엔드 코드는 회사가 운영하는 서버에서만 실행됩니다. 이 차이 때문에 프론트엔드 코드는 누구나 열어볼 수 있고, 그래서 비밀 정보를 담으면 안 됩니다."
+  },
+  {
+    q: "다음 중 <b>사실</b>인 것은?",
+    o: [
+      "JavaScript는 Java를 웹용으로 줄여 만든 언어다",
+      "HTML은 조건과 반복을 다루는 프로그래밍 언어다",
+      "JavaScript와 Java는 이름만 비슷할 뿐 관련 없는 언어다",
+      "CSS는 JavaScript 없이는 동작하지 않는다"
+    ],
+    a: 2,
+    e: "JavaScript는 1995년 넷스케이프에서 만들어졌고, 당시 인기 있던 Java의 이름값을 빌린 <b>마케팅 결정</b>이었을 뿐 기술적으로 무관합니다. 또한 HTML은 \"이건 제목\"처럼 의미를 표시하는 <b>마크업 언어</b>라 프로그래밍 언어가 아니며, CSS는 JavaScript 없이도 완전히 독립적으로 동작합니다."
+  },
+  {
+    q: "결제 API 키(비밀 문자열)를 JavaScript 파일에 적어 두고 배포했습니다. 어떤 문제가 있나요?",
+    o: [
+      "문제없다. 압축(번들링)하면 사람이 읽을 수 없다",
+      "문제없다. HTTPS를 쓰면 암호화되어 안전하다",
+      "프론트엔드 코드는 사용자에게 그대로 전달되므로 누구나 키를 꺼내 쓸 수 있다",
+      "브라우저가 자동으로 민감한 문자열을 가려 준다"
+    ],
+    a: 2,
+    e: "번들링·압축은 <b>보안 수단이 아니라 용량 최적화 수단</b>입니다. 읽기 어려워질 뿐 그대로 들어 있습니다. HTTPS는 <b>전송 구간</b>만 보호하므로, 도착한 뒤 브라우저 안에 있는 코드는 사용자가 전부 볼 수 있습니다. 비밀은 반드시 서버에 두고, 서버를 거쳐 호출해야 합니다. 78장에서 자세히 다룹니다."
+  },
+  {
+    q: "\"내 크롬에서는 잘 보이는데 아이폰 사파리에서 깨져요\"라는 상황이 생기는 근본 원인은?",
+    o: [
+      "아이폰이 구형 기기라서",
+      "브라우저마다 렌더링 엔진이 달라 같은 코드의 처리 결과가 다를 수 있어서",
+      "사파리가 HTML을 지원하지 않아서",
+      "코드에 오타가 있을 때만 생기는 현상이라서"
+    ],
+    a: 1,
+    e: "Chrome·Edge는 Blink, Safari는 WebKit, Firefox는 Gecko라는 서로 다른 렌더링 엔진을 씁니다. 명세를 따르더라도 신기능 지원 시점과 세부 동작이 달라질 수 있습니다. 그래서 새 CSS·JavaScript 기능을 쓸 때는 Can I use 같은 자료로 지원 범위를 확인하는 습관이 필요합니다."
+  },
+  {
+    q: "이 책이 React를 배우기 전에 JavaScript를 두 개 부(4·5부)에 걸쳐 깊게 다루는 이유로 가장 적절한 것은?",
+    o: [
+      "React가 JavaScript로 만들어져 있어, JavaScript 이해도가 곧 React 실력의 상한이 되기 때문",
+      "React는 실무에서 거의 쓰이지 않기 때문",
+      "JavaScript를 모르면 HTML도 쓸 수 없기 때문",
+      "React 공식 문서가 한국어를 지원하지 않기 때문"
+    ],
+    a: 0,
+    e: "React는 JavaScript 라이브러리입니다. 클로저·this·비동기·배열 고차 함수 같은 개념을 모르면 React 코드가 왜 그렇게 동작하는지 설명할 수 없고, 문제가 생겼을 때 검색으로도 해결되지 않습니다. HTML은 JavaScript와 독립적으로 배울 수 있으므로 세 번째 보기는 틀렸습니다."
+  }
+]);
+</script>

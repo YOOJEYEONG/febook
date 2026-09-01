@@ -1,0 +1,347 @@
+<!--desc: static·relative·absolute·fixed·sticky의 차이, 기준이 되는 조상을 찾는 규칙, z-index가 안 먹는 진짜 이유인 쌓임 맥락을 설명합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><code>position</code> 다섯 값의 정확한 동작</li>
+  <li><code>absolute</code>가 <b>무엇을 기준으로</b> 배치되는지</li>
+  <li><code>sticky</code>가 동작하지 않는 세 가지 이유</li>
+  <li><b><code>z-index: 9999</code>를 줬는데도 안 올라오는</b> 문제의 진짜 원인</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 모달·드롭다운·툴팁을 만들려면 반드시 필요합니다</p>
+
+<h2 id="values">position 다섯 가지</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>값</th><th>기준</th><th>원래 자리</th><th>주 용도</th></tr></thead>
+<tbody>
+<tr><td><code>static</code> (기본)</td><td>—</td><td>차지함</td><td>일반 흐름. <code>top</code> 등이 무시됨</td></tr>
+<tr><td><code>relative</code></td><td><b>자기 원래 자리</b></td><td><b>차지함</b></td><td>살짝 밀기 + <b>absolute의 기준점 제공</b></td></tr>
+<tr><td><code>absolute</code></td><td><b>가장 가까운 위치 지정 조상</b></td><td>차지하지 않음</td><td>배지, 툴팁, 드롭다운</td></tr>
+<tr><td><code>fixed</code></td><td><b>뷰포트</b>(화면)</td><td>차지하지 않음</td><td>고정 헤더, 플로팅 버튼, 모달</td></tr>
+<tr><td><code>sticky</code></td><td>스크롤 조상 + 자기 자리</td><td><b>차지함</b></td><td>스크롤 시 붙는 헤더, 표 머리글</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📌</span> relative의 진짜 용도</p>
+<p style="margin-bottom:0"><code>relative</code>를 <b>요소를 움직이려고</b> 쓰는 경우는 드뭅니다.
+실무에서 <code>position: relative</code>의 90%는 <b>자식 <code>absolute</code>의 기준점을 만들기 위해</b> 붙입니다.
+값을 하나도 주지 않은 <code>position: relative;</code>만으로도 그 역할은 충분합니다.</p>
+</div>
+
+<h2 id="absolute">absolute의 기준 찾기</h2>
+
+<p><code>absolute</code> 요소는 <b>조상을 거슬러 올라가며 <code>position</code>이 <code>static</code>이 아닌
+첫 번째 요소</b>를 찾아 그것을 기준으로 배치됩니다.
+끝까지 없으면 문서 전체(초기 컨테이닝 블록)가 기준이 됩니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">가장 흔한 패턴 — 배지 붙이기</span>
+<pre><code data-lang="css">.card {
+  position: relative;   /* ← 기준점 선언 */
+}
+.card .badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;           /* 카드의 오른쪽 위 모서리 */
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎯</span> 요소가 화면 구석으로 날아갔다면</p>
+<p style="margin-bottom:0">부모에 <code>position: relative</code>를 <b>안 붙였기 때문</b>입니다.
+기준이 될 조상이 없어 <b>문서 전체</b>가 기준이 되어 페이지 맨 위로 올라간 것입니다.
+<code>absolute</code>를 쓸 때는 <b>항상 "기준이 누구인가"를 먼저</b> 정하세요.</p>
+</div>
+
+<div class="runner" data-lang="html" data-title="absolute의 기준" data-note="아래 .no-anchor 카드에 position: relative 를 추가해서 배지가 제자리로 오는지 확인해 보세요.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; padding-top: 40px; }
+  .card {
+    width: 200px; height: 100px; margin-bottom: 20px;
+    background: #e6f0ec; border: 2px solid #1f5f4f;
+    border-radius: 8px; padding: 12px;
+  }
+  .anchored { position: relative; }   /* 기준점 있음 */
+  .no-anchor { }                       /* 기준점 없음 */
+
+  .badge {
+    position: absolute; top: 8px; right: 8px;
+    background: #c0392b; color: white;
+    padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  }
+</style>
+
+<div class="card anchored">
+  ✅ 부모에 position: relative 있음
+  <span class="badge">NEW</span>
+</div>
+
+<div class="card no-anchor">
+  ❌ 기준점 없음 → 배지가 페이지 오른쪽 위로 날아감
+  <span class="badge">NEW</span>
+</div>
+</textarea>
+</div>
+
+<h3 id="inset">네 방향을 모두 지정하면</h3>
+<div class="codeblock">
+<pre><code data-lang="css">.overlay {
+  position: absolute;
+  inset: 0;          /* top:0; right:0; bottom:0; left:0 의 축약 */
+}
+/* 크기를 지정하지 않아도 부모를 꽉 채웁니다 */</code></pre>
+</div>
+<p><code>inset</code>은 축약 속성으로 Chrome 87+, Safari 14.1+, Firefox 66+에서 지원됩니다.
+모달 배경막, 이미지 위 그라데이션 등에 자주 씁니다.</p>
+
+<h2 id="fixed">fixed의 함정</h2>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">💥</span> "fixed인데 스크롤을 따라 움직여요"</p>
+<span class="mythline"><code>fixed</code>는 <b>뷰포트 기준</b>이라고 배웁니다. 그런데 조상 중에
+<b><code>transform</code>, <code>filter</code>, <code>perspective</code>, <code>backdrop-filter</code>,
+<code>will-change</code>, <code>contain</code></b> 중 하나라도 적용된 요소가 있으면,
+<b>그 요소가 새로운 기준</b>이 됩니다. 뷰포트가 아니라요.</span>
+<span class="mythline">그래서 <b>애니메이션을 위해 부모에 <code>transform</code>을 넣었더니
+자식 모달이 갑자기 스크롤을 따라 움직이는</b> 상황이 생깁니다.
+원인을 모르면 며칠도 헤맬 수 있는 문제입니다.</span>
+<span class="mythline"><b>해결</b> — 모달·드롭다운처럼 화면 최상단에 떠야 하는 요소는
+<code>&lt;body&gt;</code> 바로 아래로 옮기거나(React의 Portal), 아예
+<b><code>&lt;dialog&gt;</code> 요소</b>를 쓰는 것이 안전합니다.</span>
+</div>
+
+<h2 id="sticky">sticky</h2>
+
+<p><code>sticky</code>는 <b>평소에는 <code>relative</code>처럼 흐르다가, 지정한 위치에 닿으면
+<code>fixed</code>처럼 붙는</b> 하이브리드입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">.sticky-header {
+  position: sticky;
+  top: 0;             /* ← 임계값. 반드시 필요합니다 */
+  background: white;  /* ← 배경이 없으면 아래 내용이 비쳐 보입니다 */
+  z-index: 10;
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔍</span> sticky가 동작하지 않는 세 가지 이유</p>
+<ol style="margin-bottom:0">
+<li><b><code>top</code>·<code>bottom</code>·<code>left</code>·<code>right</code> 중 하나도 지정하지 않았다.</b>
+임계값이 없으면 붙을 지점을 알 수 없어 아무 일도 일어나지 않습니다. 가장 흔한 원인입니다.</li>
+<li><b>조상 중에 <code>overflow</code>가 <code>hidden</code>·<code>auto</code>·<code>scroll</code>인 요소가 있다.</b>
+그 요소가 새로운 스크롤 기준이 되어 예상과 다르게 동작하거나 아예 붙지 않습니다.</li>
+<li><b>부모의 높이가 자식과 같다.</b> sticky는 <b>부모 상자 안에서만</b> 붙어 있을 수 있습니다.
+움직일 여유 공간이 없으면 붙을 일도 없습니다.</li>
+</ol>
+</div>
+
+<div class="runner" data-lang="html" data-title="sticky 헤더" data-note="스크롤 영역 안에서 굴려 보세요. 각 섹션 제목이 위에 붙었다가 다음 제목에 밀려납니다.">
+<textarea class="rn-src">
+<style>
+  body { margin: 0; font-size: 13px; }
+  .scroller { height: 260px; overflow-y: auto; border: 2px solid #1f5f4f; border-radius: 8px; }
+  section { padding-bottom: 10px; }
+  h3 {
+    position: sticky;
+    top: 0;                       /* 임계값 — 필수 */
+    margin: 0;
+    background: #1f5f4f;          /* 배경 — 없으면 내용이 비쳐 보인다 */
+    color: white;
+    padding: 8px 12px;
+    font-size: 13px;
+    z-index: 1;
+  }
+  p { margin: 8px 12px; line-height: 1.9; }
+</style>
+
+<div class="scroller">
+  <section>
+    <h3>1장. 시작하기</h3>
+    <p>내용 A</p><p>내용 B</p><p>내용 C</p><p>내용 D</p>
+  </section>
+  <section>
+    <h3>2장. 배치</h3>
+    <p>내용 E</p><p>내용 F</p><p>내용 G</p><p>내용 H</p>
+  </section>
+  <section>
+    <h3>3장. 정리</h3>
+    <p>내용 I</p><p>내용 J</p><p>내용 K</p><p>내용 L</p>
+  </section>
+</div>
+</textarea>
+</div>
+
+<h2 id="zindex">z-index와 쌓임 맥락</h2>
+
+<h3 id="zbasic">기본 규칙</h3>
+<ul>
+<li><code>z-index</code>는 <b><code>position</code>이 <code>static</code>이 아닌 요소</b>에만 적용됩니다.
+(예외: flex·grid 아이템에는 <code>position</code> 없이도 적용됩니다.)</li>
+<li>값이 클수록 앞에 옵니다. 같으면 <b>나중에 나온 요소</b>가 앞입니다.</li>
+</ul>
+
+<h3 id="context">쌓임 맥락 — z-index가 안 먹는 진짜 이유</h3>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🪆</span> 러시아 인형(마트료시카)으로 이해하기</p>
+<p><b>쌓임 맥락(stacking context)</b>은 <b>독립된 층 세계</b>입니다.
+한 번 그 안에 들어간 요소는 <b>아무리 z-index를 높여도 그 세계 밖으로 나갈 수 없습니다.</b></p>
+<div class="codeblock" style="margin:0">
+<pre><code data-lang="css">.parent-a { position: relative; z-index: 1; }
+.parent-a .child { position: absolute; z-index: 9999; }  /* 소용없음 */
+
+.parent-b { position: relative; z-index: 2; }</code></pre>
+</div>
+<p style="margin-bottom:0"><b><code>.parent-b</code>(2)가 <code>.parent-a</code>(1)보다 앞</b>이므로,
+<code>.parent-a</code> 안의 자식은 z-index가 9999든 100만이든 <b>.parent-b 뒤에 있습니다.</b>
+인형 안에 들어간 인형이 아무리 커도 바깥 인형보다 앞으로 나올 수 없는 것과 같습니다.</p>
+</div>
+
+<h3 id="creators">쌓임 맥락을 만드는 것들</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>조건</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td>문서의 루트(<code>&lt;html&gt;</code>)</td><td>—</td></tr>
+<tr><td><code>position</code>이 <code>relative</code>·<code>absolute</code>이고 <code>z-index</code>가 <code>auto</code>가 아님</td><td>가장 흔한 경우</td></tr>
+<tr><td><code>position: fixed</code> 또는 <code>sticky</code></td><td><b><code>z-index</code>가 없어도</b> 만들어집니다</td></tr>
+<tr><td><code>opacity</code>가 1보다 작음</td><td><b>이것 때문에 자주 당합니다</b></td></tr>
+<tr><td><code>transform</code>, <code>filter</code>, <code>perspective</code>, <code>backdrop-filter</code>, <code>mix-blend-mode</code></td><td>애니메이션 최적화에 흔히 쓰는 속성들</td></tr>
+<tr><td><code>isolation: isolate</code></td><td><b>의도적으로</b> 맥락을 만들 때 쓰는 전용 속성</td></tr>
+<tr><td><code>will-change</code>, <code>contain: layout</code>·<code>paint</code></td><td>—</td></tr>
+<tr><td>flex·grid 아이템 중 <code>z-index</code>가 <code>auto</code>가 아닌 것</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — z-index 문제 진단 순서</p>
+<ol>
+<li>대상 요소에 <code>position</code>이 있는가? (없으면 z-index는 무시됩니다)</li>
+<li>개발자 도구에서 <b>조상을 하나씩 거슬러 올라가며</b> <code>opacity</code>·<code>transform</code>·<code>filter</code>·<code>z-index</code>가 걸린 요소를 찾습니다. 그것이 범인입니다.</li>
+<li>해결책은 <b>z-index를 더 올리는 것이 아니라</b>, 그 요소를 <b>다른 부모 밑으로 옮기는 것</b>입니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>팀 규칙으로 z-index 단계를 미리 정해 두면</b> 이 싸움의 절반이 사라집니다.
+예: 드롭다운 10, 고정 헤더 100, 모달 1000, 토스트 2000.
+<b><code>z-index: 99999</code>가 등장했다면 그것은 설계가 무너졌다는 신호입니다.</b></p>
+</div>
+
+<div class="runner" data-lang="html" data-title="쌓임 맥락 함정 재현" data-note="첫 번째 카드의 z-index: 1 을 지워 보세요. 그러면 9999가 비로소 효과를 냅니다.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 12px; }
+  .wrap { position: relative; height: 200px; }
+  .card {
+    position: absolute; width: 150px; height: 100px;
+    padding: 10px; border-radius: 8px; color: white; font-weight: 700;
+  }
+  /* 여기가 핵심: 부모 A가 z-index 1로 쌓임 맥락을 만든다 */
+  .a { left: 0;  top: 0;  background: #2980b9; z-index: 1; }
+  .b { left: 90px; top: 40px; background: #c0392b; z-index: 2; }
+
+  /* A 안의 자식 — z-index를 아무리 올려도 B를 못 이긴다 */
+  .a .child {
+    position: absolute; left: 40px; top: 60px;
+    width: 130px; padding: 8px; border-radius: 6px;
+    background: #f1c40f; color: #333; z-index: 9999;
+  }
+</style>
+
+<div class="wrap">
+  <div class="card a">
+    부모 A (z-index: 1)
+    <div class="child">자식 (z-index: 9999) — 그래도 뒤에 있음</div>
+  </div>
+  <div class="card b">부모 B (z-index: 2)</div>
+</div>
+</textarea>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><code>relative</code>는 <b>자기 자리</b>, <code>absolute</code>는 <b>가장 가까운 위치 지정 조상</b>, <code>fixed</code>는 <b>뷰포트</b> 기준.</li>
+<li><code>relative</code>의 주 용도는 이동이 아니라 <b>기준점 제공</b>이다.</li>
+<li>조상에 <code>transform</code>·<code>filter</code> 등이 있으면 <b><code>fixed</code>의 기준이 뷰포트가 아니게 된다.</b></li>
+<li><code>sticky</code>는 <b>임계값(<code>top</code> 등)이 필수</b>이고, 조상의 <code>overflow</code>와 부모 높이에 영향을 받는다.</li>
+<li><code>z-index</code>는 <b>같은 쌓임 맥락 안에서만</b> 비교된다.</li>
+<li><code>opacity: 0.99</code>나 <code>transform</code>만으로도 쌓임 맥락이 생긴다.</li>
+<li>해결은 z-index를 올리는 게 아니라 <b>DOM 위치를 바꾸는 것</b>이다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/position" target="_blank" rel="noopener">MDN — position</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_positioned_layout/Stacking_context" target="_blank" rel="noopener">MDN — 쌓임 맥락</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/z-index" target="_blank" rel="noopener">MDN — z-index</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Containing_block" target="_blank" rel="noopener">MDN — 컨테이닝 블록</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "카드 오른쪽 위에 배지를 붙이려고 배지에 <code>position:absolute; top:8px; right:8px</code>을 줬더니 페이지 오른쪽 맨 위로 날아갔습니다. 원인은?",
+    o: [
+      "top과 right를 동시에 쓸 수 없어서",
+      "부모 카드에 <code>position: relative</code>가 없어 기준이 될 조상을 찾지 못하고 문서 전체를 기준으로 삼았기 때문",
+      "z-index가 없어서",
+      "absolute는 배지에 쓸 수 없어서"
+    ],
+    a: 1,
+    e: "<code>absolute</code>는 조상을 거슬러 올라가며 <code>position</code>이 <code>static</code>이 아닌 첫 요소를 기준으로 삼습니다. 하나도 없으면 문서 전체가 기준이 됩니다. 부모 카드에 <code>position: relative</code>만 추가하면 해결됩니다."
+  },
+  {
+    q: "<code>position: sticky; </code>를 줬는데 전혀 붙지 않습니다. 가장 흔한 원인은?",
+    o: [
+      "z-index가 없어서",
+      "<code>top</code> 등 임계값을 지정하지 않아서",
+      "부모가 flex 컨테이너라서",
+      "sticky는 Chrome에서만 동작해서"
+    ],
+    a: 1,
+    e: "<code>sticky</code>는 <b>어느 지점에서 붙을지</b>를 알아야 동작합니다. <code>top</code>·<code>bottom</code>·<code>left</code>·<code>right</code> 중 하나가 반드시 필요합니다. 그다음으로 흔한 원인은 조상의 <code>overflow: hidden/auto</code>와 부모의 여유 높이 부족입니다."
+  },
+  {
+    q: "자식 요소에 <code>z-index: 9999</code>를 줬는데도 다른 요소 뒤에 있습니다. 올바른 진단은?",
+    o: [
+      "z-index를 99999로 더 올려야 한다",
+      "부모가 쌓임 맥락을 만들었기 때문에 자식은 그 맥락 안에서만 경쟁한다. 부모의 z-index나 DOM 위치를 조정해야 한다",
+      "z-index는 최대 100까지만 유효하다",
+      "position: absolute를 fixed로 바꾸면 해결된다"
+    ],
+    a: 1,
+    e: "쌓임 맥락은 <b>독립된 층 세계</b>입니다. 부모가 만든 맥락 안에 들어간 자식은 아무리 큰 z-index를 줘도 부모의 순위를 넘어설 수 없습니다. 값을 올리는 것은 해결이 아니며, 조상 중 맥락을 만든 요소를 찾아 DOM 구조나 부모의 z-index를 조정해야 합니다."
+  },
+  {
+    q: "다음 중 <b>z-index 없이도</b> 쌓임 맥락을 만드는 것은?",
+    o: [
+      "<code>position: relative</code>만 준 경우",
+      "<code>opacity: 0.99</code>",
+      "<code>display: block</code>",
+      "<code>margin: 0 auto</code>"
+    ],
+    a: 1,
+    e: "<code>opacity</code>가 1 미만이면 <b>그 자체로</b> 쌓임 맥락이 생깁니다. <code>transform</code>, <code>filter</code>, <code>position: fixed/sticky</code>, <code>will-change</code> 등도 마찬가지입니다. <code>position: relative</code>는 <code>z-index</code>가 <code>auto</code>인 동안에는 맥락을 만들지 않습니다."
+  },
+  {
+    q: "부모에 애니메이션용 <code>transform</code>을 추가했더니 자식 모달(<code>position: fixed</code>)이 화면에 고정되지 않고 스크롤을 따라 움직입니다. 이유는?",
+    o: [
+      "transform이 fixed를 지원하지 않아서",
+      "transform이 적용된 조상이 fixed의 기준(컨테이닝 블록)이 되어 뷰포트 기준이 사라졌기 때문",
+      "transform이 z-index를 초기화해서",
+      "브라우저 버그이며 해결 방법이 없다"
+    ],
+    a: 1,
+    e: "<code>transform</code>·<code>filter</code>·<code>perspective</code>·<code>backdrop-filter</code>·<code>will-change</code>·<code>contain</code>이 적용된 요소는 <b>자손 fixed 요소의 컨테이닝 블록</b>이 됩니다. 그래서 뷰포트가 아니라 그 요소를 기준으로 배치됩니다. 모달은 <code>body</code> 바로 아래로 옮기거나(Portal) <code>&lt;dialog&gt;</code>를 쓰는 것이 안전합니다."
+  }
+]);
+</script>

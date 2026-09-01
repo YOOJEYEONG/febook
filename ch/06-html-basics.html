@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6장. HTML 기초 문법 — 프엔북</title>
+<meta name="description" content="HTML 문서의 기본 골격, 태그와 요소와 속성, 빈 요소, 중첩 규칙, 문자 엔티티까지 HTML의 문법 전체를 처음부터 설명합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="6장. HTML 기초 문법 — 프엔북">
+<meta property="og:description" content="HTML 문서의 기본 골격, 태그와 요소와 속성, 빈 요소, 중첩 규칙, 문자 엔티티까지 HTML의 문법 전체를 처음부터 설명합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="06-html-basics">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">2부 · HTML — 웹 페이지의 뼈대</p>
+    <h1>6장. HTML 기초 문법</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>HTML 문서의 기본 골격과 각 줄이 왜 필요한지</li>
+  <li><span class="term" data-term="tag">태그</span>·<span class="term" data-term="element">요소</span>·<span class="term" data-term="attribute">속성</span>의 정확한 구분</li>
+  <li>닫는 태그가 없는 요소들</li>
+  <li>중첩 규칙과 <span class="term" data-term="browser">브라우저</span>의 자동 교정</li>
+  <li><code>&amp;lt;</code> 같은 문자 엔티티가 필요한 이유</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 18분 · 여기서부터 직접 코드를 씁니다</p>
+
+<h2 id="skeleton">문서의 기본 골격</h2>
+
+<p>모든 HTML 문서는 이 뼈대에서 시작합니다. 지금은 외우지 말고 <b>각 줄이 왜 있는지</b>만 이해하세요.</p>
+
+<div class="codeblock">
+<span class="cb-label">index.html</span>
+<pre><code data-lang="html">&lt;!doctype html&gt;
+&lt;html lang="ko"&gt;
+  &lt;head&gt;
+    &lt;meta charset="utf-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+    &lt;title&gt;내 첫 페이지&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;안녕하세요&lt;/h1&gt;
+    &lt;p&gt;첫 번째 문단입니다.&lt;/p&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>줄</th><th>없으면 무슨 일이</th></tr></thead>
+<tbody>
+<tr><td><code>&lt;!doctype html&gt;</code></td><td>브라우저가 <b>호환 모드(quirks mode)</b>로 전환됩니다. 1990년대 낡은 규칙으로 화면을 그려서 <span class="term" data-term="css">CSS</span>가 예상과 다르게 동작합니다. <b>반드시 첫 줄에</b> 있어야 합니다</td></tr>
+<tr><td><code>lang="ko"</code></td><td><span <span class="term" data-term="class">class</span>="term" data-term="screen-reader">스크린 리더</span>가 <b>어느 언어로 읽을지</b> 모릅니다. 한글을 영어 발음으로 읽는 사고가 납니다. 검색엔진과 브라우저 번역 기능도 이 값을 봅니다</td></tr>
+<tr><td><code>&lt;meta charset="utf-8"&gt;</code></td><td>한글이 <b>깨집니다.</b> 문자를 어떤 방식으로 해석할지 알려주는 선언입니다. <code>&lt;head&gt;</code> 안에서 <b>가능한 한 앞쪽</b>에 둡니다</td></tr>
+<tr><td><code>viewport</code> meta</td><td>휴대폰에서 <b>PC 화면을 축소한 것처럼</b> 보입니다. 글자가 개미만 해집니다. 반응형의 출발점입니다(18장)</td></tr>
+<tr><td><code>&lt;title&gt;</code></td><td>브라우저 탭 제목, 북마크 이름, <b>검색 결과 제목</b>이 비어 버립니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="head-body">head와 body</h3>
+<ul>
+<li><b><code>&lt;head&gt;</code></b> — <b>화면에 보이지 않는</b> 정보. 제목, 문자 인코딩, CSS 연결, 검색용 설명 등.</li>
+<li><b><code>&lt;body&gt;</code></b> — <b>화면에 보이는</b> 모든 내용.</li>
+</ul>
+
+<div class="runner" data-lang="html" data-title="첫 HTML 문서" data-note="h1의 글자를 바꾸거나 p를 하나 더 추가해 보세요. 태그를 빼먹으면 어떻게 되는지도 실험해 보세요.">
+<textarea class="rn-src">
+<h1>안녕하세요</h1>
+<p>이것은 <strong>첫 번째</strong> 문단입니다.</p>
+<p>두 번째 문단. HTML은 <em>연습</em>이 전부입니다.</p>
+<ul>
+  <li>목록 항목 하나</li>
+  <li>목록 항목 둘</li>
+</ul>
+</textarea>
+</div>
+
+<h2 id="terms">태그, 요소, 속성</h2>
+
+<p>세 단어를 정확히 구분해서 쓰면 앞으로 문서를 읽기 훨씬 쉬워집니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">용어 구분</span>
+<pre><code data-lang="text">&lt;a href="https://example.com" target="_blank"&gt;예제 사이트&lt;/a&gt;
+│                                            │           │
+└─ 여는 태그 ────────────────────────────────┘  내용      └─ 닫는 태그
+
+   속성 이름 ─┘        └─ 속성 값
+
+&lt;a&gt; 부터 &lt;/a&gt; 까지 전체 = "a 요소(element)"</code></pre>
+</div>
+
+<ul>
+<li><b>태그</b> — <code>&lt;a&gt;</code>, <code>&lt;/a&gt;</code> 처럼 꺾쇠로 감싼 표시 자체.</li>
+<li><b>요소</b> — 여는 태그부터 닫는 태그까지, 내용을 포함한 <b>덩어리 전체</b>.</li>
+<li><b>속성</b> — 여는 태그 안에 적는 추가 설정. <code>이름="값"</code> 형태.</li>
+</ul>
+
+<h3 id="attr-rules">속성 작성 규칙</h3>
+<ul>
+<li>속성은 <b>여는 태그에만</b> 씁니다. 닫는 태그에는 쓰지 않습니다.</li>
+<li>값은 <b>따옴표로 감싸는 것을 권장</b>합니다. 문법상 생략 가능한 경우도 있지만, 값에 공백이 들어가면 즉시 깨집니다.</li>
+<li>태그 이름과 속성 이름은 <b>대소문자를 구분하지 않지만</b>, 관행적으로 <b>소문자</b>로 씁니다.</li>
+<li>값이 필요 없는 속성도 있습니다. <code>&lt;input required&gt;</code>처럼 <b>있으면 참, 없으면 거짓</b>인 <b>불리언 속성</b>입니다. <code>required="false"</code>라고 써도 <b>참</b>이 되니 주의하세요. 끄려면 속성 자체를 지워야 합니다.</li>
+</ul>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>required="false"</code>는 참입니다</p>
+<p style="margin-bottom:0">불리언 속성은 <b>존재 여부</b>만 봅니다. 값은 무시됩니다.
+<code>disabled="false"</code>, <code>checked="no"</code> 전부 <b>켜진 상태</b>가 됩니다.
+초보자가 가장 많이 빠지는 함정 중 하나입니다.</p>
+</div>
+
+<h2 id="void">닫는 태그가 없는 요소</h2>
+
+<p>내용을 담을 수 없는 요소는 닫는 태그가 없습니다. <b>빈 요소(void el<span class="term" data-term="em">em</span>ent)</b>라고 부릅니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">대표적인 빈 요소</span>
+<pre><code data-lang="html">&lt;br&gt;                              &lt;!-- 줄바꿈 --&gt;
+&lt;hr&gt;                              &lt;!-- 구분선 --&gt;
+&lt;img src="cat.jpg" alt="고양이"&gt;  &lt;!-- 이미지 --&gt;
+&lt;input type="text"&gt;               &lt;!-- 입력 칸 --&gt;
+&lt;meta charset="utf-8"&gt;            &lt;!-- 메타 정보 --&gt;
+&lt;link rel="stylesheet" href="style.css"&gt;  &lt;!-- 외부 파일 연결 --&gt;</code></pre>
+</div>
+
+<p><code>&lt;br /&gt;</code>처럼 끝에 슬래시를 붙인 코드도 자주 봅니다.
+HTML에서는 <b>있어도 없어도 똑같이 동작</b>합니다. XHTML이라는 옛 규격의 흔적이고,
+지금은 <span class="term" data-term="jsx">JSX</span>(<span class="term" data-term="react">React</span>)에서 필수라서 습관적으로 붙이는 사람이 많습니다.</p>
+
+<h2 id="nesting">중첩 규칙</h2>
+
+<p>요소 안에 요소를 넣을 수 있습니다. 단 <b>순서를 지켜 열고 닫아야</b> 합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">중첩</span>
+<pre><code data-lang="html">&lt;!-- 올바름: 나중에 연 것을 먼저 닫는다 --&gt;
+&lt;p&gt;이것은 &lt;strong&gt;중요한&lt;/strong&gt; 내용입니다.&lt;/p&gt;
+
+&lt;!-- 잘못됨: 순서가 엇갈림 --&gt;
+&lt;p&gt;이것은 &lt;strong&gt;중요한&lt;/p&gt;&lt;/strong&gt;</code></pre>
+</div>
+
+<p>부모·자식·형제라는 말도 여기서 나옵니다.
+위 예에서 <code>p</code>는 <code>strong</code>의 <b>부모</b>, <code>strong</code>은 <code>p</code>의 <b>자식</b>입니다.
+이 관계는 CSS <span class="term" data-term="selector">선택자</span>(12장)와 <span class="term" data-term="dom">DOM</span> 조작(38장)에서 계속 쓰입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🩹</span> 브라우저는 틀린 HTML을 고쳐서 읽는다</p>
+<p>HTML은 관대합니다. 태그를 잘못 닫아도 브라우저가 <b>알아서 고쳐서</b> DOM을 만듭니다.
+에러 화면을 띄우지 않습니다. 이게 장점이자 함정입니다.</p>
+<p style="margin-bottom:0"><b>화면이 멀쩡해 보여도 구조는 엉망일 수 있습니다.</b>
+그러면 CSS 선택자가 예상과 다르게 걸리고, <span class="term" data-term="javascript">JavaScript</span>가 엉뚱한 요소를 잡습니다.
+<span class="term" data-term="devtools">개발자 도구</span> <b>Elements 탭</b>에서 실제 DOM을 확인하는 습관이 필요합니다(5장).</p>
+</div>
+
+<p>또 아무 요소나 아무 데나 넣을 수는 없습니다. 대표적인 규칙 두 가지만 기억하세요.</p>
+<ul>
+<li><code>&lt;p&gt;</code> 안에 <code>&lt;div&gt;</code>를 넣을 수 없습니다. 넣으면 브라우저가 <code>&lt;p&gt;</code>를 강제로 닫아 버립니다.</li>
+<li><code>&lt;ul&gt;</code>·<code>&lt;ol&gt;</code>의 직계 자식은 <code>&lt;li&gt;</code>여야 합니다.</li>
+</ul>
+
+<h2 id="comments">주석</h2>
+
+<div class="codeblock">
+<span class="cb-label">HTML 주석</span>
+<pre><code data-lang="html">&lt;!-- 이 부분은 화면에 나오지 않습니다 --&gt;</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 주석은 숨기는 수단이 아닙니다</p>
+<p style="margin-bottom:0">주석은 <b>화면에만</b> 안 보일 뿐, <b>소스 보기를 하면 그대로 보입니다.</b>
+주석 안에 개발용 계정 정보나 아직 공개하면 안 되는 내용을 남기면 그대로 유출됩니다.
+실제로 자주 발생하는 정보 노출 사고입니다.</p>
+</div>
+
+<h2 id="whitespace">공백은 하나로 합쳐진다</h2>
+
+<p>HTML에서 <b>연속된 공백·줄바꿈·탭은 전부 공백 하나로</b> 취급됩니다.</p>
+
+<div class="runner" data-lang="html" data-title="공백 처리 실험" data-note="pre 요소만 입력한 그대로 보존됩니다. 그래서 코드를 보여줄 때 pre를 씁니다.">
+<textarea class="rn-src">
+<p>여기      공백을        많이      넣어도
+줄을
+바꿔도
+한 칸으로 합쳐집니다.</p>
+
+<p>줄을 바꾸고 싶으면 br 태그를 씁니다.<br>이렇게요.</p>
+
+<pre>pre 안에서는
+  공백과 줄바꿈이
+    그대로   유지됩니다.</pre>
+</textarea>
+</div>
+
+<h2 id="entities">문자 엔티티 — 특수문자 쓰기</h2>
+
+<p><code>&lt;</code>는 태그의 시작을 뜻하는 예약된 문자입니다.
+그래서 화면에 <code>&lt;</code>를 보여주고 싶으면 그대로 쓸 수 없고 <b>엔티티</b>를 씁니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>표시하고 싶은 문자</th><th>이렇게 쓴다</th><th>왜</th></tr></thead>
+<tbody>
+<tr><td><code>&lt;</code></td><td><code>&amp;lt;</code></td><td>태그 시작으로 오해되므로</td></tr>
+<tr><td><code>&gt;</code></td><td><code>&amp;gt;</code></td><td>태그 끝으로 오해되므로</td></tr>
+<tr><td><code>&amp;</code></td><td><code>&amp;amp;</code></td><td>엔티티 시작 문자이므로</td></tr>
+<tr><td><code>"</code></td><td><code>&amp;quot;</code></td><td>속성 값 안에서 필요할 때</td></tr>
+<tr><td>줄바꿈 안 되는 공백</td><td><code>&amp;nbsp;</code></td><td>이 공백에서는 줄이 안 넘어감</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트</p>
+<p style="margin-bottom:0">이 규칙은 단순한 표기법이 아니라 <b>보안의 핵심</b>입니다.
+사용자가 입력한 글을 화면에 그대로 붙이는데, 그 안에 <code>&lt;script&gt;</code>가 들어 있다면?
+브라우저는 <b>진짜 스크립트로 실행합니다.</b> 이것이 <b><span class="term" data-term="xss">XSS</span></b> 공격입니다.
+그래서 사용자 입력을 화면에 넣을 때는 반드시 <code>&lt;</code>·<code>&amp;</code>를 엔티티로 바꿔야(이스케이프) 합니다.
+78장에서 자세히 다룹니다. 다행히 React 같은 도구는 이 처리를 기본으로 해 줍니다.</p>
+</div>
+
+<h2 id="block-inline">블록과 인라인</h2>
+
+<p>요소는 화면에서 차지하는 방식이 크게 두 가지로 나뉩니다.
+정확히는 CSS의 <code>display</code> 기본값이지만(13장), 지금 감을 잡아 두면 좋습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>블록 (block)</th><th>인라인 (inline)</th></tr></thead>
+<tbody>
+<tr><td><b>줄</b></td><td>혼자 한 줄을 차지</td><td>글자처럼 옆으로 나열</td></tr>
+<tr><td><b>너비</b></td><td>기본적으로 가로 전체</td><td>내용만큼만</td></tr>
+<tr><td><b>크기 지정</b></td><td>가능</td><td>너비·높이 지정이 먹히지 않음</td></tr>
+<tr><td><b>예</b></td><td><code>div</code>, <code>p</code>, <code>h1</code>~<code>h6</code>, <code>ul</code>, <code>li</code>, <code>section</code></td><td><code>span</code>, <code>a</code>, <code>strong</code>, <code>em</code>, <code>img</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> 자주 하는 오해</p>
+<span class="mythline"><b class="no">오해</b> — HTML은 프로그래밍 언어이고, 잘못 쓰면 에러가 난다.</span>
+<span class="mythline"><b class="yes">사실</b> — HTML에는 <b>조건문도 반복문도 없어</b> 프로그래밍 언어가 아니며,
+문법이 틀려도 <b>에러를 띄우지 않습니다.</b> 브라우저는 어떻게든 화면을 그립니다.
+"에러가 안 났으니 맞게 썼다"는 판단이 통하지 않는다는 뜻입니다.
+그래서 <a href="https://validator.w3.org/nu/" target="_blank" rel="noopener">W3C 검사기</a> 같은 도구로
+따로 확인해야 합니다.</span>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>문서는 <code>&lt;!doctype html&gt;</code>로 시작한다. 없으면 옛 호환 모드로 동작한다.</li>
+<li><code>lang</code>, <code>charset</code>, <code>viewport</code>, <code>title</code>은 <b>매 문서에 꼭</b> 들어간다.</li>
+<li><b>태그</b>는 표시, <b>요소</b>는 덩어리 전체, <b>속성</b>은 여는 태그 안의 설정.</li>
+<li>불리언 속성은 <b>존재 여부</b>만 본다. <code>required="false"</code>도 참이다.</li>
+<li>빈 요소(<code>br</code>, <code>img</code>, <code>input</code>…)는 닫는 태그가 없다.</li>
+<li>브라우저는 틀린 HTML도 고쳐서 그린다. <b>화면이 멀쩡해도 구조는 틀릴 수 있다.</b></li>
+<li>연속 공백은 하나로 합쳐진다. 예외는 <code>&lt;pre&gt;</code>.</li>
+<li><code>&amp;lt;</code> 같은 엔티티는 표기법이자 <b>XSS 방어의 기본</b>이다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/Structuring_content/Basic_HTML_syntax" target="_blank" rel="noopener">MDN — HTML 기본 문법</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTML/Reference/Elements" target="_blank" rel="noopener">MDN — HTML 요소 전체 목록</a></li>
+<li><a href="https://html.spec.whatwg.org/multipage/syntax.html#void-elements" target="_blank" rel="noopener">WHATWG — 빈 요소 목록</a></li>
+<li><a href="https://validator.w3.org/nu/" target="_blank" rel="noopener">W3C 마크업 검사기</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>&lt;!doctype html&gt;</code>을 빠뜨리면 어떤 일이 생기나요?",
+    o: [
+      "페이지가 아예 열리지 않는다",
+      "브라우저가 호환 모드로 전환되어 옛 규칙으로 화면을 그리고, CSS가 예상과 다르게 동작한다",
+      "한글이 깨진다",
+      "아무 차이도 없다"
+    ],
+    a: 1,
+    e: "doctype은 \"이 문서를 표준 모드로 해석하라\"는 신호입니다. 없으면 <b>호환 모드(quirks mode)</b>가 켜져 박스 크기 계산 같은 기본 규칙이 1990년대 방식으로 바뀝니다. 한글 깨짐은 <code>&lt;meta charset&gt;</code>의 영역입니다."
+  },
+  {
+    q: "<code>&lt;input type=\"text\" required=\"false\"&gt;</code> 의 실제 동작은?",
+    o: [
+      "필수 입력이 해제된다",
+      "필수 입력이 그대로 적용된다. 불리언 속성은 값이 아니라 존재 여부만 보기 때문",
+      "문법 오류로 input이 렌더링되지 않는다",
+      "브라우저마다 다르다"
+    ],
+    a: 1,
+    e: "<code>required</code>, <code>disabled</code>, <code>checked</code> 같은 <b>불리언 속성</b>은 속성이 <b>있으면 참</b>입니다. 값은 무시되므로 <code>\"false\"</code>, <code>\"no\"</code>를 넣어도 켜진 상태입니다. 끄려면 속성 자체를 제거해야 합니다."
+  },
+  {
+    q: "화면에 <code>a &lt; b</code> 라는 글자를 그대로 보이게 하려면 HTML에 어떻게 써야 하나요?",
+    o: ["<code>a &lt; b</code>", "<code>a &amp;lt; b</code>", "<code>a \\&lt; b</code>", "<code>a [lt] b</code>"],
+    a: 1,
+    e: "<code>&lt;</code>는 태그의 시작을 뜻하는 예약 문자라 그대로 쓰면 브라우저가 태그로 해석하려 합니다. <b>문자 엔티티</b> <code>&amp;lt;</code>로 써야 화면에 <code>&lt;</code>가 표시됩니다. 이 이스케이프 처리는 XSS 방어의 기본이기도 합니다."
+  },
+  {
+    q: "HTML을 잘못 작성했는데도 화면이 정상으로 보입니다. 어떻게 확인해야 할까요?",
+    o: [
+      "화면이 정상이면 문제없으므로 확인할 필요 없다",
+      "브라우저가 자동 교정하므로 개발자 도구 Elements 탭에서 실제 DOM 구조를 확인하고, 검사기로 검증한다",
+      "JavaScript 콘솔에 HTML 오류가 출력되므로 그것을 본다",
+      "새로고침하면 오류 화면이 뜬다"
+    ],
+    a: 1,
+    e: "HTML은 오류를 던지지 않고 브라우저가 <b>임의로 고쳐서</b> DOM을 만듭니다. 화면은 멀쩡해도 구조가 의도와 다르면 CSS 선택자와 JavaScript가 어긋납니다. Elements 탭에서 실제 DOM을 보고, W3C 검사기로 검증하는 것이 정석입니다. 콘솔에는 HTML 구조 오류가 나오지 않습니다."
+  },
+  {
+    q: "다음 중 <b>빈 요소(void element)</b>가 아닌 것은?",
+    o: ["<code>&lt;img&gt;</code>", "<code>&lt;br&gt;</code>", "<code>&lt;span&gt;</code>", "<code>&lt;input&gt;</code>"],
+    a: 2,
+    e: "<code>&lt;span&gt;</code>은 내용을 담을 수 있으므로 <code>&lt;/span&gt;</code>으로 닫아야 합니다. <code>img</code>·<code>br</code>·<code>input</code>은 내용을 가질 수 없는 빈 요소라 닫는 태그가 없습니다."
+  }
+]);
+</script>
+</body>
+</html>

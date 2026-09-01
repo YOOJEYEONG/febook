@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16장. Grid 완전 정복 — 프엔북</title>
+<meta name="description" content="CSS Grid의 행·열 정의, fr 단위, repeat와 minmax, auto-fit과 auto-fill의 차이, grid-template-areas로 레이아웃 그리기까지 전부 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="16장. Grid 완전 정복 — 프엔북">
+<meta property="og:description" content="CSS Grid의 행·열 정의, fr 단위, repeat와 minmax, auto-fit과 auto-fill의 차이, grid-template-areas로 레이아웃 그리기까지 전부 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="16-grid">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">3부 · CSS — 보이는 모든 것</p>
+    <h1>16장. Grid 완전 정복</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>격자를 정의하는 <code>grid-template-columns</code>와 <code>fr</code> 단위</li>
+  <li><span <span class="term" data-term="class">class</span>="term" data-term="media-query">미디어 쿼리</span> 없이 반응형이 되는 마법의 한 줄</li>
+  <li><code>auto-fit</code>과 <code>auto-fill</code>의 진짜 차이</li>
+  <li><code>grid-template-areas</code>로 레이아웃을 <b>그림처럼</b> 쓰기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분</p>
+
+<h2 id="basics">Grid의 기본</h2>
+
+<p><span class="term" data-term="flexbox">Flexbox</span>가 <b>한 방향</b>이라면, Grid는 <b>행과 열 두 방향을 동시에</b> 다룹니다.
+표를 그리듯 격자를 먼저 정의하고 그 안에 요소를 배치합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">가장 기본</span>
+<pre><code data-lang="css">.container {
+  display: grid;
+  grid-template-columns: 200px 1fr 100px;  /* 3개 열 */
+  grid-template-rows: 60px auto 40px;      /* 3개 행 */
+  gap: 16px;
+}</code></pre>
+</div>
+
+<h3 id="fr">fr — Grid만의 단위</h3>
+<p><code>fr</code>은 fraction(분수)의 약자로, <b>남은 공간을 나누는 비율</b>입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="css">grid-template-columns: 1fr 1fr 1fr;   /* 셋으로 균등 분할 */
+grid-template-columns: 2fr 1fr;       /* 2:1 비율 */
+grid-template-columns: 200px 1fr;     /* 200px 고정 + 나머지 전부 */</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧮</span> <code>1fr</code>과 <code>33.33%</code>가 다른 이유</p>
+<p style="margin-bottom:0"><code>%</code>는 <b>gap을 고려하지 않습니다.</b>
+<code>33.33%</code> 세 개에 <code>gap: 16px</code>을 주면 합이 100%를 넘어 넘칩니다.
+<code>fr</code>은 <b>gap을 뺀 나<span class="term" data-term="merge">머지</span></b>를 나누므로 정확히 맞습니다.
+Grid·Flex 안에서는 <code>%</code>보다 <code>fr</code>이나 <code>flex</code>를 쓰세요.</p>
+</div>
+
+<h3 id="repeat">repeat와 minmax</h3>
+<div class="codeblock">
+<pre><code data-lang="css">grid-template-columns: repeat(4, 1fr);        /* 1fr 1fr 1fr 1fr 과 동일 */
+grid-template-columns: repeat(3, 100px 1fr);  /* 패턴 반복도 가능 */
+
+grid-template-columns: repeat(3, minmax(150px, 1fr));
+/* 각 칸: 최소 150px, 남으면 균등하게 늘어남 */</code></pre>
+</div>
+
+<h2 id="magic">미디어 쿼리 없는 반응형 격자</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✨</span> 외워 둘 가치가 있는 한 줄</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="css">.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}</code></pre>
+</div>
+<p style="margin-bottom:0">뜻: <b>"칸 하나의 최소 너비는 240px. 들어갈 수 있는 만큼 열을 만들고, 남는 공간은 나눠 가져라."</b><br>
+화면이 넓으면 4열, 좁으면 2열, 더 좁으면 1열이 <b>미디어 쿼리 하나 없이</b> 자동으로 됩니다.</p>
+</div>
+
+<h3 id="autofit-autofill">auto-fit과 auto-fill의 차이</h3>
+<p>둘은 <b>아이템이 열 개수보다 적을 때</b>만 차이가 납니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>동작</th></tr></thead>
+<tbody>
+<tr><td><code>auto-fill</code></td><td>공간이 되는 만큼 <b>빈 열도 만들어 둡니다.</b> 아이템은 왼쪽부터 채워지고 오른쪽에 빈 자리가 남습니다</td></tr>
+<tr><td><code>auto-fit</code></td><td>빈 열을 <b>0으로 접습니다.</b> 그 결과 남은 아이템들이 <b>공간을 전부 차지하도록 늘어납니다</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="runner" data-lang="html" data-title="auto-fit vs auto-fill" data-note="아이템 개수를 6개로 늘리면 두 결과가 같아집니다. 개수가 적을 때만 차이가 납니다.">
+<textarea class="rn-src">
+<style>
+  body { font-size: 13px; }
+  .grid { display: grid; gap: 8px; border: 2px dashed #999;
+          padding: 8px; margin-bottom: 16px; border-radius: 6px; }
+  .fit  { grid-template-columns: repeat(auto-fit,  minmax(120px, 1fr)); }
+  .fill { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .item { background: #1f5f4f; color: white; padding: 16px;
+          border-radius: 6px; text-align: center; font-weight: 600; }
+  h4 { margin: 0 0 4px; font-size: 12px; }
+  p.desc { margin: 0 0 6px; color: #666; font-size: 11px; }
+</style>
+
+<h4>auto-fit — 빈 열을 접어서 아이템이 늘어난다</h4>
+<p class="desc">아이템 3개가 남는 공간을 전부 나눠 가진다</p>
+<div class="grid fit">
+  <div class="item">1</div><div class="item">2</div><div class="item">3</div>
+</div>
+
+<h4>auto-fill — 빈 열이 자리를 차지한다</h4>
+<p class="desc">아이템은 120px 근처에 머물고 오른쪽에 빈 공간이 남는다</p>
+<div class="grid fill">
+  <div class="item">1</div><div class="item">2</div><div class="item">3</div>
+</div>
+</textarea>
+</div>
+
+<h2 id="placement">아이템 배치하기</h2>
+
+<p>Grid는 눈에 보이지 않는 <b>선(line)</b>에 번호를 매깁니다. 열이 3개면 세로선은 4개(1~4)입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">선 번호로 배치</span>
+<pre><code data-lang="css">.item {
+  grid-column: 1 / 3;   /* 1번 선에서 3번 선까지 = 두 칸 차지 */
+  grid-row: 2 / 4;
+}
+
+/* span 으로 개수 지정 (더 자주 씁니다) */
+.item { grid-column: span 2; }   /* 어디서 시작하든 두 칸 */
+
+/* -1 은 마지막 선 */
+.full { grid-column: 1 / -1; }   /* 전체 너비 차지 */</code></pre>
+</div>
+
+<h3 id="areas">grid-template-areas — 레이아웃을 그림으로</h3>
+
+<p>Grid에서 가장 직관적인 기능입니다. <b>글자로 배치도를 그립니다.</b></p>
+
+<div class="codeblock">
+<span class="cb-label">이름으로 배치</span>
+<pre><code data-lang="css">.layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header  header"
+    "sidebar main"
+    "footer  footer";
+  gap: 16px;
+  min-height: 100dvh;
+}
+
+.layout &gt; header  { grid-area: header; }
+.layout &gt; nav     { grid-area: sidebar; }
+.layout &gt; main    { grid-area: main; }
+.layout &gt; footer  { grid-area: footer; }</code></pre>
+</div>
+
+<p>화면 폭이 좁아지면 <b>배치도만 다시 그리면</b> 됩니다.</p>
+<div class="codeblock">
+<pre><code data-lang="css">@media (max-width: 700px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "main"
+      "sidebar"
+      "footer";
+  }
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> areas 문법 규칙</p>
+<ul style="margin-bottom:0">
+<li>모든 줄의 <b>칸 개수가 같아야</b> 합니다. 하나라도 다르면 전체가 무효가 됩니다.</li>
+<li>같은 이름이 이어지면 <b>병합</b>됩니다. 단 <b>직사각형</b>이어야 합니다. L자 모양은 불가능합니다.</li>
+<li>빈 칸은 마침표 <code>.</code>로 표시합니다.</li>
+</ul>
+</div>
+
+<div class="runner" data-lang="html" data-title="areas로 만든 페이지 레이아웃" data-note="grid-template-areas의 문자열 배치를 바꿔 보세요. 예를 들어 sidebar를 오른쪽으로 옮겨 보세요.">
+<textarea class="rn-src">
+<style>
+  body { margin: 0; font-size: 13px; }
+  .layout {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "header  header"
+      "sidebar main"
+      "footer  footer";
+    gap: 10px;
+    min-height: 320px;
+  }
+  .layout > * {
+    padding: 14px; border-radius: 8px; color: white;
+    font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  header  { grid-area: header;  background: #c0392b; }
+  nav     { grid-area: sidebar; background: #2980b9; }
+  main    { grid-area: main;    background: #1f5f4f; }
+  footer  { grid-area: footer;  background: #7f8c8d; }
+</style>
+
+<div class="layout">
+  <header>header</header>
+  <nav>sidebar</nav>
+  <main>main</main>
+  <footer>footer</footer>
+</div>
+</textarea>
+</div>
+
+<h2 id="align">정렬 — 두 축, 네 속성</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>속성</th><th>대상</th><th>축</th></tr></thead>
+<tbody>
+<tr><td><code>justify-items</code></td><td><b>각 칸 안의</b> 아이템</td><td>가로(인라인)</td></tr>
+<tr><td><code>align-items</code></td><td><b>각 칸 안의</b> 아이템</td><td>세로(블록)</td></tr>
+<tr><td><code>justify-content</code></td><td><b>격자 전체</b></td><td>가로 — 격자가 컨테이너보다 작을 때</td></tr>
+<tr><td><code>align-content</code></td><td><b>격자 전체</b></td><td>세로</td></tr>
+<tr><td><code>place-items: center</code></td><td colspan="2"><code>align-items</code> + <code>justify-items</code> 축약</td></tr>
+<tr><td><code>justify-self</code> / <code>align-self</code></td><td colspan="2">개별 아이템만 따로</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 가장 짧은 중앙 정렬</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="css">.center {
+  display: grid;
+  place-items: center;   /* 이 한 줄로 가로·세로 완벽 중앙 */
+  min-height: 100dvh;
+}</code></pre>
+</div>
+</div>
+
+<h2 id="implicit">암시적 격자</h2>
+<p>정의한 칸보다 아이템이 많으면, Grid는 <b>알아서 행을 추가</b>합니다.
+그 자동 생성 행의 크기는 <code>grid-auto-rows</code>로 정합니다.</p>
+<div class="codeblock">
+<pre><code data-lang="css">.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(120px, auto);  /* 자동 생성 행은 최소 120px */
+  grid-auto-flow: row;                  /* 기본값. dense 로 하면 빈틈을 메운다 */
+}</code></pre>
+</div>
+<p><code>grid-auto-flow: dense</code>는 빈 구멍에 뒤 아이템을 끌어와 채웁니다.
+빽빽해 보이지만 <b>시각적 순서와 DOM 순서가 달라져</b> 접근성 문제가 생기므로 신중히 쓰세요.</p>
+
+<h2 id="subgrid">subgrid</h2>
+<p>중첩된 Grid가 <b>부모의 격자선을 그대로 물려받게</b> 하는 기능입니다.
+카드 여러 개의 제목·본문·버튼 높이를 서로 맞출 때 유용합니다.</p>
+<div class="codeblock">
+<pre><code data-lang="css">.card {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;   /* 부모의 행 선을 그대로 사용 */
+}</code></pre>
+</div>
+<p>Firefox 71+, Safari 16+, Chrome 117+에서 지원됩니다. 최신 브라우저에서는 쓸 수 있지만
+지원 범위 확인 후 사용하세요.</p>
+
+<h2 id="vs-flex">Grid와 Flexbox, 실전 선택 기준</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상황</th><th>선택</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td>내비게이션 바</td><td><b>Flex</b></td><td>한 줄, 내용 크기대로</td></tr>
+<tr><td>페이지 전체 골격</td><td><b>Grid</b></td><td>행과 열을 동시에 통제</td></tr>
+<tr><td>카드 목록</td><td><b>Grid</b></td><td><code>auto-fit</code> + <code>minmax</code> 한 줄로 반응형</td></tr>
+<tr><td>카드 <b>내부</b> (아이콘 + 텍스트)</td><td><b>Flex</b></td><td>내용에 따라 크기가 정해짐</td></tr>
+<tr><td>버튼 묶음</td><td><b>Flex</b></td><td>—</td></tr>
+<tr><td>대시보드, 사진 갤러리</td><td><b>Grid</b></td><td>칸 병합이 필요</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — Grid 디버깅</p>
+<p style="margin-bottom:0">크롬·파이어폭스 개발자 도구에서 <code>display: grid</code>인 요소 옆에
+<b><code>grid</code> 배지</b>가 뜹니다. 그것을 누르면 <b>격자선과 선 번호가 화면에 겹쳐 표시</b>됩니다.
+Grid는 눈에 안 보이는 선을 다루기 때문에 이 도구 없이 디버깅하면 시간이 몇 배로 듭니다.
+<b>Grid를 쓸 때는 반드시 이 오버레이를 켜 두세요.</b></p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>Grid는 <b>행과 열 두 방향</b>을 동시에 다룬다. Flex는 한 방향.</li>
+<li><code>fr</code>은 <b>gap을 뺀 나머지</b>를 나눈다. <code>%</code>보다 안전하다.</li>
+<li><b><code>repeat(auto-fit, minmax(240px, 1fr))</code></b> — 미디어 쿼리 없는 반응형 격자.</li>
+<li><code>auto-fit</code>은 빈 열을 접고, <code>auto-fill</code>은 빈 열을 남긴다.</li>
+<li><code>grid-template-areas</code>로 레이아웃을 <b>글자 그림</b>으로 그린다. 칸 수가 맞아야 하고 직사각형만 가능.</li>
+<li><code>place-items: center</code> 한 줄이면 완벽한 중앙 정렬.</li>
+<li>개발자 도구의 <b>grid 오버레이</b>를 반드시 켜고 작업한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/CSS_layout/Grids" target="_blank" rel="noopener">MDN — Grid 학습 가이드</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_grid_layout" target="_blank" rel="noopener">MDN — CSS 그리드 레이아웃</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout/Auto-placement_in_grid_layout" target="_blank" rel="noopener">MDN — 그리드 자동 배치</a></li>
+<li><a href="https://cssgridgarden.com/#ko" target="_blank" rel="noopener">Grid Garden</a> — 게임으로 연습하는 사이트</li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))</code> 의 의미는?",
+    o: [
+      "항상 정확히 240px짜리 열을 만든다",
+      "열 하나의 최소 너비를 240px로 두고 들어갈 수 있는 만큼 열을 만들며, 남는 공간은 열들이 나눠 갖는다",
+      "화면 너비를 240등분한다",
+      "240개의 열을 만든다"
+    ],
+    a: 1,
+    e: "<code>minmax(240px, 1fr)</code>가 \"최소 240px, 여유가 있으면 늘어남\"을 뜻하고, <code>auto-fit</code>이 \"공간이 허락하는 만큼 열을 만들라\"를 뜻합니다. 결과적으로 미디어 쿼리 없이 화면 폭에 따라 열 개수가 자동으로 바뀝니다."
+  },
+  {
+    q: "아이템이 3개일 때 <code>auto-fit</code>과 <code>auto-fill</code>의 차이는?",
+    o: [
+      "차이가 없다",
+      "auto-fit은 빈 열을 0으로 접어 아이템들이 남은 공간까지 늘어나고, auto-fill은 빈 열을 유지해 아이템이 최소 크기에 머문다",
+      "auto-fill이 더 많은 아이템을 표시한다",
+      "auto-fit은 세로 방향에만 적용된다"
+    ],
+    a: 1,
+    e: "두 값의 차이는 <b>아이템이 만들 수 있는 열 개수보다 적을 때</b>만 드러납니다. <code>auto-fill</code>은 빈 열을 만들어 두어 아이템이 왼쪽에 몰리고, <code>auto-fit</code>은 빈 열을 접어 아이템들이 전체 폭을 채우도록 늘어납니다."
+  },
+  {
+    q: "Grid 컨테이너에서 <code>grid-template-columns: 33.33% 33.33% 33.33%</code> 와 <code>gap: 16px</code>을 함께 쓰면 어떻게 되나요?",
+    o: [
+      "정확히 3등분된다",
+      "% 는 gap을 고려하지 않으므로 전체 너비를 넘어 넘친다. <code>1fr 1fr 1fr</code>을 써야 한다",
+      "gap이 무시된다",
+      "브라우저가 자동으로 % 를 조정해 준다"
+    ],
+    a: 1,
+    e: "<code>%</code>는 컨테이너 너비를 기준으로 계산되며 <b>gap을 빼지 않습니다</b>. 33.33%×3 = 약 100%에 gap 32px이 더해져 넘칩니다. <code>fr</code>은 <b>gap을 제외한 나머지</b>를 나누므로 정확히 맞습니다."
+  },
+  {
+    q: "<code>grid-template-areas</code>에서 각 줄의 칸 개수가 서로 다르면?",
+    o: [
+      "부족한 칸은 자동으로 빈 칸이 된다",
+      "선언 전체가 무효가 되어 areas 배치가 적용되지 않는다",
+      "가장 긴 줄에 맞춰 늘어난다",
+      "경고만 표시되고 정상 동작한다"
+    ],
+    a: 1,
+    e: "<code>grid-template-areas</code>는 <b>완전한 직사각형 격자</b>를 요구합니다. 줄마다 칸 수가 다르면 값이 무효가 되어 무시됩니다. 빈 칸이 필요하면 마침표 <code>.</code>로 명시해야 합니다."
+  },
+  {
+    q: "다음 중 Flexbox보다 <b>Grid</b>가 더 적합한 상황은?",
+    o: [
+      "아이콘과 텍스트를 가로로 나란히 붙이기",
+      "버튼 세 개를 한 줄에 늘어놓기",
+      "헤더·사이드바·본문·푸터로 이루어진 페이지 전체 골격 잡기",
+      "내비게이션 링크를 한 줄로 배치하기"
+    ],
+    a: 2,
+    e: "행과 열을 <b>동시에</b> 통제해야 하고 칸 병합이 필요한 페이지 골격은 Grid의 영역입니다. 나머지는 모두 한 방향으로 내용 크기대로 늘어놓는 경우라 Flexbox가 적합합니다. 실무에서는 Grid로 큰 틀을 잡고 각 칸 내부를 Flex로 정렬하는 조합을 가장 많이 씁니다."
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>76장. 성능 최적화와 Core Web Vitals — 프엔북</title>
+<meta name="description" content="Core Web Vitals(LCP·INP·CLS)의 의미와 기준, 측정 방법, 로딩·상호작용·레이아웃 각각의 개선 기법을 체계적으로 정리합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="76장. 성능 최적화와 Core Web Vitals — 프엔북">
+<meta property="og:description" content="Core Web Vitals(LCP·INP·CLS)의 의미와 기준, 측정 방법, 로딩·상호작용·레이아웃 각각의 개선 기법을 체계적으로 정리합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="76-performance">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">10부 · 품질, 성능, 보안</p>
+    <h1>76장. 성능 최적화와 Core Web Vitals</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>Core Web Vitals</b> 세 지표의 의미와 기준</li>
+  <li><b>실험실 데이터와 실제 사용자 데이터</b>의 차이</li>
+  <li>LCP·INP·CLS를 각각 개선하는 법</li>
+  <li>성능 예산과 <b>측정 우선</b> 원칙</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 5·8·47·49장의 내용이 여기서 합쳐집니다</p>
+
+<h2 id="why">성능은 기능입니다</h2>
+
+<ul>
+<li>페이지가 느리면 <b>사용자는 떠납니다.</b> 이탈률과 로딩 시간의 상관관계는 여러 업계 연구에서 반복 확인되었습니다.</li>
+<li>구글은 <b>Core Web Vitals를 검색 순위에 반영</b>합니다(10장).</li>
+<li>느린 사이트는 <b>느린 기기와 네트워크를 쓰는 사람</b>을 먼저 배제합니다. <span class="term" data-term="a11y">접근성</span> 문제이기도 합니다.</li>
+</ul>
+
+<h2 id="cwv">Core Web Vitals</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>지표</th><th>측정하는 것</th><th>좋음</th><th>개선 필요</th></tr></thead>
+<tbody>
+<tr><td><b>LCP</b><br>Largest Contentful Paint</td><td><b>가장 큰 콘텐츠</b>가 보이기까지</td><td><b>2.5초 이하</b></td><td>4초 초과</td></tr>
+<tr><td><b>INP</b><br>Interaction to Next Paint</td><td><b>상호작용 후 화면이 반응</b>하기까지</td><td><b>200ms 이하</b></td><td>500ms 초과</td></tr>
+<tr><td><b>CLS</b><br>Cumulative Layout Shift</td><td><b>레이아웃이 얼마나 흔들렸는지</b></td><td><b>0.1 이하</b></td><td>0.25 초과</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔄</span> INP는 FID를 대체했습니다</p>
+<p style="margin-bottom:0">예전 지표 <b>FID</b>는 <b>첫 상호작용의 지연만</b> 측정했습니다.
+그래서 첫 클릭만 빠르면 좋은 점수가 나왔습니다.<br>
+<b>INP</b>는 <b>페이지에 머무는 동안의 모든 상호작용</b>을 보고,
+<b>반응이 화면에 그려지기까지</b>를 잽니다. 훨씬 정직한 지표입니다.
+2024년 3월부터 공식 Core Web Vital이 되었습니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📊</span> 실험실 데이터 vs 실제 사용자 데이터</p>
+<div class="tablewrap" style="margin:.6em 0 0">
+<table>
+<thead><tr><th></th><th>실험실 (Lab)</th><th>실제 사용자 (Field)</th></tr></thead>
+<tbody>
+<tr><td>도구</td><td><span <span class="term" data-term="class">class</span>="term" data-term="lighthouse">Lighthouse</span>, <span class="term" data-term="devtools">DevTools</span>(49장)</td><td>CrUX, <code>web-vitals</code> 라이브러리</td></tr>
+<tr><td>환경</td><td>내 컴퓨터, 통제된 조건</td><td><b>진짜 사용자의 기기·네트워크</b></td></tr>
+<tr><td>장점</td><td>재현 가능, 개선 항목 제시</td><td><b>진실</b></td></tr>
+<tr><td>한계</td><td><b>INP를 제대로 못 잽니다</b>(실제 상호작용이 없으므로)</td><td>원인 파악이 어렵습니다</td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin-bottom:0"><b>둘 다 필요합니다.</b>
+실제 데이터로 <b>문제가 있는지</b> 알고, 실험실 도구로 <b>원인을 찾습니다.</b>
+Lighthouse 점수 100점이 "빠르다"의 증명이 아니라는 것을 다시 기억하세요(49장).</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">실제 사용자 데이터 수집</span>
+<pre><code data-lang="js">import { onLCP, onINP, onCLS } from "web-vitals";
+
+function report(metric) {
+  navigator.sendBeacon("/api/vitals", JSON.stringify(metric));   // 40장
+}
+onLCP(report);
+onINP(report);
+onCLS(report);</code></pre>
+</div>
+
+<h2 id="lcp">LCP 개선</h2>
+
+<p>LCP 요소는 대개 <b>큰 이미지나 큰 제목 텍스트</b>입니다.
+LCP는 네 단계로 나뉘고, 어디가 느린지 알아야 고칠 수 있습니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="text">① TTFB          서버가 첫 바이트를 보내기까지
+② 자원 로드 지연  브라우저가 그 이미지를 '발견'하기까지
+③ 자원 로드 시간  실제 다운로드
+④ 렌더링 지연     받고 나서 화면에 그리기까지</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>원인</th><th>대응</th></tr></thead>
+<tbody>
+<tr><td>서버 응답이 느림 (①)</td><td>캐싱, <b><span class="term" data-term="ssg">SSG</span>·<span class="term" data-term="isr">ISR</span></b>(70장), <span class="term" data-term="cdn"><span class="term" data-term="cd">CD</span>N</span>(3장), DB 쿼리 개선</td></tr>
+<tr><td>이미지 발견이 늦음 (②)</td><td><b><code>priority</code>·<code>preload</code></b>(73장). JS로 삽입되는 이미지는 발견이 늦습니다</td></tr>
+<tr><td>이미지가 큼 (③)</td><td><b>WebP·AVIF</b>, 적절한 크기, <code>srcset</code>(8장)</td></tr>
+<tr><td><b>첫 화면 이미지에 <code>lazy</code></b></td><td>붙이면 안 됩니다(8·73장). <b>매우 흔한 실수</b></td></tr>
+<tr><td><span class="term" data-term="css">CSS</span>·폰트가 렌더링을 막음 (④)</td><td>첫 화면 CSS만 먼저(5장), <code>font-display: swap</code>(19장)</td></tr>
+<tr><td>데이터를 받은 뒤에야 그림</td><td><span class="term" data-term="ssr">SSR</span>·SSG로 <b><span class="term" data-term="html">HTML</span>에 내용을 포함</b>(70장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="inp">INP 개선</h2>
+
+<p>INP는 <b>메인 스레드가 막히는</b> 문제입니다(35장).
+클릭했을 때 <span class="term" data-term="browser">브라우저</span>가 <b>다른 일을 하느라 반응하지 못하는</b> 것입니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>원인</th><th>대응</th></tr></thead>
+<tbody>
+<tr><td><b>긴 작업</b> (50ms 초과)</td><td>쪼개기, <b>Web Worker</b>(40장), 알고리즘 개선</td></tr>
+<tr><td>무거운 렌더링</td><td><b><code>useTransition</code></b>(69장), 가상 스크롤, 구조 개선(64장)</td></tr>
+<tr><td>과도한 JS 실행</td><td>번들 줄이기, <b><span class="term" data-term="code-splitting">코드 분할</span></b>(47·68장)</td></tr>
+<tr><td><span class="term" data-term="hydration">하이드레이션</span>이 오래 걸림</td><td><b><span class="term" data-term="rsc">서버 <span class="term" data-term="component">컴포넌트</span></span></b>로 <span class="term" data-term="client">클라이언트</span> 코드 줄이기(69·71장)</td></tr>
+<tr><td><b>서드파티 스크립트</b></td><td><span class="term" data-term="lazy-loading">지연 로딩</span>(73장). <b>범인인 경우가 매우 많습니다</b></td></tr>
+<tr><td>이벤트 핸들러가 무거움</td><td><span class="term" data-term="debounce">디바운스</span>·<span class="term" data-term="throttle">스로틀</span>(31장), <code>passive: true</code>(38장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">👆</span> 즉시 반응하는 것처럼 보이게</p>
+<p style="margin-bottom:0">실제 처리가 오래 걸려도 <b>사용자에게 즉시 반응을 보여주면</b> INP가 좋아집니다.</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">button.addEventListener("click", async () =&gt; {
+  setLoading(true);                 // ① 즉시 시각 피드백
+  await new Promise(r =&gt; setTimeout(r, 0));   // ② 브라우저에 그릴 기회를 줌
+  doHeavyWork();                    // ③ 무거운 작업
+});</code></pre>
+</div>
+<p style="margin-bottom:0">67장의 <b><span class="term" data-term="optimistic-update">낙관적 업데이트</span></b>도 같은 원리입니다.
+<b>"기다리는 느낌"을 줄이는 것</b>이 실제 속도만큼 중요합니다.</p>
+</div>
+
+<h2 id="cls">CLS 개선</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>원인</th><th>대응</th></tr></thead>
+<tbody>
+<tr><td><b>크기 없는 이미지</b></td><td><code>width</code>·<code>height</code> 명시(8장). 가장 흔한 원인</td></tr>
+<tr><td>광고·임베드</td><td>미리 <b>자리를 확보</b>(<code>min-height</code>)</td></tr>
+<tr><td>폰트 교체</td><td><code>size-adjust</code>·<code>preload</code>(19장), <code>next/font</code>(73장)</td></tr>
+<tr><td>동적으로 삽입되는 배너</td><td>기존 콘텐츠 <b>위에 끼워 넣지 않기</b>. 겹쳐 띄우거나 자리를 미리 비워 두기</td></tr>
+<tr><td>데이터 도착 후 늘어나는 목록</td><td><b><span class="term" data-term="skeleton">스켈레톤</span></b>으로 실제 크기만큼 자리 잡기(67장)</td></tr>
+<tr><td><code>height: auto</code>인 컨테이너</td><td><code>aspect-ratio</code> 지정(13장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">😤</span> CLS는 사용자를 가장 화나게 합니다</p>
+<p style="margin-bottom:0">읽던 줄이 갑자기 밀려 내려가고,
+누르려던 버튼이 <b>움직여서 광고를 누르게</b> 되는 경험.
+숫자로는 0.3 같은 작은 값이지만 <b>체감 불쾌감은 가장 큽니다.</b><br>
+그리고 <b>대부분 쉽게 고칠 수 있습니다.</b> 이미지에 크기를 적는 것만으로 상당 부분 해결됩니다.
+투자 대비 효과가 가장 좋은 항목입니다.</p>
+</div>
+
+<h2 id="js">JavaScript 줄이기 — 가장 큰 레버</h2>
+
+<div class="codeblock">
+<span class="cb-label">확인 순서 (47장)</span>
+<pre><code data-lang="bash">npm run build                    # 라우트별 크기 확인
+npx vite-bundle-visualizer       # 무엇이 큰지 시각화</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>기법</th><th>효과</th></tr></thead>
+<tbody>
+<tr><td><b>라우트별 코드 분할</b></td><td>초기 번들이 크게 줄어듭니다(68장)</td></tr>
+<tr><td><b>필요한 것만 import</b></td><td><code>import * as _</code> 금지(47장)</td></tr>
+<tr><td><b>무거운 라이브러리 교체</b></td><td>날짜 표시는 <code>Intl</code>로 충분한 경우가 많습니다(43장)</td></tr>
+<tr><td><b>서드파티 재검토</b></td><td>정말 필요한지 다시 묻기(73장)</td></tr>
+<tr><td><b>서버 컴포넌트</b></td><td>해당 코드가 <b>번들에 아예 없습니다</b>(69장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📉</span> 가장 빠른 코드는 보내지 않은 코드</p>
+<p style="margin-bottom:0">JS는 <b>다운로드 → 파싱 → 컴파일 → 실행</b> 네 단계를 거칩니다.
+같은 100KB라도 <b>이미지보다 <span class="term" data-term="javascript">JavaScript</span>가 훨씬 비쌉니다.</b>
+저사양 기기에서는 이 차이가 몇 배로 벌어집니다.<br>
+그래서 <b>번들 크기를 줄이는 것</b>이 <span class="term" data-term="frontend">프론트엔드</span> 성능 개선에서 <b>가장 큰 레버</b>입니다.</p>
+</div>
+
+<h2 id="images">이미지와 캐싱</h2>
+<ul>
+<li><b>적절한 크기로</b> 줄이기 — 400px로 보일 것을 4000px로 올리지 않기(8장)</li>
+<li><b>WebP·AVIF</b>로 변환</li>
+<li>첫 화면 밖은 <b><code>loading="lazy"</code></b>, 첫 화면은 <b><code>priority</code></b></li>
+<li><b>정적 자원은 길게 캐시</b> — 해시 파일명이 있으면 1년도 안전합니다(3·47장)</li>
+<li><b>CDN</b>으로 거리 지연 줄이기(3장)</li>
+</ul>
+
+<h2 id="budget">성능 예산</h2>
+
+<div class="codeblock">
+<span class="cb-label">숫자를 정해 두면 관리가 됩니다</span>
+<pre><code data-lang="text">First Load JS      &lt; 150 KB
+LCP                &lt; 2.5초 (4G, 중급 기기 기준)
+INP                &lt; 200ms
+CLS                &lt; 0.1
+이미지 한 장        &lt; 200 KB</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🚨</span> <span class="term" data-term="ci">CI</span>에서 자동으로 감시하세요</p>
+<p style="margin-bottom:0">예산이 없으면 <b>성능은 조금씩, 눈치채지 못하게 나빠집니다.</b>
+라이브러리 하나, 스크립트 하나씩 늘어나다 어느 날 "왜 이렇게 느리지?"가 됩니다.<br>
+CI에 <b>번들 크기 검사</b>나 <b>Lighthouse CI</b>를 붙여
+예산을 넘으면 PR을 막으면 됩니다(74장).
+<b>사후에 고치는 것보다 늘어나지 않게 막는 것</b>이 훨씬 쉽습니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 최적화 순서</p>
+<ol>
+<li><b>측정합니다.</b> 실제 사용자 데이터로 "무엇이 문제인가"를 봅니다.</li>
+<li><b>가장 큰 것부터.</b> 500KB 라이브러리 하나가 나<span class="term" data-term="merge">머지</span> 최적화 전부보다 영향이 큽니다.</li>
+<li><b>하나씩 바꾸고 다시 측정합니다.</b> 여러 개를 동시에 바꾸면 무엇이 효과였는지 모릅니다.</li>
+<li><b>느린 기기로 테스트합니다.</b> 개발자 컴퓨터는 사용자의 기기가 아닙니다(49장의 CPU 스로틀링).</li>
+</ol>
+<div class="box myth" style="margin-bottom:0">
+<p class="box-title" style="margin-bottom:.4em"><span class="box-ico">⚠️</span> 하지 말아야 할 것</p>
+<span class="mythline"><b class="no">추측으로 최적화</b> — <code>useMemo</code>를 여기저기 붙이는 것(64장)</span>
+<span class="mythline"><b class="no">미세 최적화</b> — <code>for</code>가 <code>forEach</code>보다 빠르다는 수준의 논쟁</span>
+<span class="mythline"><b class="no">가독성을 크게 해치는 최적화</b> — 측정으로 증명되지 않았다면</span>
+<span class="mythline"><b class="yes">가장 흔한 진실</b> — 대부분의 성능 문제는 <b>이미지 하나, 라이브러리 하나, 서드파티 스크립트 하나</b>입니다.</span>
+</div>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>LCP 2.5초 · INP 200ms · CLS 0.1</b>이 기준선이다.</li>
+<li><b>INP가 FID를 대체</b>했다. 모든 상호작용의 반응성을 본다.</li>
+<li><b>실험실 데이터로 원인을, 실제 사용자 데이터로 진실을</b> 확인한다.</li>
+<li>LCP: 서버 응답·이미지 최적화·<b>첫 화면 이미지에 lazy 금지</b>.</li>
+<li>INP: <b>메인 스레드를 막지 않기</b>. 서드파티 스크립트가 범인인 경우가 많다.</li>
+<li>CLS: <b>이미지에 크기 명시</b>가 절반을 해결한다.</li>
+<li><b>JavaScript 줄이기가 가장 큰 레버</b>다. 같은 용량이라도 이미지보다 비싸다.</li>
+<li><b>성능 예산을 정하고 CI에서 감시</b>한다.</li>
+<li><b>측정 없이 최적화하지 않는다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://web.dev/articles/vitals?hl=ko" target="_blank" rel="noopener">web.dev — Web Vitals (한국어)</a></li>
+<li><a href="https://web.dev/articles/optimize-lcp" target="_blank" rel="noopener">web.dev — LCP 최적화</a></li>
+<li><a href="https://web.dev/articles/optimize-inp" target="_blank" rel="noopener">web.dev — INP 최적화</a></li>
+<li><a href="https://web.dev/articles/optimize-cls" target="_blank" rel="noopener">web.dev — CLS 최적화</a></li>
+<li><a href="https://github.com/GoogleChrome/web-vitals" target="_blank" rel="noopener">web-vitals 라이브러리</a></li>
+<li><a href="https://pagespeed.web.dev/" target="_blank" rel="noopener">PageSpeed Insights</a> — 실험실 + 실제 사용자 데이터를 함께 보여줍니다</li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "Core Web Vitals 세 지표와 각각의 \"좋음\" 기준으로 옳은 것은?",
+    o: [
+      "LCP 4초, INP 500ms, CLS 0.25",
+      "LCP 2.5초 이하, INP 200ms 이하, CLS 0.1 이하",
+      "LCP 1초, INP 50ms, CLS 0",
+      "FCP 2초, FID 100ms, TTI 5초"
+    ],
+    a: 1,
+    e: "<b>LCP 2.5초 · INP 200ms · CLS 0.1</b>이 \"좋음\" 기준입니다. 마지막 보기의 FID는 2024년 3월에 <b>INP로 대체</b>되었습니다. FID는 첫 상호작용의 지연만 봤지만 INP는 체류 중 모든 상호작용의 반응성을 봅니다."
+  },
+  {
+    q: "Lighthouse 점수가 좋은데 실제 사용자 데이터에서는 INP가 나쁩니다. 이유는?",
+    o: [
+      "Lighthouse가 고장 났다",
+      "Lighthouse는 실험실 환경에서 실제 상호작용 없이 측정하므로 INP를 제대로 잴 수 없고, 사용자의 기기·네트워크·사용 패턴도 다르기 때문",
+      "INP는 측정할 수 없는 지표라서",
+      "실제 사용자 데이터가 부정확해서"
+    ],
+    a: 1,
+    e: "INP는 <b>실제 클릭·입력이 있어야</b> 측정됩니다. Lighthouse는 페이지를 열고 로딩만 관찰하므로 이 지표에 한계가 있습니다. 또 개발자 기기는 대개 사용자보다 빠릅니다. <b>실제 데이터로 문제를 알고 실험실 도구로 원인을 찾는</b> 방식이 옳습니다."
+  },
+  {
+    q: "LCP를 개선하려는데 첫 화면 대표 이미지에 <code>loading=\"lazy\"</code>가 붙어 있습니다. 어떻게 해야 하나요?",
+    o: [
+      "그대로 둔다. lazy는 항상 성능에 좋다",
+      "제거하고 필요하면 priority나 preload를 적용한다. 이미 보이는 이미지에 lazy를 붙이면 로드가 늦어져 LCP가 나빠진다",
+      "이미지를 배경 이미지로 바꾼다",
+      "이미지 크기를 줄이면 lazy는 상관없다"
+    ],
+    a: 1,
+    e: "<code>lazy</code>는 \"화면에 가까워질 때까지 미루라\"는 뜻입니다(8장). LCP 요소는 <b>처음부터 화면에 있는 가장 큰 콘텐츠</b>이므로 미루면 안 됩니다. 오히려 우선순위를 <b>올려야</b> 합니다. 매우 흔한 실수입니다."
+  },
+  {
+    q: "CLS를 개선하는 데 가장 효과가 큰 조치는?",
+    o: [
+      "애니메이션을 제거한다",
+      "이미지·비디오·임베드에 크기(width/height 또는 aspect-ratio)를 명시해 미리 자리를 확보한다",
+      "JavaScript 번들을 줄인다",
+      "CDN을 사용한다"
+    ],
+    a: 1,
+    e: "크기를 모르면 브라우저가 자리를 0으로 잡았다가 도착 후 밀어냅니다(8장). 이미지에 크기를 적는 것만으로 CLS 문제의 상당 부분이 해결되며, <b>투자 대비 효과가 가장 좋은 항목</b>입니다. 폰트 교체와 동적 삽입 배너도 주요 원인입니다."
+  },
+  {
+    q: "같은 100KB라도 이미지보다 JavaScript가 성능에 더 나쁜 이유는?",
+    o: [
+      "JavaScript 파일이 압축되지 않아서",
+      "이미지는 다운로드 후 디코딩만 하면 되지만 JS는 다운로드·파싱·컴파일·실행을 거쳐 메인 스레드를 오래 점유하기 때문",
+      "브라우저가 JavaScript를 캐시하지 않아서",
+      "JavaScript는 CDN을 쓸 수 없어서"
+    ],
+    a: 1,
+    e: "JS는 받은 뒤에도 <b>파싱·컴파일·실행</b>이라는 CPU 작업이 남습니다. 저사양 기기에서는 이 비용이 몇 배로 커집니다. 그래서 <b>번들 크기를 줄이는 것</b>이 프론트엔드 성능에서 가장 큰 레버이고, \"가장 빠른 코드는 보내지 않은 코드\"라는 말이 나옵니다."
+  }
+]);
+</script>
+</body>
+</html>

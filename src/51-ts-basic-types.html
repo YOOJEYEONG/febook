@@ -1,0 +1,365 @@
+<!--desc: TypeScript의 기본 타입, 배열과 튜플, 유니온과 리터럴 타입, 객체 타입, 함수 타입, enum 대신 쓸 것까지 정리합니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>원시 타입과 배열, <b>튜플</b></li>
+  <li><b>유니온 타입</b>과 <b>리터럴 타입</b> — TypeScript의 진짜 강점</li>
+  <li>객체 타입과 선택적 속성</li>
+  <li>함수 타입 쓰는 법</li>
+  <li><b><code>enum</code> 대신 무엇을 쓸지</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분</p>
+
+<h2 id="primitives">기본 타입</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">let name: string = "홍길동";
+let age: number = 20;              // 정수·소수 구분 없음 (25장)
+let isActive: boolean = true;
+let nothing: null = null;
+let notDefined: undefined = undefined;
+let big: bigint = 100n;
+let unique: symbol = Symbol("id");
+
+// 특별한 타입들
+let anything: any;         // 모든 검사 해제 — 피하세요
+let safe: unknown;         // 확인 후에만 사용 가능
+function fail(): never { throw new Error(); }   // 절대 반환하지 않음
+function log(): void { console.log("x"); }      // 반환값이 없음</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔤</span> 소문자로 씁니다</p>
+<p style="margin-bottom:0"><code>string</code>이 맞고 <code>String</code>은 <b>틀립니다.</b>
+대문자 <code>String</code>은 JavaScript의 <b>래퍼 객체</b>를 뜻해서 의도와 다르게 동작합니다.
+<code>number</code>, <code>boolean</code>도 마찬가지입니다.</p>
+</div>
+
+<h2 id="array">배열과 튜플</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// 배열 — 두 표기법은 완전히 같습니다. 앞의 것을 더 많이 씁니다
+let names: string[] = ["a", "b"];
+let ages: Array&lt;number&gt; = [20, 30];
+
+// 여러 타입이 섞인 배열
+let mixed: (string | number)[] = ["a", 1];
+
+// 2차원
+let grid: number[][] = [[1, 2], [3, 4]];
+
+// 튜플 — 길이와 각 자리의 타입이 정해진 배열
+let point: [number, number] = [10, 20];
+let entry: [string, number] = ["age", 20];
+
+point[0].toFixed(1);        // ✅ number 임을 압니다
+// point[2];                ❌ 길이를 벗어남
+
+// 이름을 붙이면 읽기 좋습니다
+type Coordinate = [x: number, y: number];
+
+// React의 useState가 튜플을 반환합니다 (59장)
+const [count, setCount] = useState(0);
+//     ↑ number   ↑ 함수 — 각 자리의 타입이 다릅니다</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🕳️</span> 배열 인덱스 접근의 함정</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">const list: string[] = [];
+const first = list[0];      // 타입은 string 이지만 실제 값은 undefined!
+first.toUpperCase();        // 💥 런타임 오류</code></pre>
+</div>
+<p style="margin-bottom:0">기본 설정에서 TypeScript는 <b>인덱스 접근이 항상 성공한다고 가정</b>합니다.
+<code>tsconfig.json</code>에 <b><code>"noUncheckedIndexedAccess": true</code></b>를 켜면
+<code>string | undefined</code>로 추론되어 확인을 강제합니다.
+안전을 중시한다면 켜는 것을 권합니다.</p>
+</div>
+
+<h2 id="union">유니온 타입 — 가장 많이 쓰는 기능</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">let id: string | number;
+id = "abc";     // ✅
+id = 123;       // ✅
+id = true;      // ❌
+
+// null 가능성을 명시적으로 표현합니다
+function findUser(id: number): User | null {
+  // …
+}
+
+const user = findUser(1);
+// user.name;              ❌ 'user' is possibly 'null'
+if (user) {
+  user.name;            // ✅ 여기서는 User 임이 확실 (54장)
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">💡</span> 유니온은 "이 중 하나"를 코드로 표현합니다</p>
+<p style="margin-bottom:0">JavaScript에서는 주석으로만 남기던 정보
+("이 함수는 유저를 찾거나 null을 반환합니다")를
+<b>컴파일러가 검사할 수 있는 형태</b>로 만드는 것이 유니온입니다.
+그리고 <b>null 검사를 빠뜨리면 즉시 오류</b>가 나므로 실수를 원천 차단합니다.</p>
+</div>
+
+<h2 id="literal">리터럴 타입 — 값 자체가 타입</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">let direction: "left" | "right" | "up" | "down";
+direction = "left";      // ✅
+direction = "back";      // ❌ 자동 완성으로 네 개만 제안됩니다
+
+type Status = "idle" | "loading" | "success" | "error";
+type Size = "sm" | "md" | "lg";
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+function request(url: string, method: HttpMethod) { }
+request("/api", "GET");    // ✅
+request("/api", "get");    // ❌ 대소문자까지 정확히</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⭐</span> 실무에서 가장 유용한 조합</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">interface ButtonProps {
+  variant: "primary" | "secondary" | "danger";
+  size: "sm" | "md" | "lg";
+  disabled?: boolean;
+}</code></pre>
+</div>
+<p style="margin-bottom:0">이렇게 써 두면 <b>컴포넌트를 쓰는 사람이 문서를 볼 필요가 없습니다.</b>
+편집기가 가능한 값을 전부 제안하고, 오타는 즉시 잡힙니다.
+React 컴포넌트 설계에서 이 패턴을 계속 쓰게 됩니다(56·63장).</p>
+</div>
+
+<h3 id="const-assertion">const 단언</h3>
+<div class="codeblock">
+<pre><code data-lang="ts">let a = "hello";              // string 으로 추론 (바뀔 수 있으므로)
+const b = "hello";            // "hello" 리터럴 타입 (바뀌지 않으므로)
+
+const config = { mode: "dark" };
+// config.mode 는 string 으로 추론됩니다
+
+const config2 = { mode: "dark" } as const;
+// config2.mode 는 "dark" 리터럴, 그리고 모든 속성이 readonly
+
+const SIZES = ["sm", "md", "lg"] as const;
+type Size = typeof SIZES[number];    // "sm" | "md" | "lg"
+// ↑ 배열 하나로 값과 타입을 동시에 관리하는 유용한 패턴</code></pre>
+</div>
+
+<h2 id="object">객체 타입</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// 인라인으로
+function greet(user: { name: string; age: number }) { }
+
+// 이름을 붙여 재사용 (52장에서 자세히)
+interface User {
+  id: number;
+  name: string;
+  email?: string;              // 선택적 — 없어도 됩니다
+  readonly createdAt: Date;    // 읽기 전용 — 수정 불가
+}
+
+const user: User = { id: 1, name: "홍길동", createdAt: new Date() };
+// user.createdAt = new Date();   ❌ 읽기 전용
+
+// 인덱스 시그니처 — 키를 미리 알 수 없을 때
+interface Scores {
+  [subject: string]: number;
+}
+const scores: Scores = { math: 90, english: 85 };
+
+// Record 로 더 간결하게
+const scores2: Record&lt;string, number&gt; = { math: 90 };
+const labels: Record&lt;"sm" | "md", string&gt; = { sm: "작게", md: "보통" };</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📦</span> 선택적 속성(<code>?</code>)과 <code>| undefined</code>는 다릅니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">interface A { email?: string; }              // 아예 없어도 됨
+interface B { email: string | undefined; }   // 반드시 있어야 하되 값이 undefined일 수 있음
+
+const a: A = {};                    // ✅
+const b: B = {};                    // ❌ email 속성이 필요합니다
+const b2: B = { email: undefined }; // ✅</code></pre>
+</div>
+</div>
+
+<h2 id="function">함수 타입</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// 매개변수와 반환 타입
+function add(a: number, b: number): number {
+  return a + b;
+}
+
+// 선택적 매개변수와 기본값
+function greet(name: string, greeting: string = "안녕", title?: string) { }
+
+// 나머지 매개변수
+function sum(...numbers: number[]): number { }
+
+// 함수 자체를 타입으로 표현
+type Handler = (event: MouseEvent) =&gt; void;
+type Comparator&lt;T&gt; = (a: T, b: T) =&gt; number;
+
+const onClick: Handler = (event) =&gt; {
+  event.preventDefault();     // ✅ event의 타입을 알고 있습니다
+};
+
+// 콜백을 받는 함수
+function repeat(times: number, action: (index: number) =&gt; void): void {
+  for (let i = 0; i &lt; times; i++) action(i);
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎁</span> 문맥 기반 추론</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">const names = ["a", "bb", "ccc"];
+names.map(name =&gt; name.length);
+//         ↑ string 으로 자동 추론됩니다. 타입을 쓸 필요가 없습니다
+
+button.addEventListener("click", (event) =&gt; {
+  //                              ↑ MouseEvent 로 추론
+});</code></pre>
+</div>
+<p style="margin-bottom:0">콜백의 매개변수는 <b>대개 자동으로 추론</b>됩니다.
+"매개변수는 항상 타입을 써야 한다"는 규칙의 예외입니다.</p>
+</div>
+
+<h2 id="enum">enum 대신</h2>
+
+<div class="codeblock">
+<pre><code data-lang="ts">// enum — 쓸 수는 있지만 권장되지 않습니다
+enum Status { Idle, Loading, Success }
+
+// 이유:
+// ① 런타임 코드를 생성합니다 (타입은 사라진다는 원칙의 예외)
+// ② 숫자 enum은 정의되지 않은 숫자도 통과시키는 등 동작이 직관적이지 않습니다
+// ③ 트리 셰이킹이 어렵습니다 (47장)
+
+// ✅ 권장: 유니온 리터럴
+type Status = "idle" | "loading" | "success";
+
+// ✅ 값도 필요하면 as const 객체
+const STATUS = {
+  IDLE: "idle",
+  LOADING: "loading",
+  SUCCESS: "success"
+} as const;
+
+type Status2 = typeof STATUS[keyof typeof STATUS];   // "idle" | "loading" | "success"</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 자주 만나는 타입들</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">// DOM
+const input = document.querySelector("#email") as HTMLInputElement | null;
+input?.value;
+
+// querySelector는 Element | null 을 반환합니다.
+// value 같은 input 전용 속성을 쓰려면 구체적인 타입이 필요합니다.
+
+// 이벤트
+function onSubmit(event: React.FormEvent&lt;HTMLFormElement&gt;) { }
+function onChange(event: React.ChangeEvent&lt;HTMLInputElement&gt;) { }
+
+// fetch 결과 — 반드시 타입을 붙이세요
+const response = await fetch("/api/users");
+const users: User[] = await response.json();
+// response.json()은 any 를 반환합니다. 그대로 두면 검사가 사라집니다.</code></pre>
+</div>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>타입 이름은 <b>소문자</b>. <code>String</code>이 아니라 <code>string</code>.</li>
+<li><b>튜플</b>은 길이와 각 자리 타입이 정해진 배열. <code>useState</code>가 대표 예.</li>
+<li>배열 인덱스 접근은 기본적으로 <code>undefined</code> 가능성을 무시한다. <code>noUncheckedIndexedAccess</code> 권장.</li>
+<li><b>유니온</b>으로 "이 중 하나"를, <b>리터럴 타입</b>으로 "정확히 이 값"을 표현한다.</li>
+<li><code>as const</code>로 리터럴 타입을 고정하고, <code>typeof X[number]</code>로 값에서 타입을 뽑는다.</li>
+<li><b><code>?</code>와 <code>| undefined</code>는 다르다.</b></li>
+<li>콜백 매개변수는 <b>대개 자동 추론</b>된다.</li>
+<li><b><code>enum</code> 대신 유니온 리터럴</b>이나 <code>as const</code> 객체를 쓴다.</li>
+<li><code>response.json()</code>은 <code>any</code>다. <b>반드시 타입을 붙인다.</b></li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/everyday-types.html" target="_blank" rel="noopener">TypeScript 핸드북 — 일상적인 타입</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/2/objects.html" target="_blank" rel="noopener">핸드북 — 객체 타입</a></li>
+<li><a href="https://www.typescriptlang.org/tsconfig/#noUncheckedIndexedAccess" target="_blank" rel="noopener">noUncheckedIndexedAccess 옵션</a></li>
+<li><a href="https://www.typescriptlang.org/docs/handbook/enums.html#objects-vs-enums" target="_blank" rel="noopener">핸드북 — enum 대신 객체 쓰기</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>type Status = \"idle\" | \"loading\" | \"success\"</code> 같은 리터럴 유니온의 실무적 이점은?",
+    o: [
+      "실행 속도가 빨라진다",
+      "편집기가 가능한 값을 전부 자동 완성해 주고 오타를 즉시 잡아, 사용하는 사람이 문서를 볼 필요가 없어진다",
+      "번들 크기가 줄어든다",
+      "런타임에 값이 검증된다"
+    ],
+    a: 1,
+    e: "리터럴 유니온은 <b>가능한 값의 목록 자체가 타입</b>이 됩니다. 자동 완성으로 선택지가 나오고 오타는 컴파일 오류가 됩니다. 다만 <b>런타임 검증은 아니므로</b> 외부 데이터에는 별도 확인이 필요합니다."
+  },
+  {
+    q: "<code>interface A { email?: string }</code> 와 <code>interface B { email: string | undefined }</code> 의 차이는?",
+    o: [
+      "차이가 없다",
+      "A는 속성이 아예 없어도 되지만, B는 속성이 반드시 존재해야 하며 값만 undefined일 수 있다",
+      "B는 문법 오류다",
+      "A는 읽기 전용이다"
+    ],
+    a: 1,
+    e: "<code>?</code>는 <b>속성의 존재 여부</b>를 선택적으로 만듭니다. <code>| undefined</code>는 속성은 반드시 있어야 하고 <b>값</b>만 <code>undefined</code>가 될 수 있습니다. 그래서 <code>const b: B = {}</code>는 오류입니다."
+  },
+  {
+    q: "TypeScript에서 <code>enum</code> 대신 유니온 리터럴이나 <code>as const</code> 객체가 권장되는 이유로 옳지 <b>않은</b> 것은?",
+    o: [
+      "enum은 런타임 코드를 생성해 \"타입은 사라진다\"는 원칙에서 벗어난다",
+      "숫자 enum은 정의되지 않은 숫자도 통과시키는 등 동작이 직관적이지 않다",
+      "트리 셰이킹이 어렵다",
+      "enum은 TypeScript 최신 버전에서 제거되었다"
+    ],
+    a: 3,
+    e: "<code>enum</code>은 여전히 사용 가능한 문법입니다. 다만 <b>런타임 코드 생성·직관적이지 않은 동작·번들 최적화 불리</b>라는 실질적 단점 때문에 유니온 리터럴이나 <code>as const</code> 객체가 선호됩니다."
+  },
+  {
+    q: "<code>const users = await response.json()</code> 이후 <code>users</code>의 타입은?",
+    o: [
+      "자동으로 정확한 타입이 추론된다",
+      "<code>any</code>다. 그대로 두면 이후 모든 검사가 사라지므로 타입을 명시하거나 런타임 검증을 해야 한다",
+      "unknown이다",
+      "object다"
+    ],
+    a: 1,
+    e: "<code>Response.json()</code>은 서버가 무엇을 줄지 알 수 없으므로 <code>any</code>(또는 최신 정의에서는 <code>Promise&lt;any&gt;</code>)를 반환합니다. <code>any</code>는 전염성이 있어 이후 코드의 검사를 무력화합니다. 타입 주석을 달거나 Zod 같은 도구로 검증하는 것이 안전합니다."
+  },
+  {
+    q: "<code>const list: string[] = []; const first = list[0]; first.toUpperCase();</code> 가 기본 설정에서 컴파일을 통과하는 이유는?",
+    o: [
+      "TypeScript가 배열이 비어 있음을 알기 때문",
+      "기본적으로 인덱스 접근이 항상 성공한다고 가정해 <code>string</code>으로 추론하기 때문. <code>noUncheckedIndexedAccess</code>를 켜면 <code>string | undefined</code>가 된다",
+      "toUpperCase가 undefined에서도 동작하기 때문",
+      "런타임에도 오류가 나지 않기 때문"
+    ],
+    a: 1,
+    e: "기본 설정에서 <code>arr[i]</code>는 요소 타입 그대로 추론되어 <b>범위를 벗어난 접근을 잡지 못합니다</b>. 실행하면 <code>undefined.toUpperCase()</code>로 터집니다. <code>noUncheckedIndexedAccess: true</code>를 켜면 확인을 강제해 이 부류의 버그를 막을 수 있습니다."
+  }
+]);
+</script>

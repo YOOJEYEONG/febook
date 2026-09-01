@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>46장. Node.js와 패키지 매니저 — 프엔북</title>
+<meta name="description" content="Node.js가 무엇인지, npm·yarn·pnpm의 차이, package.json 읽는 법, semver 버전 규칙, lock 파일의 역할과 의존성 보안까지 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="46장. Node.js와 패키지 매니저 — 프엔북">
+<meta property="og:description" content="Node.js가 무엇인지, npm·yarn·pnpm의 차이, package.json 읽는 법, semver 버전 규칙, lock 파일의 역할과 의존성 보안까지 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="46-node-npm">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">6부 · 개발 환경과 도구</p>
+    <h1>46장. Node.js와 패키지 매니저</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><span <span class="term" data-term="class">class</span>="term" data-term="nodejs">Node.js</span>와 npm의 관계, 버전 관리 도구로 설치하기</li>
+  <li><code>package.json</code>의 모든 항목</li>
+  <li><b>s<span class="term" data-term="em">em</span>ver</b> — <code>^</code>와 <code>~</code>가 무슨 뜻인지</li>
+  <li><b>lock 파일</b>이 왜 중요한지</li>
+  <li><code>node_modules</code>와 의존성 보안</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분</p>
+
+<h2 id="node">Node.js 설치</h2>
+
+<p>23장에서 본 것처럼 Node.js는 <b><span class="term" data-term="browser">브라우저</span> 밖에서 <span class="term" data-term="javascript">JavaScript</span>를 실행하는 환경</b>입니다.
+<span class="term" data-term="frontend">프론트엔드</span> 개발에서는 <b>서버를 만들지 않더라도</b> 반드시 필요합니다.
+빌드 도구·테스트 도구·개발 서버가 전부 Node 위에서 돌기 때문입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📥</span> 공식 설치 파일보다 <b>버전 관리 도구</b>를 권합니다</p>
+<p>프로젝트마다 요구하는 Node 버전이 다릅니다.
+버전 관리 도구를 쓰면 <b>폴더를 옮기는 것만으로 버전이 바뀝니다.</b></p>
+<div class="codeblock" style="margin-bottom:0">
+<pre><code data-lang="bash"># fnm (빠르고 가볍습니다) 또는 nvm 을 설치한 뒤
+fnm install --lts        # 최신 LTS 설치
+fnm use 20               # 특정 버전 사용
+node --version
+npm --version</code></pre>
+</div>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🏷️</span> LTS 버전을 쓰세요</p>
+<p style="margin-bottom:0"><b>LTS</b>(Long Term Support)는 <b>장기 지원 버전</b>으로, 짝수 번호가 붙습니다.
+홀수 버전은 실험적 기능이 들어간 단기 버전이라 실무에 적합하지 않습니다.
+프로젝트에는 <code>.nvmrc</code>나 <code>package.json</code>의 <code>engines</code> 필드로
+<b>팀이 쓸 버전을 명시</b>해 두는 것이 좋습니다.</p>
+</div>
+
+<h2 id="pm">패키지 매니저</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>특징</th></tr></thead>
+<tbody>
+<tr><td><b>npm</b></td><td>Node에 <b>기본 포함</b>. 가장 무난한 선택</td></tr>
+<tr><td><b>yarn</b></td><td>npm이 느리던 시절 등장. 지금은 npm과 큰 차이가 없습니다</td></tr>
+<tr><td><b>pnpm</b></td><td><b>디스크 절약과 속도</b>가 강점. 패키지를 한 곳에 두고 링크로 연결합니다. <span class="term" data-term="monorepo">모노레포</span>에서 특히 유리</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">명령어 대응표</span>
+<pre><code data-lang="bash">npm install              pnpm install         yarn
+npm install react        pnpm add react       yarn add react
+npm install -D vite      pnpm add -D vite     yarn add -D vite
+npm uninstall react      pnpm remove react    yarn remove react
+npm run dev              pnpm dev             yarn dev
+npx create-vite          pnpm dlx create-vite yarn dlx create-vite</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔀</span> 한 프로젝트에서 <b>하나만</b> 쓰세요</p>
+<p style="margin-bottom:0">npm과 yarn을 섞어 쓰면 <b>lock 파일이 두 개</b>가 되어
+사람마다 다른 버전이 설치되는 최악의 상황이 됩니다.
+저장소에 <code>package-lock.json</code>이 있으면 npm을, <code>pnpm-lock.yaml</code>이 있으면 pnpm을 쓰세요.</p>
+</div>
+
+<h2 id="pkgjson">package.json</h2>
+
+<div class="codeblock">
+<pre><code data-lang="json">{
+  "name": "my-app",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "eslint": "^9.0.0"
+  },
+  "engines": {
+    "node": "&gt;=20"
+  }
+}</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>항목</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>type: "module"</code></td><td>이 프로젝트의 <code>.js</code> 파일을 <b><span class="term" data-term="esm">ES 모듈</span></b>로 해석(34장). 없으면 <span class="term" data-term="commonjs">CommonJS</span></td></tr>
+<tr><td><b><code>scripts</code></b></td><td>자주 쓰는 명령에 별명 붙이기. <code>npm run dev</code>로 실행</td></tr>
+<tr><td><b><code>dependencies</code></b></td><td><b>실행에 필요한</b> 패키지. 사용자에게 전달되는 코드에 포함됩니다</td></tr>
+<tr><td><b><code>devDependencies</code></b></td><td><b>개발할 때만</b> 필요한 것. 빌드 도구, 테스트, 린터</td></tr>
+<tr><td><code>engines</code></td><td>필요한 Node 버전 명시</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎬</span> <code>scripts</code>가 실무의 진입점입니다</p>
+<p style="margin-bottom:0">낯선 프로젝트를 받았을 때 <b>가장 먼저 볼 곳이 <code>scripts</code></b>입니다.
+어떻게 실행하고, 어떻게 빌드하고, 어떻게 테스트하는지가 전부 여기 적혀 있습니다.
+<code>npm run</code>만 입력하면 <b>사용 가능한 스크립트 목록</b>이 나옵니다.</p>
+</div>
+
+<h2 id="semver">semver — 버전 번호 읽기</h2>
+
+<div class="codeblock">
+<span class="cb-label">MAJOR.MINOR.PATCH</span>
+<pre><code data-lang="text">    19  .  2  .  3
+    │      │     └── PATCH — 버그 수정. 사용법이 바뀌지 않음
+    │      └──────── MINOR — 기능 추가. 기존 코드는 그대로 동작 (하위 호환)
+    └─────────────── MAJOR — 깨지는 변경. 코드 수정이 필요할 수 있음</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>표기</th><th>허용 범위</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><code>^19.2.3</code></td><td>19.2.3 ~ 19.x.x</td><td><b>MAJOR는 고정.</b> npm 기본값</td></tr>
+<tr><td><code>~19.2.3</code></td><td>19.2.3 ~ 19.2.x</td><td>PATCH만 허용. 더 보수적</td></tr>
+<tr><td><code>19.2.3</code></td><td>정확히 이 버전</td><td>완전 고정</td></tr>
+<tr><td><code>*</code> 또는 <code>latest</code></td><td>아무 최신 버전</td><td><b>절대 쓰지 마세요</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📌</span> "제 컴퓨터에서는 되는데요"의 원인</p>
+<p style="margin-bottom:0"><code>^19.2.3</code>은 <b>범위</b>입니다.
+같은 <code>package.json</code>으로 오늘 설치한 사람과 한 달 뒤 설치한 사람이
+<b>서로 다른 버전</b>을 받을 수 있습니다.
+그래서 <b>lock 파일</b>이 필요합니다.</p>
+</div>
+
+<h2 id="lock">lock 파일</h2>
+
+<p><code>package-lock.json</code>(또는 <code>pnpm-lock.yaml</code>, <code>yarn.lock</code>)은
+<b>실제로 설치된 정확한 버전</b>을 전부 기록합니다.
+직접 설치한 것뿐 아니라 <b>그것들이 의존하는 패키지까지 전부</b>입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔒</span> lock 파일은 <b>반드시 <span class="term" data-term="commit">커밋</span></b>하세요</p>
+<ul style="margin-bottom:0">
+<li>커밋하면 <b>모든 팀원과 <span class="term" data-term="ci">CI</span> 서버가 완전히 같은 버전</b>을 설치합니다.</li>
+<li><code>.gitignore</code>에 넣으면 안 됩니다. <b>재현 가능한 빌드의 근거</b>가 사라집니다.</li>
+<li><span class="term" data-term="conflict">충돌</span>이 나면 손으로 고치지 말고, <b>lock 파일을 지우고 <code>npm install</code>을 다시 실행</b>하세요.</li>
+</ul>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm install       # package.json 기준으로 설치. lock 파일을 갱신할 수 있음
+npm ci            # lock 파일 그대로 정확히 설치. 빠르고 결정적
+                  # → CI·배포 환경에서는 항상 npm ci 를 씁니다</code></pre>
+</div>
+
+<h2 id="node-modules">node_modules</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>사실</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>커밋하지 않습니다</b></td><td><code>.gitignore</code>에 반드시 넣습니다. 수만 개 파일에 수백 MB입니다</td></tr>
+<tr><td><b>언제든 다시 만들 수 있습니다</b></td><td><code>package.json</code> + lock 파일만 있으면 됩니다</td></tr>
+<tr><td><b>이상하면 지우고 다시</b></td><td><code>rm -rf node_modules package-lock.json &amp;&amp; npm install</code>이 의외로 많은 문제를 해결합니다</td></tr>
+<tr><td><b>직접 수정하지 않습니다</b></td><td>다시 설치하면 사라집니다. 고쳐야 한다면 <code>patch-package</code> 같은 도구를 씁니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="security">의존성과 보안</h2>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🕸️</span> 패키지 하나가 수백 개를 데려옵니다</p>
+<p style="margin-bottom:0">패키지 3개를 설치했는데 <code>node_modules</code>에 폴더가 800개 생기는 일이 흔합니다.
+여러분이 설치한 것들이 <b>또 다른 패키지에 의존</b>하기 때문입니다.
+즉 <b>여러분의 앱에는 얼굴도 모르는 수백 명의 코드가 들어 있습니다.</b>
+이것을 <b>공급망(supply chain) 위험</b>이라고 부릅니다.</p>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npm audit              # 알려진 취약점 확인
+npm audit fix          # 자동으로 고칠 수 있는 것 수정
+npm outdated           # 오래된 패키지 확인
+npm ls react           # 이 패키지가 어디서 왔는지 추적</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 패키지를 설치하기 전에</p>
+<ol>
+<li><b>정말 필요한가?</b> 40장에서 말했듯 표준 <span class="term" data-term="api">API</span>로 되는 일이 많습니다.
+날짜 표시에 라이브러리를 넣기 전에 <code>Intl</code>을 확인하세요.</li>
+<li><b>얼마나 무거운가?</b> <a href="https://bundlephobia.com/" target="_blank" rel="noopener">bundlephobia.com</a>에서
+설치 전에 용량을 확인할 수 있습니다.</li>
+<li><b>살아 있는 프로젝트인가?</b> 마지막 배포일, 이슈 응답, 다운로드 수를 봅니다.</li>
+<li><b>의존성이 몇 개인가?</b> 작은 기능에 의존성 50개짜리 패키지를 쓸 이유는 없습니다.</li>
+</ol>
+<p style="margin-bottom:0"><b>"직접 20줄 짜기 vs 패키지 설치"</b> 사이에서, 신입은 대개 설치 쪽으로 기웁니다.
+경험이 쌓일수록 <b>작은 기능은 직접 쓰는 편이 낫다</b>는 판단이 늘어납니다.
+설치한 패키지는 <b>영원히 관리 대상</b>이 되기 때문입니다.</p>
+</div>
+
+<h2 id="npx">npx</h2>
+<div class="codeblock">
+<pre><code data-lang="bash">npx create-vite my-app        # 설치하지 않고 한 번만 실행
+npx serve                      # 로컬 서버 (44장)
+npx eslint .                   # 프로젝트에 설치된 eslint 실행</code></pre>
+</div>
+<p><code>npx</code>는 <b>패키지를 전역 설치하지 않고 실행</b>합니다.
+프로젝트 생성 도구처럼 <b>한 번만 쓰는 명령</b>에 적합하며,
+전역 설치로 인한 버전 충돌을 피할 수 있습니다.</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>Node.js는 <b>버전 관리 도구</b>(fnm·nvm)로 설치하고 <b>LTS</b>를 쓴다.</li>
+<li>한 프로젝트에서 패키지 매니저는 <b>하나만</b> 쓴다.</li>
+<li><code>dependencies</code>는 실행에, <code>devDependencies</code>는 개발에만 필요한 것.</li>
+<li><code>^19.2.3</code>은 <b>MAJOR 고정</b>, <code>~</code>는 PATCH만. <code>*</code>는 쓰지 않는다.</li>
+<li><b>lock 파일은 반드시 커밋</b>한다. CI에서는 <code>npm ci</code>.</li>
+<li><code>node_modules</code>는 커밋하지 않고, 이상하면 지우고 다시 설치한다.</li>
+<li>패키지 하나가 <b>수백 개를 데려온다.</b> 설치 전에 필요성·용량·관리 상태를 확인한다.</li>
+<li>일회성 실행은 <b><code>npx</code></b>.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://nodejs.org/ko" target="_blank" rel="noopener">Node.js 공식 사이트</a></li>
+<li><a href="https://docs.npmjs.com/cli/v10/configuring-npm/package-json" target="_blank" rel="noopener">npm — package.json 전체 명세</a></li>
+<li><a href="https://semver.org/lang/ko/" target="_blank" rel="noopener">유의적 버전(semver) 한국어 명세</a></li>
+<li><a href="https://bundlephobia.com/" target="_blank" rel="noopener">Bundlephobia</a> — 패키지 용량 확인</li>
+<li><a href="https://pnpm.io/ko/" target="_blank" rel="noopener">pnpm 공식 문서 (한국어)</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>package-lock.json</code>을 <code>.gitignore</code>에 넣으면 안 되는 이유는?",
+    o: [
+      "파일 크기가 작아서",
+      "팀원과 CI가 각자 다른 버전을 설치하게 되어 \"제 컴퓨터에서는 되는데요\" 문제가 생기기 때문",
+      "npm이 동작하지 않기 때문",
+      "보안 취약점이 생기기 때문"
+    ],
+    a: 1,
+    e: "<code>package.json</code>의 <code>^19.2.3</code>은 <b>범위</b>라서 설치 시점에 따라 다른 버전이 깔립니다. lock 파일은 <b>실제 설치된 모든 패키지의 정확한 버전</b>을 기록해 재현 가능한 빌드를 보장합니다. CI에서는 <code>npm ci</code>로 lock 파일 그대로 설치합니다."
+  },
+  {
+    q: "<code>\"react\": \"^19.2.3\"</code> 이 허용하는 버전 범위는?",
+    o: [
+      "정확히 19.2.3만",
+      "19.2.3 이상 20.0.0 미만 — MAJOR는 고정하고 MINOR·PATCH 업데이트는 허용",
+      "19.2.3 이상 19.3.0 미만",
+      "모든 버전"
+    ],
+    a: 1,
+    e: "<code>^</code>(캐럿)은 <b>MAJOR를 고정</b>합니다. MAJOR가 바뀌면 하위 호환이 깨질 수 있기 때문입니다. <code>~</code>(틸드)는 더 보수적이어서 PATCH만 허용합니다(19.2.x)."
+  },
+  {
+    q: "빌드 도구인 Vite는 <code>dependencies</code>와 <code>devDependencies</code> 중 어디에 들어가야 하나요?",
+    o: [
+      "dependencies — 프로젝트에 필요하므로",
+      "devDependencies — 개발·빌드 시점에만 필요하고 사용자에게 전달되는 코드에는 포함되지 않으므로",
+      "둘 다",
+      "어느 쪽이든 상관없다"
+    ],
+    a: 1,
+    e: "<code>dependencies</code>는 <b>앱이 실행될 때 필요한 것</b>, <code>devDependencies</code>는 <b>개발할 때만 필요한 것</b>입니다. 빌드 도구·린터·테스트 도구가 후자입니다. 배포 환경에서 <code>--production</code>으로 설치하면 devDependencies는 제외됩니다."
+  },
+  {
+    q: "npm과 yarn을 한 프로젝트에서 섞어 쓰면 생기는 문제는?",
+    o: [
+      "설치 속도가 느려진다",
+      "lock 파일이 두 개가 되어 사람마다 다른 버전이 설치될 수 있다",
+      "package.json이 삭제된다",
+      "아무 문제 없다"
+    ],
+    a: 1,
+    e: "각 매니저는 <b>자기만의 lock 파일</b>을 만듭니다. 둘이 공존하면 어느 것이 진실인지 알 수 없고 환경마다 다른 트리가 설치됩니다. 저장소에 있는 lock 파일 종류를 보고 <b>하나로 통일</b>해야 합니다."
+  },
+  {
+    q: "새 패키지를 설치하기 전에 확인해야 할 것으로 <b>가장 거리가 먼</b> 것은?",
+    o: [
+      "표준 브라우저 API로 해결할 수 있는지",
+      "번들 용량과 의존성 개수",
+      "최근 유지보수 상태와 다운로드 수",
+      "패키지 이름이 짧고 외우기 쉬운지"
+    ],
+    a: 3,
+    e: "설치한 패키지는 <b>영원히 관리 대상</b>이 되고 공급망 위험도 함께 들어옵니다. 필요성·용량·의존성 개수·유지보수 상태가 판단 기준이며, 이름의 길이는 아무 상관이 없습니다."
+  }
+]);
+</script>
+</body>
+</html>

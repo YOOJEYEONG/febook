@@ -1,0 +1,365 @@
+<!--desc: 프로토타입 체인이 무엇인지, class 문법이 그 위에 어떻게 얹혀 있는지, 상속과 비공개 필드, instanceof까지 객체지향 JavaScript를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>프로토타입 체인</b> — <code>[1,2].map()</code>이 어디서 오는가</li>
+  <li><code>class</code>는 <b>새로운 것이 아니라 문법 설탕</b>이라는 사실</li>
+  <li>생성자, 메서드, <code>static</code>, 접근자, <b><code>#</code> 비공개 필드</b></li>
+  <li><code>extends</code>·<code>super</code>로 상속하기</li>
+  <li>실무에서 <b>클래스를 쓸지 말지</b> 판단하는 기준</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분</p>
+
+<h2 id="proto">프로토타입 — 물려받는 사슬</h2>
+
+<p>이상한 점을 하나 짚어 봅시다. 우리는 <code>map</code>을 만든 적이 없는데
+모든 배열이 <code>map</code>을 가지고 있습니다. <b>어디서 왔을까요?</b></p>
+
+<div class="runner" data-lang="js" data-title="프로토타입 체인 따라가기" data-note="__proto__ 는 설명용입니다. 실무 코드에서는 Object.getPrototypeOf를 씁니다.">
+<textarea class="rn-src">
+const arr = [1, 2, 3];
+
+console.log("arr 자신이 가진 것:", Object.keys(arr));   // ["0","1","2"] — map은 없습니다
+
+console.log("--- 체인을 따라가 봅시다 ---");
+const p1 = Object.getPrototypeOf(arr);
+console.log("1단계:", p1 === Array.prototype);          // true — 여기에 map이 있습니다
+console.log("  map 보유?", p1.hasOwnProperty("map"));
+
+const p2 = Object.getPrototypeOf(p1);
+console.log("2단계:", p2 === Object.prototype);         // true
+console.log("  toString 보유?", p2.hasOwnProperty("toString"));
+
+const p3 = Object.getPrototypeOf(p2);
+console.log("3단계:", p3);                              // null — 체인의 끝
+
+console.log("--- 그래서 이런 일이 가능합니다 ---");
+console.log(arr.map(n => n * 2));      // Array.prototype 에서 찾음
+console.log(arr.toString());           // Object.prototype 에서 찾음
+console.log(arr.없는메서드);             // undefined — 끝까지 못 찾음
+
+console.log("--- 직접 만들어 확인 ---");
+const parent = { greet() { return "부모의 인사"; } };
+const child = Object.create(parent);   // parent를 프로토타입으로 하는 객체
+child.name = "자식";
+
+console.log(child.name);      // 자기 것
+console.log(child.greet());   // 부모에서 찾음
+console.log(Object.hasOwn(child, "greet"));   // false — 자기 것은 아님
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔗</span> 프로토타입 체인 한 줄 요약</p>
+<p style="margin-bottom:0">객체에서 속성을 찾을 때, <b>자기 것에 없으면 프로토타입으로 올라가며 찾습니다.</b>
+끝까지 없으면 <code>undefined</code>. 이 연결 고리가 <b>프로토타입 체인</b>입니다.<br>
+24장의 <b>스코프 체인</b>이 "변수"를 찾는 사슬이라면,
+프로토타입 체인은 <b>"속성"을 찾는 사슬</b>입니다. 구조가 닮았습니다.</p>
+</div>
+
+<h2 id="class">class 문법</h2>
+
+<div class="codeblock">
+<span class="cb-label">예전 방식과 현재 방식</span>
+<pre><code data-lang="js">// ES5 이전: 생성자 함수 + prototype
+function PersonOld(name) {
+  this.name = name;
+}
+PersonOld.prototype.greet = function () {
+  return this.name + "입니다";
+};
+
+// ES2015 이후: class
+class Person {
+  constructor(name) {
+    this.name = name;
+  }
+  greet() {
+    return this.name + "입니다";
+  }
+}</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🍬</span> class는 "문법 설탕"입니다</p>
+<span class="mythline"><b class="no">오해</b> — JavaScript에 클래스 기반 객체지향이 새로 도입되었다.</span>
+<span class="mythline"><b class="yes">사실</b> — <b>동작은 프로토타입 그대로입니다.</b>
+<code>class</code>는 위의 생성자 함수 + <code>prototype</code> 코드를 <b>읽기 좋게 쓰는 문법</b>일 뿐입니다.
+<code>typeof Person</code>은 여전히 <code>"function"</code>이고, 메서드는 <code>Person.prototype</code>에 들어갑니다.</span>
+<span class="mythline">다만 완전히 같지는 않습니다. <b><code>class</code>는 항상 엄격 모드로 동작</b>하고,
+<b><code>new</code> 없이 호출하면 오류</b>가 나며, <b>호이스팅되어도 TDZ</b>에 걸립니다.
+이 차이들은 대부분 <b>실수를 막아 주는</b> 방향입니다.</span>
+</div>
+
+<h2 id="members">클래스의 구성 요소</h2>
+
+<div class="runner" data-lang="js" data-title="클래스 전체 문법" data-note="# 비공개 필드는 클로저 없이 데이터를 감추는 표준 방법입니다.">
+<textarea class="rn-src">
+class BankAccount {
+  // ① 클래스 필드 — 인스턴스마다 생김
+  bank = "국민은행";
+
+  // ② 비공개 필드 — 클래스 밖에서 접근 불가
+  #balance = 0;
+
+  // ③ 정적 속성 — 클래스 자체에 붙음 (인스턴스가 아님)
+  static minimumDeposit = 1000;
+  static #count = 0;
+
+  // ④ 생성자
+  constructor(owner, initial = 0) {
+    this.owner = owner;
+    this.#balance = initial;
+    BankAccount.#count++;
+  }
+
+  // ⑤ 메서드 — prototype에 들어감 (인스턴스마다 복제되지 않음)
+  deposit(amount) {
+    if (amount < BankAccount.minimumDeposit) {
+      return `${BankAccount.minimumDeposit}원 이상만 입금 가능합니다`;
+    }
+    this.#balance += amount;
+    return `잔액 ${this.#balance}원`;
+  }
+
+  // ⑥ 접근자 — 속성처럼 쓰지만 함수가 실행됨
+  get balance() {
+    return this.#balance;
+  }
+  set balance(value) {
+    throw new Error("잔액은 직접 설정할 수 없습니다");
+  }
+
+  // ⑦ 정적 메서드 — 인스턴스 없이 호출
+  static getCount() {
+    return BankAccount.#count;
+  }
+
+  // ⑧ 특별한 메서드
+  toString() {
+    return `${this.owner}의 계좌(${this.#balance}원)`;
+  }
+}
+
+const account = new BankAccount("홍길동", 5000);
+console.log(account.deposit(500));      // 최소 금액 미달
+console.log(account.deposit(3000));
+console.log("접근자로 읽기:", account.balance);   // 괄호 없이 씁니다
+
+console.log("--- 비공개 필드는 진짜로 막혀 있습니다 ---");
+console.log("getter를 통해서만 읽힙니다:", account.balance);
+console.log("자기 속성 목록에도 없습니다:", Object.keys(account));
+console.log("JSON에도 포함되지 않습니다:", JSON.stringify(account));
+// 참고: 아래 줄의 주석을 풀면 '실행'이 아니라 '파싱' 단계에서 문법 오류가 납니다.
+//       try/catch로도 잡을 수 없습니다. 그만큼 강하게 막혀 있다는 뜻입니다.
+// console.log(account.#balance);
+
+console.log("--- setter로 잘못된 조작 막기 ---");
+try {
+  account.balance = 999999;
+} catch (error) {
+  console.error("  " + error.message);
+}
+console.log("잔액 그대로:", account.balance);
+
+console.log("--- 정적 멤버 ---");
+new BankAccount("김철수");
+console.log("생성된 계좌 수:", BankAccount.getCount());
+console.log("인스턴스에는 없음:", account.getCount);   // undefined
+
+console.log("--- 메서드는 prototype에 있습니다 ---");
+console.log("자기 속성:", Object.keys(account));
+console.log("deposit이 자기 것?", Object.hasOwn(account, "deposit"));  // false
+console.log(String(account));   // toString 자동 호출
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔒</span> <code>#</code> 비공개 필드</p>
+<p style="margin-bottom:0">이름 앞에 <code>#</code>를 붙이면 <b>클래스 밖에서 접근할 수 없습니다.</b>
+관례상 <code>_name</code>처럼 밑줄을 붙이던 옛 방식과 달리 <b>문법적으로 강제됩니다.</b>
+Chrome 74+, Safari 14.1+, Firefox 90+, Node 12+에서 지원됩니다.</p>
+</div>
+
+<h2 id="inherit">상속</h2>
+
+<div class="runner" data-lang="js" data-title="extends와 super" data-note="super()를 빼면 어떤 오류가 나는지도 확인해 보세요.">
+<textarea class="rn-src">
+class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+  speak() {
+    return `${this.name}이(가) 소리를 냅니다`;
+  }
+  describe() {
+    return `[동물] ${this.speak()}`;
+  }
+}
+
+class Dog extends Animal {
+  constructor(name, breed) {
+    super(name);          // ← 부모 생성자 호출. this보다 먼저 와야 합니다
+    this.breed = breed;
+  }
+
+  // 오버라이딩: 부모 메서드를 덮어씀
+  speak() {
+    return `${this.name}이(가) 멍멍 짖습니다`;
+  }
+
+  // 부모 것도 함께 쓰고 싶으면 super
+  speakBoth() {
+    return super.speak() + " / " + this.speak();
+  }
+}
+
+const dog = new Dog("바둑이", "진돗개");
+console.log(dog.speak());
+console.log(dog.describe());     // 부모의 describe가 자식의 speak를 호출합니다
+console.log(dog.speakBoth());
+
+console.log("--- 타입 확인 ---");
+console.log("Dog인가?", dog instanceof Dog);         // true
+console.log("Animal인가?", dog instanceof Animal);   // true — 체인을 따라 확인
+console.log("Object인가?", dog instanceof Object);   // true
+
+console.log("--- super() 없이 this를 쓰면 ---");
+class Broken extends Animal {
+  constructor(name) {
+    try {
+      this.name = name;   // super() 전에 this 사용
+    } catch (e) {
+      console.error("  " + e.name + ": super() 호출 전에는 this를 쓸 수 없습니다");
+    }
+    super(name);
+  }
+}
+new Broken("테스트");
+</textarea>
+</div>
+
+<h2 id="instanceof">instanceof와 타입 판별</h2>
+<div class="codeblock">
+<pre><code data-lang="js">dog instanceof Dog;          // true — 프로토타입 체인에 Dog.prototype이 있는가
+
+// ⚠️ 배열 판별에 instanceof를 쓰지 마세요
+arr instanceof Array;        // 대개 true지만, iframe 등 다른 실행 환경의
+                             // 배열에는 false가 됩니다
+Array.isArray(arr);          // ✅ 항상 정확</code></pre>
+</div>
+
+<h2 id="when">클래스를 언제 쓸까</h2>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 현대 프론트엔드에서의 위치</p>
+<p><b>React를 쓴다면 클래스를 직접 만들 일이 거의 없습니다.</b>
+과거에는 클래스 컴포넌트가 표준이었지만, 2019년 훅이 나온 뒤로는 <b>함수형이 사실상 표준</b>입니다.
+상태와 로직은 커스텀 훅(66장)으로 재사용합니다.</p>
+<div class="tablewrap" style="margin-bottom:0">
+<table>
+<thead><tr><th>클래스가 어울리는 곳</th><th>객체·함수가 나은 곳</th></tr></thead>
+<tbody>
+<tr><td>같은 구조의 인스턴스를 <b>여러 개</b> 만들 때</td><td>단 하나만 필요한 설정·상수 묶음</td></tr>
+<tr><td>상태와 동작이 <b>강하게 묶여</b> 있을 때</td><td>순수한 계산·변환 (그냥 함수)</td></tr>
+<tr><td>라이브러리 API 설계 (예: <code>new Map()</code>)</td><td>React 컴포넌트</td></tr>
+<tr><td>커스텀 에러 클래스(33장)</td><td>단순 데이터 전달용 객체</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🪜</span> 상속을 깊게 만들지 마세요</p>
+<p style="margin-bottom:0">3단계 이상 상속은 <b>어디서 온 메서드인지 추적하기 어려워집니다.</b>
+부모를 고치면 모든 자식이 영향을 받아 변경도 위험해집니다.
+현대적인 조언은 <b>"상속보다 합성(composition)"</b>입니다.
+클래스를 물려받기보다, <b>필요한 기능을 가진 객체를 안에 담아 쓰는 방식</b>이 대체로 더 유연합니다.
+React가 상속을 쓰지 않고 <b>컴포넌트를 조립하는 방식</b>을 택한 것도 같은 이유입니다(63장).</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>객체는 속성을 찾을 때 <b>프로토타입 체인</b>을 따라 올라간다. 끝은 <code>null</code>.</li>
+<li><code>[1,2].map</code>은 <b><code>Array.prototype</code></b>에 있다.</li>
+<li><b><code>class</code>는 프로토타입 위에 얹은 문법 설탕</b>이다. 동작 원리는 그대로다.</li>
+<li>단, <code>class</code>는 항상 엄격 모드이고 <code>new</code> 없이 호출할 수 없다.</li>
+<li>메서드는 <b>prototype에 한 벌</b>만 존재한다. 인스턴스마다 복제되지 않는다.</li>
+<li><code>#</code> 비공개 필드는 <b>문법적으로 강제</b>되는 은닉이다.</li>
+<li><code>extends</code> + <code>super()</code>. <b><code>super()</code>는 <code>this</code>보다 먼저.</b></li>
+<li>배열 판별은 <code>instanceof</code>가 아니라 <b><code>Array.isArray()</code></b>.</li>
+<li><b>상속보다 합성.</b> React를 쓴다면 클래스를 직접 만들 일이 드물다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Inheritance_and_the_prototype_chain" target="_blank" rel="noopener">MDN — 상속과 프로토타입 체인</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Classes" target="_blank" rel="noopener">MDN — 클래스</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Private_properties" target="_blank" rel="noopener">MDN — 비공개 속성 (#)</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof" target="_blank" rel="noopener">MDN — instanceof</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>[1,2,3].map(...)</code> 에서 <code>map</code> 메서드는 실제로 어디에 있나요?",
+    o: [
+      "배열 인스턴스 자신에게 복사되어 있다",
+      "<code>Array.prototype</code>에 있으며, 프로토타입 체인을 따라 찾아진다",
+      "전역 객체에 있다",
+      "브라우저가 호출 시점에 만들어 준다"
+    ],
+    a: 1,
+    e: "배열 인스턴스가 가진 것은 인덱스 속성뿐입니다. <code>map</code>은 <code>Array.prototype</code>에 <b>한 벌만</b> 존재하고, 속성을 찾을 때 프로토타입 체인을 따라 올라가 발견됩니다. 그래서 배열이 백만 개여도 메서드는 하나입니다."
+  },
+  {
+    q: "\"<code>class</code>는 문법 설탕이다\"라는 말의 의미는?",
+    o: [
+      "class는 실제로 동작하지 않는다",
+      "내부 동작은 기존의 프로토타입 기반 그대로이고, class는 그것을 읽기 좋게 쓰는 문법일 뿐이다",
+      "class는 컴파일 시점에 제거된다",
+      "class는 TypeScript에서만 쓸 수 있다"
+    ],
+    a: 1,
+    e: "<code>class</code>로 만든 메서드는 여전히 <code>prototype</code>에 들어가고 <code>typeof</code>는 <code>\"function\"</code>입니다. 다만 <b>항상 엄격 모드</b>이고 <b><code>new</code> 없이 호출하면 오류</b>가 나는 등 실수를 막는 차이가 추가되어 있습니다."
+  },
+  {
+    q: "자식 클래스 생성자에서 <code>super()</code> 호출 전에 <code>this</code>를 사용하면?",
+    o: [
+      "부모 속성이 undefined가 된다",
+      "ReferenceError가 발생한다. super() 호출로 this가 초기화되기 전이기 때문",
+      "정상 동작한다",
+      "부모 생성자가 자동으로 호출된다"
+    ],
+    a: 1,
+    e: "파생 클래스에서는 <code>super()</code>가 실행되어야 <code>this</code>가 만들어집니다. 그 전에 <code>this</code>를 참조하면 <code>ReferenceError</code>가 납니다. 그래서 <code>super()</code>는 생성자의 <b>맨 앞</b>에 두는 것이 관례입니다."
+  },
+  {
+    q: "클래스에서 <code>#balance</code> 처럼 <code>#</code>를 붙인 필드의 특징은?",
+    o: [
+      "관례상 비공개일 뿐 밖에서 접근 가능하다",
+      "문법적으로 강제되는 비공개 필드로, 클래스 밖에서는 접근 자체가 불가능하다",
+      "정적 속성이 된다",
+      "읽기 전용이 된다"
+    ],
+    a: 1,
+    e: "예전의 <code>_name</code> 규칙은 <b>약속일 뿐</b>이라 마음먹으면 접근할 수 있었습니다. <code>#</code> 필드는 <b>언어 차원에서 막혀</b> 있어 클래스 본문 밖에서는 참조하면 문법 오류가 납니다. 외부에 값을 노출하려면 getter를 따로 만듭니다."
+  },
+  {
+    q: "배열인지 확인할 때 <code>instanceof Array</code>보다 <code>Array.isArray()</code>가 권장되는 이유는?",
+    o: [
+      "instanceof가 더 느려서",
+      "iframe 등 다른 실행 환경에서 만들어진 배열은 프로토타입이 달라 instanceof가 false가 될 수 있기 때문",
+      "instanceof는 배열을 지원하지 않아서",
+      "Array.isArray가 더 짧아서"
+    ],
+    a: 1,
+    e: "각 실행 환경(iframe, 워커 등)은 <b>자기만의 <code>Array.prototype</code></b>을 갖습니다. 다른 환경에서 넘어온 배열은 현재 환경의 <code>Array</code>를 상속하지 않아 <code>instanceof</code>가 실패합니다. <code>Array.isArray()</code>는 환경과 무관하게 정확합니다."
+  }
+]);
+</script>

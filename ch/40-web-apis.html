@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>40장. 알아두면 강력한 Web API — 프엔북</title>
+<meta name="description" content="IntersectionObserver·ResizeObserver·MutationObserver, History API, matchMedia, Web Worker, 클립보드, dialog 요소 등 실무에서 강력한 브라우저 API를 정리합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="40장. 알아두면 강력한 Web API — 프엔북">
+<meta property="og:description" content="IntersectionObserver·ResizeObserver·MutationObserver, History API, matchMedia, Web Worker, 클립보드, dialog 요소 등 실무에서 강력한 브라우저 API를 정리합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="40-web-apis">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">5부 · JavaScript 심화와 브라우저 API</p>
+    <h1>40장. 알아두면 강력한 Web API</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>Observer 삼형제</b> — 스크롤 이벤트를 쓰지 않고 감지하기</li>
+  <li><b>History <span class="term" data-term="api">API</span></b> — 새로고침 없이 주소 바꾸기</li>
+  <li><b>Web Worker</b> — 진짜 별도 스레드에서 계산하기</li>
+  <li><code>matchMedia</code>·클립보드·<code>&lt;dialog&gt;</code> 등 실무 API</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분 · 사전처럼 필요할 때 다시 찾아오세요</p>
+
+<h2 id="io">IntersectionObserver — 화면에 보이는지 감지</h2>
+
+<p><b>"이 요소가 화면에 들어왔는가"</b>를 알려 줍니다.
+예전에는 <code>scroll</code> 이벤트에서 위치를 계산했는데, 그 방식은 <b>초당 수십 번 레이아웃을 강제</b>해
+심각하게 느렸습니다. IntersectionObserver는 <span class="term" data-term="browser">브라우저</span>가 <b>효율적으로 대신 감시</b>해 줍니다.</p>
+
+<div class="runner" data-lang="html" data-title="스크롤에 따라 나타나기" data-note="아래 영역을 스크롤해 보세요. 카드가 화면에 들어올 때 나타납니다.">
+<textarea class="rn-src">
+<style>
+  body { margin: 0; font-size: 13px; }
+  .scroller { height: 240px; overflow-y: auto; border: 2px solid #1f5f4f;
+              border-radius: 8px; padding: 12px; }
+  .spacer { height: 200px; display: grid; place-items: center; color: #999; }
+  .card {
+    padding: 20px; margin-bottom: 40px; background: #1f5f4f; color: white;
+    border-radius: 8px; text-align: center; font-weight: 700;
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 400ms ease-out, transform 400ms ease-out;
+  }
+  .card.visible { opacity: 1; transform: none; }
+</style>
+
+<div class="scroller" id="scroller">
+  <div class="spacer">↓ 스크롤하세요</div>
+  <div class="card">카드 1</div>
+  <div class="card">카드 2</div>
+  <div class="card">카드 3</div>
+  <div class="spacer">끝</div>
+</div>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("visible");
+        console.log("보임:", entry.target.textContent,
+                    "(" + Math.round(entry.intersectionRatio * 100) + "%)");
+        // 한 번만 필요하면 감시를 해제합니다
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    root: document.getElementById("scroller"),  // null이면 화면 전체 기준
+    rootMargin: "0px",       // 여유 범위. "200px"이면 200px 전에 미리 감지
+    threshold: 0.3           // 30% 이상 보이면 발동 (0~1, 배열도 가능)
+  });
+
+  document.querySelectorAll(".card").forEach(card => observer.observe(card));
+</script>
+</textarea>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>쓰임</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>이미지 <span <span class="term" data-term="class">class</span>="term" data-term="lazy-loading">지연 로딩</span></b></td><td><code>loading="lazy"</code>로 안 되는 배경 이미지 등</td></tr>
+<tr><td><b>무한 스크롤</b></td><td>맨 아래 감시 요소가 보이면 다음 페이지 요청</td></tr>
+<tr><td><b>등장 애니메이션</b></td><td>위 예제</td></tr>
+<tr><td><b>스크롤 스파이</b></td><td>현재 읽고 있는 섹션을 목차에 표시 (이 책의 우측 목차가 이 방식입니다)</td></tr>
+<tr><td><b>광고 노출 측정</b></td><td>실제로 화면에 보였는지 확인</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ro-mo">ResizeObserver와 MutationObserver</h2>
+
+<div class="codeblock">
+<span class="cb-label">ResizeObserver — 요소 크기 변화 감지</span>
+<pre><code data-lang="js">const ro = new ResizeObserver((entries) =&gt; {
+  for (const entry of entries) {
+    const { width, height } = entry.contentRect;
+    console.log(`${width} × ${height}`);
+  }
+});
+ro.observe(chartContainer);</code></pre>
+</div>
+<p><code>window</code>의 <code>resize</code> 이벤트는 <b>창 크기</b>만 알려 줍니다.
+사이드바가 접혀서 <b>요소</b>만 작아지는 경우는 감지하지 못합니다.
+차트 라이브러리를 컨테이너 크기에 맞춰 다시 그릴 때 필수입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">MutationObserver — <span class="term" data-term="dom">DOM</span> 변화 감지</span>
+<pre><code data-lang="js">const mo = new MutationObserver((mutations) =&gt; {
+  for (const m of mutations) {
+    console.log(m.type, m.addedNodes.length);
+  }
+});
+mo.observe(container, { childList: true, subtree: true, attributes: true });</code></pre>
+</div>
+<p>내가 통제할 수 없는 <b>외부 스크립트가 DOM을 바꿀 때</b> 대응하는 용도입니다.
+직접 만든 코드라면 대개 필요 없습니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧹</span> Observer는 반드시 정리하세요</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">observer.unobserve(element);   // 특정 요소만 해제
+observer.disconnect();          // 전부 해제</code></pre>
+</div>
+<p style="margin-bottom:0">해제하지 않으면 요소가 사라진 뒤에도 <span class="term" data-term="reference">참조</span>가 남아 <b>메모리 누수</b>가 됩니다.
+<span class="term" data-term="react">React</span>에서는 <code>useEffect</code>의 <span class="term" data-term="cleanup">정리 함수</span>에서 <code>disconnect()</code>를 호출합니다(61장).</p>
+</div>
+
+<h2 id="history">History API</h2>
+
+<div class="codeblock">
+<pre><code data-lang="js">// 새로고침 없이 주소만 바꾸기 (히스토리에 새 항목 추가)
+history.pushState({ page: 2 }, "", "/products?page=2");
+
+// 현재 항목을 교체 (뒤로 가기 목록에 남기지 않음)
+history.replaceState({ tab: "info" }, "", "?tab=info");
+
+// 뒤로/앞으로 갈 때
+window.addEventListener("popstate", (event) =&gt; {
+  console.log("상태:", event.state);
+  renderPage(location.pathname);   // 화면을 직접 다시 그려야 합니다
+});
+
+history.back();
+history.forward();</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧭</span> <span class="term" data-term="spa">SPA</span> <span class="term" data-term="routing">라우팅</span>의 정체</p>
+<p style="margin-bottom:0">React Router 같은 라이브러리가 하는 일이 바로 이것입니다.
+링크 클릭에서 <code>preventDefault()</code>로 <b>브라우저의 페이지 이동을 막고</b>,
+<code>pushState</code>로 <b>주소만 바꾸고</b>, 해당하는 <span class="term" data-term="component">컴포넌트</span>를 렌더링합니다.
+68장에서 다시 다룹니다.<br>
+<b>주의</b>: <code>pushState</code>는 <b>화면을 바꿔 주지 않습니다.</b> 주소만 바뀝니다.
+그리고 <b>다른 <span class="term" data-term="origin">출처</span>의 주소로는 바꿀 수 없습니다.</b></p>
+</div>
+
+<h2 id="worker">Web Worker — 진짜 별도 스레드</h2>
+
+<p>35장에서 본 것처럼 무거운 계산은 화면을 멈추게 합니다.
+Web Worker는 <b>완전히 다른 스레드</b>에서 코드를 실행해 메인 스레드를 자유롭게 둡니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">worker.js</span>
+<pre><code data-lang="js">self.addEventListener("message", (event) =&gt; {
+  const result = heavyCalculation(event.data);
+  self.postMessage(result);
+});</code></pre>
+</div>
+<div class="codeblock">
+<span class="cb-label">main.js</span>
+<pre><code data-lang="js">const worker = new Worker("worker.js");
+worker.postMessage({ numbers: bigArray });
+worker.addEventListener("message", (event) =&gt; {
+  console.log("결과:", event.data);   // 이 동안에도 화면은 부드럽게 움직입니다
+});
+worker.terminate();   // 다 쓰면 종료</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Worker에서 <b>되는 것</b></th><th><b>안 되는 것</b></th></tr></thead>
+<tbody>
+<tr><td>계산, <code>fetch</code>, <span class="term" data-term="indexeddb">IndexedDB</span>, <code>setTimeout</code></td><td><b><code>document</code>·<code>window</code>·DOM 접근</b>, <code>localStorage</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>메인과 Worker는 <b>메시지로만</b> 대화합니다. 데이터는 <b>복사되어</b> 전달되므로
+아주 큰 데이터를 자주 주고받으면 그 자체가 비용이 됩니다.</p>
+
+<h2 id="misc">그 밖에 자주 쓰는 API</h2>
+
+<div class="codeblock">
+<span class="cb-label">matchMedia — <span class="term" data-term="javascript">JavaScript</span>에서 <span class="term" data-term="media-query">미디어 쿼리</span> 쓰기</span>
+<pre><code data-lang="js">const mq = window.matchMedia("(prefers-color-scheme: dark)");
+console.log(mq.matches);                       // 현재 상태
+mq.addEventListener("change", (e) =&gt; {
+  applyTheme(e.matches ? "dark" : "light");    // 설정이 바뀌면 즉시 반응
+});</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">클립보드</span>
+<pre><code data-lang="js">// ⚠️ HTTPS(또는 localhost)에서만 동작하고, 사용자 동작에 의해 호출되어야 합니다
+async function copy(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast("복사했습니다");
+  } catch (error) {
+    showToast("복사에 실패했습니다");
+  }
+}</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">페이지 가시성 — 탭이 백그라운드로 갔는지</span>
+<pre><code data-lang="js">document.addEventListener("visibilitychange", () =&gt; {
+  if (document.hidden) {
+    pauseVideo();          // 배터리·데이터 절약
+  } else {
+    refreshData();         // 돌아오면 최신 데이터로
+  }
+});</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">페이지를 떠날 때 데이터 전송</span>
+<pre><code data-lang="js">// fetch는 페이지가 닫히면 취소될 수 있습니다. sendBeacon은 보장됩니다
+navigator.sendBeacon("/api/analytics", JSON.stringify({ event: "leave" }));</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">&lt;dialog&gt; — 모달을 직접 만들 필요가 없습니다</span>
+<pre><code data-lang="html">&lt;dialog id="modal"&gt;
+  &lt;form method="dialog"&gt;
+    &lt;p&gt;정말 삭제할까요?&lt;/p&gt;
+    &lt;button value="cancel"&gt;취소&lt;/button&gt;
+    &lt;button value="ok"&gt;삭제&lt;/button&gt;
+  &lt;/form&gt;
+&lt;/dialog&gt;</code></pre>
+</div>
+<div class="codeblock">
+<pre><code data-lang="js">modal.showModal();     // 배경 클릭 차단, Esc로 닫기, 포커스 가둠 — 전부 기본 제공
+modal.addEventListener("close", () =&gt; console.log(modal.returnValue));</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✨</span> <code>&lt;dialog&gt;</code>를 쓰세요</p>
+<p style="margin-bottom:0">직접 만든 모달은 <b>포커스 가두기, Esc 닫기, 스크롤 잠금, <span class="term" data-term="a11y">접근성</span> 역할</b>을
+전부 구현해야 하고, 대부분 빠뜨립니다.
+<code>&lt;dialog&gt;</code>는 이 모든 것을 브라우저가 제공합니다.
+게다가 17장에서 본 <code>transform</code> 조상 문제도 겪지 않습니다.
+Chrome 37+, Safari 15.4+, Firefox 98+에서 지원됩니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 라이브러리를 찾기 전에 표준을 확인하세요</p>
+<p style="margin-bottom:0">"모달", "툴팁", "무한 스크롤", "날짜 포맷", "복사 버튼" — 예전에는 전부 라이브러리가 필요했지만
+지금은 <b>브라우저가 기본 제공하는 것이 많습니다.</b>
+<code>&lt;dialog&gt;</code>, <code>&lt;details&gt;</code>, IntersectionObserver, <code>Intl</code>(43장),
+<code>navigator.clipboard</code>가 그 예입니다.<br>
+표준 기능은 <b>용량이 0이고, 접근성이 갖춰져 있고, 유지보수가 필요 없습니다.</b>
+새 의존성을 추가하기 전에 <b><span class="term" data-term="mdn">MDN</span>에서 먼저 검색하는 습관</b>이 실력을 크게 좌우합니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>IntersectionObserver</b>로 "화면에 보이는지"를 효율적으로 감지한다. <code>scroll</code> 이벤트 계산보다 훨씬 빠르다.</li>
+<li><b>ResizeObserver</b>는 창이 아니라 <b>요소</b>의 크기 변화를 본다.</li>
+<li>모든 Observer는 <b>정리(<code>disconnect</code>)</b>해야 한다.</li>
+<li><b>History API</b>가 SPA 라우팅의 토대다. <code>pushState</code>는 <b>주소만</b> 바꾼다.</li>
+<li><b>Web Worker</b>는 별도 스레드지만 <b>DOM에 접근할 수 없다.</b></li>
+<li><code>matchMedia</code>로 JavaScript에서 미디어 쿼리를 쓴다.</li>
+<li>모달은 <b><code>&lt;dialog&gt;</code></b>. 접근성이 공짜로 따라온다.</li>
+<li><b>라이브러리 전에 표준 API를 먼저 확인</b>한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/Intersection_Observer_API" target="_blank" rel="noopener">MDN — Intersection Observer API</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver" target="_blank" rel="noopener">MDN — ResizeObserver</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/History_API" target="_blank" rel="noopener">MDN — History API</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/Web_Workers_API/Using_web_workers" target="_blank" rel="noopener">MDN — Web Worker 사용하기</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/dialog" target="_blank" rel="noopener">MDN — dialog 요소</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "스크롤에 따라 요소가 화면에 들어왔는지 감지할 때 <code>scroll</code> 이벤트 대신 IntersectionObserver를 쓰는 이유는?",
+    o: [
+      "코드가 짧아서",
+      "scroll 이벤트에서 위치를 계산하면 초당 수십 번 레이아웃을 강제해 매우 느린 반면, IntersectionObserver는 브라우저가 효율적으로 처리해 주기 때문",
+      "scroll 이벤트는 모바일에서 동작하지 않아서",
+      "IntersectionObserver가 더 정확한 픽셀 값을 주기 때문"
+    ],
+    a: 1,
+    e: "<code>scroll</code> 핸들러에서 <code>getBoundingClientRect()</code>를 호출하면 <b>매번 레이아웃을 강제로 계산</b>합니다(38장 레이아웃 스래싱). IntersectionObserver는 브라우저 내부에서 비동기로 처리되어 메인 스레드 부담이 훨씬 작습니다."
+  },
+  {
+    q: "<code>history.pushState()</code>를 호출하면 무슨 일이 일어나나요?",
+    o: [
+      "페이지가 새로고침되며 이동한다",
+      "주소창의 URL과 히스토리 항목만 바뀌고 화면은 바뀌지 않는다. 화면 갱신은 직접 해야 한다",
+      "서버에 요청이 전송된다",
+      "이전 페이지로 돌아간다"
+    ],
+    a: 1,
+    e: "<code>pushState</code>는 <b>브라우저 히스토리와 주소만</b> 조작합니다. 서버 요청도 없고 화면도 그대로입니다. 그래서 SPA 라우터는 <code>pushState</code> 호출 후 <b>직접 컴포넌트를 렌더링</b>하고, <code>popstate</code>에서도 같은 일을 합니다."
+  },
+  {
+    q: "Web Worker 안에서 <b>할 수 없는</b> 일은?",
+    o: ["fetch로 데이터 가져오기", "무거운 계산 수행", "document.querySelector로 DOM 조작", "setTimeout 사용"],
+    a: 2,
+    e: "Worker는 <b>DOM에 접근할 수 없습니다</b>. <code>document</code>·<code>window</code>가 아예 없습니다. 계산 결과를 <code>postMessage</code>로 메인 스레드에 보내고, DOM 조작은 메인 스레드가 합니다. 이 제약 덕분에 스레드 간 충돌 문제가 생기지 않습니다."
+  },
+  {
+    q: "모달을 만들 때 <code>&lt;dialog&gt;</code> 요소를 권장하는 이유는?",
+    o: [
+      "디자인이 예뻐서",
+      "포커스 가두기·Esc로 닫기·배경 클릭 차단·접근성 역할을 브라우저가 기본 제공하기 때문",
+      "JavaScript 없이 열 수 있어서",
+      "구형 브라우저에서만 동작해서"
+    ],
+    a: 1,
+    e: "직접 만든 모달은 <b>포커스 트랩, Esc 처리, 스크롤 잠금, ARIA 역할</b>을 모두 구현해야 하고 대부분 빠뜨립니다. <code>showModal()</code>은 이 전부를 제공하며, 최상위 레이어에 그려져 <code>z-index</code>·<code>transform</code> 문제도 겪지 않습니다."
+  },
+  {
+    q: "Observer(Intersection·Resize·Mutation)를 정리하지 않으면 생기는 문제는?",
+    o: [
+      "이벤트가 두 번 발생한다",
+      "사라진 요소에 대한 참조가 남아 메모리 누수가 발생한다",
+      "브라우저가 자동으로 오류를 낸다",
+      "아무 문제 없다"
+    ],
+    a: 1,
+    e: "Observer는 감시 대상 요소에 대한 참조를 유지합니다. 컴포넌트가 사라져도 <code>disconnect()</code>를 호출하지 않으면 그 참조가 남아 가비지 컬렉션이 되지 않습니다. React에서는 <code>useEffect</code>의 정리 함수에서 해제하는 것이 정석입니다."
+  }
+]);
+</script>
+</body>
+</html>

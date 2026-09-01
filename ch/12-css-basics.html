@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12장. CSS 기초: 선택자, 명시도, 캐스케이드 — 프엔북</title>
+<meta name="description" content="CSS를 연결하는 세 가지 방법, 선택자 전체, 명시도 계산법, 캐스케이드와 상속의 규칙을 처음부터 설명합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="12장. CSS 기초: 선택자, 명시도, 캐스케이드 — 프엔북">
+<meta property="og:description" content="CSS를 연결하는 세 가지 방법, 선택자 전체, 명시도 계산법, 캐스케이드와 상속의 규칙을 처음부터 설명합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="12-css-basics">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">3부 · CSS — 보이는 모든 것</p>
+    <h1>12장. CSS 기초: 선택자, 명시도, 캐스케이드</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>CSS 규칙의 구조와 문서에 연결하는 방법</li>
+  <li>선택자 전체 — 요소·클래스·id·속성·조합·가상 클래스</li>
+  <li><b>명시도</b>를 직접 계산하는 법</li>
+  <li>"왜 내 스타일이 안 먹지?"의 원인을 찾는 순서</li>
+  <li>상속되는 속성과 되지 않는 속성</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분 · CSS에서 가장 중요한 챕터입니다</p>
+
+<h2 id="rule">CSS 규칙의 구조</h2>
+
+<div class="codeblock">
+<span class="cb-label">용어</span>
+<pre><code data-lang="css">h1 {                 /* h1 = 선택자 (selector) */
+  color: #1f5f4f;    /* color = 속성(property), #1f5f4f = 값(value) */
+  font-size: 28px;   /* 속성: 값;  ← 이 한 줄이 선언(declaration) */
+}                    /* { } 안 전체 = 선언 블록 */</code></pre>
+</div>
+
+<h3 id="connect">문서에 연결하는 세 가지 방법</h3>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>방법</th><th>코드</th><th>쓰임</th></tr></thead>
+<tbody>
+<tr><td><b>외부 파일</b></td><td><code>&lt;link rel="stylesheet" href="style.css"&gt;</code></td><td><b>기본.</b> 여러 페이지가 공유하고 캐시된다</td></tr>
+<tr><td><b>내부 스타일</b></td><td><code>&lt;style&gt; … &lt;/style&gt;</code></td><td>그 페이지에만 필요한 소량. 첫 화면 최적화에도 쓰인다</td></tr>
+<tr><td><b>인라인 스타일</b></td><td><code>&lt;p style="color:red"&gt;</code></td><td><b>피한다.</b> 재사용 불가, 명시도가 매우 높아 덮어쓰기 어려움</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="selectors">선택자</h2>
+
+<h3 id="basic-sel">기본 선택자</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>선택자</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>p</code></td><td>모든 <code>&lt;p&gt;</code> 요소</td></tr>
+<tr><td><code>.card</code></td><td><code>class="card"</code>인 모든 요소</td></tr>
+<tr><td><code>#header</code></td><td><code>id="header"</code>인 요소. <b>id는 문서에 하나만</b> 있어야 합니다</td></tr>
+<tr><td><code>*</code></td><td>모든 요소</td></tr>
+<tr><td><code>[type="email"]</code></td><td>해당 속성을 가진 요소</td></tr>
+<tr><td><code>h1, h2, h3</code></td><td>쉼표로 여러 선택자를 <b>동시에</b> 지정</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="combinator">조합 선택자 — 관계로 찾기</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>기호</th><th>이름</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>A B</code> (공백)</td><td>자손</td><td>A 안 <b>어디든</b> 있는 B</td></tr>
+<tr><td><code>A &gt; B</code></td><td>자식</td><td>A의 <b>바로 아래</b> B만</td></tr>
+<tr><td><code>A + B</code></td><td>인접 형제</td><td>A <b>바로 다음</b>에 오는 B 하나</td></tr>
+<tr><td><code>A ~ B</code></td><td>일반 형제</td><td>A 뒤에 오는 <b>모든</b> 형제 B</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⬅️</span> CSS는 왼쪽이 아니라 오른쪽으로 갈 수 없다</p>
+<p style="margin-bottom:0">"B를 포함한 A"를 고르는 부모 선택자는 오랫동안 없었습니다.
+지금은 <code>:has()</code>가 그 역할을 합니다. <code>article:has(img)</code>는
+<b>이미지를 포함한 article</b>을 고릅니다.
+Chrome 105+, Safari 15.4+, Firefox 121+에서 지원되며 현재는 실무에서 쓸 만합니다.</p>
+</div>
+
+<h3 id="pseudo-class">가상 클래스 — 상태로 찾기</h3>
+<div class="tablewrap">
+<table>
+<thead><tr><th>선택자</th><th>의미</th></tr></thead>
+<tbody>
+<tr><td><code>:hover</code></td><td>마우스를 올렸을 때. <b>터치 기기에는 없습니다</b> — 여기에만 기능을 넣으면 안 됩니다</td></tr>
+<tr><td><code>:focus</code> / <code>:focus-visible</code></td><td>포커스를 받았을 때 / <b>키보드로</b> 받았을 때</td></tr>
+<tr><td><code>:active</code></td><td>누르고 있는 동안</td></tr>
+<tr><td><code>:first-child</code> / <code>:last-child</code></td><td>형제 중 첫째 / 막내</td></tr>
+<tr><td><code>:nth-child(2n)</code></td><td>짝수 번째. <code>2n+1</code>은 홀수</td></tr>
+<tr><td><code>:not(.excluded)</code></td><td>해당하지 <b>않는</b> 것</td></tr>
+<tr><td><code>:is(h1, h2, h3)</code></td><td>여럿 중 하나. 긴 선택자를 짧게 씁니다</td></tr>
+<tr><td><code>:where(…)</code></td><td><code>:is</code>와 같지만 <b>명시도가 0</b>입니다</td></tr>
+<tr><td><code>:disabled</code> / <code>:checked</code></td><td>폼 요소의 상태</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="pseudo-element">가상 요소 — 없는 것을 만들기</h3>
+<p>가상 요소는 콜론 <b>두 개</b>를 씁니다. 실제로 존재하지 않는 부분에 스타일을 넣습니다.</p>
+<div class="codeblock">
+<pre><code data-lang="css">a::before { content: "→ "; }         /* 요소 내용 앞에 삽입 */
+a::after  { content: " ↗"; }         /* 뒤에 삽입 */
+p::first-line { font-weight: 700; }  /* 첫 줄만 */
+::selection { background: #ffe58a; } /* 드래그로 선택한 부분 */</code></pre>
+</div>
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>content</code>가 없으면 나타나지 않습니다</p>
+<p style="margin-bottom:0"><code>::before</code>·<code>::after</code>는 <b><code>content</code> 속성이 반드시 있어야</b> 생성됩니다.
+빈 문자열 <code>content: ""</code>이라도 있어야 합니다. 가장 흔한 실수입니다.<br>
+또한 <code>::before</code>로 넣은 글자는 <b>중요한 정보에 쓰면 안 됩니다.</b>
+장식용으로만 쓰고, <span <span class="term" data-term="class">class</span>="term" data-term="screen-reader">스크린 리더</span>가 읽는 방식이 일정하지 않습니다.</p>
+</div>
+
+<h2 id="cascade">캐스케이드 — 규칙이 겹칠 때</h2>
+
+<p>CSS의 C는 <b>Cascading</b>, 폭포처럼 흘러내린다는 뜻입니다.
+같은 요소에 여러 규칙이 적용될 때 <b>어느 것이 이길지</b>를 정하는 절차가 있습니다.
+순서대로 비교하고, <b>앞 단계에서 승부가 나면 끝</b>입니다.</p>
+
+<ol>
+<li><b><code>!important</code>가 붙었는가</b> — 붙은 쪽이 이깁니다.</li>
+<li><b>명시도(specificity)가 높은가</b> — 더 구체적인 선택자가 이깁니다.</li>
+<li><b>나중에 작성된 것</b> — 위 둘이 같으면 아래에 쓴 것이 이깁니다.</li>
+</ol>
+<p>(정확히는 이 앞에 "어느 <span class="term" data-term="origin">출처</span>인가"와 "어느 <span class="term" data-term="cascade-layer">캐스케이드 레이어</span>인가"라는 단계가 더 있습니다. 21장에서 다룹니다.)</p>
+
+<h3 id="specificity">명시도 계산하기</h3>
+
+<p>명시도는 세 자리 점수로 셉니다. <b>(A, B, C)</b>로 표기하겠습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>자리</th><th>세는 것</th><th>예</th></tr></thead>
+<tbody>
+<tr><td><b>A</b></td><td>id 선택자 개수</td><td><code>#header</code></td></tr>
+<tr><td><b>B</b></td><td>클래스, 속성 선택자, 가상 클래스 개수</td><td><code>.card</code>, <code>[type=text]</code>, <code>:hover</code></td></tr>
+<tr><td><b>C</b></td><td>요소 선택자, 가상 요소 개수</td><td><code>div</code>, <code>::before</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>비교는 <b>A부터</b> 합니다. A가 크면 B·C가 아무리 작아도 이깁니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">계산 예시</span>
+<pre><code data-lang="text">p                          → (0, 0, 1)
+.title                     → (0, 1, 0)   .title 이 이김
+ul li                      → (0, 0, 2)
+.menu li                   → (0, 1, 1)   .menu li 가 이김
+#nav                       → (1, 0, 0)
+.a .b .c .d .e .f .g .h    → (0, 8, 0)   여전히 #nav 가 이김 (A 자리 우선)
+style="…" (인라인)          → 어떤 선택자보다도 높음
+!important                 → 명시도 비교 이전 단계에서 이김
+* , :where(...)            → (0, 0, 0)</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> 명시도는 10진수 자릿수가 아닙니다</p>
+<span class="mythline"><b class="no">오해</b> — id는 100점, class는 10점, 요소는 1점이니까 클래스 11개를 쓰면 id를 이긴다.</span>
+<span class="mythline"><b class="yes">사실</b> — <b>세 자리를 각각 따로 비교</b>합니다. id가 하나라도 있으면
+클래스를 100개 써도 <b>절대</b> 못 이깁니다. 널리 퍼진 잘못된 설명이라 주의하세요.</span>
+</div>
+
+<div class="runner" data-lang="html" data-title="명시도 대결" data-note="style 블록의 규칙 순서를 바꿔 보세요. 명시도가 다르면 순서를 바꿔도 결과가 그대로입니다.">
+<textarea class="rn-src">
+<style>
+  /* 아래 네 규칙이 모두 같은 요소를 가리킵니다. 어느 색이 이길까요? */
+
+  p                    { color: gray; }        /* (0,0,1) */
+  .text                { color: blue; }        /* (0,1,0) */
+  div p.text           { color: green; }       /* (0,1,2) */
+  #main .text          { color: crimson; }     /* (1,1,0)  ← 승자 */
+
+  /* 순서상 맨 마지막이지만 명시도가 낮아서 집니다 */
+  p { color: orange; }                          /* (0,0,1) */
+
+  body { font-size: 15px; }
+  .note { color: #666; font-size: 13px; }
+</style>
+
+<div id="main">
+  <p class="text">이 문장은 무슨 색일까요?</p>
+</div>
+
+<p class="note">
+  #main .text 가 (1,1,0)으로 가장 높아 crimson이 적용됩니다.<br>
+  맨 아래 orange 규칙은 순서상 마지막이지만 (0,0,1)이라 집니다.
+</p>
+</textarea>
+</div>
+
+<h3 id="debug">"스타일이 안 먹어요" 해결 순서</h3>
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 이 순서대로 확인하세요</p>
+<ol style="margin-bottom:0">
+<li><b><span class="term" data-term="devtools">개발자 도구</span>에서 그 요소를 클릭</b>합니다. Styles 패널에 적용된 규칙이 전부 보입니다.</li>
+<li><b>취소선이 그어진 선언</b>을 찾습니다. 그것이 <b>다른 규칙에 밀린</b> 것입니다. 어느 규칙에 밀렸는지도 바로 위에 보입니다.</li>
+<li>규칙 자체가 <b>목록에 없다면</b> 선택자가 안 걸린 것입니다. 오타, 클래스 이름 불일치, 잘못된 중첩 관계를 확인합니다.</li>
+<li>값이 <b>무효</b>면 <span class="term" data-term="browser">브라우저</span>가 그 선언만 버립니다. <code>color: #GGG</code>처럼 잘못된 값이나 단위 누락(<code>width: 100</code>)을 확인합니다.</li>
+<li>그 속성이 <b>그 요소에 적용 가능한지</b> 확인합니다. 인라인 요소에 <code>width</code>는 먹지 않습니다(13장).</li>
+</ol>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💣</span> <code>!important</code>를 쓰지 마세요</p>
+<p style="margin-bottom:0"><code>!important</code>는 문제를 해결하는 게 아니라 <b>미룹니다.</b>
+다음 사람은 그것을 이기려고 또 <code>!important</code>를 붙이고, 결국 아무도 손댈 수 없는 파일이 됩니다.
+정당한 사용처는 <b>수정할 수 없는 외부 라이브러리 스타일을 덮어쓸 때</b> 정도입니다.
+그 외에는 선택자를 정리하거나 캐스케이드 레이어(21장)를 쓰는 것이 옳습니다.</p>
+</div>
+
+<h2 id="inherit">상속</h2>
+
+<p>일부 속성은 부모에서 자식으로 <b>자동으로 물려받습니다.</b></p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>상속됨</th><th>상속 안 됨</th></tr></thead>
+<tbody>
+<tr><td><code>color</code>, <code>font-family</code>, <code>font-size</code>, <code>font-weight</code>, <code>line-height</code>, <code>text-align</code>, <code>letter-spacing</code>, <code>visibility</code>, <code>cursor</code></td>
+<td><code>width</code>, <code>height</code>, <code>margin</code>, <code>padding</code>, <code>border</code>, <code>background</code>, <code>display</code>, <code>position</code>, <code>overflow</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>규칙성이 있습니다. <b>글자에 관한 것은 대체로 상속</b>되고, <b>박스(크기·여백·배경)에 관한 것은 상속되지 않습니다.</b>
+당연합니다. 부모의 <code>width: 500px</code>를 모든 자식이 물려받으면 화면이 망가지겠죠.</p>
+
+<div class="codeblock">
+<span class="cb-label">상속을 직접 제어하는 값</span>
+<pre><code data-lang="css">.child {
+  color: inherit;   /* 부모 값을 물려받는다 */
+  border: initial;  /* 그 속성의 CSS 기본값으로 되돌린다 */
+  margin: unset;    /* 상속 속성이면 inherit, 아니면 initial 처럼 동작 */
+  padding: revert;  /* 브라우저 기본 스타일로 되돌린다 */
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔤</span> 실무에서 자주 쓰는 <code>font: inherit</code></p>
+<p style="margin-bottom:0"><code>&lt;button&gt;</code>, <code>&lt;input&gt;</code>, <code>&lt;textarea&gt;</code> 같은 폼 요소는
+<b>글꼴을 상속받지 않습니다.</b> 운영체제 기본 글꼴이 적용되어 주변 글자와 따로 놉니다.
+그래서 대부분의 프로젝트가 초기 설정에 이 한 줄을 넣습니다.<br>
+<code>button, input, select, textarea { font: inherit; }</code></p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>CSS는 <b>선택자 + { 속성: 값; }</b>. 연결은 외부 파일이 기본.</li>
+<li>조합 선택자: 공백(자손), <code>&gt;</code>(자식), <code>+</code>(다음 형제), <code>~</code>(이후 형제).</li>
+<li>가상 요소 <code>::before</code>·<code>::after</code>는 <b><code>content</code>가 있어야</b> 생긴다.</li>
+<li>승부 순서: <b><code>!important</code> → 명시도 → 작성 순서</b>.</li>
+<li>명시도는 <b>(id, 클래스·속성·가상클래스, 요소)</b> 세 자리를 <b>각각</b> 비교한다. 자릿수 합산이 아니다.</li>
+<li>글자 관련 속성은 상속되고, 박스 관련 속성은 상속되지 않는다.</li>
+<li>폼 요소에는 <code>font: inherit</code>을 따로 넣어야 한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Learn_web_development/Core/Styling_basics" target="_blank" rel="noopener">MDN — CSS 스타일링 기초</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_cascade/Specificity" target="_blank" rel="noopener">MDN — 명시도</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_cascade/Cascade" target="_blank" rel="noopener">MDN — 캐스케이드</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/CSS/CSS_selectors" target="_blank" rel="noopener">MDN — CSS 선택자 전체</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/CSS/:has" target="_blank" rel="noopener">MDN — :has()</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "<code>#main .text</code> 와 <code>.a .b .c .d .e .f .g .h .i .j .k</code> 중 어느 쪽이 이기나요?",
+    o: [
+      "클래스가 11개인 두 번째. 점수 합이 더 크므로",
+      "<code>#main .text</code>. 명시도는 자릿수를 합산하지 않고 id 자리부터 차례로 비교하므로",
+      "나중에 작성된 쪽",
+      "둘은 같은 명시도를 가진다"
+    ],
+    a: 1,
+    e: "명시도는 <b>(id 개수, 클래스류 개수, 요소 개수)</b> 세 자리를 <b>앞에서부터 차례로</b> 비교합니다. 첫 자리에서 1 대 0으로 승부가 나므로 뒤 자리는 보지도 않습니다. \"id=100점\"이라는 설명은 흔하지만 잘못된 비유입니다."
+  },
+  {
+    q: "<code>::before</code>로 아이콘을 넣었는데 아무것도 나타나지 않습니다. 가장 흔한 원인은?",
+    o: [
+      "콜론을 두 개 써서",
+      "<code>content</code> 속성이 없어서",
+      "부모에 <code>position: relative</code>가 없어서",
+      "가상 요소는 Chrome에서만 동작해서"
+    ],
+    a: 1,
+    e: "<code>::before</code>·<code>::after</code>는 <b><code>content</code> 속성이 있어야만</b> 생성됩니다. 빈 값이라도 <code>content: \"\"</code>가 필요합니다. 콜론은 하나(<code>:before</code>)여도 하위 호환으로 동작하며, 가상 요소는 모든 주요 브라우저가 지원합니다."
+  },
+  {
+    q: "다음 중 부모에서 자식으로 <b>상속되는</b> 속성은?",
+    o: ["<code>width</code>", "<code>margin</code>", "<code>color</code>", "<code>border</code>"],
+    a: 2,
+    e: "대체로 <b>글자에 관한 속성</b>(<code>color</code>, <code>font-*</code>, <code>line-height</code>, <code>text-align</code>)이 상속되고, <b>박스에 관한 속성</b>(<code>width</code>, <code>margin</code>, <code>border</code>, <code>background</code>)은 상속되지 않습니다. 박스 속성이 상속된다면 자식마다 부모 크기를 물려받아 화면이 무너질 것입니다."
+  },
+  {
+    q: "버튼의 글꼴만 다른 글자와 다르게 보입니다. 가장 적절한 해결책은?",
+    o: [
+      "<code>button { font-family: sans-serif; }</code> 로 직접 지정한다",
+      "<code>button, input, select, textarea { font: inherit; }</code> 를 추가한다",
+      "<code>button { font-size: 100%; }</code> 만 넣는다",
+      "브라우저 문제이므로 해결할 수 없다"
+    ],
+    a: 1,
+    e: "폼 요소는 브라우저 기본 스타일이 강해 <b>글꼴을 상속받지 않고</b> 운영체제 기본 글꼴을 씁니다. <code>font: inherit</code>은 글꼴·크기·굵기·행간을 한꺼번에 부모에서 물려받게 하므로, 대부분의 프로젝트가 초기 설정에 넣는 한 줄입니다."
+  },
+  {
+    q: "CSS 규칙이 겹칠 때 승자를 정하는 순서로 옳은 것은? (레이어·출처는 제외)",
+    o: [
+      "작성 순서 → 명시도 → !important",
+      "!important → 명시도 → 작성 순서",
+      "명시도 → !important → 작성 순서",
+      "항상 파일에서 가장 마지막에 쓴 것이 이긴다"
+    ],
+    a: 1,
+    e: "<code>!important</code>가 붙었는지를 먼저 보고, 그다음 <b>명시도</b>, 그래도 같으면 <b>나중에 쓴 것</b>이 이깁니다. 그래서 명시도가 낮은 규칙은 파일 맨 아래에 써도 지고, 명시도가 같을 때만 순서가 의미를 갖습니다."
+  }
+]);
+</script>
+</body>
+</html>

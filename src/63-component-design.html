@@ -1,0 +1,351 @@
+<!--desc: 합성으로 컴포넌트를 조립하는 법, props drilling 해결, 컴파운드 컴포넌트, 컨테이너와 프레젠테이션 분리, 폴더 구조를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>합성(composition)</b> — React의 재사용 방식</li>
+  <li><b>props가 너무 많아질 때</b> 대처법</li>
+  <li>컴파운드 컴포넌트 패턴</li>
+  <li>좋은 컴포넌트 API 설계</li>
+  <li>폴더 구조 잡기</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분 · 코드가 커질 때 필요한 챕터입니다</p>
+
+<h2 id="composition">상속이 아니라 합성</h2>
+
+<p>32장에서 <b>"상속보다 합성"</b>이라고 했습니다.
+React는 이 원칙을 철저히 따릅니다. <b>React에는 컴포넌트 상속이 없습니다.</b></p>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// ❌ 다른 언어에서 하던 방식 — React에는 없습니다
+class PrimaryButton extends Button { }
+
+// ✅ 합성: 컴포넌트를 조립합니다
+function PrimaryButton(props) {
+  return &lt;Button variant="primary" {...props} /&gt;;
+}
+
+// ✅ children으로 감싸기 (58장)
+&lt;Card&gt;
+  &lt;UserProfile user={user} /&gt;
+&lt;/Card&gt;</code></pre>
+</div>
+
+<h3 id="slots">여러 자리를 열어 두기</h3>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// children이 하나로 부족하면 props로 여러 자리를 받습니다
+function Dialog({ title, body, footer }) {
+  return (
+    &lt;div className="dialog"&gt;
+      &lt;header&gt;{title}&lt;/header&gt;
+      &lt;div className="body"&gt;{body}&lt;/div&gt;
+      &lt;footer&gt;{footer}&lt;/footer&gt;
+    &lt;/div&gt;
+  );
+}
+
+&lt;Dialog
+  title={&lt;h2&gt;삭제 확인&lt;/h2&gt;}
+  body={&lt;p&gt;정말 삭제할까요?&lt;/p&gt;}
+  footer={&lt;&gt;&lt;Button&gt;취소&lt;/Button&gt;&lt;Button variant="danger"&gt;삭제&lt;/Button&gt;&lt;/&gt;}
+/&gt;</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧩</span> JSX도 그냥 값입니다</p>
+<p style="margin-bottom:0">58장에서 배웠듯 JSX는 값이므로 <b>props로 넘길 수 있습니다.</b>
+"이 자리에 무엇이 들어갈지 컴포넌트가 정하지 않고 <b>쓰는 쪽이 정하게</b>" 만드는 것이
+합성의 핵심입니다. 그래서 컴포넌트가 훨씬 유연해집니다.</p>
+</div>
+
+<h2 id="drilling">props drilling</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// ❌ user를 4단계 아래로 전달하기 위해 중간 컴포넌트들이 받기만 합니다
+&lt;App user={user}&gt;
+  &lt;Layout user={user}&gt;
+    &lt;Sidebar user={user}&gt;
+      &lt;Profile user={user} /&gt;</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">💡</span> Context를 꺼내기 전에 — 합성으로 해결되는 경우가 많습니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ✅ 완성된 요소를 children으로 내려보냅니다
+function App() {
+  const user = useUser();
+  return (
+    &lt;Layout&gt;
+      &lt;Sidebar&gt;
+        &lt;Profile user={user} /&gt;      {/* 여기서 이미 만들어 넘깁니다 */}
+      &lt;/Sidebar&gt;
+    &lt;/Layout&gt;
+  );
+}
+// Layout과 Sidebar는 user를 몰라도 됩니다. children을 그냥 렌더링할 뿐입니다.</code></pre>
+</div>
+<p style="margin-bottom:0">이 방법의 장점은 <b>Layout과 Sidebar가 재사용 가능</b>해진다는 것입니다.
+<code>user</code>를 알아야 하는 컴포넌트는 <code>user</code>가 없는 화면에서는 못 씁니다.<br>
+전달 단계가 2~3단계라면 <b>props가 오히려 명확합니다.</b>
+"어디서 왔는지" 코드에 드러나기 때문입니다.
+정말 넓은 범위(테마·로그인 정보)에서만 Context를 씁니다(65장).</p>
+</div>
+
+<h2 id="compound">컴파운드 컴포넌트</h2>
+
+<div class="codeblock">
+<span class="cb-label">props가 많아지는 문제</span>
+<pre><code data-lang="jsx">// ❌ props가 계속 늘어납니다
+&lt;Select
+  options={options}
+  placeholder="선택"
+  showSearch
+  searchPlaceholder="검색"
+  renderOption={…}
+  groupBy={…}
+  footerText="더 보기"
+  onFooterClick={…}
+/&gt;</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">✅ 구조를 쓰는 쪽이 정하게 합니다</span>
+<pre><code data-lang="jsx">&lt;Select value={value} onChange={setValue}&gt;
+  &lt;Select.Trigger placeholder="선택" /&gt;
+  &lt;Select.Content&gt;
+    &lt;Select.Search placeholder="검색" /&gt;
+    &lt;Select.Group label="수도권"&gt;
+      &lt;Select.Option value="seoul"&gt;서울&lt;/Select.Option&gt;
+      &lt;Select.Option value="incheon"&gt;인천&lt;/Select.Option&gt;
+    &lt;/Select.Group&gt;
+  &lt;/Select.Content&gt;
+&lt;/Select&gt;</code></pre>
+</div>
+
+<p>내부적으로는 <b>Context로 상태를 공유</b>합니다(65장).
+HTML의 <code>&lt;select&gt;</code>·<code>&lt;option&gt;</code>, <code>&lt;table&gt;</code>·<code>&lt;tr&gt;</code>과 같은 구조입니다.
+Radix UI, Headless UI 같은 라이브러리가 이 방식을 씁니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚖️</span> 항상 좋은 것은 아닙니다</p>
+<p style="margin-bottom:0">컴파운드 패턴은 <b>구현이 복잡</b>하고 쓰는 쪽 코드도 길어집니다.
+<b>정말 다양한 조합이 필요한 컴포넌트</b>(디자인 시스템의 Select, Tabs, Accordion)에만 쓰세요.
+버튼 하나에 이 패턴을 적용하는 것은 과합니다.</p>
+</div>
+
+<h2 id="api">좋은 컴포넌트 API</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>원칙</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>props 이름은 의도를</b></td><td><code>isRed</code>가 아니라 <code>variant="danger"</code>. 나중에 색이 바뀌어도 이름이 맞습니다</td></tr>
+<tr><td><b>불리언보다 유니온</b></td><td><code>isPrimary</code>+<code>isSecondary</code>는 둘 다 true인 <b>불가능한 상태</b>를 만듭니다(52장)</td></tr>
+<tr><td><b>기본값을 주기</b></td><td>대부분의 경우 아무것도 안 넘겨도 동작해야 합니다</td></tr>
+<tr><td><b>나머지 props 전달</b></td><td><code>{...rest}</code>로 <code>aria-*</code>·<code>data-*</code>를 지원(56장)</td></tr>
+<tr><td><b>제어·비제어 둘 다</b></td><td><code>value</code>가 오면 제어, 없으면 내부 상태 사용</td></tr>
+<tr><td><b>콜백은 의미 있는 값으로</b></td><td><code>onChange(value)</code>가 <code>onChange(event)</code>보다 낫습니다(56장)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">잘 설계된 버튼</span>
+<pre><code data-lang="jsx">function Button({
+  variant = "primary",
+  size = "md",
+  isLoading = false,
+  leftIcon,
+  children,
+  className,
+  disabled,
+  ...rest
+}) {
+  return (
+    &lt;button
+      className={cx("btn", `btn-${variant}`, `btn-${size}`, className)}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      {...rest}
+    &gt;
+      {isLoading ? &lt;Spinner size="sm" /&gt; : leftIcon}
+      {children}
+    &lt;/button&gt;
+  );
+}</code></pre>
+</div>
+
+<h2 id="separation">로직과 화면 분리</h2>
+
+<div class="codeblock">
+<pre><code data-lang="jsx">// ❌ 한 컴포넌트가 데이터·상태·화면을 모두 담당
+function UserList() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() =&gt; { /* 페칭 … */ }, []);
+  return &lt;ul&gt;{users.map(u =&gt; &lt;li key={u.id}&gt;{u.name}&lt;/li&gt;)}&lt;/ul&gt;;
+}
+
+// ✅ 로직은 훅으로 (66장), 화면은 순수하게
+function useUsers() {
+  const [state, setState] = useState({ status: "loading" });
+  useEffect(() =&gt; { /* 페칭 … */ }, []);
+  return state;
+}
+
+function UserList() {
+  const state = useUsers();
+  if (state.status === "loading") return &lt;Spinner /&gt;;
+  return &lt;UserListView users={state.data} /&gt;;
+}
+
+// 데이터만 받아 그리는 컴포넌트 — 테스트와 스토리북에 쓰기 좋습니다
+function UserListView({ users }) {
+  return &lt;ul&gt;{users.map(u =&gt; &lt;li key={u.id}&gt;{u.name}&lt;/li&gt;)}&lt;/ul&gt;;
+}</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✂️</span> 나누는 기준</p>
+<p style="margin-bottom:0">"컨테이너/프레젠테이션"이라는 옛 규칙을 <b>기계적으로 적용할 필요는 없습니다.</b>
+훅이 나온 뒤로는 <b>로직을 커스텀 훅으로 빼는 것</b>만으로 대부분 해결됩니다.<br>
+분리가 <b>확실히 이득인 경우</b>는 이럴 때입니다.</p>
+<ul style="margin-bottom:0">
+<li>같은 화면을 <b>다른 데이터 출처</b>로 재사용해야 할 때</li>
+<li>화면만 따로 <b>테스트하거나 문서화</b>하고 싶을 때</li>
+<li>컴포넌트가 <b>200줄을 넘어</b> 읽기 어려울 때</li>
+</ul>
+</div>
+
+<h2 id="folder">폴더 구조</h2>
+
+<div class="codeblock">
+<span class="cb-label">기능 기준 구조 (규모가 커져도 잘 버팁니다)</span>
+<pre><code data-lang="text">src/
+├── features/              ← 기능 단위로 묶기
+│   ├── auth/
+│   │   ├── components/
+│   │   ├── hooks/
+│   │   ├── api.ts
+│   │   └── types.ts
+│   └── products/
+│       ├── components/
+│       ├── hooks/
+│       └── api.ts
+├── shared/                ← 여러 기능이 함께 쓰는 것
+│   ├── ui/                   Button, Input, Modal …
+│   ├── hooks/                useDebounce, useLocalStorage …
+│   └── lib/                  formatDate, apiClient …
+├── pages/                 ← 라우트별 화면
+└── app/                   ← 전역 설정, 프로바이더</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📁</span> 타입별로 나누면 커질수록 불편해집니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="text">src/
+├── components/     ← 100개가 뒤섞임
+├── hooks/          ← 어느 기능의 것인지 모름
+└── utils/</code></pre>
+</div>
+<p style="margin-bottom:0">작은 프로젝트에서는 괜찮지만, 커지면 <b>기능 하나를 고치려고 폴더 네 개를 오가야</b> 합니다.
+<b>함께 바뀌는 것을 함께 두는 것</b>이 좋은 구조의 기본 원칙입니다.<br>
+다만 <b>처음부터 완벽한 구조를 만들려 하지 마세요.</b>
+작게 시작해서 <b>불편해질 때 옮기는</b> 것이 실제 순서입니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 컴포넌트 설계 판단</p>
+<ol style="margin-bottom:0">
+<li><b>세 번째 복사할 때 추출하세요.</b> 두 번까지는 복사가 낫습니다. 성급한 추상화가 잘못된 추상화보다 흔한 문제입니다.</li>
+<li><b>props가 8개를 넘으면</b> 컴포넌트가 너무 많은 일을 하는 것입니다. 나누거나 합성으로 바꾸세요.</li>
+<li><b>이름이 안 떠오르면</b> 잘못 나눈 것입니다. <code>Wrapper</code>, <code>Container2</code> 같은 이름이 그 신호입니다.</li>
+<li><b>"이 컴포넌트가 무엇을 하는가"를 한 문장으로</b> 말할 수 있어야 합니다.</li>
+<li><b>추상화는 되돌리기 어렵습니다.</b> 확신이 없으면 중복을 유지하세요.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>React에는 <b>컴포넌트 상속이 없다.</b> 합성으로 조립한다.</li>
+<li>JSX는 값이므로 <b>props로 넘길 수 있다.</b> 여러 자리를 열어 두면 유연해진다.</li>
+<li><b>props drilling은 합성으로 먼저</b> 풀어 본다. Context는 정말 넓은 범위에만.</li>
+<li><b>컴파운드 컴포넌트</b>는 조합이 다양한 UI에만 쓴다.</li>
+<li>props는 <b>의도를 담은 이름</b>과 <b>유니온 타입</b>으로. 나머지는 <code>{...rest}</code>로 전달.</li>
+<li>로직은 <b>커스텀 훅</b>으로 빼고 화면은 데이터만 받게 한다.</li>
+<li>폴더는 <b>기능 단위</b>로. 함께 바뀌는 것을 함께 둔다.</li>
+<li><b>세 번째 복사할 때 추출한다.</b> 성급한 추상화를 피한다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://ko.react.dev/learn/passing-props-to-a-component#passing-jsx-as-children" target="_blank" rel="noopener">React — children으로 JSX 전달하기</a></li>
+<li><a href="https://ko.react.dev/learn/extracting-state-logic-into-a-reducer" target="_blank" rel="noopener">React — 상태 로직 분리하기</a></li>
+<li><a href="https://www.radix-ui.com/primitives" target="_blank" rel="noopener">Radix UI</a> — 컴파운드 컴포넌트의 좋은 예</li>
+<li><a href="https://feature-sliced.design/kr/" target="_blank" rel="noopener">Feature-Sliced Design (한국어)</a> — 기능 기반 구조 방법론</li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "props를 4단계 아래로 전달해야 합니다. Context를 쓰기 전에 먼저 검토할 방법은?",
+    o: [
+      "전역 변수를 만든다",
+      "합성 — 필요한 데이터를 아는 곳에서 완성된 JSX를 만들어 children으로 내려보내면 중간 컴포넌트들이 그 데이터를 몰라도 된다",
+      "props를 객체 하나로 묶는다",
+      "각 단계에서 상태를 복제한다"
+    ],
+    a: 1,
+    e: "<code>&lt;Layout&gt;&lt;Sidebar&gt;&lt;Profile user={user} /&gt;&lt;/Sidebar&gt;&lt;/Layout&gt;</code>처럼 만들면 Layout·Sidebar는 <code>children</code>만 렌더링하면 됩니다. 덤으로 두 컴포넌트가 <b>user와 무관한 화면에서도 재사용 가능</b>해집니다."
+  },
+  {
+    q: "버튼 컴포넌트의 props로 <code>isPrimary</code>, <code>isSecondary</code>, <code>isDanger</code> 세 개의 불리언을 두는 것의 문제는?",
+    o: [
+      "props가 많아 성능이 나빠진다",
+      "셋 다 true인 것처럼 불가능한 조합이 만들어질 수 있다. <code>variant: \"primary\" | \"secondary\" | \"danger\"</code>가 낫다",
+      "불리언은 props로 쓸 수 없다",
+      "TypeScript에서 지원되지 않는다"
+    ],
+    a: 1,
+    e: "52·59장에서 본 <b>\"불가능한 상태를 표현할 수 없게 만들라\"</b>는 원칙입니다. 배타적인 선택지는 <b>하나의 유니온 prop</b>으로 표현해야 조합 폭발과 우선순위 고민이 사라집니다."
+  },
+  {
+    q: "컴파운드 컴포넌트 패턴(<code>&lt;Select.Option&gt;</code> 등)을 쓰기 적절한 경우는?",
+    o: [
+      "모든 컴포넌트에 항상 적용한다",
+      "Select·Tabs·Accordion처럼 내부 구조의 조합이 다양해야 하는 UI. 구현이 복잡하므로 단순한 컴포넌트에는 과하다",
+      "props가 두 개 이하인 컴포넌트",
+      "상태가 없는 컴포넌트"
+    ],
+    a: 1,
+    e: "이 패턴의 가치는 <b>구조를 쓰는 쪽이 정하게</b> 하는 것입니다. props가 계속 늘어나는 복합 UI에 적합하고, 내부적으로 Context로 상태를 공유해야 해서 구현 비용이 있습니다. 버튼 하나에 적용하는 것은 과합니다."
+  },
+  {
+    q: "폴더를 <code>components/</code>, <code>hooks/</code>, <code>utils/</code> 처럼 타입별로만 나누면 프로젝트가 커질 때 생기는 문제는?",
+    o: [
+      "빌드가 느려진다",
+      "하나의 기능을 수정하려면 여러 폴더를 오가야 하고, 어떤 파일이 어느 기능에 속하는지 알기 어려워진다",
+      "import 경로가 길어진다",
+      "타입 검사가 실패한다"
+    ],
+    a: 1,
+    e: "<b>함께 바뀌는 것은 함께 두는 것</b>이 좋은 구조의 원칙입니다. 기능 단위로 묶으면 그 기능의 컴포넌트·훅·API·타입이 한곳에 있어 수정과 삭제가 쉽습니다. 다만 작은 프로젝트에서는 타입별 구조도 충분합니다."
+  },
+  {
+    q: "\"세 번째 복사할 때 추출하라\"는 조언의 의미는?",
+    o: [
+      "코드는 세 번까지만 복사할 수 있다",
+      "두 번의 중복만으로는 공통점이 진짜인지 알기 어렵다. 성급한 추상화는 잘못된 추상화를 만들고 되돌리기 어렵기 때문",
+      "컴포넌트는 세 개 이상 만들어야 한다",
+      "세 번 테스트해야 한다"
+    ],
+    a: 1,
+    e: "두 곳이 비슷해 보여도 <b>우연히 비슷한 것</b>일 수 있습니다. 성급히 합치면 나중에 요구사항이 갈릴 때 조건 분기가 덕지덕지 붙은 컴포넌트가 됩니다. 중복은 눈에 보이지만 <b>잘못된 추상화는 보이지 않습니다.</b>"
+  }
+]);
+</script>

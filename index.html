@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>프엔북 — 비전공자를 위한 프론트엔드 완전 학습서</title>
+<meta name="description" content="비전공자가 0부터 시작해 실무 프론트엔드 개발자가 되기까지. HTML·CSS·JavaScript·TypeScript·React·Next.js·성능·접근성·보안까지 84개 챕터.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="프엔북 — 비전공자를 위한 프론트엔드 완전 학습서">
+<meta property="og:description" content="0부터 실무까지, 84개 챕터. 브라우저에서 바로 코드를 실행하며 배웁니다.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="assets/css/book.css">
+</head>
+<body data-base="" data-page="home">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <div class="cover">
+      <div class="cover-hero">
+        <h1>프엔북</h1>
+        <p class="lede">비전공자가 0부터 시작해 실무 프론트엔드 개발자가 되기까지.<br>
+          읽고, 바로 실행해 보고, 확인하며 배우는 84개 챕터.</p>
+        <div class="cover-stats">
+          <div><b id="stat-parts">12</b><span>부</span></div>
+          <div><b id="stat-chapters">84</b><span>챕터</span></div>
+          <div><b id="stat-done">0</b><span>읽은 챕터</span></div>
+        </div>
+      </div>
+
+      <section class="progress-card">
+        <h2>내 진도</h2>
+        <div class="pbar"><i id="pbar-fill" style="width:0%"></i></div>
+        <div class="progress-meta">
+          <span id="prog-text">아직 시작하지 않았습니다.</span>
+          <span id="prog-pct">0%</span>
+        </div>
+        <div class="progress-actions">
+          <a class="btn" id="continue-btn" href="ch/01-frontend-intro.html">1장부터 시작하기</a>
+          <button class="btn ghost" id="reset-progress" type="button">진도 초기화</button>
+        </div>
+      </section>
+
+      <section class="box tip">
+        <p class="box-title"><span class="box-ico">📖</span> 이 책을 읽는 방법</p>
+        <ul>
+          <li><b>순서대로 읽으세요.</b> 각 챕터는 앞 챕터의 개념 위에 쌓입니다.</li>
+          <li><b>코드는 반드시 직접 고쳐 보세요.</b> 본문의 실행기는 브라우저 안에서 바로 돌아갑니다. 값을 바꿔 보고 결과가 어떻게 달라지는지 확인하는 게 핵심입니다.</li>
+          <li><b>점선 밑줄 친 용어</b>를 누르면 그 자리에서 뜻을 볼 수 있습니다.</li>
+          <li>챕터 끝 퀴즈는 <b>틀리라고 있는 것</b>입니다. 해설이 진짜 본문입니다.</li>
+          <li>진도·테마·편집한 코드는 <b>이 브라우저에만</b> 저장됩니다. 서버로 전송되지 않습니다.</li>
+        </ul>
+      </section>
+
+      <h2 id="toc">전체 목차</h2>
+      <div id="parts"></div>
+
+      <section class="box field" style="margin-top:2.5em">
+        <p class="box-title"><span class="box-ico">✅</span> 이 책의 원칙</p>
+        <p>기술 문서에서 가장 나쁜 것은 <b>그럴듯한 거짓말</b>입니다. 이 책의 모든 설명은
+        MDN, W3C·WHATWG 명세, 그리고 각 도구의 공식 문서를 근거로 씁니다. 챕터마다 맨 아래에
+        실제 출처 링크를 남겨 두었으니, 의심되면 원문을 확인하세요.</p>
+        <p>버전에 따라 달라지는 내용은 <b>어떤 버전 기준인지 반드시 표기</b>합니다.
+        브라우저마다 지원이 갈리는 기능은 지원 범위를 함께 적습니다.
+        사실과 취향은 분리해서, 실무 관행은 <b>현장 노트</b> 상자로 따로 표시합니다.</p>
+        <p style="margin-bottom:0"><small>본문 기준 시점: 2026년.</small></p>
+      </section>
+    </div>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 페이지의 목차"></aside>
+</div>
+
+<script src="assets/data/toc.js"></script>
+<script src="assets/data/glossary-data.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/glossary.js"></script>
+<script>
+(function () {
+  var FB = window.FB, TOC = window.BOOK_TOC, FLAT = window.BOOK_FLAT;
+
+  function paint() {
+    var done = FLAT.filter(function (c) { return FB.isRead(c.id); });
+    var pct = Math.round(done.length / FLAT.length * 100);
+    document.getElementById("stat-chapters").textContent = FLAT.length;
+    document.getElementById("stat-parts").textContent = TOC.parts.length;
+    document.getElementById("stat-done").textContent = done.length;
+    document.getElementById("pbar-fill").style.width = pct + "%";
+    document.getElementById("prog-pct").textContent = pct + "%";
+    document.getElementById("prog-text").textContent =
+      done.length === 0 ? "아직 시작하지 않았습니다."
+      : done.length === FLAT.length ? "전 과정을 완주했습니다. 축하합니다."
+      : FLAT.length + "챕터 중 " + done.length + "챕터를 읽었습니다.";
+
+    /* 이어보기: 아직 읽지 않은 첫 챕터 */
+    var next = FLAT.find(function (c) { return !FB.isRead(c.id); }) || FLAT[FLAT.length - 1];
+    var btn = document.getElementById("continue-btn");
+    btn.href = "ch/" + next.id + ".html";
+    btn.textContent = done.length === 0 ? "1장부터 시작하기" : "이어보기 · " + next.n + "장 " + next.title;
+
+    /* 부별 카드 */
+    document.getElementById("parts").innerHTML = TOC.parts.map(function (p) {
+      var d = p.chapters.filter(function (c) { return FB.isRead(c.id); }).length;
+      var open = d < p.chapters.length && p.chapters.some(function (c) { return !FB.isRead(c.id); }) && d > 0;
+      return '<details class="part-card"' + (open || p.n === 0 ? " open" : "") + '>' +
+        '<summary class="part-head">' +
+          '<span class="part-badge">' + p.n + '부</span>' +
+          '<span class="part-info"><b>' + FB.esc(p.title) + '</b><span>' + FB.esc(p.desc || "") + '</span></span>' +
+          '<span class="part-prog">' + d + " / " + p.chapters.length + '</span>' +
+        '</summary>' +
+        '<ul class="part-list">' + p.chapters.map(function (c) {
+          return '<li><a href="ch/' + c.id + '.html"><span class="n">' + c.n + '</span>' +
+            '<span>' + FB.esc(c.title) + '</span>' +
+            '<span style="flex:1"></span>' +
+            '<span class="done">' + (FB.isRead(c.id) ? "✓" : "") + '</span></a></li>';
+        }).join("") + '</ul></details>';
+    }).join("");
+  }
+
+  document.getElementById("reset-progress").addEventListener("click", function () {
+    if (!confirm("읽음 표시와 퀴즈 점수를 모두 지웁니다. 계속할까요?")) return;
+    try { localStorage.removeItem("fenbook:progress"); } catch (e) {}
+    location.reload();
+  });
+
+  document.addEventListener("fb:progress", paint);
+  paint();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>70장. CSR, SSR, SSG, ISR — 프엔북</title>
+<meta name="description" content="CSR·SSR·SSG·ISR의 동작 방식과 장단점, 하이드레이션, 그리고 화면별로 렌더링 전략을 고르는 기준을 설명합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="70장. CSR, SSR, SSG, ISR — 프엔북">
+<meta property="og:description" content="CSR·SSR·SSG·ISR의 동작 방식과 장단점, 하이드레이션, 그리고 화면별로 렌더링 전략을 고르는 기준을 설명합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="70-rendering-strategies">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">9부 · Next.js와 렌더링 전략</p>
+    <h1>70장. CSR, SSR, SSG, ISR</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>CSR·SSR·SSG·ISR</b>이 각각 언제 <span class="term" data-term="html">HTML</span>을 만드는지</li>
+  <li><b>하이드레이션</b>이 무엇이고 왜 비용인지</li>
+  <li>화면마다 <b>다른 전략</b>을 쓸 수 있다는 사실</li>
+  <li><span class="term" data-term="seo">SEO</span>와 성능에 미치는 영향</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 9부 전체의 토대입니다</p>
+
+<h2 id="when">핵심 질문: HTML을 <b>언제</b> 만드는가</h2>
+
+<div class="codeblock">
+<span class="cb-label">네 가지 시점</span>
+<pre><code data-lang="text">CSR   브라우저에서, 요청 후          → 빈 HTML을 받고 JS가 그림
+SSR   서버에서, 요청이 올 때마다      → 완성된 HTML을 받음
+SSG   빌드할 때 미리                 → 저장해 둔 HTML을 받음
+ISR   빌드할 때 미리 + 주기적으로 갱신 → SSG인데 낡으면 다시 만듦</code></pre>
+</div>
+
+<h2 id="csr">CSR — 클라이언트 렌더링</h2>
+
+<div class="codeblock">
+<span class="cb-label"><span class="term" data-term="browser">브라우저</span>가 처음 받는 HTML</span>
+<pre><code data-lang="html">&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;body&gt;
+    &lt;div id="root"&gt;&lt;/div&gt;      &lt;!-- 텅 비어 있습니다 --&gt;
+    &lt;script src="/bundle.js"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">진행 순서</span>
+<pre><code data-lang="text">HTML(빈 껍데기) → JS 다운로드 → JS 실행 → API 호출 → 데이터 도착 → 화면
+└──────────────── 이 시간 동안 사용자는 흰 화면을 봅니다 ─────────────┘</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>장점</th><th>단점</th></tr></thead>
+<tbody>
+<tr><td>서버가 단순합니다 (정적 <span class="term" data-term="hosting">호스팅</span> 가능)<br>이후 화면 전환이 빠릅니다<br>앱 같은 상호작용</td><td><b>첫 화면이 느립니다</b><br><b>SEO에 불리</b>합니다<br>JS가 실패하면 아무것도 안 보입니다<br>느린 기기에서 특히 나쁩니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔍</span> 검색엔진과 CSR</p>
+<p style="margin-bottom:0">구글 크롤러는 <b><span <span class="term" data-term="class">class</span>="term" data-term="javascript">JavaScript</span>를 실행할 수 있습니다.</b> 그래서 CSR 페이지도 색인될 수 있습니다.
+다만 <b>JS 실행은 별도 큐에서 나중에</b> 처리되어 색인이 늦어질 수 있고,
+<b>다른 검색엔진과 SNS 미리보기 크롤러는 대개 JS를 실행하지 않습니다.</b>
+카카오톡에 링크를 붙였을 때 미리보기가 안 나오는 이유가 이것입니다(10장).</p>
+</div>
+
+<h2 id="ssr">SSR — 서버 렌더링</h2>
+
+<div class="codeblock">
+<span class="cb-label">진행 순서</span>
+<pre><code data-lang="text">요청 → 서버가 데이터 조회 → HTML 완성 → 전송 → 화면 보임(!) → JS 다운로드 → 하이드레이션 → 상호작용 가능
+                                            └ 여기서 이미 읽을 수 있습니다 ┘</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>장점</th><th>단점</th></tr></thead>
+<tbody>
+<tr><td><b>첫 화면이 빠릅니다</b><br><b>SEO에 유리</b>합니다<br>SNS 미리보기가 나옵니다<br>느린 기기에서도 내용은 보입니다</td><td>서버가 필요하고 <b>비용</b>이 듭니다<br>요청마다 서버가 일합니다<br><b><span class="term" data-term="ttfb">TTFB</span></b>(첫 바이트까지)가 늦을 수 있습니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="hydration">하이드레이션</h3>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">💧</span> 마른 HTML에 물을 붓는다</p>
+<p style="margin-bottom:0">서버가 보낸 HTML은 <b>보이기만 하고 아무것도 안 됩니다.</b>
+버튼을 눌러도 반응이 없습니다.<br>
+브라우저에서 <span class="term" data-term="react">React</span>가 다시 실행되어 <b>이미 있는 <span class="term" data-term="dom">DOM</span>에 이벤트 핸들러와 상태를 연결</b>하는 과정을
+<b>하이드레이션</b>이라고 합니다. 이것이 끝나야 상호작용이 됩니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💥</span> 하이드레이션 불일치 오류</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="jsx">// ❌ 서버와 클라이언트의 결과가 달라집니다
+function Clock() {
+  return &lt;p&gt;{new Date().toLocaleTimeString()}&lt;/p&gt;;
+}
+// 서버: "오후 3:00:01" / 브라우저: "오후 3:00:02" → 불일치 오류
+
+// ❌ 서버에는 window가 없습니다
+const width = window.innerWidth;
+
+// ✅ 브라우저에서만 쓰는 값은 Effect에서
+const [time, setTime] = useState(null);
+useEffect(() =&gt; { setTime(new Date().toLocaleTimeString()); }, []);</code></pre>
+</div>
+<p style="margin-bottom:0">서버 HTML과 <span class="term" data-term="client">클라이언트</span>의 첫 렌더링 결과가 <b>일치해야</b> 합니다.
+<code>Date</code>·<code>Math.random()</code>·<code>window</code>·<code>localStorage</code>가 대표적인 원인입니다.
+"Text content did not match" 오류를 보면 이 목록을 떠올리세요.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⏳</span> SSR의 함정 — 보이지만 눌리지 않는 시간</p>
+<p style="margin-bottom:0">화면은 빨리 보이는데 <b>JS 로딩과 하이드레이션이 끝날 때까지 버튼이 안 눌립니다.</b>
+사용자는 <b>다 됐다고 생각하고 클릭했다가 반응이 없어</b> 혼란스러워합니다.
+이 지표를 <b><span class="term" data-term="inp">INP</span></b>(상호작용 반응성)로 측정합니다(76장).<br>
+이 문제를 줄이려는 것이 <b><span class="term" data-term="rsc">서버 <span class="term" data-term="component">컴포넌트</span></span></b>(69장)와 <b>부분 하이드레이션</b> 계열의 기술입니다.
+하이드레이션할 코드 자체를 줄이는 방향입니다.</p>
+</div>
+
+<h2 id="ssg">SSG — 정적 생성</h2>
+
+<div class="codeblock">
+<pre><code data-lang="text">빌드 시점: 모든 페이지의 HTML을 미리 만들어 파일로 저장
+요청 시점: 만들어 둔 파일을 그냥 전송 (CDN에서)</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>장점</th><th>단점</th></tr></thead>
+<tbody>
+<tr><td><b>가장 빠릅니다</b> (<span class="term" data-term="cdn"><span class="term" data-term="cd">CD</span>N</span>에서 즉시)<br><b>가장 쌉니다</b> (서버 계산 없음)<br>서버가 죽어도 페이지는 살아 있습니다<br>SEO 완벽</td><td>내용이 바뀌면 <b>다시 빌드</b>해야 합니다<br>페이지가 많으면 <b>빌드가 오래</b> 걸립니다<br>사용자별 개인화 불가</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>블로그, 문서, 랜딩 페이지, 제품 소개</b>처럼
+<b>모든 사용자에게 같은 내용</b>을 보여주는 페이지에 최적입니다.
+(참고로 <b>지금 보고 계신 이 책도 정적 페이지</b>입니다.)</p>
+
+<h2 id="isr">ISR — 증분 정적 재생성</h2>
+
+<div class="codeblock">
+<pre><code data-lang="text">① 빌드 때 HTML을 만들어 둠 (SSG처럼)
+② 사용자에게는 저장된 HTML을 즉시 전송
+③ 정해진 시간이 지나면 "낡음" 표시
+④ 다음 요청이 오면 낡은 것을 그대로 주고, 뒤에서 새로 만들어 교체</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">♻️</span> SSG의 속도 + SSR의 최신성</p>
+<p style="margin-bottom:0">67장에서 본 <b>"낡은 것을 먼저 보여주고 뒤에서 갱신"</b> 전략이
+페이지 단위로 적용된 것입니다.<br>
+상품 10만 개짜리 쇼핑몰을 매번 전부 빌드할 수는 없습니다.
+ISR은 <b>실제로 요청된 페이지만</b> 만들고 <b>주기적으로 갱신</b>합니다.
+"1분마다 갱신"으로 설정하면 서버 부하는 SSG 수준인데 내용은 거의 최신입니다.<br>
+내용이 바뀌었을 때 <b>즉시 갱신하도록 신호를 보내는</b> 방식(온디맨드 <span class="term" data-term="revalidate">재검증</span>)도 있습니다.</p>
+</div>
+
+<h2 id="compare">한눈에 비교</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>CSR</th><th>SSR</th><th>SSG</th><th>ISR</th></tr></thead>
+<tbody>
+<tr><td>HTML 생성</td><td>브라우저</td><td>요청마다 서버</td><td>빌드 때</td><td>빌드 때 + 갱신</td></tr>
+<tr><td>첫 화면 속도</td><td>느림</td><td>보통</td><td><b>매우 빠름</b></td><td><b>매우 빠름</b></td></tr>
+<tr><td>데이터 최신성</td><td>최신</td><td><b>항상 최신</b></td><td>빌드 시점</td><td>거의 최신</td></tr>
+<tr><td>SEO</td><td>불리</td><td><b>좋음</b></td><td><b>좋음</b></td><td><b>좋음</b></td></tr>
+<tr><td>서버 비용</td><td>없음</td><td><b>높음</b></td><td>없음</td><td>낮음</td></tr>
+<tr><td>개인화</td><td>가능</td><td><b>가능</b></td><td>불가</td><td>불가</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="choose">화면마다 다르게 고릅니다</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 전부 하나로 통일할 필요가 없습니다</p>
+<div class="tablewrap" style="margin:.6em 0 0">
+<table>
+<thead><tr><th>화면</th><th>전략</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td>랜딩·소개 페이지</td><td><b>SSG</b></td><td>모두에게 같고, SEO가 중요합니다</td></tr>
+<tr><td>블로그 글</td><td><b>SSG</b> 또는 ISR</td><td>가끔 수정됩니다</td></tr>
+<tr><td>상품 목록·상세</td><td><b>ISR</b></td><td>가격·재고가 바뀌지만 매번 계산할 필요는 없습니다</td></tr>
+<tr><td>검색 결과</td><td><b>SSR</b></td><td>조건이 매번 다릅니다</td></tr>
+<tr><td>대시보드·마이페이지</td><td><b>CSR</b> 또는 SSR</td><td>개인화되고 SEO가 필요 없습니다</td></tr>
+<tr><td>실시간 채팅</td><td><b>CSR</b></td><td>계속 바뀌는 상호작용</td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin-bottom:0"><span class="term" data-term="nextjs">Next.js</span> 같은 <span class="term" data-term="framework">프레임워크</span>가 하는 일이 바로 <b>이 선택을 화면 단위로 가능하게</b> 하는 것입니다.
+심지어 <b>한 페이지 안에서도</b> 정적인 부분과 동적인 부분을 나눌 수 있습니다
+(부분 사전 렌더링, PPR).</p>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> "SSR이 항상 더 좋다"는 오해</p>
+<span class="mythline">SSR은 <b>서버 비용</b>이 들고, 서버가 데이터를 조회하는 동안 <b>첫 바이트가 늦어질</b> 수 있습니다.
+느린 <span class="term" data-term="api">API</span> 하나가 <b>전체 페이지 전송을 막습니다.</b></span>
+<span class="mythline">SEO가 필요 없는 <b>로그인 후 대시보드</b>에 SSR을 쓰면
+<b>비용만 늘고 얻는 것이 거의 없습니다.</b></span>
+<span class="mythline">가능하면 <b>SSG·ISR을 먼저</b> 고려하세요. 가장 빠르고 가장 쌉니다.
+SSR은 <b>정말 요청마다 달라져야 할 때</b>만 씁니다.</span>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 판단 순서</p>
+<ol style="margin-bottom:0">
+<li><b>모든 사용자에게 같은가?</b> → 예: SSG / 아니오: 다음</li>
+<li><b>어느 정도 낡아도 되는가?</b> → 예: ISR / 아니오: 다음</li>
+<li><b>SEO나 첫 화면 속도가 중요한가?</b> → 예: SSR / 아니오: CSR</li>
+</ol>
+<p style="margin-bottom:0">그리고 <b>측정하세요.</b> "SSR로 바꾸면 빨라지겠지"라는 추측이
+실제로는 <b>TTFB만 늘리는</b> 경우도 많습니다(49·76장).</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>차이는 <b>HTML을 언제 만드는가</b>다. 브라우저(CSR)·요청마다(SSR)·빌드 때(SSG)·빌드+갱신(ISR).</li>
+<li>CSR은 <b>첫 화면이 느리고 SEO에 불리</b>하다. SNS 미리보기도 안 나온다.</li>
+<li><b>하이드레이션</b>은 서버 HTML에 상호작용을 연결하는 과정이고, 그동안은 눌러도 반응하지 않는다.</li>
+<li>서버와 클라이언트의 첫 렌더링 결과가 <b>다르면 오류</b>가 난다(<code>Date</code>·<code>window</code> 주의).</li>
+<li><b>SSG가 가장 빠르고 싸다.</b> ISR은 그 속도에 최신성을 더한다.</li>
+<li><b>화면마다 다른 전략</b>을 쓸 수 있고, 그것이 프레임워크의 존재 이유다.</li>
+<li><b>SSR이 항상 좋은 것은 아니다.</b> 개인화 화면에는 비용만 늘어난다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://web.dev/articles/rendering-on-the-web" target="_blank" rel="noopener">web.dev — 웹에서의 렌더링 전략</a></li>
+<li><a href="https://nextjs.org/docs/app/getting-started/partial-prerendering" target="_blank" rel="noopener">Next.js — 부분 사전 렌더링(PPR)</a></li>
+<li><a href="https://ko.react.dev/reference/react-dom/client/hydrateRoot" target="_blank" rel="noopener">React — hydrateRoot</a></li>
+<li><a href="https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics?hl=ko" target="_blank" rel="noopener">Google — JavaScript SEO 기본</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "\"하이드레이션\"이란 무엇인가요?",
+    o: [
+      "서버에서 HTML을 생성하는 과정",
+      "서버가 보낸 정적 HTML에 브라우저의 React가 이벤트 핸들러와 상태를 연결해 상호작용 가능하게 만드는 과정",
+      "데이터를 캐싱하는 과정",
+      "CSS를 적용하는 과정"
+    ],
+    a: 1,
+    e: "SSR로 받은 HTML은 <b>보이지만 아무 동작도 하지 않습니다</b>. 브라우저에서 React가 다시 실행되어 기존 DOM에 이벤트와 상태를 붙여야 버튼이 눌립니다. 이 시간 동안 사용자가 클릭하면 반응이 없어 혼란을 겪습니다."
+  },
+  {
+    q: "SSR 페이지에서 <code>&lt;p&gt;{new Date().toLocaleTimeString()}&lt;/p&gt;</code> 를 쓰면 생기는 문제는?",
+    o: [
+      "시간이 표시되지 않는다",
+      "서버에서 만든 HTML과 브라우저의 첫 렌더링 결과가 달라 하이드레이션 불일치 오류가 발생한다",
+      "서버가 느려진다",
+      "SEO에 불리해진다"
+    ],
+    a: 1,
+    e: "서버 렌더링 시각과 브라우저 렌더링 시각이 다르므로 결과가 어긋납니다. <code>Math.random()</code>·<code>window</code>·<code>localStorage</code>도 같은 문제를 일으킵니다. 브라우저 전용 값은 <code>useEffect</code> 안에서 설정해야 합니다."
+  },
+  {
+    q: "상품 10만 개인 쇼핑몰의 상품 상세 페이지에 가장 적합한 전략은?",
+    o: [
+      "SSG — 모든 페이지를 빌드 때 만든다",
+      "ISR — 요청된 페이지만 만들어 두고 주기적으로 갱신해 SSG의 속도와 어느 정도의 최신성을 함께 얻는다",
+      "CSR — 브라우저에서만 그린다",
+      "SSR — 요청마다 서버가 새로 만든다"
+    ],
+    a: 1,
+    e: "10만 페이지를 매번 빌드하면 배포에 몇 시간이 걸립니다. SSR은 요청마다 DB를 조회해 비용이 큽니다. ISR은 <b>실제 요청된 페이지만</b> 생성·캐시하고 낡으면 배경에서 갱신하므로 두 문제를 모두 피합니다."
+  },
+  {
+    q: "로그인 후에만 보이는 개인 대시보드에 SSR을 적용하는 것의 문제는?",
+    o: [
+      "SSR은 개인화된 데이터를 다룰 수 없다",
+      "SEO가 필요 없는 화면인데 요청마다 서버 비용이 들고 TTFB가 늘어나 얻는 이득이 거의 없다",
+      "하이드레이션이 동작하지 않는다",
+      "쿠키를 읽을 수 없다"
+    ],
+    a: 1,
+    e: "SSR의 주된 이점은 <b>SEO와 첫 화면 속도</b>입니다. 검색엔진이 볼 수 없는 로그인 뒤 화면에서는 SEO 이득이 0이고, 개인화 데이터라 캐시도 어렵습니다. 이런 화면은 CSR이나 최소한의 SSR로 충분한 경우가 많습니다."
+  },
+  {
+    q: "CSR 방식의 사이트를 카카오톡에 공유했더니 미리보기가 나오지 않습니다. 이유는?",
+    o: [
+      "Open Graph 태그가 없어서만이다",
+      "SNS 미리보기 크롤러는 대개 JavaScript를 실행하지 않아, 빈 HTML만 받아 메타 정보를 찾지 못하기 때문",
+      "HTTPS를 쓰지 않아서",
+      "이미지 용량이 커서"
+    ],
+    a: 1,
+    e: "구글 크롤러는 JS를 실행할 수 있지만 <b>대부분의 SNS 크롤러는 그렇지 않습니다</b>. CSR에서는 초기 HTML이 비어 있어 <code>og:</code> 태그가 존재하지 않습니다(10장). SSR·SSG로 초기 HTML에 메타 태그를 포함시켜야 해결됩니다."
+  }
+]);
+</script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4장. HTTP와 HTTPS: 웹의 대화 규칙 — 프엔북</title>
+<meta name="description" content="HTTP 요청과 응답의 구조, 메서드와 상태 코드, 헤더와 쿠키, HTTPS가 보호하는 것과 못 하는 것, HTTP/1.1·2·3의 차이를 정리합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="4장. HTTP와 HTTPS: 웹의 대화 규칙 — 프엔북">
+<meta property="og:description" content="HTTP 요청과 응답의 구조, 메서드와 상태 코드, 헤더와 쿠키, HTTPS가 보호하는 것과 못 하는 것, HTTP/1.1·2·3의 차이를 정리합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="04-http">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">1부 · 웹이 동작하는 원리</p>
+    <h1>4장. HTTP와 HTTPS: 웹의 대화 규칙</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>HTTP 요청·응답 메시지가 실제로 어떻게 생겼는지</li>
+  <li>GET·POST 등 메서드와 "안전·멱등"이라는 두 성질</li>
+  <li>상태 코드를 외우지 않고 읽는 법</li>
+  <li>쿠키가 왜 필요하고 어떤 위험이 있는지</li>
+  <li>HTTPS가 <b>보호하는 것</b>과 <b>보호하지 못하는 것</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 이 책에서 가장 자주 되돌아올 챕터입니다</p>
+
+<h2 id="what">HTTP는 대화의 규칙이다</h2>
+
+<p><b><span class="term" data-term="http">HTTP</span></b>는 <span class="term" data-term="browser">브라우저</span>와 서버가 대화할 때 쓰는 <b>양식</b>입니다.
+사람으로 치면 "무엇을, 어떤 조건으로 달라"고 적는 신청서 서식이라고 보면 됩니다.</p>
+
+<p>HTTP에는 중요한 성질이 하나 있습니다. <b>상태를 기억하지 않는다(<span class="term" data-term="state">state</span>less)</b>는 것입니다.
+서버는 방금 요청한 사람이 5초 전에 요청했던 그 사람인지 <b>기본적으로 모릅니다.</b>
+매 요청이 완전히 독립적입니다. 그래서 로그인 상태를 유지하려면 <b>따로 장치가 필요</b>하고,
+그것이 뒤에 나올 쿠키와 토큰입니다.</p>
+
+<h2 id="message">요청과 응답 메시지의 실제 모습</h2>
+
+<p>브라우저가 보내는 요청은 사실 이런 <b>텍스트</b>입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">HTTP 요청</span>
+<pre><code data-lang="text">GET /products/42 HTTP/1.1           ← ① 시작 줄: 메서드, 경로, 버전
+Host: shop.example.com              ← ② 헤더들: 부가 정보
+Accept: text/html
+Accept-Language: ko-KR
+Cookie: session=abc123
+                                    ← ③ 빈 줄 (헤더 끝을 알림)
+                                    ← ④ 본문 (GET에는 보통 없음)</code></pre>
+</div>
+
+<p>서버의 응답도 같은 모양입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">HTTP 응답</span>
+<pre><code data-lang="text">HTTP/1.1 200 OK                     ← ① 상태 줄: 버전, 상태 코드, 설명
+Content-Type: text/html; charset=utf-8   ← ② 헤더들
+Content-Length: 1024
+Cache-Control: max-age=3600
+                                    ← ③ 빈 줄
+&lt;!doctype html&gt;&lt;html&gt;…             ← ④ 본문: 실제 내용</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">👀</span> 직접 보는 법</p>
+<p style="margin-bottom:0">아무 사이트에서 <b>F12</b>(맥은 <b>⌘⌥I</b>)를 눌러 <span <span class="term" data-term="class">class</span>="term" data-term="devtools">개발자 도구</span>를 열고 <b>Network</b> 탭에서 새로고침해 보세요.
+요청 하나를 클릭하면 위의 헤더가 그대로 보입니다. 이 화면을 읽을 줄 아는 것과 모르는 것의 차이가
+디버깅 시간을 몇 시간씩 가릅니다. 49장에서 제대로 다룹니다.</p>
+</div>
+
+<h2 id="methods">메서드 — 무엇을 하려는가</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>메서드</th><th>의미</th><th>안전</th><th>멱등</th></tr></thead>
+<tbody>
+<tr><td><b>GET</b></td><td>가져오기. 조회</td><td>O</td><td>O</td></tr>
+<tr><td><b>HEAD</b></td><td>GET과 같지만 <b>본문 없이 헤더만</b></td><td>O</td><td>O</td></tr>
+<tr><td><b>POST</b></td><td>보내서 <b>새로 만들기</b> 또는 처리 요청</td><td>X</td><td><b>X</b></td></tr>
+<tr><td><b>PUT</b></td><td>통째로 <b>바꿔 넣기</b></td><td>X</td><td>O</td></tr>
+<tr><td><b>PATCH</b></td><td>일부만 수정</td><td>X</td><td>X (보장 안 됨)</td></tr>
+<tr><td><b>DELETE</b></td><td>삭제</td><td>X</td><td>O</td></tr>
+<tr><td><b>OPTIONS</b></td><td>이 주소에 무엇이 허용되는지 묻기. <span class="term" data-term="cors">CORS</span>에서 쓰입니다(37장)</td><td>O</td><td>O</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="safe-idempotent">"안전"과 "멱등"이 뭔가요</h3>
+
+<ul>
+<li><b>안전(safe)</b> — 서버의 상태를 <b>바꾸지 않는다</b>. 몇 번을 불러도 데이터가 변하지 않음. 조회 전용.</li>
+<li><b>멱등(id<span class="term" data-term="em">em</span>potent)</b> — <b>여러 번 실행해도 결과가 한 번 실행한 것과 같다</b>. 상태를 바꾸긴 하지만 반복해도 누적되지 않음.</li>
+</ul>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔀</span> 엘리베이터 버튼으로 이해하기</p>
+<p style="margin-bottom:0">엘리베이터 호출 버튼을 열 번 눌러도 엘리베이터는 <b>한 번 옵니다</b>. 이게 <b>멱등</b>입니다.
+반면 자판기 결제 버튼을 열 번 누르면 열 번 결제됩니다. 이게 <b>멱등이 아닌</b> 것이고, POST가 여기 해당합니다.
+"결제 버튼을 두 번 눌렀는데 두 번 결제됐어요"라는 사고가 나오는 지점이 정확히 여깁니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 실무에서 진짜 중요한 규칙</p>
+<p style="margin-bottom:0"><b>데이터를 바꾸는 일에 GET을 쓰면 안 됩니다.</b>
+GET은 안전하다고 약속된 메서드라서 브라우저·<span class="term" data-term="cdn"><span class="term" data-term="cd">CD</span>N</span>·검색엔진 크롤러가 <b>마음대로 미리 호출하거나 캐시</b>할 수 있습니다.
+<code>GET /posts/42/delete</code> 같은 주소를 만들어 두면, 검색 크롤러가 지나가며 글을 전부 지울 수 있습니다.
+실제로 있었던 사고입니다.</p>
+</div>
+
+<h2 id="status">상태 코드 — 세 자리로 읽는 결과</h2>
+
+<p>전부 외울 필요 없습니다. <b>첫 자리</b>만 알면 절반은 읽힙니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>대</th><th>뜻</th><th>한 줄 해석</th></tr></thead>
+<tbody>
+<tr><td><b>1xx</b></td><td>정보</td><td>"계속 진행 중" (직접 볼 일 거의 없음)</td></tr>
+<tr><td><b>2xx</b></td><td>성공</td><td>"됐습니다"</td></tr>
+<tr><td><b>3xx</b></td><td>리다이렉션</td><td>"거기 아니고 저기로 가세요"</td></tr>
+<tr><td><b>4xx</b></td><td><span class="term" data-term="client">클라이언트</span> 오류</td><td>"<b>당신</b>이 잘못 요청했습니다"</td></tr>
+<tr><td><b>5xx</b></td><td>서버 오류</td><td>"<b>우리</b>가 잘못했습니다"</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><b>4xx와 5xx를 구분하는 것</b>이 핵심입니다. 4xx면 요청을 고쳐야 하고, 5xx면 서버 담당자에게 알려야 합니다.</p>
+
+<div class="runner" data-lang="js" data-title="상태 코드 사전" data-note="맨 아래 codes 배열에 다른 숫자를 넣어 보세요. 존재하지 않는 코드를 넣으면 어떻게 되는지도 확인해 보세요.">
+<textarea class="rn-src">
+const dictionary = {
+  200: ["OK", "성공. 요청한 것이 본문에 들어 있습니다."],
+  201: ["Created", "성공했고 새 자원이 만들어졌습니다. POST의 정상 응답."],
+  204: ["No Content", "성공했지만 돌려줄 본문이 없습니다. 삭제 성공에 자주 씁니다."],
+  301: ["Moved Permanently", "영구 이동. 앞으로는 새 주소를 쓰세요."],
+  302: ["Found", "임시 이동. 원래 주소는 그대로 두세요."],
+  304: ["Not Modified", "안 바뀌었으니 캐시에 있는 걸 쓰세요. 본문을 안 보내 트래픽을 아낍니다."],
+  400: ["Bad Request", "요청 형식이 잘못됐습니다."],
+  401: ["Unauthorized", "누구인지 모르겠습니다. 로그인이 필요합니다."],
+  403: ["Forbidden", "누구인지는 알겠는데 권한이 없습니다."],
+  404: ["Not Found", "그런 주소가 없습니다."],
+  409: ["Conflict", "충돌. 이미 같은 이메일로 가입되어 있는 경우 등."],
+  422: ["Unprocessable Content", "형식은 맞지만 내용이 규칙에 어긋납니다."],
+  429: ["Too Many Requests", "너무 자주 요청했습니다. 잠시 후 다시."],
+  500: ["Internal Server Error", "서버 코드에서 예외가 났습니다."],
+  502: ["Bad Gateway", "중간 서버가 뒤쪽 서버로부터 이상한 답을 받았습니다."],
+  503: ["Service Unavailable", "서버가 지금 감당이 안 됩니다. 점검 중이거나 과부하."],
+  504: ["Gateway Timeout", "뒤쪽 서버가 제때 답하지 않았습니다."]
+};
+
+function explain(code) {
+  const family = Math.floor(code / 100);
+  const familyName = { 1: "정보", 2: "성공", 3: "리다이렉션", 4: "클라이언트 잘못", 5: "서버 잘못" }[family];
+  const found = dictionary[code];
+
+  if (!found) {
+    return code + " → " + (familyName || "알 수 없는 범위") + " (사전에 없는 코드)";
+  }
+  return code + " " + found[0] + " [" + familyName + "] → " + found[1];
+}
+
+// 여기 숫자를 바꿔 보세요
+const codes = [200, 301, 401, 403, 404, 500, 418];
+
+for (const code of codes) {
+  console.log(explain(code));
+}
+</textarea>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> 401과 403을 헷갈리지 마세요</p>
+<span class="mythline"><b class="no">401 Unauthorized</b> — 이름과 달리 실제 뜻은 <b>"인증되지 않음"</b>입니다. <b>당신이 누군지 모르겠으니 로그인하세요.</b></span>
+<span class="mythline"><b class="yes">403 Forbidden</b> — <b>누군지는 알겠는데 그 일을 할 권한이 없습니다.</b> 로그인해도 안 됩니다.</span>
+<span class="mythline">일반 회원이 관리자 페이지에 들어가려 하면 <b>403</b>입니다. 401이 아닙니다.</span>
+</div>
+
+<h2 id="headers">헤더 — 요청과 응답에 붙는 쪽지</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>헤더</th><th>방향</th><th>하는 일</th></tr></thead>
+<tbody>
+<tr><td><code>Host</code></td><td>요청</td><td>어느 <span class="term" data-term="domain">도메인</span>에 온 요청인지. 한 서버가 여러 사이트를 운영할 수 있게 해 줍니다</td></tr>
+<tr><td><code>Accept</code></td><td>요청</td><td>"나는 이런 형식을 받을 수 있다"</td></tr>
+<tr><td><code>Authorization</code></td><td>요청</td><td>인증 토큰을 담습니다</td></tr>
+<tr><td><code>User-Agent</code></td><td>요청</td><td>브라우저·기기 정보. <b>얼마든지 조작 가능</b>하므로 신뢰하면 안 됩니다</td></tr>
+<tr><td><code>Content-Type</code></td><td>둘 다</td><td>본문이 어떤 형식인지. <code>application/json</code>, <code>text/html</code> 등</td></tr>
+<tr><td><code>Cache-Control</code></td><td>응답</td><td>이 응답을 얼마나 캐시해도 되는지</td></tr>
+<tr><td><code>Set-Cookie</code></td><td>응답</td><td>브라우저에 쿠키를 저장시킵니다</td></tr>
+<tr><td><code>Location</code></td><td>응답</td><td>3xx일 때 갈 곳</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> <code>Content-Type</code>은 그냥 형식 표시가 아닙니다</p>
+<p style="margin-bottom:0">브라우저는 이 헤더를 보고 <b>내용을 어떻게 취급할지</b> 결정합니다.
+<code>text/html</code>로 내려온 것은 <b><span class="term" data-term="html">HTML</span>로 해석되고 그 안의 스크립트가 실행됩니다.</b>
+사용자가 올린 파일을 잘못된 <code>Content-Type</code>으로 내려주면 그 자체가 보안 사고가 됩니다(78장).</p>
+</div>
+
+<h2 id="cookie">쿠키 — 상태 없는 HTTP에 기억을 붙이기</h2>
+
+<p>HTTP는 상태를 기억하지 않는다고 했습니다. 그런데 로그인은 유지되죠. 어떻게 할까요?</p>
+
+<ol>
+<li>로그인에 성공하면 서버가 응답에 <code>Set-Cookie: session=abc123</code>을 담아 보냅니다.</li>
+<li>브라우저는 이 값을 저장합니다.</li>
+<li>이후 <b>같은 사이트로 가는 모든 요청에</b> 브라우저가 자동으로 <code>Cookie: session=abc123</code>을 붙입니다.</li>
+<li>서버는 그 값을 보고 "아, 이 사람은 아까 로그인한 그 사람"이라고 알아봅니다.</li>
+</ol>
+
+<p>중요한 것은 <b>브라우저가 자동으로 붙인다</b>는 점입니다. 편리하지만 동시에 위험합니다.
+공격자가 만든 페이지에서 여러분의 은행 사이트로 요청을 보내면 <b>쿠키도 같이 따라갑니다</b>.
+이 공격을 <span class="term" data-term="csrf"><span class="term" data-term="csr">CSR</span>F</span>라고 하고, 이를 막기 위한 <code>SameSite</code> 같은 쿠키 옵션이 78장에 나옵니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>쿠키 옵션</th><th>하는 일</th></tr></thead>
+<tbody>
+<tr><td><code>HttpOnly</code></td><td><span class="term" data-term="javascript">JavaScript</span>에서 <b>읽을 수 없게</b> 만듭니다. <span class="term" data-term="xss">XSS</span> 공격으로 세션을 훔쳐가는 것을 막습니다</td></tr>
+<tr><td><code>Secure</code></td><td>HTTPS 연결에서만 전송합니다</td></tr>
+<tr><td><code>SameSite</code></td><td>다른 사이트에서 시작된 요청에 이 쿠키를 붙일지 통제합니다</td></tr>
+<tr><td><code>Max-Age</code> / <code>Expires</code></td><td>유효 기간. 없으면 브라우저를 닫을 때 사라집니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="https">HTTPS — 무엇을 지키고 무엇을 못 지키나</h2>
+
+<p><b>HTTPS</b>는 HTTP에 <b>TLS</b>라는 암호화 계층을 씌운 것입니다.
+(SSL은 TLS의 옛 이름입니다. 지금은 TLS를 쓰면서 관행적으로 "SSL 인증서"라고 부릅니다.)</p>
+
+<p>HTTPS는 세 가지를 보장합니다.</p>
+<ul>
+<li><b>기밀성</b> — 중간에서 들여다봐도 내용을 알 수 없습니다.</li>
+<li><b>무결성</b> — 중간에서 내용을 바꾸면 들킵니다.</li>
+<li><b>인증</b> — 접속한 서버가 정말 그 도메인의 주인인지 인증서로 확인합니다.</li>
+</ul>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> HTTPS에 대한 가장 위험한 오해</p>
+<span class="mythline"><b class="no">오해</b> — HTTPS를 쓰면 사이트가 안전하다.</span>
+<span class="mythline"><b class="yes">사실</b> — HTTPS는 <b>이동 중인 구간</b>만 보호합니다. 자물쇠 아이콘은
+<b>"이 연결은 도청되지 않는다"</b>는 뜻이지 <b>"이 사이트는 착하다"</b>는 뜻이 <b>아닙니다.</b>
+피싱 사이트도 무료로 HTTPS 인증서를 받을 수 있습니다.
+그리고 데이터가 도착한 뒤 브라우저 안에서는 전부 평문이므로,
+JavaScript에 적어 둔 비밀은 HTTPS와 무관하게 그대로 노출됩니다.</span>
+</div>
+
+<h2 id="versions">HTTP/1.1, 2, 3</h2>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>버전</th><th>핵심 변화</th><th>남은 문제</th></tr></thead>
+<tbody>
+<tr><td><b>HTTP/1.1</b><br>(1997)</td><td>연결을 재사용(keep-alive). 텍스트 기반</td><td>한 연결에서 <b>요청을 하나씩</b> 처리. 앞 요청이 느리면 뒤가 전부 밀립니다(HOL 블로킹)</td></tr>
+<tr><td><b>HTTP/2</b><br>(2015)</td><td>하나의 연결에서 <b>여러 요청을 동시에</b>(멀티플렉싱). 헤더 <span class="term" data-term="minify">압축</span>. 이진 형식</td><td><span class="term" data-term="tcp">TCP</span> 자체의 특성 때문에 <b><span class="term" data-term="packet">패킷</span> 하나가 유실되면</b> 그 연결의 모든 스트림이 함께 기다립니다</td></tr>
+<tr><td><b>HTTP/3</b><br>(2022)</td><td>TCP 대신 <b>QUIC</b>(UDP 기반)을 사용해 TCP 수준의 막힘을 제거. 연결 수립도 더 빠릅니다</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 옛 최적화가 지금은 손해가 되는 경우</p>
+<p style="margin-bottom:0">HTTP/1.1 시절에는 요청 수를 줄이는 것이 최우선이라, 작은 이미지를 하나로 합치거나
+JS 파일을 전부 하나로 묶는 기법이 표준이었습니다.
+<b>HTTP/2 이후에는 여러 요청을 동시에 처리할 수 있어</b>, 무조건 하나로 합치는 것이 오히려 손해일 수 있습니다.
+파일 하나만 바뀌어도 전체를 다시 받아야 하기 때문입니다.
+"예전에 좋다고 배운 최적화"를 지금도 그대로 적용하면 안 되는 대표적인 예입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>HTTP 메시지 = <b>시작 줄 + 헤더 + 빈 줄 + 본문</b>. 요청과 응답 모두 같은 구조.</li>
+<li>HTTP는 <b>상태를 기억하지 않는다.</b> 로그인 유지는 쿠키·토큰으로 따로 만든다.</li>
+<li><b>안전</b> = 상태를 바꾸지 않음, <b>멱등</b> = 여러 번 해도 결과가 같음. GET은 둘 다, POST는 둘 다 아니다.</li>
+<li>상태 코드는 첫 자리로 읽는다. <b>4xx는 요청자 잘못, 5xx는 서버 잘못.</b></li>
+<li><b>401은 "누군지 모름", 403은 "권한 없음".</b></li>
+<li>쿠키는 브라우저가 <b>자동으로</b> 붙인다. 편리함이 곧 CSRF의 원인이다.</li>
+<li>HTTPS는 <b>전송 구간</b>만 보호한다. 사이트의 선의를 보장하지 않는다.</li>
+<li>HTTP/2는 멀티플렉싱, HTTP/3은 QUIC으로 TCP 수준의 막힘까지 해결했다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Guides/Overview" target="_blank" rel="noopener">MDN — HTTP 개요</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener">MDN — HTTP 상태 코드 전체 목록</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Methods" target="_blank" rel="noopener">MDN — HTTP 요청 메서드</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Guides/Cookies" target="_blank" rel="noopener">MDN — HTTP 쿠키</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Evolution_of_HTTP" target="_blank" rel="noopener">MDN — HTTP의 발전 과정</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "게시글을 삭제하는 기능을 <code>GET /posts/42/delete</code> 주소로 만들면 안 되는 이유는?",
+    o: [
+      "GET은 주소가 너무 길어지기 때문",
+      "GET은 안전한 메서드로 약속되어 있어 브라우저·CDN·크롤러가 임의로 호출하거나 캐시할 수 있고, 그 결과 의도치 않은 삭제가 일어날 수 있어서",
+      "GET은 한글 주소를 지원하지 않아서",
+      "GET은 HTTPS에서 동작하지 않아서"
+    ],
+    a: 1,
+    e: "GET은 명세상 <b>안전(safe)</b>한 메서드입니다. 즉 \"호출해도 아무것도 변하지 않는다\"는 약속이고, 이 약속을 믿고 브라우저는 미리 불러오기를 하고 검색 크롤러는 링크를 따라갑니다. 상태를 바꾸는 동작에는 POST·PUT·PATCH·DELETE를 써야 합니다."
+  },
+  {
+    q: "일반 회원이 관리자 전용 페이지에 접근했습니다. 서버가 돌려줄 가장 적절한 상태 코드는?",
+    o: ["401 Unauthorized", "403 Forbidden", "404 Not Found", "500 Internal Server Error"],
+    a: 1,
+    e: "이 사용자는 <b>이미 로그인해서 누구인지 확인된 상태</b>입니다. 다만 그 일을 할 권한이 없을 뿐이므로 <b>403 Forbidden</b>입니다. 401은 이름과 달리 \"인증되지 않음\", 즉 <b>누구인지 모르니 로그인하라</b>는 뜻입니다. (참고: 자원의 존재 자체를 숨기고 싶을 때 의도적으로 404를 쓰는 전략도 있습니다.)"
+  },
+  {
+    q: "\"멱등하다(idempotent)\"의 뜻으로 옳은 것은?",
+    o: [
+      "서버의 데이터를 전혀 바꾸지 않는다",
+      "여러 번 실행해도 결과 상태가 한 번 실행한 것과 같다",
+      "실행 속도가 항상 일정하다",
+      "암호화되어 전송된다"
+    ],
+    a: 1,
+    e: "\"상태를 전혀 바꾸지 않는다\"는 <b>안전(safe)</b>의 정의입니다. 멱등은 상태를 바꾸긴 하되 <b>반복해도 누적되지 않는</b> 성질입니다. DELETE는 두 번 호출해도 결과적으로 \"삭제된 상태\"로 같으니 멱등이고, POST는 두 번 호출하면 두 개가 생기므로 멱등이 아닙니다."
+  },
+  {
+    q: "쿠키에 <code>HttpOnly</code> 옵션을 붙이면 무엇이 달라지나요?",
+    o: [
+      "HTTP에서만 전송되고 HTTPS에서는 전송되지 않는다",
+      "JavaScript의 <code>document.cookie</code>로 그 쿠키를 읽을 수 없게 되어, 스크립트 삽입 공격으로 세션을 훔치기 어려워진다",
+      "쿠키가 암호화되어 저장된다",
+      "쿠키 용량 제한이 사라진다"
+    ],
+    a: 1,
+    e: "<code>HttpOnly</code>는 <b>JavaScript의 접근을 차단</b>하는 옵션입니다. 이름 때문에 \"HTTP 전용\"으로 오해하기 쉽지만 HTTPS와는 무관하며, HTTPS 전송 제한은 <code>Secure</code> 옵션의 역할입니다. 쿠키 값 자체를 암호화하지도 않습니다."
+  },
+  {
+    q: "\"우리 사이트는 HTTPS를 쓰니까 API 키를 JavaScript에 넣어도 안전하다\"는 주장의 문제점은?",
+    o: [
+      "문제없다. HTTPS면 안전하다",
+      "HTTPS는 전송 구간만 보호할 뿐, 브라우저에 도착한 뒤의 코드는 사용자가 그대로 읽을 수 있다",
+      "HTTPS는 JavaScript 파일에는 적용되지 않는다",
+      "HTTPS는 한국에서만 동작한다"
+    ],
+    a: 1,
+    e: "HTTPS는 <b>중간에서 엿보는 것</b>을 막습니다. 그러나 목적지인 사용자 브라우저에 도착하면 복호화되어 평문이 되고, 개발자 도구로 전부 볼 수 있습니다. 비밀 값은 서버에 두고 서버를 경유해 호출해야 합니다."
+  },
+  {
+    q: "HTTP/2가 HTTP/1.1보다 빠른 핵심 이유는?",
+    o: [
+      "인터넷 회선 대역폭을 늘려 주어서",
+      "하나의 연결에서 여러 요청과 응답을 동시에 주고받을 수 있어서(멀티플렉싱)",
+      "이미지를 자동으로 압축해 주어서",
+      "DNS 조회를 생략해서"
+    ],
+    a: 1,
+    e: "HTTP/1.1은 한 연결에서 요청을 하나씩 처리해, 앞의 느린 요청이 뒤를 막았습니다(HOL 블로킹). HTTP/2는 하나의 연결을 여러 스트림으로 나눠 동시에 처리합니다. 다만 TCP 특성상 패킷 유실 시 전체가 기다리는 문제가 남았고, 이를 QUIC으로 해결한 것이 HTTP/3입니다."
+  }
+]);
+</script>
+</body>
+</html>
