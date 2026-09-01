@@ -32,9 +32,14 @@
 # 2. 전체 빌드 (챕터 생성 → 용어 자동 표시 → 검색 색인 생성)
 node tools/build.js
 
-# 3. 내부 링크 검사
-node tools/check-links.js
+# 3. 검사 (전부 통과해야 배포)
+node tools/check-links.js      # 내부 링크·앵커
+node tools/check-content.js    # 퀴즈 데이터 · 챕터 상호 참조
+node tools/check-external.js   # 참고 자료의 외부 링크 생존 여부
 ```
+
+> `check-external.js`는 네트워크를 씁니다. `w3.org`는 봇 요청에 403을 주므로
+> 실패로 잡혀도 실제로는 정상인 경우가 많습니다. 브라우저로 한 번 확인하세요.
 
 목차·챕터 순서를 바꾸려면 `assets/data/toc.js`를,
 용어를 추가하려면 `assets/data/glossary-data.js`를 수정한 뒤 다시 빌드합니다.
@@ -54,8 +59,11 @@ python3 -m http.server 8000
 
 정적 파일뿐이므로 어떤 정적 호스팅에도 올릴 수 있습니다.
 
+`main`에 푸시하면 Vercel이 자동으로 프로덕션 배포합니다.
+수동 배포가 필요하면:
+
 ```bash
-npx vercel
+npx vercel deploy --prod
 ```
 
 ## 집필 원칙
