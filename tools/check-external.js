@@ -12,7 +12,8 @@ for (const dir of ["", "ch"]) {
     const rel = dir ? `${dir}/${f}` : f;
     const html = fs.readFileSync(path.join(base, f), "utf8")
       .replace(/<pre[\s\S]*?<\/pre>/gi, "")
-      .replace(/<textarea[\s\S]*?<\/textarea>/gi, "");
+      .replace(/<textarea[\s\S]*?<\/textarea>/gi, "")
+      .replace(/<code[\s\S]*?<\/code>/gi, "");   /* 본문 속 예시 코드의 가짜 URL 제외 */
     const re = /href="(https?:\/\/[^"]+)"/g; let m;
     while ((m = re.exec(html)) !== null) {
       const url = m[1];

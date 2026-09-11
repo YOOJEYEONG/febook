@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>80장. 프로젝트 구조와 아키텍처 — 프엔북</title>
+<title>90장. 프로젝트 구조와 아키텍처 — 프엔북</title>
 <meta name="description" content="프로젝트 폴더 구조 설계, 계층 분리, 의존성 방향, 네이밍 규칙, 그리고 구조를 점진적으로 발전시키는 방법을 다룹니다.">
 <meta name="color-scheme" content="light dark">
-<meta property="og:title" content="80장. 프로젝트 구조와 아키텍처 — 프엔북">
+<meta property="og:title" content="90장. 프로젝트 구조와 아키텍처 — 프엔북">
 <meta property="og:description" content="프로젝트 폴더 구조 설계, 계층 분리, 의존성 방향, 네이밍 규칙, 그리고 구조를 점진적으로 발전시키는 방법을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
 <link rel="stylesheet" href="../assets/css/book.css">
 </head>
-<body data-base="../" data-chapter="80-project-structure">
+<body data-base="../" data-chapter="90-project-structure">
 <div id="app-header"></div>
 
 <div class="layout">
   <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
 
   <main class="page">
-    <p class="ch-eyebrow">11부 · 실전과 커리어</p>
-    <h1>80장. 프로젝트 구조와 아키텍처</h1>
+    <p class="ch-eyebrow">12부 · 실전과 커리어</p>
+    <h1>90장. 프로젝트 구조와 아키텍처</h1>
 
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
@@ -79,14 +79,14 @@ import { useAuth } from "@/features/auth";           // ✅
 import { validate } from "@/features/auth/internal"; // ❌ 하지 않기로 약속</code></pre>
 </div>
 <p style="margin-bottom:0">34장에서 말한 <b>배럴 파일</b>입니다.
-<b>기능의 경계에서만</b> 쓰고 남용하지 마세요. 순환 <span class="term" data-term="reference">참조</span>와 번들 문제를 만듭니다.</p>
+<b>기능의 경계에서만</b> 쓰고 남용하지 마세요. <span class="term" data-term="circular-dependency">순환 참조</span>와 번들 문제를 만듭니다.</p>
 </div>
 
 <h2 id="direction">의존성 방향 — 가장 중요한 규칙</h2>
 
 <div class="box warn">
 <p class="box-title"><span class="box-ico">➡️</span> 구조가 무너지는 진짜 원인</p>
-<p style="margin-bottom:0">폴더를 아무리 잘 나눠도 <b>서로 마구 참조하면</b> 의미가 없습니다.
+<p style="margin-bottom:0">폴더를 아무리 잘 나눠도 <b>서로 마구 <span class="term" data-term="reference">참조</span>하면</b> 의미가 없습니다.
 <b>"A를 고치려면 B를 봐야 하고, B를 보려면 C를 봐야 하는"</b> 상태가 되면
 폴더 이름은 장식일 뿐입니다.</p>
 </div>
@@ -246,7 +246,7 @@ import { Button } from "@/shared/ui/Button";</code></pre>
 <li><b>주요 스크립트</b> — 빌드·테스트·린트</li>
 </ul>
 <p style="margin-bottom:0"><b>새 팀원이 30분 안에 실행할 수 있는가</b>가 기준입니다.
-포트폴리오라면 README가 <b>가장 먼저 읽히는 문서</b>입니다(83장).</p>
+포트폴리오라면 README가 <b>가장 먼저 읽히는 문서</b>입니다(93장).</p>
 </div>
 
 <div class="box field">

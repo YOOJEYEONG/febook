@@ -1,0 +1,464 @@
+<!--desc: 스택과 큐가 콜 스택·이벤트 루프에서 실제로 어떻게 쓰이는지, 연결 리스트가 React 내부에 왜 있는지, DOM과 컴포넌트가 트리인 이유, 깊이 우선과 너비 우선 탐색을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>스택</b>과 <b>큐</b> — 콜 스택, 태스크 큐, 뒤로 가기의 정체</li>
+  <li><b>연결 리스트</b>가 React 내부에 들어 있는 이유</li>
+  <li><b>트리</b> — DOM, 컴포넌트, 라우트, 폴더가 전부 같은 구조인 이유</li>
+  <li><b>DFS와 BFS</b>, 그리고 평면 배열을 트리로 바꾸는 실무 코드</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 면접 단골 주제</p>
+
+<h2 id="stack">스택 — 마지막에 넣은 것이 먼저 나온다</h2>
+
+<p><b>스택(stack)</b>은 <b>쌓아 올린 접시</b>입니다. 넣을 때도 위, 뺄 때도 위.
+마지막에 넣은 것이 가장 먼저 나오므로 <b>LIFO</b>(Last In, First Out)라고 부릅니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">프론트엔드에서 스택이 쓰이는 곳</span>
+<pre><code data-lang="text">콜 스택            함수를 호출하면 쌓이고, 끝나면 걷어낸다 (30·35장)
+실행 취소(Undo)     마지막 동작부터 되돌린다
+브라우저 히스토리   뒤로 가기는 가장 최근 방문부터
+괄호 · 태그 짝 검사  여는 것을 쌓고, 닫는 것이 오면 꺼내서 맞춰 본다
+DFS(깊이 우선 탐색) 재귀 자체가 콜 스택을 쓰는 것</code></pre>
+</div>
+
+<div class="runner" data-lang="js" data-title="스택으로 괄호 검사하기" data-note="배열의 push/pop이 곧 스택입니다. 편집기의 괄호 매칭이 이 원리입니다.">
+<textarea class="rn-src">
+function isBalanced(str) {
+  const pairs = { ")": "(", "]": "[", "}": "{" };
+  const stack = [];
+
+  for (const ch of str) {
+    if (ch === "(" || ch === "[" || ch === "{") {
+      stack.push(ch);                     // 여는 괄호는 쌓는다
+    } else if (pairs[ch]) {
+      if (stack.pop() !== pairs[ch]) return false;   // 꺼내서 짝을 맞춘다
+    }
+  }
+  return stack.length === 0;              // 남은 게 없어야 올바르다
+}
+
+console.log(isBalanced("({[]})"));        // true
+console.log(isBalanced("(]"));            // false
+console.log(isBalanced("(()"));           // false  ← 안 닫힘
+console.log(isBalanced("func(a[0], {k: 1})"));  // true
+
+console.log("--- 실행 취소도 스택 ---");
+const history = [];
+const doAction = (a) => { history.push(a); console.log("실행:", a); };
+const undo = () => console.log("취소:", history.pop());
+doAction("글자 입력"); doAction("굵게"); doAction("색 변경");
+undo();   // "색 변경"  ← 가장 최근 것부터
+undo();   // "굵게"
+</textarea>
+</div>
+
+<h3 id="overflow">스택 오버플로</h3>
+
+<p>콜 스택에는 한계가 있습니다. 함수가 자기를 계속 부르면 스택이 꽉 차고
+<code>RangeError: Maximum call stack size exceeded</code>가 납니다.
+한계는 엔진·환경마다 다르며 대략 <b>수천에서 수만 단계</b> 수준입니다.</p>
+
+<div class="runner" data-lang="js" data-title="내 환경의 스택 깊이 재보기" data-note="숫자는 브라우저와 함수 모양에 따라 달라집니다.">
+<textarea class="rn-src">
+let depth = 0;
+function dive() { depth++; dive(); }
+
+try { dive(); } catch (e) {
+  console.log("최대 깊이:", depth);
+  console.log(e.name + ":", e.message);
+}
+
+console.log("--- 깊은 재귀는 반복문으로 바꿀 수 있습니다 ---");
+// 재귀 버전 (깊이가 커지면 터짐)
+const sumRec = (n) => (n === 0 ? 0 : n + sumRec(n - 1));
+try { console.log(sumRec(100000)); } catch (e) { console.log("재귀 실패:", e.name); }
+
+// 반복 버전 (스택을 쓰지 않음)
+let sum = 0;
+for (let i = 1; i <= 100000; i++) sum += i;
+console.log("반복 성공:", sum);
+</textarea>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🔁</span> "JavaScript는 꼬리 호출 최적화가 되니 재귀가 안전하다"</p>
+<span class="mythline"><b>사실상 아닙니다.</b> 꼬리 호출 최적화(TCO)는 ES2015 명세에 들어갔지만,
+<b>실제로 구현한 엔진은 Safari(JavaScriptCore)뿐</b>입니다. V8(Chrome·Node)과 SpiderMonkey(Firefox)는 구현하지 않았습니다.</span>
+<span class="mythline">그래서 <b>깊은 재귀를 실무 코드에 쓰면 안 됩니다.</b>
+데이터가 어디까지 깊어질지 모르는 트리 순회는 <b>명시적 스택(배열)을 쓰는 반복문</b>으로 바꾸는 편이 안전합니다.</span>
+<span class="mythline">반대로 <b>깊이가 뻔한 경우</b>(카테고리 3단계, 댓글 2단계)는 재귀가 훨씬 읽기 쉽습니다. 상황으로 판단하세요.</span>
+</div>
+
+<h2 id="queue">큐 — 먼저 온 것이 먼저 나간다</h2>
+
+<p><b>큐(queue)</b>는 <b>줄 서기</b>입니다. 뒤로 들어와 앞으로 나갑니다. <b>FIFO</b>(First In, First Out).</p>
+
+<p>35장의 <b>태스크 큐</b>와 <b>마이크로태스크 큐</b>가 정확히 이것입니다.
+이벤트 루프는 큐 앞에서 하나씩 꺼내 실행합니다. 그래서 <b>먼저 등록된 콜백이 먼저 실행</b>됩니다.</p>
+
+<div class="runner" data-lang="js" data-title="요청 동시 실행 제한" data-note="이미지 100개를 한꺼번에 요청하지 않고 3개씩 처리하는 실무 패턴입니다.">
+<textarea class="rn-src">
+// 큐에서 하나씩 꺼내되, 동시에 최대 3개까지만 실행합니다
+async function runWithLimit(tasks, limit = 3) {
+  const queue = [...tasks];          // 대기열
+  const results = [];
+  let running = 0;
+
+  async function worker(id) {
+    while (queue.length > 0) {
+      const task = queue.shift();    // 앞에서 꺼낸다 (FIFO)
+      running++;
+      console.log(`worker${id} 시작 (동시 실행 ${running}개)`);
+      results.push(await task());
+      running--;
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: limit }, (_, i) => worker(i + 1))
+  );
+  return results;
+}
+
+const makeTask = (n) => () =>
+  new Promise((res) => setTimeout(() => res(`작업${n} 완료`), 100));
+
+runWithLimit([1, 2, 3, 4, 5, 6, 7].map(makeTask), 3)
+  .then((r) => console.log(r));
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🐢</span> 큰 큐에 <code>shift()</code>를 쓰지 마세요</p>
+<p style="margin-bottom:0">배열의 <code>shift()</code>는 <b>앞을 빼고 나머지를 전부 당기는</b> 동작입니다(81장).
+항목이 수만 개인 큐에서 <code>shift</code>를 반복하면 눈에 띄게 느려집니다.
+대안은 <b>읽기 위치를 가리키는 인덱스</b>를 따로 두고 <code>arr[head++]</code>로 꺼내는 방식입니다.
+다만 <b>대부분의 프론트엔드 큐는 항목이 수십 개 수준</b>이라 <code>shift</code>로 충분합니다. 규모를 보고 판단하세요.</p>
+</div>
+
+<h2 id="linked">연결 리스트 — React 안에 들어 있는 구조</h2>
+
+<p><b>연결 리스트</b>는 값과 <b>"다음 노드를 가리키는 참조"</b>를 한 묶음으로 만들어 사슬처럼 이은 구조입니다.
+메모리에 흩어져 있어도 됩니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">배열 vs 연결 리스트</span>
+<pre><code data-lang="text">배열        [10][20][30][40]     인덱스 접근 즉시 / 중간 삽입은 전부 이동
+연결 리스트  10 → 20 → 30 → 40    인덱스 접근은 처음부터 / 중간 삽입은 참조만 바꾸면 끝
+
+                     ↓ 20과 30 사이에 25 삽입
+            10 → 20 → 25 → 30 → 40     (이동 없음)</code></pre>
+</div>
+
+<p>프론트엔드에서 연결 리스트를 <b>직접 만들 일은 거의 없습니다.</b>
+하지만 <b>React 내부가 이 구조를 씁니다.</b> 컴포넌트의 훅들은 호출 순서대로 <b>연결 리스트</b>에 저장되고,
+React는 렌더링마다 그 사슬을 순서대로 따라갑니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">💡</span> "훅을 조건문 안에서 부르지 마라"의 진짜 이유</p>
+<p style="margin-bottom:0">React는 훅을 <b>이름으로 찾지 않습니다.</b> <b>호출 순서</b>로 사슬의 몇 번째 칸인지를 셉니다.
+<code>if (cond) useState(...)</code>처럼 조건에 따라 호출 개수가 달라지면
+<b>두 번째 렌더링에서 칸이 어긋나</b> 엉뚱한 상태를 읽게 됩니다.
+그래서 훅 규칙은 "취향"이 아니라 <b>자료구조에서 나온 제약</b>입니다. (61·66장)</p>
+</div>
+
+<h2 id="tree">트리 — 프론트엔드에서 가장 많이 만나는 구조</h2>
+
+<p><b>트리</b>는 하나의 <b>루트</b>에서 가지가 뻗어 나가되 <b>고리가 생기지 않는</b> 구조입니다.
+프론트엔드 개발자는 트리를 하루 종일 다룹니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">전부 같은 구조입니다</span>
+<pre><code data-lang="text">DOM 트리          html → body → div → p           (5·38장)
+컴포넌트 트리      App → Layout → Sidebar → Item   (58장)
+폴더 구조         src/ → components/ → Button.tsx
+JSON 데이터       { user: { address: { city } } }
+라우트 트리        / → /posts → /posts/[id]        (68·71장)
+카테고리 · 댓글    대댓글은 댓글의 자식</code></pre>
+</div>
+
+<p>용어는 가족 관계로 부릅니다. <b>루트</b>(맨 위), <b>부모·자식</b>, <b>형제</b>,
+<b>잎(leaf)</b>(자식이 없는 노드), <b>깊이</b>(루트에서 몇 단계 아래인가).</p>
+
+<h3 id="traverse">DFS와 BFS — 트리를 훑는 두 가지 방법</h3>
+
+<div class="codeblock">
+<span class="cb-label">같은 트리, 다른 순서</span>
+<pre><code data-lang="text">            A
+          /   \
+         B     C
+        / \     \
+       D   E     F
+
+DFS (깊이 우선) A B D E C F   한 갈래를 끝까지 파고든 뒤 되돌아온다. 재귀/스택.
+BFS (너비 우선) A B C D E F   같은 깊이를 전부 본 뒤 다음 층으로. 큐.</code></pre>
+</div>
+
+<div class="runner" data-lang="js" data-title="DFS와 BFS 직접 구현" data-note="구현의 차이는 '스택이냐 큐냐' 딱 하나입니다.">
+<textarea class="rn-src">
+const tree = {
+  name: "A",
+  children: [
+    { name: "B", children: [{ name: "D", children: [] }, { name: "E", children: [] }] },
+    { name: "C", children: [{ name: "F", children: [] }] }
+  ]
+};
+
+// 깊이 우선 — 재귀 (가장 읽기 쉬움)
+function dfs(node, out = []) {
+  out.push(node.name);
+  for (const child of node.children) dfs(child, out);
+  return out;
+}
+console.log("DFS(재귀):", dfs(tree).join(" "));
+
+// 깊이 우선 — 스택 (깊어도 안전)
+function dfsIter(root) {
+  const out = [], stack = [root];
+  while (stack.length) {
+    const node = stack.pop();                  // 스택: 마지막 것부터
+    out.push(node.name);
+    for (let i = node.children.length - 1; i >= 0; i--) stack.push(node.children[i]);
+  }
+  return out;
+}
+console.log("DFS(스택):", dfsIter(tree).join(" "));
+
+// 너비 우선 — 큐
+function bfs(root) {
+  const out = [], queue = [root];
+  while (queue.length) {
+    const node = queue.shift();                // 큐: 먼저 들어온 것부터
+    out.push(node.name);
+    queue.push(...node.children);
+  }
+  return out;
+}
+console.log("BFS(큐)  :", bfs(tree).join(" "));
+</textarea>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 언제 무엇을 쓰나</p>
+<ol style="margin-bottom:0">
+<li><b>DFS</b> — 전체를 빠짐없이 훑을 때(모든 노드에 함수 적용, 합계 계산, 중첩 댓글 렌더링).
+코드가 짧고 자연스럽습니다. <code>querySelectorAll</code>이 돌려주는 문서 순서도 DFS 순서입니다.</li>
+<li><b>BFS</b> — <b>가장 가까운 것</b>을 찾을 때(최단 경로, "제일 가까운 부모 중 조건에 맞는 것").
+깊이별로 처리해야 할 때도 BFS입니다.</li>
+<li><b>깊이를 모르는 사용자 데이터</b>(무한 중첩 가능한 폴더·댓글)는 <b>반복 + 스택</b>으로 짜서 스택 오버플로를 피하세요.</li>
+<li>DOM에는 이미 좋은 도구가 있습니다. 조상 찾기는 직접 올라가지 말고 <code>element.closest(".card")</code>를 쓰세요.</li>
+</ol>
+</div>
+
+<h3 id="flat-to-tree">실무 코드 — 평면 배열을 트리로</h3>
+
+<p>서버는 보통 <b>평평한 배열</b>을 줍니다. 화면에는 <b>중첩</b>해서 그려야 합니다.
+이 변환은 실무에서 정말 자주 씁니다.</p>
+
+<div class="runner" data-lang="js" data-title="parentId 배열 → 중첩 트리" data-note="81장의 Map 조회표가 여기서 쓰입니다. 배열을 두 번만 훑습니다.">
+<textarea class="rn-src">
+const rows = [
+  { id: 1, parentId: null, name: "문서" },
+  { id: 2, parentId: 1,    name: "기획" },
+  { id: 3, parentId: 1,    name: "개발" },
+  { id: 4, parentId: 3,    name: "프론트엔드" },
+  { id: 5, parentId: 3,    name: "백엔드" },
+  { id: 6, parentId: 4,    name: "React" }
+];
+
+function buildTree(rows) {
+  const byId = new Map();
+  // 1차: 모든 노드를 Map에 넣고 children 자리를 만든다
+  for (const row of rows) byId.set(row.id, { ...row, children: [] });
+
+  // 2차: 부모를 찾아 자기를 붙인다
+  const roots = [];
+  for (const node of byId.values()) {
+    if (node.parentId === null) roots.push(node);
+    else byId.get(node.parentId)?.children.push(node);
+  }
+  return roots;
+}
+
+const tree = buildTree(rows);
+
+// 보기 좋게 출력 (DFS)
+function print(nodes, depth = 0) {
+  for (const n of nodes) {
+    console.log("  ".repeat(depth) + (depth ? "└ " : "") + n.name);
+    print(n.children, depth + 1);
+  }
+}
+print(tree);
+
+console.log("--- 깊이별로 세기 (BFS) ---");
+let level = 0, queue = tree;
+while (queue.length) {
+  console.log(`깊이 ${level}: ${queue.map(n => n.name).join(", ")}`);
+  queue = queue.flatMap(n => n.children);
+  level++;
+}
+</textarea>
+</div>
+
+<h2 id="graph">그래프 — 고리가 있어도 되는 구조</h2>
+
+<p><b>그래프</b>는 트리에서 제약을 푼 것입니다. <b>노드끼리 자유롭게 연결</b>되고, <b>고리(순환)</b>가 있어도 됩니다.
+트리는 "고리 없는 그래프"의 특수한 경우입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">프론트엔드에서 만나는 그래프</span>
+<pre><code data-lang="text">모듈 의존성 그래프   A가 B를 import하고 B가 C를 import… (47장 번들러)
+순환 참조            A → B → A  로 되돌아오는 import. 값이 undefined로 보이는 버그의 원인
+링크 구조            페이지끼리 서로 연결
+상태 전이            로딩 → 성공 → 다시 로딩 …</code></pre>
+</div>
+
+<div class="runner" data-lang="js" data-title="순환 참조 찾기" data-note="번들러가 'Circular dependency detected' 경고를 내는 원리입니다.">
+<textarea class="rn-src">
+// 모듈 의존성 (누가 누구를 import 하는가)
+const deps = {
+  "app.js":    ["user.js", "cart.js"],
+  "user.js":   ["api.js"],
+  "cart.js":   ["user.js", "price.js"],
+  "price.js":  ["cart.js"],        // ⚠️ cart → price → cart 순환
+  "api.js":    []
+};
+
+function findCycle(graph) {
+  const visiting = new Set();   // 지금 따라가는 중인 경로
+  const done = new Set();       // 다 확인한 노드
+
+  function walk(node, path) {
+    if (visiting.has(node)) return [...path, node];   // 되돌아왔다 → 순환
+    if (done.has(node)) return null;
+
+    visiting.add(node);
+    for (const next of graph[node] || []) {
+      const cycle = walk(next, [...path, node]);
+      if (cycle) return cycle;
+    }
+    visiting.delete(node);
+    done.add(node);
+    return null;
+  }
+
+  for (const node of Object.keys(graph)) {
+    const cycle = walk(node, []);
+    if (cycle) return cycle;
+  }
+  return null;
+}
+
+const cycle = findCycle(deps);
+console.log(cycle ? "순환 발견: " + cycle.join(" → ") : "순환 없음");
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔄</span> 순환 import가 만드는 유령 버그</p>
+<p style="margin-bottom:0"><code>a.js</code>가 <code>b.js</code>를, <code>b.js</code>가 다시 <code>a.js</code>를 import하면
+<b>둘 중 하나는 아직 초기화가 끝나지 않은 상태</b>에서 상대를 읽게 됩니다.
+그 결과 <code>undefined is not a function</code>이나 <code>Cannot access 'X' before initialization</code>이
+<b>엉뚱한 파일에서</b> 납니다. 원인을 찾기 매우 어렵습니다.</p>
+<p style="margin-bottom:0">해결은 대개 <b>공통 부분을 제3의 모듈로 빼는 것</b>입니다.
+<code>eslint-plugin-import</code>의 <code>import/no-cycle</code> 규칙으로 미리 잡을 수 있습니다. (34·48장)</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>스택</b>은 LIFO — 콜 스택, 실행 취소, 괄호 검사, DFS. 배열의 <code>push</code>/<code>pop</code>.</li>
+<li>재귀가 깊어지면 <b>스택 오버플로</b>. JS는 사실상 <b>꼬리 호출 최적화가 없다</b>(Safari 제외).</li>
+<li><b>큐</b>는 FIFO — 태스크 큐, 요청 대기열. 큰 큐에서는 <code>shift</code> 대신 인덱스를 쓴다.</li>
+<li><b>연결 리스트</b>는 참조로 이은 사슬. React 훅이 이 구조라서 <b>훅 호출 순서 규칙</b>이 있다.</li>
+<li>DOM·컴포넌트·라우트·폴더·JSON은 <b>전부 트리</b>다.</li>
+<li><b>DFS</b>=재귀/스택(전체 훑기), <b>BFS</b>=큐(가장 가까운 것 찾기).</li>
+<li>평면 배열 → 트리 변환은 <b><code>Map</code>으로 한 번, 부모 연결로 한 번</b>, 두 번만 훑으면 된다.</li>
+<li><b>순환 import</b>는 초기화 순서 버그를 만든다. <code>import/no-cycle</code>로 막는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/Element/closest" target="_blank" rel="noopener">MDN — Element.closest (조상 탐색)</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/API/Document_Object_Model/Introduction" target="_blank" rel="noopener">MDN — DOM 소개</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/TreeWalker" target="_blank" rel="noopener">MDN — TreeWalker (영문)</a></li>
+<li><a href="https://react.dev/reference/rules/rules-of-hooks" target="_blank" rel="noopener">React 공식 — 훅의 규칙 (영문)</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "스택과 큐의 차이를 가장 정확히 설명한 것은?",
+    o: [
+      "스택은 배열로, 큐는 객체로 구현한다",
+      "스택은 마지막에 넣은 것이 먼저 나오고(LIFO), 큐는 먼저 넣은 것이 먼저 나온다(FIFO)",
+      "스택은 동기, 큐는 비동기 처리에만 쓰인다",
+      "스택은 크기 제한이 있고 큐는 없다"
+    ],
+    a: 1,
+    e: "꺼내는 방향이 다를 뿐입니다. <b>콜 스택</b>은 나중에 호출된 함수가 먼저 끝나야 하므로 스택, <b>태스크 큐</b>는 먼저 등록된 콜백이 먼저 실행돼야 하므로 큐입니다. 자료구조 선택이 곧 동작 규칙입니다."
+  },
+  {
+    q: "깊이를 예측할 수 없는 사용자 데이터(무한 중첩 폴더 등)를 재귀로 순회할 때의 위험은?",
+    o: [
+      "재귀는 항상 반복문보다 느리다",
+      "깊이가 커지면 콜 스택이 가득 차 RangeError(스택 오버플로)가 난다. JS는 사실상 꼬리 호출 최적화가 없으므로 명시적 스택을 쓰는 반복문이 안전하다",
+      "재귀는 비동기 함수에서 쓸 수 없다",
+      "재귀는 메모리를 전혀 쓰지 않아 결과가 유실된다"
+    ],
+    a: 1,
+    e: "함수 호출마다 콜 스택에 프레임이 쌓입니다. 한계(대략 수천~수만 단계)를 넘으면 <code>Maximum call stack size exceeded</code>가 납니다. 꼬리 호출 최적화는 ES2015 명세에 있지만 <b>실제로 구현한 엔진은 Safari 계열뿐</b>이라 기대면 안 됩니다. 깊이가 뻔한 경우엔 재귀가 더 읽기 좋습니다."
+  },
+  {
+    q: "React가 \"훅을 조건문·반복문 안에서 호출하지 말라\"고 하는 근본 이유는?",
+    o: [
+      "성능이 나빠지기 때문",
+      "React는 훅을 이름이 아니라 호출 순서로 구분해 연결 리스트에 저장하므로, 호출 개수가 렌더링마다 달라지면 상태가 어긋나기 때문",
+      "조건문 안의 훅은 문법 오류이기 때문",
+      "훅은 비동기라 순서를 보장할 수 없기 때문"
+    ],
+    a: 1,
+    e: "React 내부에서 훅은 <b>호출 순서대로 이어진 사슬(연결 리스트)</b>에 저장됩니다. 이름표가 없으므로 \"몇 번째로 불렸는가\"가 곧 신원입니다. 조건에 따라 호출 개수가 바뀌면 <b>두 번째 렌더링에서 칸이 한 칸씩 밀려</b> 다른 훅의 상태를 읽게 됩니다. 스타일 규칙이 아니라 <b>자료구조에서 나온 제약</b>입니다."
+  },
+  {
+    q: "트리에서 \"조건에 맞는 가장 가까운 노드\"를 찾아야 합니다. 적절한 탐색은?",
+    o: [
+      "DFS — 한 갈래를 끝까지 파고들어야 정확하다",
+      "BFS — 큐를 써서 가까운 깊이부터 전부 확인하므로 처음 발견한 것이 가장 가까운 노드다",
+      "둘 다 결과가 같으므로 아무거나 써도 된다",
+      "정렬한 뒤 이진 탐색을 해야 한다"
+    ],
+    a: 1,
+    e: "BFS는 <b>깊이 0 → 1 → 2</b> 순으로 층별로 훑습니다. 그래서 <b>처음 만난 것이 가장 가까운 것</b>임이 보장됩니다. DFS는 한 갈래를 끝까지 내려가므로 훨씬 먼 노드를 먼저 만날 수 있습니다. 전체를 다 볼 때는 둘 다 같지만, <b>'가장 가까운'</b>이 조건이면 BFS입니다."
+  },
+  {
+    q: "<code>[{id:1,parentId:null},{id:2,parentId:1},{id:3,parentId:2}]</code> 같은 평면 배열을 중첩 트리로 바꾸는 효율적인 방법은?",
+    o: [
+      "각 노드마다 배열 전체를 find로 훑어 자식을 찾는다",
+      "먼저 Map에 id → 노드를 모두 넣고, 다시 한 번 훑으며 각 노드를 부모의 children에 붙인다",
+      "정렬한 뒤 순서대로 붙이면 항상 정확하다",
+      "JSON.parse로 자동 변환된다"
+    ],
+    a: 1,
+    e: "배열을 <b>두 번만</b> 훑으면 됩니다. 1차로 <code>Map</code> 조회표를 만들고(81장), 2차로 각 노드가 <code>byId.get(parentId)</code>로 부모를 즉시 찾아 자기를 붙입니다. 매번 <code>find</code>로 훑으면 노드 수의 제곱에 비례해 느려집니다. 실무에서 매우 자주 쓰는 패턴입니다."
+  },
+  {
+    q: "<code>a.js</code>와 <code>b.js</code>가 서로를 import하는 순환 참조가 위험한 이유는?",
+    o: [
+      "번들 크기가 두 배가 되기 때문",
+      "한쪽이 초기화되기 전에 다른 쪽이 그 값을 읽게 되어, 엉뚱한 곳에서 undefined나 초기화 전 접근 오류가 나기 때문",
+      "브라우저가 import를 무한 반복해 멈추기 때문",
+      "TypeScript에서만 발생하는 문제이기 때문"
+    ],
+    a: 1,
+    e: "모듈 시스템은 순환을 감지하면 <b>무한 반복 대신 아직 완성되지 않은 모듈을 그대로 돌려줍니다</b>. 그래서 값이 <code>undefined</code>이거나 <code>Cannot access 'X' before initialization</code>이 <b>원인과 먼 파일에서</b> 터집니다. 공통 부분을 별도 모듈로 분리해 고리를 끊고, <code>import/no-cycle</code> 규칙으로 미리 막습니다."
+  }
+]);
+</script>

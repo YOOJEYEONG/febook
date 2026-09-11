@@ -151,14 +151,30 @@ window.BOOK_TOC = {
       ]
     },
     {
-      n: 11, title: "실전과 커리어",
+      n: 11, title: "컴퓨터 과학 기초",
+      desc: "프론트엔드에 실제로 쓰이는 만큼의 CS",
+      chapters: [
+        { n: 80, id: "80-cs-numbers-text", title: "컴퓨터는 숫자와 글자를 어떻게 다루나" },
+        { n: 81, id: "81-cs-data-structures", title: "자료구조 1: 배열, 객체, 해시 테이블" },
+        { n: 82, id: "82-cs-trees-graphs", title: "자료구조 2: 스택, 큐, 트리, 그래프" },
+        { n: 83, id: "83-cs-complexity", title: "알고리즘과 시간 복잡도" },
+        { n: 84, id: "84-cs-memory", title: "메모리, 가비지 컬렉션, 메모리 누수" },
+        { n: 85, id: "85-cs-process-thread", title: "프로세스와 스레드, 동시성과 병렬성" },
+        { n: 86, id: "86-cs-compiler-jit", title: "컴파일러, 인터프리터, 그리고 JIT" },
+        { n: 87, id: "87-cs-network", title: "네트워크 심화: TCP, TLS, HTTP/2와 HTTP/3" },
+        { n: 88, id: "88-cs-cache", title: "캐시: CPU부터 CDN까지" },
+        { n: 89, id: "89-cs-backend-db", title: "백엔드와 데이터베이스, 알아야 할 만큼" }
+      ]
+    },
+    {
+      n: 12, title: "실전과 커리어",
       desc: "배운 것을 실제 결과물과 커리어로",
       chapters: [
-        { n: 80, id: "80-project-structure", title: "프로젝트 구조와 아키텍처" },
-        { n: 81, id: "81-mini-projects", title: "미니 프로젝트 3개" },
-        { n: 82, id: "82-collaboration", title: "협업과 코드 리뷰" },
-        { n: 83, id: "83-interview", title: "면접 대비 핵심 질문" },
-        { n: 84, id: "84-keep-learning", title: "계속 학습하기" }
+        { n: 90, id: "90-project-structure", title: "프로젝트 구조와 아키텍처" },
+        { n: 91, id: "91-mini-projects", title: "미니 프로젝트 3개" },
+        { n: 92, id: "92-collaboration", title: "협업과 코드 리뷰" },
+        { n: 93, id: "93-interview", title: "면접 대비 핵심 질문" },
+        { n: 94, id: "94-keep-learning", title: "계속 학습하기" }
       ]
     }
   ]

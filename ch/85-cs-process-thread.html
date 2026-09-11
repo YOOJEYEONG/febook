@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>85장. 프로세스와 스레드, 동시성과 병렬성 — 프엔북</title>
+<meta name="description" content="프로세스와 스레드의 차이, 브라우저가 탭마다 프로세스를 나누는 이유, 메인 스레드와 컴포지터 스레드, 동시성과 병렬성의 구분, Web Worker로 진짜 병렬 처리를 하는 법을 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="85장. 프로세스와 스레드, 동시성과 병렬성 — 프엔북">
+<meta property="og:description" content="프로세스와 스레드의 차이, 브라우저가 탭마다 프로세스를 나누는 이유, 메인 스레드와 컴포지터 스레드, 동시성과 병렬성의 구분, Web Worker로 진짜 병렬 처리를 하는 법을 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="85-cs-process-thread">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">11부 · 컴퓨터 과학 기초</p>
+    <h1>85장. 프로세스와 스레드, 동시성과 병렬성</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>프로세스</b>와 <b>스레드</b>의 차이를 비유 없이 정확히</li>
+  <li><span class="term" data-term="browser">브라우저</span>가 <b>탭마다 프로세스를 나누는</b> 이유</li>
+  <li><b>동시성</b>과 <b>병렬성</b>은 다른 말이다</li>
+  <li><b>Web Worker</b> — <span class="term" data-term="javascript">JavaScript</span>에서 진짜 병렬을 쓰는 유일한 길</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 35장 <span class="term" data-term="event-loop">이벤트 루프</span>의 확장판</p>
+
+<h2 id="basics">프로그램, 프로세스, 스레드</h2>
+
+<div class="codeblock">
+<span class="cb-label">세 단어의 차이</span>
+<pre><code data-lang="text">프로그램   디스크에 저장된 파일. 아직 아무것도 하지 않는다. (Chrome.app)
+프로세스   실행되어 메모리를 받은 상태. 자기만의 주소 공간을 갖는다.
+스레드     프로세스 안에서 실제로 코드를 실행하는 흐름. 여러 개일 수 있다.</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">핵심 차이 하나: 메모리를 공유하는가</span>
+<pre><code data-lang="text">프로세스 A          프로세스 B        서로의 메모리에 접근할 수 없다
+┌──────────┐       ┌──────────┐      → 하나가 죽어도 다른 쪽은 멀쩡하다
+│ 메모리 A  │       │ 메모리 B  │      → 대화하려면 별도의 통신 수단 필요
+│ 스레드1   │       │ 스레드1   │      → 만들고 전환하는 비용이 크다
+│ 스레드2   │       └──────────┘
+└──────────┘
+  ↑ 같은 프로세스의 스레드끼리는 메모리를 공유한다
+    → 데이터 주고받기가 빠르다
+    → 동시에 같은 값을 건드리면 망가진다 (경쟁 조건)</code></pre>
+</div>
+
+<h2 id="browser">브라우저는 왜 프로세스를 여러 개 쓰나</h2>
+
+<p>초기 브라우저는 <b>전체가 하나의 프로세스</b>였습니다. 탭 하나가 죽으면 <b>브라우저 전체가 죽었습니다.</b>
+지금의 브라우저는 역할별로 프로세스를 나눕니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">Chrome 계열의 프로세스 구성 (개략)</span>
+<pre><code data-lang="text">브라우저 프로세스    주소창, 탭, 북마크, 나머지 프로세스 관리
+렌더러 프로세스      실제 웹 페이지를 그린다. ★ 우리 코드가 도는 곳
+                    보통 탭/사이트마다 따로 만들어진다
+네트워크 프로세스    HTTP 요청 처리
+GPU 프로세스        화면 합성·그리기 가속
+유틸리티 프로세스    오디오, 확장 프로그램 등</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🛡️</span> 사이트 격리 (Site Isolation)</p>
+<p style="margin-bottom:0">현대 브라우저는 <b>서로 다른 사이트를 다른 렌더러 프로세스에 둡니다.</b>
+<code>&lt;iframe&gt;</code>으로 들어온 광고도 별도 프로세스입니다.</p>
+<p style="margin-bottom:0">이유는 두 가지입니다. <b>① 안정성</b> — 한 탭이 뻗어도 나<span class="term" data-term="merge">머지</span>는 살아 있습니다.
+<b>② 보안</b> — CPU 취약점(Spectre 계열)을 이용해 <b>같은 프로세스 메모리</b>를 훔쳐보는 공격이 가능하다는 것이 밝혀졌습니다.
+사이트를 물리적으로 다른 프로세스에 두면, 애초에 읽을 메모리가 거기 없습니다.</p>
+<p style="margin-bottom:0">대가는 <b>메모리 사용량</b>입니다. "Chrome이 램을 많이 먹는다"는 말은 상당 부분 이 설계 때문이고,
+<b>의도된 교환</b>입니다.</p>
+</div>
+
+<h3 id="main-thread">렌더러 프로세스 안 — 메인 스레드가 하는 일</h3>
+
+<p>우리 코드는 렌더러 프로세스의 <b>메인 스레드</b> 하나에서 돕니다. 그리고 이 스레드는 <b>전부</b>를 합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">메인 스레드의 업무 목록</span>
+<pre><code data-lang="text">JavaScript 실행
+스타일 계산 (어떤 CSS가 적용되는가)
+레이아웃     (무엇이 어디에 얼마 크기로)
+페인트       (픽셀로 어떻게 칠할까)
+이벤트 처리  (클릭, 입력, 스크롤)
+
+→ 전부 한 줄에서 차례로 처리한다
+→ JS가 200ms 붙잡고 있으면 그동안 클릭도, 애니메이션도, 스크롤도 멈춘다 (35장)</code></pre>
+</div>
+
+<p>다행히 <b>메인 스레드만 있는 것은 아닙니다.</b> 브라우저는 일부 작업을 다른 스레드로 뺍니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">메인 스레드 밖의 스레드들</span>
+<pre><code data-lang="text">컴포지터 스레드   이미 그려 둔 레이어를 합성하고 화면에 올린다
+래스터 스레드     레이어를 실제 픽셀로 굽는다
+
+→ transform 과 opacity 애니메이션은 레이아웃·페인트를 다시 하지 않아도 되므로
+  컴포지터 스레드에서 처리할 수 있다 → 메인 스레드가 바빠도 부드럽다 (20·76장)
+→ 반면 width, top, margin 애니메이션은 레이아웃을 다시 계산해야 해서
+  메인 스레드를 거친다 → 끊긴다</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 이 한 줄이 실무 지식의 핵심입니다</p>
+<p style="margin-bottom:0"><b>애니메이션은 <code>transform</code>과 <code>opacity</code>로 만드세요.</b>
+<code>left</code>를 바꾸면 브라우저는 매 프레임 레이아웃을 다시 계산합니다.
+<code>transform: translateX()</code>는 이미 구워 둔 레이어를 <b>다른 위치에 얹기만</b> 합니다.
+같은 움직임인데 비용이 완전히 다릅니다. "왜?"의 답이 바로 <b>스레드가 다르기 때문</b>입니다.</p>
+</div>
+
+<h2 id="concurrency">동시성과 병렬성은 다른 말이다</h2>
+
+<div class="codeblock">
+<span class="cb-label">요리사 비유 — 이 구분만은 정확히</span>
+<pre><code data-lang="text">동시성(Concurrency)   요리사 1명이 여러 요리를 번갈아 다룬다.
+                      국이 끓는 동안 채소를 썬다.
+                      → 진짜 동시에 하는 건 아니지만 기다림이 사라진다
+                      → JavaScript의 이벤트 루프 (35장)
+
+병렬성(Parallelism)   요리사 3명이 각자 다른 요리를 정말로 동시에 만든다.
+                      → CPU 코어가 여러 개여야 가능
+                      → Web Worker, 서버의 멀티프로세스</code></pre>
+</div>
+
+<p><b>JavaScript는 싱글 스레드</b>입니다. 하지만 느려 보이지 않는 이유는 <b>동시성</b> 덕분입니다.
+<code>fetch</code>로 요청을 보내면 <b>기다리는 일은 네트워크 프로세스가</b> 하고,
+메인 스레드는 그동안 다른 코드를 실행합니다. 응답이 오면 <span class="term" data-term="callback">콜백</span>이 큐에 들어갑니다.</p>
+
+<p>그래서 <b>기다리는 작업(I/O)</b>은 싱글 스레드로도 충분합니다.
+문제가 되는 건 <b>계산하는 작업(CPU)</b>입니다. 계산은 대신해 줄 곳이 없습니다.</p>
+
+<div class="runner" data-lang="js" data-title="기다림은 동시에, 계산은 차례로" data-note="두 번째 실험이 끝날 때까지 페이지가 잠깐 멈춥니다. 이것이 CPU 작업의 문제입니다.">
+<textarea class="rn-src">
+const delay = (ms, label) =>
+  new Promise((res) => setTimeout(() => res(label), ms));
+
+// ① 기다리는 작업 3개 — 동시에 진행된다
+(async () => {
+  let t = performance.now();
+  await Promise.all([delay(300, "A"), delay(300, "B"), delay(300, "C")]);
+  console.log("기다림 3개 (각 300ms):", (performance.now() - t).toFixed(0), "ms");
+  console.log("→ 900ms가 아니라 300ms. 기다리는 건 브라우저가 대신 합니다.");
+
+  // ② 계산 작업 3개 — 차례로 할 수밖에 없다
+  const heavy = () => { let s = 0; for (let i = 0; i < 3e7; i++) s += i; return s; };
+  t = performance.now();
+  await Promise.all([
+    Promise.resolve().then(heavy),
+    Promise.resolve().then(heavy),
+    Promise.resolve().then(heavy)
+  ]);
+  console.log("계산 3개:", (performance.now() - t).toFixed(0), "ms");
+  console.log("→ Promise로 감싸도 빨라지지 않습니다. 스레드가 하나이기 때문입니다.");
+  console.log("이 CPU 코어 수:", navigator.hardwareConcurrency);
+})();
+</textarea>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">⚡</span> "<code>async</code>를 붙이면 병렬로 실행된다"</p>
+<span class="mythline"><b>아닙니다.</b> <code>async</code>/<code>await</code>는 <b>기다리는 동안 자리를 비켜 주는</b> 문법입니다.
+새 스레드를 만들지 않습니다.</span>
+<span class="mythline">그래서 <code>Promise.all</code>로 <b>네트워크 요청 3개</b>를 묶으면 실제로 빨라지지만,
+<b>무거운 계산 3개</b>를 묶으면 전혀 빨라지지 않습니다. 여전히 한 줄에서 차례로 돕니다.</span>
+<span class="mythline">JavaScript에서 <b>진짜 병렬</b>을 얻는 방법은 <b>Web Worker</b>(브라우저)나
+<b>worker_threads</b>·<b>자식 프로세스</b>(<span class="term" data-term="nodejs">Node.js</span>)뿐입니다.</span>
+</div>
+
+<h2 id="worker">Web Worker — 진짜 별도 스레드</h2>
+
+<p><b>Web Worker</b>는 <b>별도의 스레드</b>에서 JavaScript를 실행합니다.
+메인 스레드를 전혀 막지 않습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">기본 사용법</span>
+<pre><code data-lang="js">// main.js
+const worker = new Worker(new URL("./heavy.worker.js", import.meta.url), { type: "module" });
+
+worker.postMessage({ numbers: bigArray });        // 일을 보낸다
+
+worker.onmessage = (e) =&gt; {
+  console.log("결과:", e.data);                    // 결과를 받는다
+};
+worker.onerror = (e) =&gt; console.error(e.message);
+
+// 다 쓰면 반드시 정리 (84장 — 안 하면 스레드가 계속 살아 있습니다)
+// worker.terminate();</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">heavy.worker.js</span>
+<pre><code data-lang="js">self.onmessage = (e) =&gt; {
+  const { numbers } = e.data;
+  const result = numbers.reduce((a, b) =&gt; a + b, 0);   // 오래 걸려도 메인은 멀쩡
+  self.postMessage(result);
+};</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🚧</span> Worker의 제약 — 알고 써야 합니다</p>
+<ol style="margin-bottom:0">
+<li><b><span class="term" data-term="dom">DOM</span>에 접근할 수 없습니다.</b> <code>document</code>, <code>window</code>가 없습니다.
+화면을 바꾸려면 결과를 메인 스레드로 보내야 합니다. (<code>fetch</code>, <code>WebSocket</code>, <code>IndexedDB</code>는 쓸 수 있습니다.)</li>
+<li><b>메모리를 공유하지 않습니다.</b> <code>postMessage</code>로 보내는 데이터는 <b>구조화 복제</b>로 복사됩니다.
+함수·DOM 노드·클래스 인스턴스의 메서드는 복사되지 않습니다.</li>
+<li><b>복사 비용이 있습니다.</b> 아주 큰 데이터라면
+<code>postMessage(buffer, [buffer])</code>로 <b>소유권을 넘기면</b>(Transferable) 복사 없이 이동합니다.
+단, 넘긴 쪽에서는 그 버퍼를 더 이상 쓸 수 없게 됩니다.</li>
+<li><b>진짜 메모리 공유</b>가 필요하면 <code>SharedArrayBuffer</code>가 있지만,
+보안상 <b>교차 <span class="term" data-term="origin">출처</span> 격리</b>(<code>COOP: same-origin</code> + <code>COEP: require-corp</code> 헤더)가 필요합니다. 난도가 높습니다.</li>
+<li><b>Worker를 만드는 것도 비용입니다.</b> 짧은 작업에 매번 새로 만들면 오히려 손해입니다.
+재사용하거나 풀을 만드세요.</li>
+</ol>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — Worker를 쓸 때와 안 쓸 때</p>
+<ol style="margin-bottom:0">
+<li><b>쓸 만한 경우</b>: 수만 행 CSV·<span class="term" data-term="json">JSON</span> 파싱, 이미지 필터·리사이즈, 암호화·해시, 대용량 검색 색인 생성,
+지도·차트 데이터 전처리.</li>
+<li><b>쓰지 말아야 할 경우</b>: 단순 <span class="term" data-term="api">API</span> 호출(이미 비동기라 메인을 막지 않음), 가벼운 계산, DOM 조작.
+<b>Worker로 옮긴다고 네트워크가 빨라지지는 않습니다.</b></li>
+<li><b>먼저 해야 할 것</b>: 알고리즘 개선(83장)과 <b>작업 쪼개기</b>. 큰 반복을 나눠
+중간에 제어권을 돌려주면(<code>scheduler.yield()</code>나 <code>setTimeout</code>) Worker 없이도 멈춤이 사라지는 경우가 많습니다.</li>
+<li><b>현실적 난이도</b>: 직접 쓰기보다 <code>comlink</code> 같은 라이브러리로 감싸면 함수 호출처럼 쓸 수 있어 훨씬 편합니다.</li>
+</ol>
+</div>
+
+<h3 id="race">JavaScript에도 경쟁 조건이 있다</h3>
+
+<p>스레드가 하나라 <b>전통적인 의미의 경쟁 조건</b>(두 스레드가 동시에 같은 변수를 써서 값이 깨지는 것)은 없습니다.
+한 번 실행이 시작된 동기 코드는 끝까지 중단되지 않기 때문입니다.</p>
+
+<p>하지만 <b>비동기 응답의 도착 순서</b>가 만드는 경쟁은 매우 흔합니다.</p>
+
+<div class="runner" data-lang="js" data-title="느린 응답이 나중에 도착해 화면을 덮어쓰는 문제" data-note="검색창 자동완성에서 실제로 자주 나는 버그입니다.">
+<textarea class="rn-src">
+// 서버 응답 시간이 매번 다르다고 가정
+const search = (q, ms) =>
+  new Promise((res) => setTimeout(() => res(`"${q}" 결과`), ms));
+
+console.log("=== ❌ 순진한 구현 ===");
+let shown = null;
+async function naive(q, ms) {
+  const r = await search(q, ms);
+  shown = r;                                  // 도착하는 대로 덮어쓴다
+  console.log("화면 갱신:", r);
+}
+naive("ab", 300);      // 먼저 요청했지만 느리다
+naive("abc", 50);      // 나중에 요청했지만 빠르다
+
+setTimeout(() => {
+  console.log("최종 화면:", shown, "← 사용자가 입력한 건 abc인데!");
+
+  console.log("=== ✅ 요청 번호로 막기 ===");
+  let latest = 0, shown2 = null;
+  async function safe(q, ms) {
+    const my = ++latest;                      // 내 요청 번호
+    const r = await search(q, ms);
+    if (my !== latest) {                      // 더 최신 요청이 있으면 버린다
+      console.log("무시:", r);
+      return;
+    }
+    shown2 = r;
+    console.log("화면 갱신:", r);
+  }
+  safe("ab", 300);
+  safe("abc", 50);
+  setTimeout(() => console.log("최종 화면:", shown2), 400);
+}, 400);
+</textarea>
+</div>
+
+<p>실무에서는 <b><code>AbortController</code>로 이전 요청을 취소</b>하거나,
+<span class="term" data-term="tanstack-query">TanStack Query</span>(67장)처럼 <b>이 문제를 이미 해결해 둔 라이브러리</b>를 씁니다.
+<span class="term" data-term="react">React</span> 18+의 <code>useEffect</code> <span class="term" data-term="cleanup">정리 함수</span>에서 <code>ignore</code> 플래그를 쓰는 패턴도 같은 목적입니다(61장).</p>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>프로세스</b>는 독립된 메모리 공간, <b>스레드</b>는 그 안에서 실행되는 흐름(메모리 공유).</li>
+<li>브라우저는 <b>탭·사이트마다 렌더러 프로세스</b>를 나눈다 — 안정성과 <b>보안(사이트 격리)</b> 때문.</li>
+<li>우리 코드는 <b>메인 스레드 하나</b>에서 돈다. JS·스타일·레이아웃·페인트·이벤트가 전부 여기 있다.</li>
+<li><code>transform</code>·<code>opacity</code>는 <b>컴포지터 스레드</b>에서 처리돼 메인이 바빠도 부드럽다.</li>
+<li><b>동시성</b>(번갈아 하기)과 <b>병렬성</b>(정말 동시에)은 다르다. JS 기본은 동시성이다.</li>
+<li><code>async</code>는 새 스레드를 만들지 않는다. <b>기다림은 빨라지고, 계산은 안 빨라진다.</b></li>
+<li>진짜 병렬은 <b>Web Worker</b>. DOM 접근 불가, 데이터는 복사, 만드는 비용이 있다.</li>
+<li>싱글 스레드에도 <b>비동기 응답 순서로 인한 경쟁</b>은 있다. 요청 번호나 <code>AbortController</code>로 막는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers" target="_blank" rel="noopener">MDN — Web Worker 사용하기 (영문)</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm" target="_blank" rel="noopener">MDN — 구조화 복제 알고리즘 (영문)</a></li>
+<li><a href="https://developer.chrome.com/blog/inside-browser-part1" target="_blank" rel="noopener">Chrome 개발자 블로그 — 브라우저 내부 들여다보기 (영문)</a></li>
+<li><a href="https://web.dev/articles/why-coop-coep" target="_blank" rel="noopener">web.dev — 교차 출처 격리가 필요한 이유 (영문)</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "프로세스와 스레드의 가장 본질적인 차이는?",
+    o: [
+      "프로세스가 스레드보다 항상 빠르다",
+      "프로세스는 각자 독립된 메모리 공간을 갖고, 같은 프로세스 안의 스레드들은 메모리를 공유한다",
+      "스레드는 운영체제가, 프로세스는 브라우저가 만든다",
+      "프로세스는 하나의 스레드만 가질 수 있다"
+    ],
+    a: 1,
+    e: "메모리 공유 여부가 모든 차이의 출발점입니다. 공유하지 않으므로 <b>프로세스는 서로를 망가뜨릴 수 없고</b>(안정성·보안), 대신 대화하려면 별도 통신이 필요하고 생성 비용이 큽니다. 스레드는 공유하므로 <b>빠르게 데이터를 주고받지만</b> 동시에 같은 값을 건드리면 깨집니다."
+  },
+  {
+    q: "브라우저가 탭이나 사이트마다 렌더러 프로세스를 분리하는 이유로 옳은 것을 모두 포함한 것은?",
+    o: [
+      "메모리를 절약하기 위해",
+      "한 탭이 죽어도 다른 탭이 살아남게 하고, Spectre 같은 CPU 취약점으로 다른 사이트의 메모리를 훔쳐보는 것을 막기 위해",
+      "JavaScript를 병렬로 실행하기 위해",
+      "탭마다 다른 브라우저 엔진을 쓰기 위해"
+    ],
+    a: 1,
+    e: "<b>안정성</b>과 <b>보안</b>입니다. 특히 Spectre 계열 취약점은 <b>같은 프로세스 안의 메모리</b>를 읽어 낼 수 있다는 것이었고, 대응책이 <b>사이트 격리</b>였습니다. 대가는 <b>메모리 사용 증가</b>입니다 — 절약이 아니라 그 반대이며, 의도된 교환입니다."
+  },
+  {
+    q: "<code>left</code> 대신 <code>transform: translateX()</code>로 애니메이션하라는 조언의 근거는?",
+    o: [
+      "transform이 문법적으로 더 짧아서",
+      "transform·opacity는 레이아웃과 페인트를 다시 하지 않아도 되어 컴포지터 스레드에서 처리될 수 있고, 메인 스레드가 바빠도 부드럽기 때문",
+      "left는 구형 브라우저에서 동작하지 않기 때문",
+      "transform은 GPU 메모리를 쓰지 않기 때문"
+    ],
+    a: 1,
+    e: "<code>left</code>를 바꾸면 <b>요소의 위치가 바뀌므로 레이아웃부터 다시</b> 계산해야 하고, 이것은 메인 스레드의 일입니다. <code>transform</code>은 <b>이미 구워 둔 레이어를 옮겨 합성</b>하는 것이라 컴포지터 스레드가 처리할 수 있습니다. 같은 움직임인데 처리하는 스레드가 다릅니다."
+  },
+  {
+    q: "무거운 계산 함수 3개를 <code>Promise.all</code>로 묶어 실행하면?",
+    o: [
+      "3개가 병렬로 실행되어 약 1/3 시간에 끝난다",
+      "여전히 메인 스레드 하나에서 차례로 실행되므로 빨라지지 않는다. async는 스레드를 만들지 않는다",
+      "브라우저가 자동으로 Web Worker를 만들어 준다",
+      "오류가 발생한다"
+    ],
+    a: 1,
+    e: "<code>async</code>/<code>await</code>와 <code>Promise</code>는 <b>기다리는 동안 자리를 비켜 주는</b> 장치이지 스레드를 만드는 도구가 아닙니다. 그래서 <b>네트워크 요청 3개</b>는 <code>Promise.all</code>로 확실히 빨라지지만(기다림이 겹침), <b>계산 3개</b>는 전혀 빨라지지 않습니다. 진짜 병렬은 <b>Web Worker</b>가 필요합니다."
+  },
+  {
+    q: "Web Worker의 제약으로 옳은 것은?",
+    o: [
+      "fetch를 사용할 수 없다",
+      "document·window에 접근할 수 없고, postMessage로 보내는 데이터는 구조화 복제로 복사되므로 함수는 전달되지 않는다",
+      "하나의 페이지에서 Worker는 한 개만 만들 수 있다",
+      "Worker 안에서는 async/await를 쓸 수 없다"
+    ],
+    a: 1,
+    e: "Worker는 <b>DOM에 접근할 수 없습니다</b>. 화면 변경은 결과를 메인 스레드로 보내서 처리해야 합니다. 다만 <code>fetch</code>·<code>WebSocket</code>·<code>IndexedDB</code>는 사용 가능합니다. 데이터는 <b>복사</b>되므로 함수·DOM 노드는 넘어가지 않고, 아주 큰 버퍼는 <b>Transferable</b>로 소유권을 넘겨 복사를 피할 수 있습니다."
+  },
+  {
+    q: "검색어를 빠르게 입력할 때, 먼저 보낸 느린 요청의 결과가 나중에 도착해 최신 결과를 덮어씁니다. 올바른 대응은?",
+    o: [
+      "요청을 동기로 바꾼다",
+      "요청마다 번호를 매겨 최신 요청이 아니면 결과를 버리거나, AbortController로 이전 요청을 취소한다",
+      "setTimeout으로 응답 처리를 지연시킨다",
+      "Web Worker에서 요청을 보낸다"
+    ],
+    a: 1,
+    e: "싱글 스레드라도 <b>비동기 응답의 도착 순서</b>는 보장되지 않습니다. 해결책은 <b>\"이 응답이 아직 유효한가\"를 확인</b>하는 것입니다. 요청 번호 비교, <code>AbortController</code>로 취소, React <code>useEffect</code> 정리 함수의 <code>ignore</code> 플래그가 모두 같은 원리이고, TanStack Query는 이를 내장하고 있습니다."
+  }
+]);
+</script>
+</body>
+</html>

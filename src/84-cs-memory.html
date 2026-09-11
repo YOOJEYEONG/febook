@@ -1,0 +1,365 @@
+<!--desc: 스택과 힙, 가비지 컬렉터가 무엇을 기준으로 메모리를 정리하는지, 프론트엔드에서 메모리 누수가 생기는 네 가지 경로와 DevTools로 찾아내는 방법, WeakMap의 쓰임을 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>스택과 힙</b> — 원시값과 참조값이 사는 곳이 다른 이유</li>
+  <li>가비지 컬렉터가 <b>무엇을 기준으로</b> 치울지 정하는가</li>
+  <li>프론트엔드 <b>메모리 누수 4대 원인</b>과 실제 코드</li>
+  <li>DevTools <b>Memory 패널</b>로 누수를 찾아내는 법</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분 · SPA에서 특히 중요</p>
+
+<h2 id="stack-heap">스택과 힙</h2>
+
+<p>프로그램이 쓰는 메모리는 성격이 다른 두 영역으로 나뉩니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">두 영역</span>
+<pre><code data-lang="text">스택(stack)                        힙(heap)
+─────────────────────────          ─────────────────────────
+함수 호출 정보와 작은 값            객체·배열·함수 같은 '덩어리'
+크기가 정해져 있다                  크기가 정해져 있지 않다
+빠르다 (넣고 빼기만)                상대적으로 느리다
+함수가 끝나면 자동으로 정리          가비지 컬렉터가 정리
+용량이 작다 → 스택 오버플로(82장)   용량이 크다</code></pre>
+</div>
+
+<p>25장에서 배운 <b>원시값과 참조값의 차이</b>가 바로 이 구조에서 나옵니다.
+<code>const a = 10</code>은 값 자체를 들고 있고, <code>const obj = {}</code>는 <b>힙에 있는 객체의 주소</b>를 들고 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">복사가 다르게 동작하는 이유</span>
+<pre><code data-lang="text">let a = 10;          스택 ┌─────────┐
+let b = a;                │ a = 10  │   값 자체를 복사 → 서로 무관
+                          │ b = 10  │
+                          └─────────┘
+
+let o1 = { n: 1 };   스택 ┌──────────┐      힙 ┌──────────┐
+let o2 = o1;              │ o1 = @100├────────▶│ { n: 1 } │
+                          │ o2 = @100├────────▶│          │
+                          └──────────┘        └──────────┘
+                          주소만 복사 → 같은 객체를 본다</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔬</span> 정확히 말하면</p>
+<p style="margin-bottom:0">"원시값은 스택, 객체는 힙"은 <b>이해를 위한 모델</b>입니다.
+실제 배치는 엔진의 구현 사항입니다. V8은 작은 정수를 값 안에 직접 끼워 넣기도 하고,
+탈출하지 않는 객체를 최적화로 스택에 두기도 합니다.
+<b>직접 관찰할 수도, 제어할 수도 없습니다.</b>
+중요한 건 <b>"값을 복사하느냐 주소를 복사하느냐"</b>라는 동작의 차이이고, 그 부분은 명세로 보장됩니다.</p>
+</div>
+
+<h2 id="gc">가비지 컬렉터는 무엇을 치우나</h2>
+
+<p>C 같은 언어에서는 개발자가 직접 메모리를 반납합니다. JavaScript는 <b>가비지 컬렉터(GC)</b>가 대신합니다.
+기준은 하나입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧹</span> 기준: <b>도달 가능한가</b></p>
+<p style="margin-bottom:0">전역 객체, 현재 실행 중인 함수의 변수 같은 <b>출발점(루트)</b>에서
+참조를 타고 <b>갈 수 있는 값은 살려 두고</b>, <b>갈 수 없는 값은 치웁니다.</b><br>
+"쓸모없어 보이는가"가 아니라 <b>"닿을 수 있는가"</b>입니다. 이 구분이 누수를 이해하는 열쇠입니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">표시하고 쓸어 담기 (mark-and-sweep)</span>
+<pre><code data-lang="text">루트 ──▶ A ──▶ B      ① 루트에서 출발해 닿는 것을 전부 '표시'
+         └──▶ C       ② 표시 안 된 것을 회수
+
+              D  ✗    D는 아무도 참조하지 않는다 → 회수 대상
+         E ⇄ F  ✗     E와 F는 서로를 참조하지만
+                      루트에서 닿을 수 없다 → 둘 다 회수 대상</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🔗</span> "서로를 참조하면 GC가 못 지운다"는 옛말입니다</p>
+<span class="mythline">이건 <b>참조 카운팅</b> 방식의 한계였습니다. 참조 개수를 세는 방식은
+<b>순환 참조</b>(A가 B를, B가 A를)에서 카운트가 0이 되지 않아 영원히 남았습니다.</span>
+<span class="mythline">현대 JavaScript 엔진은 <b>도달 가능성 기반</b>입니다.
+서로 붙잡고 있어도 <b>루트에서 닿을 수 없으면 통째로 회수</b>됩니다.
+(구형 IE에서 DOM과 JS 객체의 순환 참조가 누수를 일으키던 것은 이제 옛날 이야기입니다.)</span>
+<span class="mythline">따라서 <b>"순환 참조를 피하라"는 메모리 때문이 아닙니다.</b>
+순환 <b>import</b>를 피해야 하는 이유는 초기화 순서 문제이지(82장), GC 때문이 아닙니다.</span>
+</div>
+
+<h3 id="when">GC는 언제 도나 — 제어할 수 없습니다</h3>
+
+<p>GC 실행 시점은 엔진이 정합니다. <b>코드로 강제할 방법이 없습니다.</b>
+<code>obj = null</code>은 "이 변수가 더 이상 그 객체를 가리키지 않는다"는 뜻일 뿐,
+<b>즉시 메모리를 반납하라는 명령이 아닙니다.</b></p>
+
+<p>V8은 <b>세대별 GC</b>를 씁니다. 대부분의 객체는 금방 죽는다는 관찰에 기반해,
+새로 만든 객체는 <b>작은 영역에서 자주, 빠르게</b> 정리하고,
+거기서 살아남은 것만 <b>큰 영역으로 옮겨 가끔</b> 정리합니다.
+덕분에 대부분의 GC가 밀리초 단위로 끝나 화면이 끊기지 않습니다.</p>
+
+<h2 id="leak">메모리 누수 — 닿을 수 있어서 못 치우는 것들</h2>
+
+<p><b>누수는 "GC가 고장 난 것"이 아닙니다.</b>
+<b>더 이상 필요 없는데도 참조가 남아 있어서, GC 입장에서는 살려 둬야 하는 것</b>입니다.
+그래서 원인은 항상 <b>"어디선가 아직 붙잡고 있다"</b>입니다.</p>
+
+<h3 id="leak1">① 제거하지 않은 이벤트 리스너</h3>
+
+<div class="codeblock">
+<span class="cb-label">가장 흔한 원인</span>
+<pre><code data-lang="js">// ❌ 컴포넌트가 사라져도 리스너는 window에 남는다
+useEffect(() =&gt; {
+  const onScroll = () =&gt; setY(window.scrollY);
+  window.addEventListener("scroll", onScroll);
+}, []);
+// window(루트)가 onScroll을 붙잡고,
+// onScroll이 클로저로 setY와 컴포넌트 관련 데이터를 붙잡는다 → 전부 못 치운다
+
+// ✅ 정리 함수로 끊는다
+useEffect(() =&gt; {
+  const onScroll = () =&gt; setY(window.scrollY);
+  window.addEventListener("scroll", onScroll);
+  return () =&gt; window.removeEventListener("scroll", onScroll);
+}, []);</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎯</span> <code>removeEventListener</code>는 <b>같은 함수 참조</b>여야 합니다</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 새 화살표 함수라 등록된 것과 다른 함수 → 아무것도 안 지워짐
+window.addEventListener("resize", () =&gt; handle());
+window.removeEventListener("resize", () =&gt; handle());
+
+// ✅ 변수에 담아 같은 참조를 넘긴다
+const onResize = () =&gt; handle();
+window.addEventListener("resize", onResize);
+window.removeEventListener("resize", onResize);
+
+// ✅ 여러 개를 한 번에 끊으려면 AbortController (38장)
+const ac = new AbortController();
+window.addEventListener("resize", onResize, { signal: ac.signal });
+window.addEventListener("scroll", onScroll, { signal: ac.signal });
+ac.abort();   // 둘 다 한 번에 해제</code></pre>
+</div>
+</div>
+
+<h3 id="leak2">② 멈추지 않은 타이머</h3>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ❌ 화면을 떠나도 5초마다 계속 돈다. 콜백이 잡은 데이터도 계속 살아 있다
+useEffect(() =&gt; {
+  setInterval(() =&gt; refetch(), 5000);
+}, []);
+
+// ✅
+useEffect(() =&gt; {
+  const id = setInterval(() =&gt; refetch(), 5000);
+  return () =&gt; clearInterval(id);
+}, []);</code></pre>
+</div>
+
+<h3 id="leak3">③ 분리된 DOM (detached DOM)</h3>
+
+<p>화면에서는 지웠는데 <b>JavaScript 변수가 그 요소를 아직 들고 있는</b> 경우입니다.
+DOM 트리에서 떨어져 나왔지만 참조가 있어 메모리에 남습니다.
+자식 노드까지 통째로 남기 때문에 <b>덩치가 큰 누수</b>가 됩니다.</p>
+
+<div class="runner" data-lang="js" data-title="분리된 DOM 만들어 보기" data-note="콘솔에 원리만 출력합니다. 실제 메모리 확인은 DevTools Memory 패널에서 합니다.">
+<textarea class="rn-src">
+// 큰 목록을 만든다
+const list = document.createElement("ul");
+for (let i = 0; i < 1000; i++) {
+  const li = document.createElement("li");
+  li.textContent = "항목 " + i;
+  list.appendChild(li);
+}
+document.body.appendChild(list);
+
+// ❌ 어딘가에 참조를 남겨 둔다
+const cache = { list };                 // 이 변수가 붙잡고 있다
+
+// 화면에서 제거
+list.remove();
+
+console.log("화면에서 제거됨:", !document.body.contains(list));
+console.log("그러나 참조가 살아 있음:", cache.list.children.length, "개 자식과 함께 메모리에 남아 있습니다");
+
+// ✅ 참조까지 끊어야 회수 대상이 된다
+cache.list = null;
+console.log("참조 해제 후:", cache.list);
+console.log("이제 GC가 알아서 치웁니다 (시점은 엔진이 정합니다)");
+</textarea>
+</div>
+
+<h3 id="leak4">④ 끝없이 자라는 전역 캐시</h3>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ❌ 모듈 최상단의 Map은 앱이 살아 있는 내내 남는다
+const cache = new Map();
+export function getUser(id) {
+  if (!cache.has(id)) cache.set(id, fetchUser(id));
+  return cache.get(id);   // 키가 무한정 늘어난다
+}
+
+// ✅ 개수를 제한하거나(LRU), 만료 시간을 두거나,
+//    아예 TanStack Query 같은 라이브러리에 맡긴다 (67장)</code></pre>
+</div>
+
+<h2 id="weak">WeakMap — 붙잡지 않는 참조</h2>
+
+<p><code>WeakMap</code>·<code>WeakSet</code>은 <b>키로 쓴 객체를 GC로부터 지켜 주지 않습니다.</b>
+그 객체를 가리키는 다른 참조가 모두 사라지면, <b>WeakMap의 항목도 함께 정리</b>됩니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">일반 Map과의 차이</span>
+<pre><code data-lang="js">const map = new Map();
+const weak = new WeakMap();
+
+let el = document.querySelector("#box");
+map.set(el, { clicks: 0 });     // map이 el을 붙잡는다 → el은 절대 회수 안 됨
+weak.set(el, { clicks: 0 });    // weak는 붙잡지 않는다
+
+el.remove();
+el = null;
+// map  : el과 부가 데이터가 메모리에 남는다 (누수)
+// weak : 다른 참조가 없으므로 el과 항목이 함께 정리된다</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — <code>WeakMap</code>을 쓰는 경우</p>
+<ol style="margin-bottom:0">
+<li><b>DOM 요소에 부가 데이터를 붙일 때</b> — 요소가 사라지면 데이터도 함께 사라져야 합니다.</li>
+<li><b>객체를 키로 하는 메모이제이션</b>(83장) — 원본 객체가 없어지면 캐시도 정리됩니다.</li>
+<li><b>클래스의 비공개 데이터 보관</b> — 요즘은 <code>#private</code> 필드(32장)가 더 낫습니다.</li>
+<li><b>제약</b>: 키는 객체여야 하고(문자열·숫자는 안 됨), <b>순회할 수 없으며</b> <code>size</code>도 없습니다.
+언제 정리될지 관찰할 수 없기 때문입니다.</li>
+<li><b>대부분의 경우 <code>WeakMap</code>은 필요 없습니다.</b> 리스너와 타이머만 제대로 정리해도 누수의 90%는 사라집니다.</li>
+</ol>
+</div>
+
+<h2 id="devtools">DevTools로 누수 찾기</h2>
+
+<div class="codeblock">
+<span class="cb-label">Chrome DevTools · Memory 패널 (49장)</span>
+<pre><code data-lang="text">1. 힙 스냅샷 비교 (가장 실용적)
+   ① Memory 탭 → "Heap snapshot" → 스냅샷 1
+   ② 의심되는 동작을 반복한다 (페이지 A→B→A 를 10번 이동 등)
+   ③ 스냅샷 2 → 위쪽 드롭다운에서 "Comparison" 선택
+   ④ Delta(증가량)가 큰 항목을 본다. 반복 후에도 계속 늘면 누수다
+
+2. 분리된 DOM 찾기
+   스냅샷의 필터 칸에 Detached 입력
+   → "Detached HTMLDivElement" 같은 항목이 보이면
+   → 아래 Retainers(무엇이 붙잡고 있나)를 펼쳐 범인 코드를 찾는다
+
+3. 실시간 그래프
+   Performance 탭에서 Memory 체크 → 녹화
+   → JS Heap 선이 계단식으로 올라가기만 하고 내려오지 않으면 누수 신호
+
+팁: 스냅샷을 찍기 전에 휴지통 아이콘(Collect garbage)을 눌러
+    이미 회수 가능한 것들을 먼저 치워야 비교가 정확합니다.</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — SPA라서 더 중요합니다</p>
+<p style="margin-bottom:0">전통적인 웹사이트는 페이지를 이동할 때마다 <b>전체가 새로 로드</b>되어 메모리가 초기화됐습니다.
+SPA(React·Next.js)는 <b>한 번 로드한 뒤 계속 같은 페이지 안에서 움직입니다.</b>
+그래서 화면 전환마다 조금씩 새는 메모리가 <b>몇 시간 뒤에 쌓여</b> 탭이 느려지거나 죽습니다.
+관리자 대시보드, 채팅, 실시간 모니터링처럼 <b>오래 켜 두는 화면</b>에서 특히 문제가 됩니다.</p>
+<p style="margin-bottom:0">예방은 단순합니다. <b><code>useEffect</code>에서 무언가를 등록했다면, 반드시 정리 함수에서 해제한다</b>(61장).
+리스너, 타이머, 구독, <code>fetch</code>(<code>AbortController</code>), WebSocket, Observer 전부입니다.</p>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>스택</b>은 호출 정보와 작은 값, <b>힙</b>은 객체·배열·함수. 참조값 복사가 주소 복사인 이유다.</li>
+<li>GC의 기준은 <b>"쓸모"가 아니라 "루트에서 닿을 수 있는가"</b>다.</li>
+<li>현대 엔진은 <b>도달 가능성 기반</b>이라 <b>순환 참조도 회수</b>한다. 참조 카운팅 시대의 이야기는 옛말이다.</li>
+<li>GC 시점은 <b>제어할 수 없다.</b> <code>= null</code>은 참조를 끊는 것이지 즉시 반납이 아니다.</li>
+<li>누수 4대 원인: <b>리스너 · 타이머 · 분리된 DOM · 무한정 자라는 캐시</b>.</li>
+<li><code>removeEventListener</code>는 <b>같은 함수 참조</b>여야 한다. 여러 개면 <code>AbortController</code>.</li>
+<li><b><code>WeakMap</code></b>은 키를 붙잡지 않아 원본과 함께 정리된다.</li>
+<li>DevTools <b>Memory → 힙 스냅샷 비교</b>, 필터에 <b>Detached</b>. SPA는 누수가 누적된다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Memory_management" target="_blank" rel="noopener">MDN — 메모리 관리</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/WeakMap" target="_blank" rel="noopener">MDN — WeakMap</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortController" target="_blank" rel="noopener">MDN — AbortController (영문)</a></li>
+<li><a href="https://developer.chrome.com/docs/devtools/memory-problems" target="_blank" rel="noopener">Chrome DevTools — 메모리 문제 해결 (영문)</a></li>
+<li><a href="https://v8.dev/blog/trash-talk" target="_blank" rel="noopener">V8 블로그 — Orinoco 가비지 컬렉터 (영문)</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "가비지 컬렉터가 어떤 값을 회수 대상으로 판단하는 기준은?",
+    o: [
+      "변수에 null을 대입한 값",
+      "루트(전역 객체, 실행 중인 함수의 변수 등)에서 참조를 따라 도달할 수 없는 값",
+      "일정 시간 동안 사용되지 않은 값",
+      "개발자가 delete로 지운 값"
+    ],
+    a: 1,
+    e: "기준은 <b>도달 가능성</b>입니다. \"논리적으로 더 이상 필요 없는가\"가 아니라 <b>\"참조를 타고 갈 수 있는가\"</b>입니다. 그래서 필요 없는데도 어딘가에서 참조를 붙잡고 있으면 GC는 그것을 <b>살려 둡니다.</b> 이것이 메모리 누수의 정체입니다."
+  },
+  {
+    q: "\"A가 B를, B가 A를 참조하는 순환 참조는 GC가 회수하지 못한다\"는 설명은?",
+    o: [
+      "맞다. 순환 참조는 영원히 메모리에 남는다",
+      "틀리다. 참조 카운팅 방식의 한계였고, 현대 엔진은 도달 가능성 기반이라 루트에서 닿을 수 없으면 순환하더라도 통째로 회수한다",
+      "맞다. 그래서 반드시 수동으로 null을 대입해야 한다",
+      "브라우저마다 다르므로 항상 피해야 한다"
+    ],
+    a: 1,
+    e: "참조 개수를 세는 방식에서는 서로를 가리키면 카운트가 0이 되지 않았습니다. 현대 엔진은 <b>mark-and-sweep(도달 가능성)</b>을 쓰므로, 서로 붙잡고 있어도 <b>바깥에서 닿을 수 없으면 함께 회수</b>됩니다. 순환 <code>import</code>를 피하는 이유는 <b>초기화 순서 문제</b>이지 메모리 때문이 아닙니다."
+  },
+  {
+    q: "<code>window.addEventListener(\"resize\", () =&gt; handle())</code> 로 등록하고 <code>window.removeEventListener(\"resize\", () =&gt; handle())</code> 로 해제했습니다. 결과는?",
+    o: [
+      "정상적으로 해제된다",
+      "해제되지 않는다. 두 화살표 함수는 서로 다른 함수 객체이므로 등록된 것과 일치하지 않는다",
+      "해제되지만 경고가 출력된다",
+      "resize 이벤트는 해제할 수 없다"
+    ],
+    a: 1,
+    e: "<code>removeEventListener</code>는 <b>같은 함수 참조</b>를 넘겨야 동작합니다. 똑같이 생긴 새 화살표 함수는 <b>다른 객체</b>라 아무것도 제거되지 않고, 조용히 실패합니다. 함수를 변수에 담아 같은 참조를 넘기거나, 여러 리스너를 한꺼번에 끊으려면 <code>AbortController</code>의 <code>signal</code>을 쓰세요."
+  },
+  {
+    q: "\"분리된 DOM(detached DOM)\" 누수란?",
+    o: [
+      "HTML 문법 오류로 태그가 닫히지 않은 상태",
+      "화면(DOM 트리)에서는 제거됐지만 JavaScript 변수가 아직 그 요소를 참조하고 있어 자식 노드까지 통째로 메모리에 남는 상태",
+      "iframe 안의 DOM을 가리키는 말",
+      "CSS display:none으로 숨겨진 요소"
+    ],
+    a: 1,
+    e: "<code>el.remove()</code>는 <b>화면에서만</b> 떼어 냅니다. 어떤 변수나 클로저가 그 요소를 붙잡고 있으면 <b>요소와 모든 자식이 메모리에 남습니다.</b> 목록이 클수록 누수 규모가 커집니다. DevTools 힙 스냅샷에서 <b><code>Detached</code></b>로 필터링하면 바로 찾을 수 있고, Retainers를 펼쳐 붙잡고 있는 코드를 특정할 수 있습니다."
+  },
+  {
+    q: "<code>WeakMap</code>이 일반 <code>Map</code>과 다른 핵심은?",
+    o: [
+      "더 빠르게 동작한다",
+      "키로 쓴 객체를 GC로부터 지켜 주지 않아, 다른 참조가 모두 사라지면 항목도 함께 정리된다",
+      "키에 문자열만 쓸 수 있다",
+      "최대 항목 수가 제한되어 있다"
+    ],
+    a: 1,
+    e: "<code>Map</code>은 키로 넣은 객체를 <b>붙잡습니다</b>. 그래서 DOM 요소를 키로 쓰면 요소가 화면에서 사라져도 회수되지 않습니다. <code>WeakMap</code>은 붙잡지 않으므로 <b>원본과 운명을 함께합니다</b>. 대신 키는 객체여야 하고, <b>순회할 수 없고 <code>size</code>도 없습니다</b> — 언제 정리될지 관찰할 수 없기 때문입니다."
+  },
+  {
+    q: "React SPA에서 메모리 누수를 예방하는 가장 기본적인 원칙은?",
+    o: [
+      "컴포넌트마다 WeakMap을 쓴다",
+      "useEffect에서 등록한 리스너·타이머·구독·요청을 정리 함수에서 반드시 해제한다",
+      "주기적으로 페이지를 새로고침한다",
+      "전역 변수를 많이 써서 참조를 한곳에 모은다"
+    ],
+    a: 1,
+    e: "SPA는 새로고침 없이 계속 돌기 때문에 작은 누수가 <b>몇 시간에 걸쳐 쌓입니다</b>. <code>useEffect</code>가 반환하는 <b>정리 함수</b>가 방어선입니다. <code>removeEventListener</code>, <code>clearInterval</code>, 구독 해제, <code>AbortController.abort()</code>, Observer의 <code>disconnect()</code>를 빠짐없이 넣으세요. 이것만 지켜도 실무 누수의 대부분이 사라집니다."
+  }
+]);
+</script>

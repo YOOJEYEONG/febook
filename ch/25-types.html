@@ -105,7 +105,7 @@ console.log(typeOf(/regex/));   // "RegExp"
 
 <div class="box myth">
 <p class="box-title"><span class="box-ico">🐛</span> <code>typeof null === "object"</code>는 <b>고칠 수 없는 버그</b></p>
-<span class="mythline"><span class="term" data-term="javascript">JavaScript</span> 최초 구현에서 값의 타입을 하위 비트로 표시했는데,
+<span class="mythline"><span class="term" data-term="javascript">JavaScript</span> 최초 구현에서 값의 타입을 하위 <span class="term" data-term="bit">비트</span>로 표시했는데,
 객체는 <code>000</code>으로 시작했고 <code>null</code>은 <b>전부 0</b>인 포인터였습니다.
 그래서 <code>null</code>이 객체로 판정됩니다.</span>
 <span class="mythline">고치자는 제안이 있었지만 <b>기존 웹의 수많은 코드가 깨지기 때문에</b> 거부되었습니다.
@@ -221,7 +221,7 @@ console.log("원본 city:", source.address.city);  // "서울" ✅ 안전
 <tbody>
 <tr><td><code>{ ...obj }</code>, <code>Object.assign({}, obj)</code></td><td><b>한 겹</b></td><td>가장 많이 씁니다. 대부분 이걸로 충분합니다</td></tr>
 <tr><td><code>[...arr]</code>, <code>arr.slice()</code></td><td><b>한 겹</b></td><td>배열용</td></tr>
-<tr><td><code>structuredClone(obj)</code></td><td><b>전부</b></td><td><b>표준 내장 함수.</b> 순환 참조, Date, <span class="term" data-term="map-object">Map</span>, <span class="term" data-term="set">Set</span>도 처리합니다. <b>함수는 복사 못 합니다</b></td></tr>
+<tr><td><code>structuredClone(obj)</code></td><td><b>전부</b></td><td><b>표준 내장 함수.</b> <span class="term" data-term="circular-dependency">순환 참조</span>, Date, <span class="term" data-term="map-object">Map</span>, <span class="term" data-term="set">Set</span>도 처리합니다. <b>함수는 복사 못 합니다</b></td></tr>
 <tr><td><code>JSON.parse(JSON.stringify(obj))</code></td><td>전부</td><td><b>옛 방식.</b> <code>undefined</code>·함수·<code>Date</code>가 손상됩니다. 지금은 쓸 이유가 없습니다</td></tr>
 </tbody>
 </table>
@@ -323,7 +323,7 @@ console.log(str);      // "Hello"</code></pre>
 <ul style="margin-bottom:0">
 <li>원시 타입 7가지(<code>string</code>·<code>number</code>·<code>boolean</code>·<code>undefined</code>·<code>null</code>·<code>symbol</code>·<code>bigint</code>) + 객체.</li>
 <li><code>typeof null === "object"</code>는 <b>고칠 수 없는 역사적 버그</b>. 배열은 <code>Array.isArray()</code>로 판별.</li>
-<li><b><code>0.1 + 0.2 !== 0.3</code></b>은 2진 부동소수점의 한계다. <b>돈은 정수로</b> 계산한다.</li>
+<li><b><code>0.1 + 0.2 !== 0.3</code></b>은 2진 <span class="term" data-term="floating-point">부동소수점</span>의 한계다. <b>돈은 정수로</b> 계산한다.</li>
 <li><code>NaN !== NaN</code>. 판별은 <code>Number.isNaN()</code>.</li>
 <li><b>원시 값은 내용이, 객체는 주소가 복사된다.</b> 이 차이가 초보자 버그의 최대 원인.</li>
 <li>얕은 복사는 <b>한 겹</b>만. 전부 복사하려면 <code>structuredClone()</code>.</li>
@@ -331,6 +331,11 @@ console.log(str);      // "Hello"</code></pre>
 <li>기본값에는 <code>||</code>가 아니라 <b><code>??</code></b>를 우선 고려한다.</li>
 <li>문자열은 <b>변경 불가능</b>하다. 메서드는 항상 새 문자열을 반환한다.</li>
 </ul>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧠</span> 더 깊이 — 값이 실제로 어디에 저장되나</p>
+<p style="margin-bottom:0">원시값과 참조값의 차이는 <b>메모리 구조</b>에서 나옵니다. <span class="term" data-term="stack">스택</span>과 힙, 그리고 "참조가 남아 있으면 지워지지 않는다"는 <span class="term" data-term="garbage-collection">가비지 컬렉션</span>의 규칙은 <b>84장</b>에서 다룹니다.</p>
 </div>
 
 <h2 id="refs">참고 자료</h2>

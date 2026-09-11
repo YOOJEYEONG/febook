@@ -33,13 +33,14 @@
         'if(v===undefined)return "undefined";' +
         'var t=typeof v;' +
         'if(t==="string")return d===0?v:JSON.stringify(v);' +
-        'if(t==="number"||t==="boolean"||t==="bigint")return String(v);' +
+        'if(t==="number"||t==="boolean")return String(v);' +
+        'if(t==="bigint")return String(v)+"n";' +
         'if(t==="symbol")return v.toString();' +
         'if(t==="function")return "ƒ "+(v.name||"anonymous")+"()";' +
         'if(seen.indexOf(v)>=0)return "[순환 참조]";' +
         'if(d>3)return Array.isArray(v)?"[…]":"{…}";' +
         'seen=seen.concat([v]);' +
-        'if(Array.isArray(v))return "["+v.map(function(x){return ser(x,d+1,seen)}).join(", ")+"]";' +
+        'if(Array.isArray(v)){var ps=[];for(var ai=0;ai<v.length;ai++){ps.push(ai in v?ser(v[ai],d+1,seen):"<빈 칸>")}return "["+ps.join(", ")+"]"}' +
         'if(v instanceof Error)return v.name+": "+v.message;' +
         'if(v instanceof Date)return v.toISOString();' +
         'if(v instanceof Map)return "Map("+v.size+") {"+Array.from(v).map(function(p){return ser(p[0],d+1,seen)+" => "+ser(p[1],d+1,seen)}).join(", ")+"}";' +

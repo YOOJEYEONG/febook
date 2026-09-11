@@ -275,7 +275,7 @@ XSS가 발생하더라도 <b>공격자의 스크립트가 실행되지 못하게
 <li><b><code>.env</code>를 <span class="term" data-term="commit">커밋</span></b> — <span class="term" data-term="git">Git</span> 이력에 영구히 남습니다(45장). <b>키를 폐기하고 재발급</b>이 유일한 대응입니다</li>
 <li><b>과도한 API 응답</b> — 화면에 이름만 쓰는데 서버가 <b>비밀번호 해시·주민번호까지</b> 보내는 경우.
 <span class="term" data-term="devtools">개발자 도구</span>로 다 보입니다(49장)</li>
-<li><b>오류 메시지에 내부 정보</b> — 스택 트레이스, SQL, 서버 경로(33장)</li>
+<li><b>오류 메시지에 내부 정보</b> — <span class="term" data-term="stack">스택</span> 트레이스, <span class="term" data-term="sql">SQL</span>, 서버 경로(33장)</li>
 <li><b><span class="term" data-term="source-map">소스맵</span> 공개</b> — 원본 코드와 주석이 그대로 노출됩니다(47장)</li>
 <li><b>주석에 남긴 계정 정보</b>(6장)</li>
 </ul>
@@ -336,6 +336,11 @@ npm audit fix</code></pre>
 <li><b>커밋된 비밀 키는 폐기·재발급</b>이 유일한 대응이다.</li>
 <li>의존성도 공격 경로다. <b>최소화하고 주기적으로 점검</b>한다.</li>
 </ul>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧠</span> 더 깊이 — 토큰을 어디에 둘 것인가</p>
+<p style="margin-bottom:0">세션 쿠키와 JWT의 차이, <code>localStorage</code> 대신 <code>HttpOnly</code> 쿠키를 권하는 이유는 <b>89장</b>에서 백엔드 관점과 함께 다룹니다.</p>
 </div>
 
 <h2 id="refs">참고 자료</h2>

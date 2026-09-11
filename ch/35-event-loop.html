@@ -25,10 +25,10 @@
 <h2>이 챕터에서 배우는 것</h2>
 <ul>
   <li><span class="term" data-term="javascript">JavaScript</span>가 <b>한 번에 하나만</b> 실행하는데도 멈추지 않는 이유</li>
-  <li>콜 스택 · 태스크 큐 · <b>마이크로태스크 큐</b></li>
+  <li>콜 <span class="term" data-term="stack">스택</span> · 태스크 큐 · <b>마이크로태스크 큐</b></li>
   <li><code>setTimeout(fn, 0)</code>이 <b>즉시 실행이 아닌</b> 이유</li>
   <li><span class="term" data-term="promise">Promise</span>가 <code>setTimeout</code>보다 <b>항상 먼저</b> 실행되는 이유</li>
-  <li>메인 스레드를 막으면 어떤 일이 생기는가</li>
+  <li><span class="term" data-term="main-thread">메인 스레드</span>를 막으면 어떤 일이 생기는가</li>
 </ul>
 </div>
 
@@ -36,7 +36,7 @@
 
 <h2 id="single">JavaScript는 한 번에 하나만 합니다</h2>
 
-<p>JavaScript는 <b>싱글 스레드</b> 언어입니다. 코드를 실행하는 통로가 <b>하나뿐</b>입니다.
+<p>JavaScript는 <b>싱글 <span class="term" data-term="thread">스레드</span></b> 언어입니다. 코드를 실행하는 통로가 <b>하나뿐</b>입니다.
 그런데도 서버 응답을 기다리면서 애니메이션이 돌고 버튼도 눌립니다. 어떻게 가능할까요?</p>
 
 <div class="box tip">
@@ -271,6 +271,11 @@ requestAnimationFrame(animate);</code></pre>
 <li><b>메인 스레드를 막으면</b> 클릭·애니메이션·렌더링이 전부 멈춘다.</li>
 <li>애니메이션에는 <b><code>requestAnimationFrame</code></b>.</li>
 </ul>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧠</span> 더 깊이 — 스레드 관점에서 다시 보기</p>
+<p style="margin-bottom:0">"메인 스레드가 막힌다"가 정확히 무슨 뜻인지, 브라우저가 <span class="term" data-term="process">프로세스</span>를 어떻게 나누는지, Web Worker로 <b>진짜 병렬</b>을 쓰는 법은 <b>85장</b>에서 이어집니다.</p>
 </div>
 
 <h2 id="refs">참고 자료</h2>

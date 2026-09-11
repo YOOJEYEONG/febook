@@ -1,0 +1,359 @@
+<!--desc: 프론트엔드 개발자가 알아야 할 만큼의 백엔드와 데이터베이스 지식. 관계형 DB와 인덱스, N+1 문제, 트랜잭션과 멱등성, REST와 GraphQL, 페이지네이션 설계, 인증 토큰을 어디에 저장할지를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>서버와 데이터베이스가 <b>실제로 하는 일</b></li>
+  <li><b>인덱스</b>와 <b>N+1 문제</b> — 프론트엔드가 만들기도 한다</li>
+  <li><b>트랜잭션</b>과 <b>멱등성</b> — 중복 결제를 막는 개념</li>
+  <li>REST·GraphQL, <b>페이지네이션</b>, <b>인증 토큰을 어디에 둘 것인가</b></li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 11부 마무리 · 협업의 기초</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🤝</span> 왜 프론트엔드가 이걸 알아야 하나</p>
+<p style="margin-bottom:0"><b>백엔드를 만들려는 게 아닙니다.</b> 세 가지 때문입니다.<br>
+① <b>API 설계 회의에서 말이 통해야</b> 합니다. "이 필드도 같이 주세요"가 왜 어려운 요구인지 알아야 합니다.<br>
+② <b>느린 원인이 어디인지</b> 판단해야 합니다(87장 TTFB).<br>
+③ <b>잘못된 화면 설계를 미리 피할 수 있습니다.</b> 목록마다 상세 API를 부르는 화면은 설계 단계에서 막아야 합니다.</p>
+</div>
+
+<h2 id="server">서버가 하는 일</h2>
+
+<div class="codeblock">
+<span class="cb-label">요청 하나가 서버 안에서 거치는 길</span>
+<pre><code data-lang="text">GET /api/orders?page=1
+   │
+   ├─ ① 인증·인가    누구인가? 이 자원을 볼 권한이 있나?
+   ├─ ② 입력 검증    page가 숫자인가? 범위는 타당한가?
+   ├─ ③ 비즈니스 로직 정책 적용 (할인, 재고, 권한별 필터)
+   ├─ ④ 데이터 접근   DB에 질의
+   └─ ⑤ 응답 직렬화   결과를 JSON으로 만들어 반환
+
+프론트엔드가 어떤 언어로 쓰였든 서버는 상관하지 않습니다.
+그래서 웹·앱·다른 서버가 같은 API를 공유할 수 있습니다.</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🛡️</span> 검증은 <b>양쪽 다</b> 해야 합니다</p>
+<p style="margin-bottom:0">프론트엔드의 유효성 검사는 <b>사용자 경험</b>을 위한 것이지 <b>보안</b>이 아닙니다.
+브라우저 개발자 도구로 누구나 요청을 조작할 수 있고, 아예 <code>curl</code>로 서버에 직접 보낼 수도 있습니다.
+<b>서버 검증이 진짜 방어선</b>입니다(78장).
+반대로 서버만 검증하면 사용자가 제출 버튼을 누르고 한참 기다려야 오류를 알게 됩니다. <b>둘 다 필요합니다.</b></p>
+</div>
+
+<h2 id="db">데이터베이스 — SQL과 NoSQL</h2>
+
+<div class="codeblock">
+<pre><code data-lang="text">관계형(SQL)                     문서형 등(NoSQL)
+PostgreSQL, MySQL               MongoDB, DynamoDB, Redis, Firestore
+─────────────────────           ─────────────────────
+표(테이블)와 관계로 저장          JSON 비슷한 문서로 저장
+스키마가 정해져 있다              구조가 유연하다
+여러 표를 조인해 질의             중첩 구조를 통째로 읽는다
+트랜잭션이 강력하다               제품마다 지원 수준이 다르다
+
+기본값으로 삼기 좋다              특정 용도에 좋다
+(대부분의 서비스)                 (캐시=Redis, 로그, 초대용량, 실시간 동기화)</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⚖️</span> "NoSQL이 더 현대적이다"는 아닙니다</p>
+<p style="margin-bottom:0">한때 그런 분위기가 있었지만, 지금 <b>대부분의 웹 서비스는 관계형 DB(주로 PostgreSQL)</b>를 기본으로 씁니다.
+데이터는 결국 서로 관계를 맺고, 그 관계를 안전하게 다루는 일은 관계형 DB가 압도적으로 잘합니다.
+NoSQL은 <b>"대체"가 아니라 "용도에 맞는 선택"</b>입니다.</p>
+</div>
+
+<h3 id="sql">읽을 줄은 알아야 하는 SQL</h3>
+
+<div class="codeblock">
+<pre><code data-lang="text">-- 사용자 목록에서 조건에 맞는 것 10개
+SELECT id, name, email          -- 어떤 열을
+FROM users                      -- 어떤 표에서
+WHERE status = 'active'         -- 어떤 조건으로
+ORDER BY created_at DESC        -- 어떤 순서로
+LIMIT 10;                       -- 몇 개나
+
+-- 조인: 주문에 사용자 이름을 붙인다 (81장의 Map 조회표와 같은 일)
+SELECT o.id, o.total, u.name
+FROM orders o
+JOIN users u ON u.id = o.user_id
+WHERE o.created_at &gt;= '2026-01-01';</code></pre>
+</div>
+
+<h3 id="index">인덱스 — 책 뒤의 색인</h3>
+
+<p>1,000만 행짜리 표에서 <code>WHERE email = 'a@b.com'</code>을 실행하면
+DB는 <b>전부 훑습니다</b>(풀 스캔). 83장의 O(n)입니다.</p>
+
+<p><b>인덱스</b>는 <b>책 뒤의 찾아보기</b>와 같습니다. 특정 열에 대해 <b>정렬된 별도의 구조</b>(보통 B-트리)를 만들어 두면
+<b>O(log n)</b>으로 찾습니다. 1,000만 행에서 <b>스무 번 남짓</b>이면 도달합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">공짜는 아닙니다</span>
+<pre><code data-lang="text">+ 조회가 극적으로 빨라진다
+− 저장 공간을 더 쓴다
+− INSERT/UPDATE/DELETE 가 느려진다 (색인도 같이 고쳐야 하니까)
+
+그래서 '자주 조회 조건으로 쓰는 열'에만 건다.
+프론트엔드가 할 일: "이 화면은 category와 created_at 으로 정렬·필터합니다"를
+백엔드에 정확히 알려 주는 것. 그래야 맞는 인덱스를 걸 수 있다.</code></pre>
+</div>
+
+<h2 id="nplus1">N+1 문제 — 프론트엔드도 만든다</h2>
+
+<div class="codeblock">
+<span class="cb-label">이름의 유래: 요청 1번 + 항목 수(N)번</span>
+<pre><code data-lang="js">// ❌ 목록 1번 + 각 항목마다 1번 = 1 + 50 = 51번 요청
+const posts = await fetch("/api/posts").then(r =&gt; r.json());
+const withAuthor = await Promise.all(
+  posts.map(async (p) =&gt; ({
+    ...p,
+    author: await fetch(`/api/users/${p.authorId}`).then(r =&gt; r.json())
+  }))
+);
+
+// ✅ 방법 1 — 서버가 한 번에 주게 한다
+//    GET /api/posts?include=author
+
+// ✅ 방법 2 — 필요한 id만 모아서 한 번에 조회
+const ids = [...new Set(posts.map(p =&gt; p.authorId))];   // 중복 제거 (81장)
+const users = await fetch(`/api/users?ids=${ids.join(",")}`).then(r =&gt; r.json());
+const byId = new Map(users.map(u =&gt; [u.id, u]));
+const withAuthor2 = posts.map(p =&gt; ({ ...p, author: byId.get(p.authorId) }));</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 화면 설계 단계에서 잡으세요</p>
+<p style="margin-bottom:0">N+1은 <b>코드 문제이기 전에 설계 문제</b>입니다.
+"목록에 작성자 프로필과 좋아요 수도 보여 주세요"라는 요구가 들어오면,
+<b>그 데이터를 목록 API가 함께 줄 수 있는지 먼저 확인</b>하세요.
+나중에 발견하면 요청 51개가 이미 배포된 뒤입니다.</p>
+<p style="margin-bottom:0">백엔드에도 같은 문제가 있습니다. ORM이 자동으로 쿼리를 만들다가
+루프 안에서 매번 DB에 질의하는 경우입니다. <b>"이 목록 API 느린데 N+1 아닐까요?"</b>라고
+물어볼 수 있으면 협업이 훨씬 수월해집니다. GraphQL 쪽에서는 <b>DataLoader</b>로 요청을 묶어 해결합니다.</p>
+</div>
+
+<h2 id="transaction">트랜잭션과 멱등성</h2>
+
+<div class="codeblock">
+<span class="cb-label">트랜잭션 — 전부 성공하거나 전부 취소하거나</span>
+<pre><code data-lang="text">계좌 이체
+  ① A의 잔액 -10,000
+  ② B의 잔액 +10,000
+
+①만 되고 ②에서 서버가 죽으면? 돈이 사라진다.
+트랜잭션은 "①②를 한 덩어리로 묶고, 중간에 실패하면 전부 되돌린다".
+
+ACID
+  원자성(Atomicity)    전부 되거나 전부 안 된다
+  일관성(Consistency)  규칙(제약 조건)을 깨지 않는다
+  격리성(Isolation)    동시에 실행돼도 서로 간섭하지 않는다
+  지속성(Durability)   성공했다면 정전이 나도 남아 있다</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💳</span> 프론트엔드가 반드시 알아야 할 것: <b>멱등성</b></p>
+<p style="margin-bottom:0"><b>멱등(idempotent)</b>하다 = <b>같은 요청을 여러 번 보내도 결과가 한 번 보낸 것과 같다.</b></p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="text">GET    멱등하다  (몇 번 읽어도 같다)
+PUT    멱등하다  (같은 값으로 덮어쓰기)
+DELETE 멱등하다  (이미 지워졌으면 그대로)
+POST   멱등하지 않다  ← 결제·주문 생성. 두 번 보내면 두 건이 생긴다</code></pre>
+</div>
+<p style="margin-bottom:0">그래서 <b>결제 버튼 연타</b>, <b>응답이 느려서 사용자가 새로고침</b>,
+<b>네트워크 불안으로 클라이언트가 자동 재시도</b>가 전부 중복 주문이 될 수 있습니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">프론트엔드가 할 수 있는 방어</span>
+<pre><code data-lang="js">// ① 제출 중에는 버튼을 잠근다 (기본이지만 자주 빠뜨립니다)
+&lt;button disabled={isSubmitting}&gt;결제하기&lt;/button&gt;
+
+// ② 멱등성 키를 보낸다 — 서버가 중복을 걸러낼 수 있게
+const idempotencyKey = useRef(crypto.randomUUID());
+fetch("/api/orders", {
+  method: "POST",
+  headers: { "Idempotency-Key": idempotencyKey.current },
+  body: JSON.stringify(order)
+});
+// 재시도해도 같은 키 → 서버는 "이미 처리한 요청"으로 인식해 기존 결과를 돌려준다
+
+// ③ POST를 자동 재시도하지 않는다
+//    GET은 재시도해도 안전하지만 POST는 위험하다.
+//    라이브러리의 retry 설정을 메서드별로 확인하세요.</code></pre>
+</div>
+
+<h2 id="api-style">REST, GraphQL, 그리고 API 설계 읽는 법</h2>
+
+<div class="codeblock">
+<pre><code data-lang="text">REST      자원마다 URL. GET /users/1, POST /orders
+          + 단순하고 캐시가 잘 듣는다(HTTP 캐시 그대로)
+          − 오버페칭(안 쓰는 필드까지 옴) / 언더페칭(여러 번 불러야 함)
+
+GraphQL   클라이언트가 필요한 필드를 질의로 지정
+          + 필요한 만큼만, 한 번에
+          − HTTP 캐시를 쓰기 어렵다, 서버 복잡도 증가, 학습 곡선
+
+tRPC      TypeScript로 서버·클라이언트가 타입을 공유
+          + 타입 안전성이 뛰어나다
+          − 한 저장소에 TS 서버가 있을 때만 쓸 수 있다
+
+정답은 없습니다. 팀 구성과 클라이언트 종류에 따라 다릅니다.
+대부분의 서비스에서 잘 설계된 REST로 충분합니다.</code></pre>
+</div>
+
+<h3 id="pagination">페이지네이션 — 오프셋 vs 커서</h3>
+
+<div class="codeblock">
+<pre><code data-lang="text">오프셋 방식   GET /posts?page=3&amp;size=20     (SQL의 OFFSET 40 LIMIT 20)
+  + 특정 페이지로 바로 이동할 수 있다 (1 2 3 … 10)
+  − 뒤 페이지로 갈수록 느려진다 (앞의 행을 세고 버려야 하므로)
+  − 새 글이 추가되면 항목이 밀려 중복·누락이 생긴다
+
+커서 방식     GET /posts?after=cursor_abc&amp;size=20
+  + 항상 일정하게 빠르다
+  + 중간에 데이터가 추가돼도 중복·누락이 없다
+  − 특정 페이지로 점프할 수 없다
+
+→ 무한 스크롤·피드에는 커서, 페이지 번호 UI에는 오프셋.
+  화면 설계를 정할 때 이 차이를 미리 백엔드와 맞춰야 합니다.</code></pre>
+</div>
+
+<h2 id="auth">인증 — 토큰을 어디에 둘 것인가</h2>
+
+<div class="codeblock">
+<pre><code data-lang="text">세션 쿠키 방식
+  서버가 세션을 저장하고 브라우저에 세션 ID 쿠키를 준다
+  + 서버에서 즉시 무효화할 수 있다 (강제 로그아웃)
+  − 서버가 상태를 가져야 한다
+
+JWT(토큰) 방식
+  서명된 토큰 자체에 정보가 들어 있다. 서버는 서명만 검증한다
+  + 서버가 상태를 안 가져도 된다, 여러 서비스에서 공유하기 쉽다
+  − 한 번 발급하면 만료 전까지 무효화하기 어렵다
+    → 그래서 '짧은 액세스 토큰 + 긴 리프레시 토큰' 조합을 쓴다</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔑</span> <code>localStorage</code>에 토큰을 저장하지 마세요</p>
+<p style="margin-bottom:0"><code>localStorage</code>는 <b>JavaScript로 읽을 수 있습니다.</b>
+XSS가 한 번이라도 성공하면 <b>토큰이 통째로 유출</b>됩니다(78장).
+광고 스크립트나 npm 패키지 하나만 오염돼도 충분합니다.</p>
+<p style="margin-bottom:0"><b>권장은 <code>HttpOnly</code> + <code>Secure</code> + <code>SameSite</code> 쿠키</b>입니다.
+JavaScript가 읽을 수 없으므로 XSS로도 훔칠 수 없습니다.
+쿠키는 자동 전송되므로 <b>CSRF 대비</b>가 추가로 필요하지만,
+<code>SameSite=Lax</code>(기본값)와 CSRF 토큰으로 막습니다.</p>
+<p style="margin-bottom:0"><b>결정은 대개 백엔드와 함께</b> 내립니다.
+프론트엔드가 할 일은 <b>"localStorage에 넣읍시다"라는 제안이 나왔을 때 위험을 설명하는 것</b>입니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — API 설계 회의에서 물어볼 것</p>
+<ol style="margin-bottom:0">
+<li><b>"이 목록에 필요한 필드를 한 번에 받을 수 있나요?"</b> (N+1 예방)</li>
+<li><b>"페이지네이션은 오프셋인가요 커서인가요?"</b> (무한 스크롤 설계에 직결)</li>
+<li><b>"에러 응답 형식이 정해져 있나요?"</b>
+(<code>{ code, message, fields }</code>처럼 일관된 형식이어야 프론트에서 처리할 수 있습니다)</li>
+<li><b>"이 POST는 재시도해도 안전한가요? 멱등성 키를 받나요?"</b></li>
+<li><b>"큰 정수 ID는 문자열로 주실 수 있나요?"</b> (80장 — 안전 정수 한계)</li>
+<li><b>"날짜는 ISO 8601 UTC 문자열인가요?"</b> (43장 — 시간대 사고 예방)</li>
+<li><b>"이 화면은 category·created_at으로 정렬합니다"</b> (인덱스를 걸 수 있게 미리 공유)</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>서버는 <b>인증 → 검증 → 로직 → DB → 직렬화</b>를 한다. <b>검증은 클라이언트·서버 양쪽</b>에서.</li>
+<li>대부분의 서비스는 <b>관계형 DB</b>가 기본. NoSQL은 대체가 아니라 <b>용도별 선택</b>이다.</li>
+<li><b>인덱스</b>는 조회를 O(log n)으로 만들지만 <b>쓰기를 느리게</b> 한다. 조회 조건을 백엔드에 알려 주자.</li>
+<li><b>N+1</b>은 프론트엔드도 만든다. 목록 API가 필요한 데이터를 <b>한 번에</b> 주게 설계한다.</li>
+<li><b>트랜잭션</b>은 전부 성공하거나 전부 취소. 중간 상태를 가정하지 않는다.</li>
+<li><b>POST는 멱등하지 않다.</b> 버튼 잠금 + <b>멱등성 키</b> + POST 자동 재시도 금지.</li>
+<li>페이지네이션은 <b>무한 스크롤=커서, 페이지 번호=오프셋</b>.</li>
+<li><b>인증 토큰은 <code>localStorage</code>가 아니라 <code>HttpOnly</code> 쿠키</b>로. XSS 한 번에 전부 털린다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Methods" target="_blank" rel="noopener">MDN — HTTP 요청 메서드 (멱등성 표기 포함)</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Headers/Set-Cookie" target="_blank" rel="noopener">MDN — Set-Cookie (HttpOnly, SameSite)</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Status" target="_blank" rel="noopener">MDN — HTTP 상태 코드</a></li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — CSRF 방어 치트시트 (영문)</a></li>
+<li><a href="https://graphql.org/learn/" target="_blank" rel="noopener">GraphQL 공식 — 배우기 (영문)</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "프론트엔드에서 입력값을 철저히 검증했다면 서버 검증은 생략해도 되나?",
+    o: [
+      "그렇다. 중복 작업이므로 서버는 신뢰해도 된다",
+      "아니다. 개발자 도구나 curl로 서버에 직접 요청할 수 있으므로 서버 검증이 진짜 방어선이고, 프론트 검증은 사용자 경험을 위한 것이다",
+      "HTTPS를 쓰면 생략해도 된다",
+      "TypeScript를 쓰면 생략해도 된다"
+    ],
+    a: 1,
+    e: "브라우저에서 도는 코드는 <b>전부 사용자가 바꿀 수 있습니다.</b> 요청을 가로채 수정하거나 아예 브라우저 없이 보낼 수도 있습니다. 프론트 검증은 <b>즉시 피드백</b>을 위한 것이고, <b>보안 경계는 서버</b>입니다. 둘 다 필요하며 역할이 다릅니다."
+  },
+  {
+    q: "목록 50건을 받고 각 항목의 작성자를 개별 API로 조회해 51번 요청이 나갑니다. 이 문제의 이름과 해결은?",
+    o: [
+      "폭포수 문제 — Promise.all로 감싸면 해결된다",
+      "N+1 문제 — 목록 API가 작성자 정보를 함께 주게 하거나, 필요한 id를 모아 한 번에 조회한다",
+      "CORS 문제 — 프록시를 설정한다",
+      "캐시 문제 — staleTime을 늘린다"
+    ],
+    a: 1,
+    e: "요청 1번 + 항목 수 N번이라 <b>N+1</b>입니다. <code>Promise.all</code>로 감싸도 <b>요청 수는 그대로 51개</b>이고 서버와 DB에 부담이 갑니다. 근본 해결은 <b>서버가 한 번에 주게 하거나</b>, 중복 제거한 id 목록으로 <b>일괄 조회</b>하는 것입니다. 화면 설계 단계에서 잡는 게 가장 좋습니다."
+  },
+  {
+    q: "DB 인덱스에 대한 설명으로 옳은 것은?",
+    o: [
+      "인덱스를 많이 걸수록 항상 좋다",
+      "조회는 빨라지지만 저장 공간을 더 쓰고 INSERT·UPDATE·DELETE가 느려지므로, 자주 조회 조건으로 쓰는 열에만 건다",
+      "인덱스는 데이터를 복제해 보관하는 백업 기능이다",
+      "NoSQL에는 인덱스가 없다"
+    ],
+    a: 1,
+    e: "인덱스는 <b>책 뒤의 찾아보기</b>입니다. 찾기는 빨라지지만 <b>본문이 바뀔 때마다 색인도 고쳐야</b> 합니다. 그래서 쓰기가 느려지고 공간도 더 씁니다. 프론트엔드가 할 일은 <b>\"이 화면은 어떤 열로 필터·정렬하는지\"</b>를 백엔드에 정확히 알려 주는 것입니다."
+  },
+  {
+    q: "결제 요청(POST)을 네트워크 오류 시 자동 재시도하도록 설정하면 어떤 위험이 있나?",
+    o: [
+      "위험 없다. 재시도는 항상 안전하다",
+      "POST는 멱등하지 않으므로 서버가 이미 처리했는데 응답만 유실된 경우 중복 주문·중복 결제가 생긴다. 멱등성 키를 함께 보내야 안전해진다",
+      "요청이 느려질 뿐 결과는 같다",
+      "CORS 오류가 발생한다"
+    ],
+    a: 1,
+    e: "<b>멱등</b>이란 <b>여러 번 보내도 결과가 한 번과 같다</b>는 성질입니다. GET·PUT·DELETE는 멱등이지만 <b>POST는 아닙니다</b>. 서버가 처리에 성공했는데 응답이 유실되면, 재시도가 <b>두 번째 주문</b>을 만듭니다. 방어는 <b>제출 중 버튼 잠금 + Idempotency-Key + POST 자동 재시도 금지</b>입니다."
+  },
+  {
+    q: "무한 스크롤 피드를 만들 때 커서 기반 페이지네이션이 오프셋 방식보다 나은 이유는?",
+    o: [
+      "특정 페이지로 바로 이동할 수 있어서",
+      "뒤로 갈수록 느려지지 않고, 중간에 새 글이 추가돼도 항목이 밀려 중복·누락되는 문제가 없어서",
+      "구현이 더 간단해서",
+      "HTTP 캐시가 더 잘 동작해서"
+    ],
+    a: 1,
+    e: "오프셋 방식은 <code>OFFSET 10000</code>처럼 뒤로 갈수록 <b>앞의 행을 세어 버리는 비용</b>이 커지고, 목록 앞에 새 글이 추가되면 <b>같은 글이 두 번 보이거나 건너뛰어집니다.</b> 커서 방식은 \"이 지점 이후\"를 직접 가리키므로 두 문제가 모두 없습니다. 다만 <b>페이지 번호 점프는 불가능</b>합니다."
+  },
+  {
+    q: "인증 토큰을 <code>localStorage</code>에 저장하는 방식의 핵심 위험은?",
+    o: [
+      "용량 제한이 있어 토큰이 잘릴 수 있다",
+      "JavaScript로 읽을 수 있으므로 XSS가 한 번 성공하면 토큰이 통째로 유출된다. HttpOnly·Secure·SameSite 쿠키가 더 안전하다",
+      "브라우저를 닫으면 사라진다",
+      "서버가 읽을 수 없다"
+    ],
+    a: 1,
+    e: "<code>localStorage</code>는 <b>같은 출처의 모든 스크립트</b>가 읽을 수 있습니다. 광고 스크립트나 오염된 npm 패키지 하나로도 토큰이 빠져나갑니다. <b><code>HttpOnly</code> 쿠키</b>는 JavaScript가 접근할 수 없어 XSS로도 훔칠 수 없습니다. 대신 자동 전송되므로 <b>CSRF 대비</b>(SameSite, CSRF 토큰)가 필요합니다."
+  }
+]);
+</script>

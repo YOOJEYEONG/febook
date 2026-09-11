@@ -121,7 +121,7 @@ React는 props를 비교하지 않고 그냥 다시 실행합니다.</span>
 결과가 같으면 <b>실제 DOM은 건드리지 않습니다</b>(57장).
 함수 실행 자체는 대개 매우 빠릅니다.</span>
 <span class="mythline">문제가 되는 것은 <b>렌더링이 정말 무거울 때</b>뿐입니다.
-목록 수천 개, 복잡한 계산, 큰 트리 같은 경우입니다.</span>
+목록 수천 개, 복잡한 계산, 큰 <span class="term" data-term="tree">트리</span> 같은 경우입니다.</span>
 </div>
 
 <h2 id="memo">memo</h2>
@@ -259,7 +259,7 @@ function Page() {
 
 <h2 id="compiler">React Compiler</h2>
 
-<p>React 팀은 <b>메모이제이션을 자동으로 넣어 주는 컴파일러</b>를 만들고 있습니다.
+<p>React 팀은 <b>메모이제이션을 자동으로 넣어 주는 <span class="term" data-term="compiler">컴파일러</span></b>를 만들고 있습니다.
 빌드 시점에 코드를 분석해 <code>useMemo</code>·<code>useCallback</code>·<code>memo</code>를
 <b>필요한 곳에 알아서 적용</b>합니다.</p>
 

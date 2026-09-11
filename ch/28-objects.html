@@ -357,7 +357,7 @@ try {
 <p class="box-title"><span class="box-ico">🚫</span> <code>JSON.parse(JSON.stringify(x))</code>로 <span class="term" data-term="deep-copy">깊은 복사</span>를 하지 마세요</p>
 <p style="margin-bottom:0">오랫동안 쓰이던 방법이지만 위에서 본 것처럼
 <b><code>Date</code>가 문자열이 되고, 함수·<code>undefined</code>가 사라지고, <code>NaN</code>이 <code>null</code>이 되며,
-순환 <span class="term" data-term="reference">참조</span>가 있으면 오류</b>가 납니다.
+<span class="term" data-term="circular-dependency">순환 참조</span>가 있으면 오류</b>가 납니다.
 지금은 <b><code>structuredClone()</code></b>이라는 표준 함수가 있습니다(25장).</p>
 </div>
 

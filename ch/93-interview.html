@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>83장. 면접 대비 핵심 질문 — 프엔북</title>
+<title>93장. 면접 대비 핵심 질문 — 프엔북</title>
 <meta name="description" content="프론트엔드 면접에서 자주 나오는 질문을 주제별로 정리하고, 답변의 방향과 관련 챕터를 연결합니다. 이력서와 포트폴리오 준비도 다룹니다.">
 <meta name="color-scheme" content="light dark">
-<meta property="og:title" content="83장. 면접 대비 핵심 질문 — 프엔북">
+<meta property="og:title" content="93장. 면접 대비 핵심 질문 — 프엔북">
 <meta property="og:description" content="프론트엔드 면접에서 자주 나오는 질문을 주제별로 정리하고, 답변의 방향과 관련 챕터를 연결합니다. 이력서와 포트폴리오 준비도 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
 <link rel="stylesheet" href="../assets/css/book.css">
 </head>
-<body data-base="../" data-chapter="83-interview">
+<body data-base="../" data-chapter="93-interview">
 <div id="app-header"></div>
 
 <div class="layout">
   <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
 
   <main class="page">
-    <p class="ch-eyebrow">11부 · 실전과 커리어</p>
-    <h1>83장. 면접 대비 핵심 질문</h1>
+    <p class="ch-eyebrow">12부 · 실전과 커리어</p>
+    <h1>93장. 면접 대비 핵심 질문</h1>
 
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
@@ -52,7 +52,7 @@
 <tr><td>GET과 POST의 차이는?</td><td>데이터 위치, <b>안전·<span class="term" data-term="idempotent">멱등</span></b>, 캐시 가능 여부</td><td>4</td></tr>
 <tr><td><span class="term" data-term="cors">CORS</span> 오류는 왜 나고 어떻게 해결하나요?</td><td><span class="term" data-term="same-origin-policy">동일 출처 정책</span>, <b>서버가 헤더로 허용</b>. 프론트에서 못 고침</td><td>3·37</td></tr>
 <tr><td><span class="term" data-term="cookie">쿠키</span>·<span class="term" data-term="localstorage">localStorage</span>·<span class="term" data-term="sessionstorage">sessionStorage</span>의 차이는?</td><td>수명·범위·용량·<b>자동 전송 여부</b></td><td>39</td></tr>
-<tr><td><span class="term" data-term="browser">브라우저</span> 렌더링 과정을 설명해 보세요</td><td><span class="term" data-term="dom">DOM</span>·<span class="term" data-term="cssom">CSSOM</span> → 렌더 트리 → 레이아웃 → 페인트 → 합성</td><td>5</td></tr>
+<tr><td><span class="term" data-term="browser">브라우저</span> 렌더링 과정을 설명해 보세요</td><td><span class="term" data-term="dom">DOM</span>·<span class="term" data-term="cssom">CSSOM</span> → 렌더 <span class="term" data-term="tree">트리</span> → 레이아웃 → 페인트 → 합성</td><td>5</td></tr>
 </tbody>
 </table>
 </div>
@@ -125,7 +125,7 @@ console.log(0.1 + 0.2 === 0.3);
 <tbody>
 <tr><td><b><span class="term" data-term="virtual-dom">가상 DOM</span>이 빠른가요?</b></td><td><b>함정 질문입니다.</b> "직접 조작보다 빠르지 않다"고 정확히 답하세요</td><td>57</td></tr>
 <tr><td><span class="term" data-term="react">React</span>가 리렌더링하는 조건은?</td><td>자기 상태·부모 렌더링·<span class="term" data-term="context">Context</span></td><td>64</td></tr>
-<tr><td><b><code>key</code>에 인덱스를 쓰면 안 되는 이유</b></td><td>순서 변경 시 상태·포커스가 엉킴. <b>구체적 시나리오</b>로</td><td>60</td></tr>
+<tr><td><b><code>key</code>에 <span class="term" data-term="db-index">인덱스</span>를 쓰면 안 되는 이유</b></td><td>순서 변경 시 상태·포커스가 엉킴. <b>구체적 시나리오</b>로</td><td>60</td></tr>
 <tr><td><code>useEffect</code>의 <span class="term" data-term="dependency-array">의존성 배열</span></td><td>거짓말하지 않기, <b><span class="term" data-term="cleanup">정리 함수</span></b>, <span class="term" data-term="strictmode">StrictMode</span> 두 번 실행</td><td>61</td></tr>
 <tr><td><b>Effect가 필요 없는 경우는?</b></td><td>계산 가능한 값, 이벤트 핸들러로 충분한 것</td><td>61</td></tr>
 <tr><td><code>useMemo</code>·<code>useCallback</code>을 언제 쓰나요?</td><td><b>"측정 후에"</b>가 핵심. 남용은 손해</td><td>64</td></tr>
@@ -154,6 +154,45 @@ console.log(0.1 + 0.2 === 0.3);
 </table>
 </div>
 
+<h2 id="cs">컴퓨터 과학 기초</h2>
+
+<p>신입·주니어 채용에서 <b>점점 비중이 커지는 영역</b>입니다.
+알고리즘 문제를 푸는 능력보다 <b>"왜 그런지 설명할 수 있는가"</b>를 봅니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>핵심</th><th>챕터</th></tr></thead>
+<tbody>
+<tr><td><b>0.1 + 0.2가 0.3이 아닌 이유는?</b></td><td>2진 <span class="term" data-term="floating-point">부동소수점</span>(IEEE 754). <b>JS만의 문제가 아님</b>. 돈은 정수로 계산</td><td>80</td></tr>
+<tr><td>한글 한 글자는 몇 <span class="term" data-term="byte">바이트</span>인가요?</td><td><span class="term" data-term="utf8">UTF-8</span>에서 <b>3바이트</b>. <code>.length</code>는 UTF-16 코드 유닛 수</td><td>80</td></tr>
+<tr><td><b>배열과 객체(해시)의 차이는?</b></td><td>인덱스 접근 vs 키 조회. <b>무엇이 빠른지가 다르다</b></td><td>81</td></tr>
+<tr><td>이 코드의 <span class="term" data-term="time-complexity">시간 복잡도</span>는?</td><td>반복문 안의 <code>find</code>·<code>includes</code> = O(n²). <b><code>Map</code>으로 개선</b></td><td>83</td></tr>
+<tr><td><span class="term" data-term="stack">스택</span>과 큐의 차이는?</td><td>LIFO vs FIFO. <b>콜 스택</b>과 <b>태스크 큐</b>로 연결해 답하면 좋습니다</td><td>82</td></tr>
+<tr><td><b>훅을 조건문에서 쓰면 안 되는 이유는?</b></td><td>훅이 <b><span class="term" data-term="linked-list">연결 리스트</span>에 호출 순서로</b> 저장되기 때문</td><td>82·66</td></tr>
+<tr><td><span class="term" data-term="memory-leak">메모리 누수</span>는 왜 생기나요?</td><td>GC 기준은 <b>도달 가능성</b>. 리스너·타이머·<span class="term" data-term="detached-dom">분리된 DOM</span>·무한 캐시</td><td>84</td></tr>
+<tr><td>JS는 싱글 <span class="term" data-term="thread">스레드</span>인데 왜 안 느린가요?</td><td><b><span class="term" data-term="concurrency">동시성</span></b>(이벤트 루프). 기다림은 브라우저가 대신. 계산은 Worker</td><td>85·35</td></tr>
+<tr><td><code>transform</code>으로 애니메이션하는 이유는?</td><td>레이아웃·페인트를 건너뛰고 <b><span class="term" data-term="compositor-thread">컴포지터 스레드</span></b>에서 처리</td><td>85·20</td></tr>
+<tr><td><span class="term" data-term="javascript">JavaScript</span>는 <span class="term" data-term="interpreter">인터프리터</span> 언어인가요?</td><td><b>하이브리드.</b> 바이트코드 해석 + 뜨거운 함수 <span class="term" data-term="jit">JIT 컴파일</span></td><td>86</td></tr>
+<tr><td><b>HTTP/2와 HTTP/3의 차이는?</b></td><td><span class="term" data-term="multiplexing">멀티플렉싱</span> / <span class="term" data-term="quic">QUIC</span>(<span class="term" data-term="udp">UDP</span>)로 <b>TCP 대기 행렬 막힘 해결</b></td><td>87</td></tr>
+<tr><td><code>no-cache</code>와 <code>no-store</code>의 차이는?</td><td><b>저장 후 매번 확인</b> vs <b>저장 금지</b>. 헷갈리기 쉬운 단골 질문</td><td>88</td></tr>
+<tr><td>캐시를 오래 걸면서 배포를 즉시 반영하려면?</td><td><b>파일명에 내용 해시</b> + <code>index.html</code>은 <code>no-cache</code></td><td>88</td></tr>
+<tr><td><span class="term" data-term="n-plus-1">N+1 문제</span>가 무엇인가요?</td><td>목록 1 + 항목마다 1. 일괄 조회나 <span class="term" data-term="api">API</span> 설계로 해결</td><td>89</td></tr>
+<tr><td>결제 버튼 중복 클릭은 어떻게 막나요?</td><td>버튼 잠금 + <b>멱등성 키</b> + POST 자동 재시도 금지</td><td>89</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — CS 질문에 답하는 요령</p>
+<ol style="margin-bottom:0">
+<li><b>정의 → 왜 그런가 → 내 코드에서 어디에 쓰이는가</b> 순서로 답하세요. 세 번째가 합격을 만듭니다.</li>
+<li><b>모르면 모른다고</b> 하고, 아는 만큼까지 말한 뒤 "여기까지 알고 있습니다"로 끊으세요.
+지어내면 바로 들킵니다.</li>
+<li><b>"그건 상황에 따라 다릅니다"</b>는 좋은 답의 시작이지만 거기서 멈추면 안 됩니다.
+<b>어떤 상황에서 무엇을 고를지</b>까지 말해야 합니다.</li>
+</ol>
+</div>
+
 <h2 id="soft">경험과 태도 질문</h2>
 
 <div class="box tip">
@@ -164,9 +203,9 @@ console.log(0.1 + 0.2 === 0.3);
 <tbody>
 <tr><td><b>가장 어려웠던 문제와 해결 과정은?</b></td><td>가장 자주 나옵니다. <b>문제 → 분석 → 시도 → 해결 → 배운 점</b> 순서로 준비하세요</td></tr>
 <tr><td>왜 이 기술을 선택했나요?</td><td>"많이 쓰니까"는 나쁩니다. <b>대안과 비교한 이유</b>를</td></tr>
-<tr><td><span class="term" data-term="code-review">코드 리뷰</span>에서 의견이 갈리면?</td><td>근거를 제시하되 <b>합의 우선</b>. 82장</td></tr>
+<tr><td><span class="term" data-term="code-review">코드 리뷰</span>에서 의견이 갈리면?</td><td>근거를 제시하되 <b>합의 우선</b>. 92장</td></tr>
 <tr><td>모르는 기술을 만나면 어떻게 하나요?</td><td>공식 문서 → 작게 실험 → 팀에 확인. <b>학습 방법</b>을 보여주세요</td></tr>
-<tr><td>일정이 부족하면?</td><td><b>일찍 공유</b>하고 우선순위를 조정. 82장</td></tr>
+<tr><td>일정이 부족하면?</td><td><b>일찍 공유</b>하고 우선순위를 조정. 92장</td></tr>
 <tr><td>마지막으로 질문 있나요?</td><td><b>반드시 준비하세요.</b> 아래 참고</td></tr>
 </tbody>
 </table>
@@ -199,7 +238,7 @@ console.log(0.1 + 0.2 === 0.3);
 <p style="margin-bottom:0"><b>면접관이 보는 것은 지식의 양이 아니라 사고 과정</b>입니다.
 모르는 것을 정직하게 말하고 <b>어떻게 접근할지</b> 보여주는 것이
 어설프게 아는 척하는 것보다 훨씬 좋은 인상을 줍니다.
-실무에서도 <b>아는 척하는 동료가 가장 위험합니다</b>(82장).</p>
+실무에서도 <b>아는 척하는 동료가 가장 위험합니다</b>(92장).</p>
 </div>
 
 <h2 id="resume">이력서와 포트폴리오</h2>
@@ -208,7 +247,7 @@ console.log(0.1 + 0.2 === 0.3);
 <table>
 <thead><tr><th>좋은 서술</th><th>약한 서술</th></tr></thead>
 <tbody>
-<tr><td>"검색 <span class="term" data-term="api">API</span> 호출을 디바운스로 <b>90% 줄여</b> 서버 부하를 낮췄습니다"</td><td>"성능 최적화를 했습니다"</td></tr>
+<tr><td>"검색 API 호출을 디바운스로 <b>90% 줄여</b> 서버 부하를 낮췄습니다"</td><td>"성능 최적화를 했습니다"</td></tr>
 <tr><td>"이미지 최적화와 코드 분할로 <b>LCP를 4.2초에서 1.8초로</b> 개선했습니다"</td><td>"React를 사용했습니다"</td></tr>
 <tr><td>"<span class="term" data-term="race-condition">경쟁 상태</span>로 검색 결과가 뒤섞이는 버그를 <code>AbortController</code>로 해결했습니다"</td><td>"버그를 수정했습니다"</td></tr>
 </tbody>
@@ -244,7 +283,7 @@ console.log(0.1 + 0.2 === 0.3);
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
 <li><b>답을 외우지 말고 이해하세요.</b> 후속 질문에서 드러납니다.</li>
-<li><span class="term" data-term="javascript">JavaScript</span> 기초(<b>클로저·<code>this</code>·이벤트 루프·호이스팅</b>)가 가장 많이 나옵니다.</li>
+<li>JavaScript 기초(<b>클로저·<code>this</code>·이벤트 루프·호이스팅</b>)가 가장 많이 나옵니다.</li>
 <li>"가상 DOM이 빠른가?"는 <b>함정 질문</b>입니다.</li>
 <li>코드 출력 문제는 <b>답보다 이유</b>가 중요합니다.</li>
 <li><b>"가장 어려웠던 문제"</b>는 반드시 준비하세요. 가장 자주 나옵니다.</li>
@@ -307,7 +346,7 @@ FB_QUIZ([
       "다른 주제로 화제를 돌린다"
     ],
     a: 2,
-    e: "얼버무리면 후속 질문 한 번에 드러나고 <b>신뢰를 잃습니다</b>. 반대로 \"모릅니다\"로 끝내면 사고 과정을 보여줄 기회를 잃습니다. 실무에서도 <b>아는 척하는 동료가 가장 위험합니다</b>(82장)."
+    e: "얼버무리면 후속 질문 한 번에 드러나고 <b>신뢰를 잃습니다</b>. 반대로 \"모릅니다\"로 끝내면 사고 과정을 보여줄 기회를 잃습니다. 실무에서도 <b>아는 척하는 동료가 가장 위험합니다</b>(92장)."
   },
   {
     q: "이력서에 \"성능 최적화를 했습니다\"보다 나은 서술은?",

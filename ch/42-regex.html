@@ -91,7 +91,7 @@ const dynamic = new RegExp(`^${keyword}`, "i");</code></pre>
 <tr><td><code>i</code></td><td>대소문자 무시</td></tr>
 <tr><td><code>m</code></td><td>여러 줄 — <code>^</code>·<code>$</code>가 <b>각 줄</b>의 시작·끝을 뜻하게</td></tr>
 <tr><td><code>s</code></td><td><code>.</code>이 줄바꿈도 포함하게</td></tr>
-<tr><td><code>u</code></td><td>유니코드 모드. 이모지·특수 문자를 올바르게 다룸</td></tr>
+<tr><td><code>u</code></td><td><span class="term" data-term="unicode">유니코드</span> 모드. 이모지·특수 문자를 올바르게 다룸</td></tr>
 </tbody>
 </table>
 </div>
@@ -240,7 +240,7 @@ console.log(re.test("aa"));   // false (!) — 검색 위치가 남아 있기 �
 /^(a+)+$/.test("aaaaaaaaaaaaaaaaaaaaaaaaaaaaX");</code></pre>
 </div>
 <p style="margin-bottom:0">중첩된 반복(<code>(a+)+</code>)은 실패할 때 <b>경우의 수가 지수적으로 폭발</b>합니다.
-문자 30개만으로도 몇 분씩 걸릴 수 있고, 그동안 <b>메인 스레드가 완전히 멈춥니다</b>(35장).
+문자 30개만으로도 몇 분씩 걸릴 수 있고, 그동안 <b><span class="term" data-term="main-thread">메인 스레드</span>가 완전히 멈춥니다</b>(35장).
 공격자가 이런 입력을 일부러 보내는 것을 <b>ReDoS 공격</b>이라고 합니다.<br>
 <b>예방</b>: 중첩 반복을 피하고, 사용자 입력으로 정규식을 만들지 말고,
 복잡한 패턴이 필요하면 <b>정규식 대신 코드로</b> 푸세요.</p>
@@ -278,7 +278,7 @@ console.log(re.test("aa"));   // false (!) — 검색 위치가 남아 있기 �
 <li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Regular_expressions" target="_blank" rel="noopener">MDN — 정규 표현식 가이드</a></li>
 <li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/matchAll" target="_blank" rel="noopener">MDN — matchAll()</a></li>
 <li><a href="https://regex101.com/" target="_blank" rel="noopener">regex101.com</a> — 정규식 작성·테스트·설명 도구</li>
-<li><a href="https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS" target="_blank" rel="noopener">OWASP — ReDoS</a></li>
+<li><a href="https://www.regular-expressions.info/catastrophic.html" target="_blank" rel="noopener">Regular-Expressions.info — 파국적 백트래킹(ReDoS) (영문)</a></li>
 </ul>
 
     <section class="quiz" id="quiz"></section>

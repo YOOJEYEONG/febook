@@ -1,0 +1,380 @@
+<!--desc: 배열이 메모리에 어떻게 놓이는지, 해시 테이블이 왜 즉시 찾아내는지, 객체와 Map의 실제 차이, 그리고 반복문 안의 배열 탐색이 서비스를 느리게 만드는 이유를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li>자료구조가 <b>여러 개인 이유</b> — 무엇을 빠르게 할지가 다르다</li>
+  <li>배열이 메모리에 <b>어떻게 놓이는지</b>와 <code>unshift</code>가 느린 이유</li>
+  <li><b>해시 테이블</b> — 객체가 어떻게 즉시 값을 찾아내나</li>
+  <li><code>Object</code> vs <code>Map</code> vs <code>Set</code>, 실무에서 무엇을 고를까</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 24분 · 성능 문제의 절반이 여기서 나온다</p>
+
+<h2 id="why">왜 자료구조를 여러 개 배우나</h2>
+
+<p>자료구조는 <b>데이터를 담는 그릇</b>입니다. 그릇이 여러 개인 이유는 하나입니다.
+<b>어떤 작업을 빠르게 할지 그릇마다 다르기 때문</b>입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🏠</span> 비유 — 책장과 사물함</p>
+<p style="margin-bottom:0"><b>책장에 책을 순서대로 꽂아 두면</b> "세 번째 책"은 즉시 꺼낼 수 있습니다. 대신 맨 앞에 한 권을 끼워 넣으려면
+<b>뒤의 책을 전부 한 칸씩 밀어야</b> 합니다. 이것이 <b>배열</b>입니다.<br>
+<b>이름표가 붙은 사물함</b>이라면 "김철수 칸"을 곧장 열 수 있습니다. 순서는 상관없습니다. 이것이 <b>해시 테이블</b>,
+JavaScript의 <b>객체와 <code>Map</code></b>입니다.</p>
+</div>
+
+<h2 id="array">배열 — 나란히 붙여 놓은 상자</h2>
+
+<p>전통적인 배열은 메모리에 <b>같은 크기의 칸이 빈틈없이 이어진</b> 구조입니다.
+그래서 <code>arr[5000]</code>을 찾을 때 앞에서부터 세지 않습니다.
+<b>시작 주소 + 5000 × 칸 크기</b>를 계산하면 곧바로 그 자리입니다. 인덱스 접근이 <b>즉시</b>인 이유입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">배열의 메모리 배치</span>
+<pre><code data-lang="text">주소  1000  1004  1008  1012  1016
+     ┌────┬────┬────┬────┬────┐
+     │ 10 │ 20 │ 30 │ 40 │ 50 │
+     └────┴────┴────┴────┴────┘
+index   0     1     2     3     4
+
+arr[3] → 1000 + 3×4 = 1012 → 한 번에 도착 (즉시)
+
+맨 앞에 5를 끼워 넣으려면?
+     ┌────┬────┬────┬────┬────┬────┐
+     │  5 │ 10 │ 20 │ 30 │ 40 │ 50 │
+     └────┴────┴────┴────┴────┴────┘
+            ↑ 기존 요소를 전부 한 칸씩 이동해야 한다</code></pre>
+</div>
+
+<p>여기서 실무 결론이 나옵니다. <b>끝에 넣고 빼는 것(<code>push</code>/<code>pop</code>)은 싸고,
+앞에 넣고 빼는 것(<code>unshift</code>/<code>shift</code>)은 비쌉니다.</b>
+데이터가 많아질수록 차이가 벌어집니다.</p>
+
+<div class="runner" data-lang="js" data-title="push와 unshift의 실제 차이" data-note="숫자는 기기마다 다릅니다. 중요한 건 '몇 배 차이인가'입니다.">
+<textarea class="rn-src">
+const N = 50000;
+
+let t = performance.now();
+const a = [];
+for (let i = 0; i < N; i++) a.push(i);          // 끝에 추가
+const pushTime = performance.now() - t;
+
+t = performance.now();
+const b = [];
+for (let i = 0; i < N; i++) b.unshift(i);       // 앞에 추가
+const unshiftTime = performance.now() - t;
+
+console.log("push   :", pushTime.toFixed(1), "ms");
+console.log("unshift:", unshiftTime.toFixed(1), "ms");
+console.log("차이   :", (unshiftTime / pushTime).toFixed(0) + "배");
+
+// 앞에 계속 넣어야 한다면 → 끝에 넣고 마지막에 한 번 뒤집는다
+t = performance.now();
+const c = [];
+for (let i = 0; i < N; i++) c.push(i);
+c.reverse();
+console.log("push + reverse:", (performance.now() - t).toFixed(1), "ms");
+</textarea>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🧩</span> JavaScript 배열은 "진짜 배열"이 아닙니다</p>
+<span class="mythline">명세상 JS 배열은 <b>특별한 객체</b>입니다. 키가 <code>"0"</code>, <code>"1"</code> 같은 문자열이고,
+길이가 자동으로 늘어나며, 서로 다른 타입을 섞어 담을 수 있습니다.</span>
+<span class="mythline">그래도 <b>대개는 빠릅니다.</b> V8 같은 엔진이 "요소가 빈틈없이 채워진 배열"을 감지하면
+내부적으로 <b>진짜 연속 메모리</b>로 최적화해 두기 때문입니다.</span>
+<span class="mythline">다만 <b>구멍을 만들면 그 최적화가 풀립니다.</b> <code>delete arr[2]</code>나 <code>arr[10000] = 1</code>처럼
+중간을 비우면 엔진이 <b>사전(딕셔너리) 모드</b>로 내려가 훨씬 느려집니다.
+<b>요소를 지울 땐 <code>delete</code>가 아니라 <code>splice</code>나 <code>filter</code></b>를 쓰세요.</span>
+</div>
+
+<div class="runner" data-lang="js" data-title="delete가 만드는 구멍" data-note="length는 그대로인데 값만 사라집니다.">
+<textarea class="rn-src">
+const arr = [10, 20, 30, 40];
+
+delete arr[1];                 // ❌ 구멍이 생깁니다
+console.log(arr);              // [10, <빈 칸>, 30, 40]
+console.log(arr.length);       // 4  ← 줄지 않았습니다
+console.log(arr[1]);           // undefined
+
+console.log("--- 구멍은 순회에서도 이상하게 동작합니다 ---");
+console.log(arr.map(x => x * 2));       // 구멍은 건너뜁니다
+console.log([...arr]);                  // 전개하면 undefined로 채워집니다
+
+console.log("--- ✅ 올바른 삭제 ---");
+const arr2 = [10, 20, 30, 40];
+arr2.splice(1, 1);                      // 원본을 바꿉니다
+console.log(arr2, arr2.length);         // [10, 30, 40] 3
+
+const arr3 = [10, 20, 30, 40].filter(x => x !== 20);   // 새 배열을 만듭니다
+console.log(arr3);
+</textarea>
+</div>
+
+<h2 id="hash">해시 테이블 — 객체가 빠른 이유</h2>
+
+<p><b>해시 함수</b>는 임의의 키(문자열 등)를 <b>고정된 범위의 숫자</b>로 바꾸는 함수입니다.
+그 숫자를 <b>저장할 칸 번호</b>로 쓰면, 키만 알면 계산 한 번으로 자리를 찾아갑니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">해시 테이블의 원리</span>
+<pre><code data-lang="text">"name" ──해시 함수──▶ 3        ┌───┐
+                              0 │   │
+"age"  ──해시 함수──▶ 7        1 │   │
+                              2 │   │
+찾을 때도 똑같이 계산한다      3 │ "홍길동"  ← "name"
+→ 앞에서부터 뒤지지 않는다     …
+→ 평균 '즉시' (O(1))          7 │ 30      ← "age"
+                                └───┘</code></pre>
+</div>
+
+<p>서로 다른 키가 <b>같은 칸 번호</b>로 계산되는 일을 <b>해시 충돌</b>이라 합니다.
+실제 구현은 그 칸에 목록을 달아 두거나 다음 빈 칸을 찾는 식으로 해결합니다.
+충돌이 심하면 느려지지만, 잘 만든 해시 함수에서는 드뭅니다.
+그래서 해시 테이블 조회는 <b>평균적으로 즉시, 최악의 경우 선형</b>이라고 말합니다.</p>
+
+<div class="runner" data-lang="js" data-title="배열 탐색 vs 객체 조회" data-note="데이터가 많아질수록 격차가 커집니다. 실무 성능 문제의 단골입니다.">
+<textarea class="rn-src">
+// 사용자 5000명, 주문 5000건. 각 주문에 사용자 이름을 붙이려면?
+const users = Array.from({ length: 5000 }, (_, i) => ({ id: i, name: "user" + i }));
+const orders = Array.from({ length: 5000 }, (_, i) => ({ id: i, userId: (i * 7) % 5000 }));
+
+// ❌ 주문마다 배열 전체를 훑는다 → 5000 × 5000 = 2500만 번 비교
+let t = performance.now();
+const slow = orders.map(o => ({
+  ...o,
+  name: users.find(u => u.id === o.userId).name
+}));
+const slowTime = performance.now() - t;
+
+// ✅ 먼저 조회표(Map)를 만든다 → 5000 + 5000 번
+t = performance.now();
+const byId = new Map(users.map(u => [u.id, u]));
+const fast = orders.map(o => ({ ...o, name: byId.get(o.userId).name }));
+const fastTime = performance.now() - t;
+
+console.log("find 반복 :", slowTime.toFixed(1), "ms");
+console.log("Map 조회  :", fastTime.toFixed(1), "ms");
+console.log("차이      :", (slowTime / fastTime).toFixed(0) + "배");
+console.log("결과 동일 :", slow[10].name === fast[10].name);
+</textarea>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — "반복문 안의 find"를 의심하세요</p>
+<p style="margin-bottom:0">React 목록 화면이 갑자기 버벅일 때 가장 흔한 원인입니다.
+<code>items.map(item =&gt; ... other.find(...))</code> 형태를 발견하면
+<b>바깥에서 <code>Map</code>을 한 번 만들어 두고 <code>get</code>으로 바꾸세요.</b>
+데이터가 100개일 땐 티가 안 나다가, 5000개가 되는 순간 화면이 멈춥니다.
+<code>find</code> 안에 <code>includes</code>가 또 들어 있으면 상황은 더 나빠집니다.</p>
+</div>
+
+<h2 id="object-map">Object vs Map</h2>
+
+<p>둘 다 "키 → 값" 저장소지만 성격이 다릅니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">비교</span>
+<pre><code data-lang="text">                   Object                        Map
+키 타입            문자열 · 심볼만               무엇이든 (객체·숫자·함수도 키)
+숫자 키            "1" 문자열로 변환됨           1과 "1"이 서로 다른 키
+키 순서            규칙이 있음 (아래 설명)        항상 삽입한 순서
+크기               Object.keys(o).length         map.size
+순회               Object.entries() 등           for…of 로 바로
+프로토타입         toString 등이 딸려 옴          없음 (깨끗함)
+JSON               JSON.stringify 바로 됨        직접 변환 필요
+용도               고정된 구조의 레코드           자주 넣고 빼는 사전</code></pre>
+</div>
+
+<div class="runner" data-lang="js" data-title="객체의 키 순서 규칙" data-note="흔히 '객체 키 순서는 보장 안 된다'고 하지만, 명세에 정해진 규칙이 있습니다.">
+<textarea class="rn-src">
+const obj = {};
+obj.b = 1;
+obj[2] = 2;
+obj.a = 3;
+obj[1] = 4;
+
+console.log(Object.keys(obj));   // ["1", "2", "b", "a"]
+// 규칙: ① 정수처럼 보이는 키가 오름차순으로 먼저
+//       ② 그 다음 나머지 문자열 키가 '넣은 순서'대로
+//       ③ 심볼 키가 마지막
+
+console.log("--- Map은 넣은 순서 그대로 ---");
+const map = new Map();
+map.set("b", 1);
+map.set(2, 2);
+map.set("a", 3);
+map.set(1, 4);
+console.log([...map.keys()]);    // ["b", 2, "a", 1]
+
+console.log("--- Map은 키 타입을 구분합니다 ---");
+const m = new Map();
+m.set(1, "숫자 1");
+m.set("1", "문자열 1");
+console.log(m.size);             // 2
+const o = {};
+o[1] = "숫자 1";
+o["1"] = "문자열 1";
+console.log(Object.keys(o).length);  // 1 ← 덮어써졌습니다
+
+console.log("--- 객체는 상속된 이름에 걸릴 수 있습니다 ---");
+const cache = {};
+console.log(cache["toString"]);      // function ... ← 넣은 적 없는데 값이 있습니다
+console.log("toString" in cache);    // true
+const safe = new Map();
+console.log(safe.get("toString"));   // undefined ← 안전
+</textarea>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚠️</span> 사용자 입력을 객체의 <b>키</b>로 쓸 때</p>
+<p style="margin-bottom:0">사용자가 <code>__proto__</code>나 <code>constructor</code>를 키로 보내면
+객체의 동작이 바뀌거나 검사 로직이 뚫릴 수 있습니다(<b>프로토타입 오염</b>, 78장).
+<b>키를 외부에서 받는 저장소는 <code>Map</code>이나 <code>Object.create(null)</code></b>을 쓰세요.
+<code>Object.create(null)</code>로 만든 객체는 프로토타입이 없어 <code>toString</code> 같은 게 딸려 오지 않습니다.</p>
+</div>
+
+<h3 id="set">Set — 중복 없는 모음</h3>
+
+<p><code>Set</code>은 <b>값이 있는지</b>만 빠르게 확인하는 자료구조입니다. 내부는 해시 테이블이라 <code>has</code>가 <b>평균 즉시</b>입니다.
+배열의 <code>includes</code>는 <b>앞에서부터 전부 확인</b>합니다.</p>
+
+<div class="runner" data-lang="js" data-title="includes vs Set.has" data-note="'이미 처리한 ID인가' 같은 검사에서 극적인 차이가 납니다.">
+<textarea class="rn-src">
+const N = 20000;
+const ids = Array.from({ length: N }, (_, i) => i);
+
+let t = performance.now();
+const seenArr = [];
+for (const id of ids) {
+  if (!seenArr.includes(id)) seenArr.push(id);    // ❌ 매번 전체 탐색
+}
+const arrTime = performance.now() - t;
+
+t = performance.now();
+const seenSet = new Set();
+for (const id of ids) {
+  if (!seenSet.has(id)) seenSet.add(id);          // ✅ 평균 즉시
+}
+const setTime = performance.now() - t;
+
+console.log("배열 includes:", arrTime.toFixed(1), "ms");
+console.log("Set has     :", setTime.toFixed(1), "ms");
+console.log("차이        :", (arrTime / setTime).toFixed(0) + "배");
+
+console.log("--- 중복 제거 한 줄 ---");
+console.log([...new Set([1, 2, 2, 3, 3, 3])]);   // [1, 2, 3]
+
+console.log("--- 주의: 객체는 '같은 내용'이어도 다른 값입니다 ---");
+const s = new Set();
+s.add({ id: 1 });
+s.add({ id: 1 });
+console.log(s.size);   // 2 ← 참조가 다르기 때문 (25장)
+</textarea>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 실무 선택 기준</p>
+<ol style="margin-bottom:0">
+<li><b>구조가 고정된 데이터</b>(API 응답 한 건, 컴포넌트 props) → <b>객체</b>. JSON으로 바로 오가고 구조 분해가 편합니다.</li>
+<li><b>키가 동적으로 계속 늘고 줄어드는 사전</b>(id → 항목 조회표, 캐시) → <b><code>Map</code></b>.</li>
+<li><b>"있냐 없냐"만 묻는 것</b>(선택된 ID 목록, 방문한 URL) → <b><code>Set</code></b>.</li>
+<li><b>순서와 인덱스가 의미 있는 목록</b>(화면에 그릴 리스트) → <b>배열</b>. React 렌더링에는 결국 배열이 필요합니다.</li>
+<li>React state에 <code>Map</code>·<code>Set</code>을 담을 땐 <b>새 인스턴스를 만들어</b> 교체해야 리렌더링됩니다
+(<code>setSel(new Set(sel).add(id))</code>). 기존 것을 <code>add</code>만 하면 참조가 같아 화면이 안 바뀝니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>자료구조 선택은 <b>"무엇을 자주 할 것인가"</b>로 정한다.</li>
+<li>배열은 <b>인덱스 접근이 즉시</b>, <b>앞쪽 삽입·삭제가 비싸다</b>(<code>unshift</code>/<code>shift</code>).</li>
+<li><code>delete arr[i]</code>는 <b>구멍</b>을 만들어 엔진 최적화를 깬다. <code>splice</code>·<code>filter</code>를 쓴다.</li>
+<li>해시 테이블은 <b>키를 숫자로 바꿔 자리를 계산</b>한다. 평균 즉시 조회.</li>
+<li><b>반복문 안의 <code>find</code>/<code>includes</code></b>는 대표적 성능 함정. <b><code>Map</code>·<code>Set</code>으로 바꾼다.</b></li>
+<li>객체 키 순서에는 규칙이 있다: <b>정수형 키 오름차순 → 문자열 키 삽입순 → 심볼</b>.</li>
+<li>키를 외부 입력에서 받으면 <b><code>Map</code> 또는 <code>Object.create(null)</code></b>.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Map" target="_blank" rel="noopener">MDN — Map</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Set" target="_blank" rel="noopener">MDN — Set</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Guide/Indexed_collections" target="_blank" rel="noopener">MDN — 인덱스 컬렉션(배열)</a></li>
+<li><a href="https://v8.dev/blog/elements-kinds" target="_blank" rel="noopener">V8 블로그 — 배열 요소 종류와 최적화 (영문)</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "10만 개짜리 배열의 <b>맨 앞</b>에 계속 값을 넣어야 합니다. 왜 <code>unshift</code>가 느린가?",
+    o: [
+      "unshift가 내부적으로 배열을 복사해 새로 만들기 때문",
+      "배열은 요소가 메모리에 이어져 있어, 앞에 넣으면 기존 요소를 전부 한 칸씩 뒤로 밀어야 하기 때문",
+      "unshift는 비동기로 동작하기 때문",
+      "unshift가 반환값을 계산하느라 느린 것이며 실제 삽입은 빠르다"
+    ],
+    a: 1,
+    e: "배열의 인덱스 접근이 즉시인 이유는 <b>요소가 연속된 자리에 놓여 있기 때문</b>입니다. 그 대가로 앞쪽에 삽입하면 <b>뒤의 모든 요소가 이동</b>해야 합니다. 요소 수에 비례해 느려집니다. 앞쪽 삽입이 많다면 <code>push</code>로 모은 뒤 <code>reverse</code>하거나, 다른 자료구조를 고려하세요."
+  },
+  {
+    q: "배열에서 요소 하나를 지울 때 <code>delete arr[1]</code> 을 쓰면 안 되는 이유는?",
+    o: [
+      "문법 오류가 발생한다",
+      "length가 줄지 않고 그 자리에 '구멍'이 남으며, 엔진의 배열 최적화가 풀려 느려질 수 있다",
+      "원본이 아니라 복사본이 수정된다",
+      "첫 번째 요소만 지워진다"
+    ],
+    a: 1,
+    e: "<code>delete</code>는 값만 지우고 <b>자리는 남깁니다</b>. <code>length</code>가 그대로라 <code>[10, &lt;empty&gt;, 30]</code>이 되고, 순회 메서드마다 구멍을 다루는 방식이 달라 버그를 부릅니다. 게다가 구멍이 생기면 엔진이 <b>연속 메모리 최적화를 포기</b>합니다. <code>splice</code>(원본 수정) 또는 <code>filter</code>(새 배열)를 쓰세요."
+  },
+  {
+    q: "사용자 5000명 배열과 주문 5000건 배열을 합치려고 <code>orders.map(o =&gt; users.find(u =&gt; u.id === o.userId))</code> 를 썼습니다. 문제는?",
+    o: [
+      "find는 첫 번째 값만 찾으므로 결과가 틀린다",
+      "주문마다 사용자 배열 전체를 훑어 대략 2500만 번 비교가 일어난다. Map으로 조회표를 먼저 만들면 1만 번으로 줄어든다",
+      "map과 find를 함께 쓸 수 없다",
+      "비동기 처리가 빠져 있다"
+    ],
+    a: 1,
+    e: "결과는 맞지만 <b>비용이 데이터 수의 곱</b>으로 커집니다(5000 × 5000). <code>new Map(users.map(u =&gt; [u.id, u]))</code>로 조회표를 한 번 만들면 이후 <code>get</code>은 평균 즉시라, 전체가 <b>두 배열을 한 번씩 훑는 수준</b>으로 떨어집니다. 실무 목록 화면 성능 문제의 단골 원인입니다."
+  },
+  {
+    q: "<code>const o = {}; o.b=1; o[2]=2; o.a=3; o[1]=4;</code> 일 때 <code>Object.keys(o)</code> 의 결과는?",
+    o: [
+      "[\"b\", \"2\", \"a\", \"1\"] — 넣은 순서 그대로",
+      "[\"1\", \"2\", \"b\", \"a\"] — 정수형 키가 오름차순으로 먼저 오고, 나머지 문자열 키가 넣은 순서로 뒤따른다",
+      "순서는 명세에 정해져 있지 않아 예측할 수 없다",
+      "[\"a\", \"b\", \"1\", \"2\"] — 알파벳 순"
+    ],
+    a: 1,
+    e: "\"객체 키 순서는 보장되지 않는다\"는 말은 <b>지금은 정확하지 않습니다.</b> 명세에 순서 규칙이 있습니다. ① 정수처럼 보이는 키를 오름차순으로, ② 그 다음 나머지 문자열 키를 삽입 순서로, ③ 심볼 키를 마지막에 나열합니다. 다만 <b>이 규칙에 기대는 코드는 읽기 어렵습니다.</b> 순서가 중요하면 배열이나 <code>Map</code>을 쓰세요."
+  },
+  {
+    q: "외부에서 받은 문자열을 키로 쓰는 캐시를 만들 때 일반 객체 대신 <code>Map</code>이나 <code>Object.create(null)</code>을 권하는 이유는?",
+    o: [
+      "일반 객체는 키 개수 제한이 있기 때문",
+      "일반 객체는 프로토타입에서 toString·constructor 같은 이름이 딸려 와, 넣은 적 없는 키가 있는 것처럼 보이거나 프로토타입 오염 공격에 노출될 수 있기 때문",
+      "Map이 메모리를 더 적게 쓰기 때문",
+      "일반 객체는 문자열 키를 지원하지 않기 때문"
+    ],
+    a: 1,
+    e: "<code>({}).toString</code>은 값이 있습니다. 그래서 <code>cache[\"toString\"]</code> 같은 조회가 <b>엉뚱하게 성공</b>합니다. 더 위험한 건 사용자가 <code>__proto__</code>를 키로 보내는 <b>프로토타입 오염</b>입니다(78장). <code>Map</code>은 프로토타입 체인과 무관하고, <code>Object.create(null)</code>은 프로토타입이 아예 없습니다."
+  },
+  {
+    q: "React에서 <code>const [sel, setSel] = useState(new Set())</code> 로 선택 목록을 관리합니다. <code>sel.add(id); setSel(sel);</code> 를 했는데 화면이 안 바뀝니다. 이유는?",
+    o: [
+      "Set은 React state에 담을 수 없다",
+      "같은 객체를 그대로 넘겼기 때문이다. React는 참조가 바뀌었는지로 변경을 판단하므로 new Set(sel)처럼 새 인스턴스를 만들어 넘겨야 한다",
+      "add는 비동기 메서드라 즉시 반영되지 않는다",
+      "Set의 크기가 바뀌어도 size는 갱신되지 않는다"
+    ],
+    a: 1,
+    e: "<code>Set</code>·<code>Map</code>·배열·객체는 모두 <b>참조값</b>입니다(25장). 내용을 바꿔도 <b>참조는 그대로</b>라 React는 \"변한 게 없다\"고 판단합니다. <code>setSel(new Set(sel).add(id))</code>처럼 <b>새 인스턴스</b>를 만들어 넘기세요. 같은 이유로 배열은 <code>push</code> 대신 <code>[...arr, x]</code>를 씁니다."
+  }
+]);
+</script>

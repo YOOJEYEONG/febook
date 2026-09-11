@@ -162,7 +162,7 @@ console.log(storage.get("없는키", { theme: "light" }));   // 기본값
 
 <div class="box warn">
 <p class="box-title"><span class="box-ico">🐌</span> localStorage는 <b>동기적</b>입니다</p>
-<p style="margin-bottom:0">읽고 쓰는 동안 <b>메인 스레드가 멈춥니다</b>(35장).
+<p style="margin-bottom:0">읽고 쓰는 동안 <b><span class="term" data-term="main-thread">메인 스레드</span>가 멈춥니다</b>(35장).
 작은 값 몇 개는 문제없지만, <b>큰 <span class="term" data-term="json">JSON</span>을 매 렌더링마다 읽고 쓰면</b> 화면이 버벅입니다.
 스크롤·입력 이벤트 안에서 <code>localStorage</code>를 호출하는 코드는 특히 위험합니다.
 큰 데이터에는 비동기인 <b>IndexedDB</b>를 쓰세요.</p>
@@ -287,7 +287,7 @@ const user = await db.get("users", 1);</code></pre>
 <li><code>localStorage</code>는 영구·출처별, <code>sessionStorage</code>는 <b>탭별</b>이며 탭을 닫으면 사라진다.</li>
 <li>둘 다 <b>문자열만</b> 저장한다. 객체는 <code>JSON.stringify</code>/<code>parse</code>.</li>
 <li><b>접근 자체가 예외를 던질 수 있다.</b> 항상 <code>try/catch</code>.</li>
-<li>동기 API라 <b>메인 스레드를 막는다.</b> 큰 데이터는 IndexedDB.</li>
+<li>동기 API라 <b>메인 <span class="term" data-term="thread">스레드</span>를 막는다.</b> 큰 데이터는 IndexedDB.</li>
 <li>쿠키는 <b>매 요청에 자동 전송</b>되므로 작게 유지한다. 약 4KB 제한.</li>
 <li>토큰은 가능하면 <b><code>HttpOnly</code> 쿠키</b>. <code>localStorage</code>는 XSS에 통째로 노출된다.</li>
 <li><b>비밀번호·주민번호·카드번호는 어디에도 저장하지 않는다.</b></li>

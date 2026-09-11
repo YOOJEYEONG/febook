@@ -1,0 +1,349 @@
+<!--desc: Big-O 표기법을 비전공자 눈높이로 설명하고, 자바스크립트 메서드별 실제 비용, 중첩 반복문이 만드는 성능 절벽, 이진 탐색과 정렬, 그리고 프론트엔드의 진짜 병목이 어디인지를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>Big-O 표기법</b>을 수학 없이 이해하기</li>
+  <li>JavaScript 메서드가 각각 <b>얼마나 비싼지</b></li>
+  <li>데이터가 늘면 <b>갑자기</b> 느려지는 코드의 정체</li>
+  <li>그런데 <b>프론트엔드의 진짜 병목은 대개 알고리즘이 아니라는</b> 사실</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 22분 · 면접 필수 · 실무 판단의 기준</p>
+
+<h2 id="why">"10개일 땐 괜찮았는데요"</h2>
+
+<p>개발 중에는 테스트 데이터가 20개입니다. 다 잘 됩니다.
+운영에 올라가니 데이터가 8,000개가 되고, 목록 화면이 <b>3초 동안 얼어붙습니다.</b></p>
+
+<p>이때 필요한 것이 <b>시간 복잡도</b>입니다.
+"지금 몇 밀리초 걸리는가"가 아니라 <b>"데이터가 10배 늘면 몇 배 느려지는가"</b>를 보는 눈입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📐</span> Big-O를 한 문장으로</p>
+<p style="margin-bottom:0"><b>입력이 커질 때 작업량이 어떤 모양으로 늘어나는지</b>를 나타낸 표기법.
+정확한 시간이 아니라 <b>증가 추세</b>만 봅니다. 그래서 상수와 계수는 버립니다.
+<code>3n + 100</code> 도 <code>n</code> 도 똑같이 <b>O(n)</b>입니다.
+"입력이 두 배면 작업량도 두 배"라는 <b>모양</b>이 같기 때문입니다.</p>
+</div>
+
+<h2 id="orders">복잡도 계급표</h2>
+
+<div class="codeblock">
+<span class="cb-label">입력 n이 커질 때 작업 횟수 (대략)</span>
+<pre><code data-lang="text">표기         이름          n=10      n=1,000      n=1,000,000   예시
+O(1)        상수           1           1                1       obj.key, map.get, arr[i], push
+O(log n)    로그          ~3          ~10              ~20       정렬된 배열의 이진 탐색
+O(n)        선형          10        1,000        1,000,000       for 한 번, find, includes, map
+O(n log n)  선형로그       33       10,000       20,000,000      sort
+O(n²)       제곱         100    1,000,000    1,000,000,000,000   이중 for, 반복문 안의 find
+O(2ⁿ)       지수       1,024   우주가 끝남              ―        메모이제이션 없는 재귀</code></pre>
+</div>
+
+<p>표에서 봐야 할 것은 <b>가로가 아니라 세로</b>입니다.
+n이 1,000일 때 O(n)은 1,000번, O(n²)은 <b>100만 번</b>입니다.
+데이터가 1,000배 늘면 O(n)은 1,000배 느려지지만 <b>O(n²)은 100만 배</b> 느려집니다.
+"갑자기 멈춘다"는 체감은 여기서 나옵니다.</p>
+
+<h3 id="js-cost">JavaScript 메서드별 비용</h3>
+
+<div class="codeblock">
+<span class="cb-label">자주 쓰는 것들 (평균 기준)</span>
+<pre><code data-lang="text">O(1)   arr[i]                    인덱스 접근
+       arr.push() / arr.pop()    끝에서 넣고 빼기 (분할 상환 기준)
+       obj.key / map.get()       키 조회
+       set.has() / map.has()     존재 확인
+
+O(n)   arr.find() / findIndex()  앞에서부터 훑는다
+       arr.includes() / indexOf()
+       arr.filter() / map() / forEach() / reduce()
+       arr.shift() / unshift()   전부 밀어야 한다
+       arr.splice()              뒤를 당겨야 한다
+       [...arr] / Object.keys()  전부 복사·나열
+       JSON.stringify / parse
+
+O(n log n)
+       arr.sort()
+
+O(n·m) arr.join() 같은 문자열 결합 계열은 총 길이에 비례</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🪤</span> 함정은 <b>안쪽</b>에 숨어 있습니다</p>
+<p style="margin-bottom:0">겉보기엔 반복문이 하나인데 실제로는 제곱인 경우가 대부분입니다.</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// 반복문은 하나지만…
+const result = items.map(item =&gt;
+  users.find(u =&gt; u.id === item.userId)   // ← 여기가 또 O(n)
+);                                        // 전체 O(n × m)
+
+// 이것도 마찬가지
+const unique = [];
+for (const x of list) {
+  if (!unique.includes(x)) unique.push(x); // ← includes가 O(n) → 전체 O(n²)
+}</code></pre>
+</div>
+</div>
+
+<div class="runner" data-lang="js" data-title="O(n)과 O(n²)의 체감 차이" data-note="n을 2배로 키우면 O(n²)는 4배 느려집니다. 직접 숫자를 바꿔 보세요.">
+<textarea class="rn-src">
+function measure(label, fn) {
+  const t = performance.now();
+  fn();
+  console.log(label, (performance.now() - t).toFixed(1), "ms");
+}
+
+for (const n of [2000, 4000, 8000]) {
+  const list = Array.from({ length: n }, (_, i) => i % (n / 2));
+  console.log(`=== n = ${n} ===`);
+
+  measure("O(n²) includes :", () => {
+    const out = [];
+    for (const x of list) if (!out.includes(x)) out.push(x);
+  });
+
+  measure("O(n)  Set      :", () => {
+    const seen = new Set();
+    for (const x of list) seen.add(x);
+  });
+}
+console.log("n이 2배 될 때 위는 약 4배, 아래는 약 2배 느려집니다.");
+</textarea>
+</div>
+
+<h2 id="binary">이진 탐색 — O(log n)이 얼마나 강력한가</h2>
+
+<p><b>정렬되어 있다면</b> 절반씩 잘라 가며 찾을 수 있습니다.
+100만 개에서 원하는 값을 찾는 데 <b>스무 번이면 충분</b>합니다.</p>
+
+<div class="runner" data-lang="js" data-title="이진 탐색" data-note="전제 조건은 '정렬되어 있을 것' 하나입니다.">
+<textarea class="rn-src">
+function binarySearch(sorted, target) {
+  let lo = 0, hi = sorted.length - 1, steps = 0;
+  while (lo <= hi) {
+    steps++;
+    const mid = Math.floor((lo + hi) / 2);
+    if (sorted[mid] === target) return { index: mid, steps };
+    if (sorted[mid] < target) lo = mid + 1;   // 오른쪽 절반만 본다
+    else hi = mid - 1;                        // 왼쪽 절반만 본다
+  }
+  return { index: -1, steps };
+}
+
+const big = Array.from({ length: 1000000 }, (_, i) => i * 2);
+
+console.log(binarySearch(big, 1999998));   // 100만 개에서 20번 언저리
+console.log(binarySearch(big, 7));         // 없는 값도 같은 횟수
+
+console.log("--- 앞에서부터 찾으면 ---");
+let steps = 0;
+for (const v of big) { steps++; if (v === 1999998) break; }
+console.log("indexOf 방식 비교 횟수:", steps.toLocaleString());
+</textarea>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 프론트엔드에서 이진 탐색을 직접 쓸 일은 드뭅니다</p>
+<p style="margin-bottom:0">데이터가 정렬돼 있고 수만 개 이상일 때만 의미가 있는데,
+그 정도 데이터는 <b>애초에 서버에서 걸러 내려받는 것</b>이 맞습니다.
+직접 구현할 일이 있다면 <b>가상 스크롤</b>(보이는 행만 그리는 기법)에서
+"스크롤 위치에 해당하는 행 찾기" 정도입니다.
+그래도 <b>원리는 알아 두세요.</b> 면접에 나오고, "정렬하면 탐색이 싸진다"는 감각 자체가 유용합니다.</p>
+</div>
+
+<h2 id="sort">정렬 — <code>sort()</code>의 함정</h2>
+
+<div class="runner" data-lang="js" data-title="기본 sort는 숫자를 숫자로 보지 않습니다">
+<textarea class="rn-src">
+console.log([10, 9, 1, 100].sort());
+// [1, 10, 100, 9]  ← 문자열로 바꿔 사전순 비교하기 때문
+
+console.log([10, 9, 1, 100].sort((a, b) => a - b));   // ✅ [1, 9, 10, 100]
+console.log([10, 9, 1, 100].sort((a, b) => b - a));   // 내림차순
+
+console.log("--- sort는 원본을 바꿉니다 ---");
+const orig = [3, 1, 2];
+const sorted = orig.sort((a, b) => a - b);
+console.log(orig, sorted, orig === sorted);   // 같은 배열입니다!
+
+// 원본을 지키려면
+const orig2 = [3, 1, 2];
+const copy = [...orig2].sort((a, b) => a - b);
+console.log(orig2, copy);
+// 최신 문법: toSorted() (Chrome 110+, Safari 16+, Firefox 115+, Node 20+)
+console.log([3, 1, 2].toSorted((a, b) => a - b));
+
+console.log("--- 문자열 정렬은 localeCompare ---");
+console.log(["다", "가", "나"].sort());                       // 유니코드 순
+console.log(["Banana", "apple", "Cherry"].sort());            // 대문자가 먼저
+console.log(["Banana", "apple", "Cherry"].sort((a, b) => a.localeCompare(b, "ko")));
+</textarea>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔒</span> <code>sort()</code>는 <b>안정 정렬</b>입니다</p>
+<p style="margin-bottom:0">값이 같은 항목들의 <b>원래 순서가 그대로 유지</b>되는 정렬을 안정 정렬이라 합니다.
+<b>ES2019부터 명세가 안정성을 요구</b>하므로 현대 브라우저·Node에서 믿고 써도 됩니다.<br>
+덕분에 <b>"먼저 이름순 정렬 → 다시 점수순 정렬"</b>을 하면
+점수가 같은 사람끼리는 이름순이 유지됩니다. 다중 기준 정렬을 이렇게 만들 수 있습니다.</p>
+</div>
+
+<h2 id="memo">지수 복잡도와 메모이제이션</h2>
+
+<div class="runner" data-lang="js" data-title="같은 계산을 몇 번이나 반복하는가" data-note="n을 35 이상으로 올리면 위쪽이 눈에 띄게 느려집니다. 40은 권하지 않습니다.">
+<textarea class="rn-src">
+let calls = 0;
+function fib(n) {
+  calls++;
+  return n <= 1 ? n : fib(n - 1) + fib(n - 2);
+}
+
+let t = performance.now();
+console.log("fib(30) =", fib(30));
+console.log("호출 횟수:", calls.toLocaleString(), "/", (performance.now() - t).toFixed(1), "ms");
+
+// 한 번 계산한 값을 기억해 둔다 (31장 클로저 + 81장 Map)
+function memoFib() {
+  const cache = new Map();
+  let calls = 0;
+  function f(n) {
+    calls++;
+    if (cache.has(n)) return cache.get(n);
+    const v = n <= 1 ? n : f(n - 1) + f(n - 2);
+    cache.set(n, v);
+    return v;
+  }
+  return { f, getCalls: () => calls };
+}
+
+const { f, getCalls } = memoFib();
+t = performance.now();
+console.log("fib(30) =", f(30));
+console.log("호출 횟수:", getCalls(), "/", (performance.now() - t).toFixed(2), "ms");
+</textarea>
+</div>
+
+<p>같은 결과인데 호출 횟수가 <b>269만 번에서 59번으로</b> 줄었습니다.
+<b>같은 입력에 같은 결과가 나오는 무거운 계산</b>은 기억해 두면 됩니다.
+React의 <code>useMemo</code>(64장)와 TanStack Query의 캐시(67장)가 같은 발상입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💾</span> 메모이제이션은 공짜가 아닙니다</p>
+<p style="margin-bottom:0"><b>시간을 메모리와 맞바꾸는</b> 기법입니다. 캐시가 무한정 커지면 <b>메모리 누수</b>가 됩니다(84장).
+키 개수를 제한하거나(LRU), 키가 객체라면 <code>WeakMap</code>을 써서 원본이 사라질 때 함께 정리되게 하세요.
+또한 <b>계산이 가벼우면 캐시 관리 비용이 더 큽니다.</b> 측정하고 적용하세요.</p>
+</div>
+
+<h2 id="reality">그런데, 프론트엔드의 진짜 병목은</h2>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🎯</span> "느리면 알고리즘부터 고쳐라"는 대체로 틀립니다</p>
+<span class="mythline">웹 화면이 느린 원인의 순서는 대개 이렇습니다.
+<b>① 네트워크</b>(큰 번들, 최적화 안 된 이미지, 폭포수 요청) →
+<b>② 렌더링</b>(불필요한 리렌더링, 레이아웃 스래싱) →
+<b>③ 알고리즘.</b></span>
+<span class="mythline">2MB짜리 JS를 내려받는 3초를 놔둔 채 <code>find</code>를 <code>Map</code>으로 바꿔 0.5ms를 아끼는 것은 의미가 없습니다.
+<b>76장의 측정</b>을 먼저 하세요.</span>
+<span class="mythline">다만 <b>알고리즘 문제는 다르게 나타납니다.</b> 네트워크 문제는 "전반적으로 느림"이고,
+알고리즘 문제는 <b>"데이터가 일정 수를 넘으면 갑자기 멈춤"</b>입니다.
+이 신호가 보이면 반복문 안을 들여다보세요.</span>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 실무 판단 기준</p>
+<ol style="margin-bottom:0">
+<li><b>n이 작으면 복잡도는 신경 쓰지 마세요.</b> 항목 50개짜리 드롭다운에서 <code>find</code>는 완벽히 괜찮습니다.
+가독성이 더 중요합니다.</li>
+<li><b>수천 개를 넘어가면</b> 반복문 안의 <code>find</code>·<code>includes</code>·<code>filter</code>를 의심하세요.</li>
+<li><b>Big-O는 상수를 버립니다.</b> 이론상 더 나쁜 알고리즘이 작은 n에서 더 빠를 수 있습니다.
+<b>추측 대신 <code>performance.now()</code>나 Performance 패널로 재세요.</b></li>
+<li><b>공간 복잡도</b>도 같은 방식으로 봅니다. 10만 개 배열을 <code>map</code>으로 세 번 변환하면
+중간 배열 3개가 메모리에 생깁니다. 한 번의 <code>reduce</code>로 합칠 수 있는지 보세요.</li>
+<li>면접에서는 <b>"이 코드는 O(n²)입니다. n이 커지면 Map으로 바꾸겠습니다"</b>처럼
+<b>복잡도를 말로 설명할 수 있는지</b>를 봅니다. 알고리즘을 외우는 것보다 이게 중요합니다.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>Big-O는 <b>입력이 커질 때의 증가 추세</b>다. 상수와 계수는 버린다.</li>
+<li>핵심 계급: <b>O(1) → O(log n) → O(n) → O(n log n) → O(n²)</b>.</li>
+<li><code>find</code>·<code>includes</code>·<code>filter</code>는 O(n). <b>반복문 안에 들어가면 O(n²)</b>이 된다.</li>
+<li>해결은 대개 <b><code>Map</code>·<code>Set</code>으로 조회표 만들기</b>(81장).</li>
+<li><code>sort()</code>는 <b>기본이 문자열 비교</b>고 <b>원본을 바꾼다</b>. 비교 함수를 반드시 넘긴다.</li>
+<li><code>sort()</code>는 <b>ES2019부터 안정 정렬</b>이 보장된다 — 다중 기준 정렬에 활용할 수 있다.</li>
+<li>중복 계산은 <b>메모이제이션</b>으로 없앤다. 단 <b>캐시는 메모리를 쓴다.</b></li>
+<li><b>프론트엔드 병목은 대개 네트워크 → 렌더링 → 알고리즘 순</b>이다. 측정이 먼저다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Global_Objects/Array/sort" target="_blank" rel="noopener">MDN — Array.prototype.sort</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/toSorted" target="_blank" rel="noopener">MDN — Array.prototype.toSorted (영문)</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Performance/now" target="_blank" rel="noopener">MDN — performance.now() (영문)</a></li>
+<li><a href="https://web.dev/articles/optimize-long-tasks" target="_blank" rel="noopener">web.dev — 긴 작업 최적화하기 (영문)</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "<code>O(3n + 100)</code> 을 Big-O로 쓰면?",
+    o: ["O(3n)", "O(n)", "O(n + 100)", "O(100)"],
+    a: 1,
+    e: "Big-O는 <b>증가 추세</b>만 봅니다. n이 충분히 커지면 상수 100과 계수 3은 모양에 영향을 주지 않습니다. \"입력이 두 배면 작업량도 대략 두 배\"라는 성질이 같으므로 <b>O(n)</b>입니다. 단, 실제 실행 시간에서는 상수가 중요할 수 있으니 <b>작은 n에서는 측정이 우선</b>입니다."
+  },
+  {
+    q: "<code>for (const x of list) { if (!out.includes(x)) out.push(x); }</code> 의 시간 복잡도와 개선 방법은?",
+    o: [
+      "O(n) — 반복문이 하나뿐이므로 이미 최적이다",
+      "O(n²) — includes가 매번 배열을 훑기 때문. Set으로 바꾸면 O(n)이 된다",
+      "O(log n) — push가 배열을 정렬하므로",
+      "O(n log n) — includes가 내부적으로 이진 탐색을 하므로"
+    ],
+    a: 1,
+    e: "바깥 반복 n번 × 안쪽 <code>includes</code> 최대 n번 = <b>O(n²)</b>입니다. <code>Set</code>의 <code>has</code>는 평균 O(1)이므로 <code>const seen = new Set(); for (const x of list) seen.add(x);</code> 로 바꾸면 전체가 <b>O(n)</b>이 됩니다. 중복 제거는 <code>[...new Set(list)]</code> 한 줄이면 끝납니다."
+  },
+  {
+    q: "정렬된 100만 개 배열에서 이진 탐색으로 값을 찾을 때 대략 몇 번 비교하나?",
+    o: ["약 20번", "약 1,000번", "약 50만 번", "100만 번"],
+    a: 0,
+    e: "매번 후보를 <b>절반으로</b> 줄이므로 log₂(1,000,000) ≈ <b>20</b>번입니다. 이것이 O(log n)의 위력입니다. 다만 <b>정렬되어 있어야 한다</b>는 전제가 있고, 정렬 자체가 O(n log n)이므로 <b>한 번 찾을 거라면 그냥 훑는 편이 빠릅니다.</b> 여러 번 찾을 때 이득이 납니다."
+  },
+  {
+    q: "<code>[10, 9, 1, 100].sort()</code> 의 결과는?",
+    o: [
+      "[1, 9, 10, 100]",
+      "[1, 10, 100, 9] — 비교 함수를 주지 않으면 요소를 문자열로 바꿔 사전순으로 비교하기 때문",
+      "[100, 10, 9, 1]",
+      "[10, 9, 1, 100] — 정렬되지 않는다"
+    ],
+    a: 1,
+    e: "<code>sort()</code>의 기본 동작은 <b>각 요소를 문자열로 변환해 UTF-16 코드 단위 순서로 비교</b>하는 것입니다. \"10\"이 \"9\"보다 앞섭니다. 숫자 정렬에는 <b>반드시</b> <code>sort((a, b) =&gt; a - b)</code>를 넘기세요. 또한 <code>sort()</code>는 <b>원본을 변경</b>합니다. 원본을 지키려면 <code>[...arr].sort()</code>나 <code>toSorted()</code>를 씁니다."
+  },
+  {
+    q: "메모이제이션을 적용할 때 주의할 점으로 옳은 것은?",
+    o: [
+      "모든 함수에 적용할수록 항상 빨라진다",
+      "시간을 메모리와 맞바꾸는 기법이므로 캐시가 무한정 커지면 메모리 누수가 된다. 계산이 가벼우면 오히려 손해다",
+      "비동기 함수에는 적용할 수 없다",
+      "캐시 키는 반드시 문자열이어야 한다"
+    ],
+    a: 1,
+    e: "메모이제이션은 <b>공간을 써서 시간을 아끼는</b> 거래입니다. 캐시 크기를 제한하지 않으면 장시간 실행되는 앱에서 메모리가 계속 늘어납니다(84장). 키가 객체라면 <code>WeakMap</code>을 써서 원본이 정리될 때 캐시도 함께 사라지게 할 수 있습니다. 그리고 <b>가벼운 계산에는 캐시 관리 비용이 더 큽니다.</b>"
+  },
+  {
+    q: "목록 화면이 느립니다. 가장 먼저 확인해야 할 것은?",
+    o: [
+      "모든 find를 Map으로 바꾼다",
+      "먼저 측정한다. 프론트엔드 병목은 대개 네트워크 → 렌더링 → 알고리즘 순이므로 무엇이 느린지 확인하고 손대야 한다",
+      "무조건 가상 스크롤을 도입한다",
+      "데이터를 정렬해 이진 탐색을 적용한다"
+    ],
+    a: 1,
+    e: "추측으로 최적화하면 <b>효과 없는 코드만 복잡해집니다.</b> 2MB 번들을 내려받는 3초를 두고 0.5ms를 아껴도 사용자는 차이를 못 느낍니다. Performance 패널과 Core Web Vitals로 <b>원인을 특정한 뒤</b> 고치세요(76장). 다만 <b>\"데이터가 일정 수를 넘으면 갑자기 멈춘다\"</b>는 증상은 알고리즘 문제의 전형적 신호입니다."
+  }
+]);
+</script>

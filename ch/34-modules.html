@@ -290,8 +290,8 @@ try {
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 모듈 관련 실무 팁</p>
 <ol style="margin-bottom:0">
 <li><b>이름 있는 내보내기를 기본으로.</b> 오타를 도구가 잡아 줍니다.</li>
-<li><b>배럴 파일</b>(<code>index.js</code>에서 모아 다시 내보내기)은 편하지만 <b>남용하면 순환 <span class="term" data-term="reference">참조</span>와 번들 크기 문제</b>를 만듭니다. 깊은 폴더에서만 쓰세요.</li>
-<li><b>순환 참조를 피하세요.</b> A가 B를, B가 A를 가져오면 한쪽이 <code>undefined</code>로 보이는 미묘한 버그가 납니다. 공통 부분을 세 번째 파일로 빼는 것이 해법입니다.</li>
+<li><b>배럴 파일</b>(<code>index.js</code>에서 모아 다시 내보내기)은 편하지만 <b>남용하면 <span class="term" data-term="circular-dependency">순환 참조</span>와 번들 크기 문제</b>를 만듭니다. 깊은 폴더에서만 쓰세요.</li>
+<li><b>순환 <span class="term" data-term="reference">참조</span>를 피하세요.</b> A가 B를, B가 A를 가져오면 한쪽이 <code>undefined</code>로 보이는 미묘한 버그가 납니다. 공통 부분을 세 번째 파일로 빼는 것이 해법입니다.</li>
 <li><b>import 순서를 정리</b>하세요. 보통 외부 라이브러리 → 내부 모듈 → 스타일 순으로 씁니다. <span class="term" data-term="eslint">ESLint</span>가 자동 정렬해 줍니다(48장).</li>
 </ol>
 </div>
@@ -305,7 +305,7 @@ try {
 <li><code>import</code>는 값 복사가 아니라 <b>읽기 전용 연결</b>이다.</li>
 <li><code>&lt;script type="module"&gt;</code>은 <code>defer</code>처럼 동작하고 <b>CORS를 따르므로 <code>file://</code>에서 실패</b>한다.</li>
 <li><code>import()</code>는 <b>필요할 때 불러오기</b>. 코드 분할의 출발점.</li>
-<li>CommonJS는 <code>require</code>, ESM은 <code>import</code>. <b>ESM만 트리 셰이킹이 가능</b>하다.</li>
+<li>CommonJS는 <code>require</code>, ESM은 <code>import</code>. <b>ESM만 <span class="term" data-term="tree">트리</span> 셰이킹이 가능</b>하다.</li>
 <li><b>순환 참조를 피한다.</b></li>
 </ul>
 </div>

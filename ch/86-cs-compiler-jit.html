@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>86장. 컴파일러, 인터프리터, 그리고 JIT — 프엔북</title>
+<meta name="description" content="컴파일러와 인터프리터의 차이, 자바스크립트 엔진이 코드를 AST와 바이트코드로 바꿔 실행하고 뜨거운 함수를 최적화하는 JIT 과정, 트랜스파일과 소스맵, 웹어셈블리를 다룹니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="86장. 컴파일러, 인터프리터, 그리고 JIT — 프엔북">
+<meta property="og:description" content="컴파일러와 인터프리터의 차이, 자바스크립트 엔진이 코드를 AST와 바이트코드로 바꿔 실행하고 뜨거운 함수를 최적화하는 JIT 과정, 트랜스파일과 소스맵, 웹어셈블리를 다룹니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="86-cs-compiler-jit">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">11부 · 컴퓨터 과학 기초</p>
+    <h1>86장. 컴파일러, 인터프리터, 그리고 JIT</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>컴파일러</b>와 <b>인터프리터</b>의 차이, 그리고 <span class="term" data-term="javascript">JavaScript</span>는 어느 쪽인가</li>
+  <li><b>AST</b> — <span class="term" data-term="eslint">ESLint</span>·<span class="term" data-term="prettier">Prettier</span>·Babel이 공통으로 서 있는 땅</li>
+  <li><b>JIT 컴파일</b> — 엔진이 실행 중에 코드를 다시 컴파일한다</li>
+  <li><b><span class="term" data-term="source-map">소스맵</span></b>이 없으면 왜 에러 로그가 쓸모없어지는가</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 20분 · 47·48장의 뒷면</p>
+
+<h2 id="translate">번역이 필요한 이유</h2>
+
+<p>CPU가 이해하는 것은 <b>기계어</b>뿐입니다. 우리가 쓰는 <code>const sum = a + b</code>는 CPU에게 그냥 글자입니다.
+그래서 누군가 <b>번역</b>해야 합니다. 번역 방식은 크게 둘입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">두 가지 번역 방식</span>
+<pre><code data-lang="text">컴파일러 (번역가)              인터프리터 (통역사)
+─────────────────────          ─────────────────────
+실행 전에 전부 번역해            한 줄씩 읽으며 그때그때 실행
+기계어 파일을 만든다
+
++ 실행이 빠르다                 + 바로 실행된다 (빌드 대기 없음)
++ 오류를 미리 잡는다             + 플랫폼을 안 가린다
+− 빌드 시간이 필요하다           − 매번 해석하므로 느리다
+− 플랫폼별로 다시 빌드           − 오류를 실행해 봐야 안다
+
+예: C, Rust, Go                예: 초창기 JavaScript, Python</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🐢</span> "JavaScript는 인터프리터 언어라 느리다"</p>
+<span class="mythline"><b>1990년대에는 맞았습니다. 지금은 아닙니다.</b>
+현대 엔진(V8·JavaScriptCore·SpiderMon<span class="term" data-term="key">key</span>)은 <b>인터프리터와 컴파일러를 둘 다</b> 씁니다.</span>
+<span class="mythline">처음에는 빠르게 시작하려고 해석해서 실행하다가,
+<b>자주 실행되는 함수를 발견하면 기계어로 컴파일</b>해 버립니다. 이것이 <b>JIT</b>(Just-In-Time) 컴파일입니다.</span>
+<span class="mythline">그래서 <b>"JavaScript는 인터프리터 언어"</b>라는 말 자체가 부정확합니다.
+언어가 아니라 <b>구현(엔진)</b>이 정하는 문제이고, 현대 구현은 하이브리드입니다.</span>
+</div>
+
+<h2 id="ast">AST — 코드를 나무로 바꾸기</h2>
+
+<p>엔진이든 ESLint든, 코드를 다루려면 먼저 <b>구조로 바꿔야</b> 합니다. 과정은 두 단계입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">글자 → 토큰 → 나무</span>
+<pre><code data-lang="text">원본        const sum = a + b;
+
+① 토큰화    [const] [sum] [=] [a] [+] [b] [;]
+             의미 있는 최소 단위로 쪼갠다
+
+② 파싱      VariableDeclaration (const)
+              └ VariableDeclarator
+                  ├ Identifier: sum
+                  └ BinaryExpression (+)
+                      ├ Identifier: a
+                      └ Identifier: b
+
+  이 나무가 AST (Abstract Syntax Tree, 추상 구문 트리)</code></pre>
+</div>
+
+<p>AST는 82장에서 배운 <b><span class="term" data-term="tree">트리</span></b>입니다. 그리고 우리가 쓰는 도구 대부분이 이 트리 위에서 동작합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">AST 위에서 도는 도구들</span>
+<pre><code data-lang="text">ESLint      트리를 훑으며 규칙 위반을 찾는다 (48장)
+            "VariableDeclaration 중 kind가 var인 노드" → no-var 경고
+Prettier    트리를 읽고 원래 서식을 버린 뒤 처음부터 다시 출력한다
+            → 그래서 내가 어떻게 띄어 썼든 결과가 같다
+Babel       트리를 변형한다. 화살표 함수 노드를 일반 함수 노드로 바꾸는 식 (47장)
+TypeScript  트리에 타입 정보를 얹어 검사하고, 타입을 지운 트리를 출력한다
+번들러      import/export 노드를 읽어 의존성 그래프를 만든다 (82장)</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔭</span> 직접 보고 싶다면</p>
+<p style="margin-bottom:0"><a href="https://astexplorer.net" target="_blank" rel="noopener">astexplorer.net</a>에 코드를 붙여 넣으면
+AST가 실시간으로 보입니다. ESLint 커스텀 규칙을 만들거나, Babel 플러그인을 쓸 일이 생기면 반드시 들르게 되는 곳입니다.</p>
+</div>
+
+<h2 id="jit">JIT — 실행하면서 더 빨라지는 코드</h2>
+
+<p>V8(Chrome·Node)의 처리 과정은 대략 이렇습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">V8의 실행 단계 (개략)</span>
+<pre><code data-lang="text">소스 코드
+   │ 파서
+   ▼
+  AST
+   │
+   ▼
+바이트코드  ──────▶  Ignition (인터프리터)
+                      한 줄씩 실행하면서 통계를 모은다
+                      "이 함수 몇 번 불렸나, 인자 타입은 뭐였나"
+                          │
+                          │ 자주 불리는 '뜨거운' 함수 발견
+                          ▼
+                     최적화 컴파일러 (Sparkplug → Maglev → TurboFan)
+                      수집한 정보를 '가정'으로 삼아 기계어를 만든다
+                      예: "이 함수의 x는 항상 숫자였으니 숫자로 가정하고 짜자"
+                          │
+                          │ 가정이 깨지면 (갑자기 문자열이 들어옴)
+                          ▼
+                     역최적화 (deoptimization)
+                      최적화 코드를 버리고 바이트코드로 되돌아간다</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎭</span> 왜 "가정"을 하나</p>
+<p style="margin-bottom:0">JavaScript는 타입을 미리 알 수 없습니다. <code>a + b</code>는 숫자 덧셈일 수도, 문자열 연결일 수도 있습니다.
+모든 경우를 다 처리하는 기계어는 느립니다.<br>
+그래서 엔진은 <b>실제 실행을 관찰</b>한 뒤 "지금까지 항상 숫자였으니 숫자로 가정하자"고 결정합니다.
+대신 <b>가정이 틀리면 즉시 되돌릴 수 있게</b> 안전장치를 겁니다. 이 도박이 성공하기 때문에 JS가 빠릅니다.</p>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 이게 실무에 주는 유일한 조언</p>
+<p style="margin-bottom:0"><b>객체의 모양과 값의 타입을 일정하게 유지하세요.</b>
+같은 함수에 어떤 때는 숫자, 어떤 때는 문자열을 넘기거나,
+같은 종류의 객체인데 어떤 건 <code>{id, name}</code>이고 어떤 건 <code>{name, id, extra}</code>면
+엔진의 가정이 계속 깨져 최적화가 풀립니다.</p>
+<p style="margin-bottom:0">다만 <b>이걸 위해 코드를 비틀지는 마세요.</b> <span class="term" data-term="typescript">TypeScript</span>를 제대로 쓰고(7부),
+데이터 모양을 일관되게 설계하면 <b>자연스럽게 충족됩니다.</b>
+엔진 최적화를 겨냥한 미시 튜닝은 엔진이 바뀌면 무의미해지고, 실제 이득도 대개 측정 오차 수준입니다.
+<b>76장의 측정이 먼저입니다.</b></p>
+</div>
+
+<h2 id="transpile">트랜스파일 — 같은 높이의 번역</h2>
+
+<p><b>컴파일</b>이 고수준 언어 → 저수준(기계어)이라면,
+<b><span class="term" data-term="transpile">트랜스파일</span></b>은 <b>고수준 → 고수준</b> 번역입니다. 결과물도 사람이 읽을 수 있는 코드입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label"><span class="term" data-term="frontend">프론트엔드</span>의 트랜스파일</span>
+<pre><code data-lang="text">TypeScript → JavaScript     타입 표기를 지운다 (타입 검사는 별개 단계)
+JSX        → JavaScript     &lt;div/&gt; 를 함수 호출로 바꾼다
+최신 문법   → 구형 문법       ?. 나 ?? 를 구형 브라우저용으로 (Babel)
+Sass       → CSS            (22장)</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">TypeScript는 '타입을 지우는' 것이다</span>
+<pre><code data-lang="ts">// 입력 (.ts)
+function greet(name: string): string {
+  return `안녕 ${name}`;
+}
+
+// 출력 (.js) — 타입 표기만 사라진다. 런타임 검사는 생기지 않는다
+function greet(name) {
+  return `안녕 ${name}`;
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧊</span> 그래서 <b>타입은 런타임을 지켜 주지 않습니다</b></p>
+<p style="margin-bottom:0">타입 표기는 <b>빌드할 때 전부 사라집니다.</b>
+서버가 <code>number</code>라고 약속한 필드에 <code>null</code>을 보내면 TypeScript는 아무것도 못 막습니다.
+<b>외부에서 들어오는 데이터</b>(<span class="term" data-term="api">API</span> 응답, <code>localStorage</code>, <span class="term" data-term="url">URL</span> 쿼리)는
+<span class="term" data-term="zod">Zod</span> 같은 <b>런타임 검증</b>을 따로 거쳐야 합니다. (50장)</p>
+</div>
+
+<p>트랜스파일 도구는 최근 몇 년 사이 크게 바뀌었습니다.
+Babel(JavaScript로 작성)에서 <b>esbuild(Go)</b>, <b>SWC(Rust)</b>로 옮겨 가면서 빌드 속도가 수십 배 빨라졌습니다.
+<span class="term" data-term="nextjs">Next.js</span>·<span class="term" data-term="vite">Vite</span> 같은 도구는 이미 내부적으로 이들을 씁니다. <b>대부분의 경우 직접 설정할 일은 없습니다.</b>
+<span class="term" data-term="nodejs">Node.js</span>도 24 기준으로 <b>타입 표기를 지운 채 <code>.ts</code> 파일을 바로 실행</b>할 수 있습니다.</p>
+
+<h2 id="sourcemap">소스맵 — 빌드 결과를 원본으로 되돌리는 지도</h2>
+
+<p>배포된 코드는 <span class="term" data-term="minify">압축</span>돼 있습니다. 변수 이름은 <code>a</code>, <code>b</code>가 되고 줄바꿈도 사라집니다.
+그 상태에서 에러가 나면 <span class="term" data-term="stack">스택</span> 트레이스가 이렇게 보입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="text">TypeError: Cannot read properties of undefined (reading 'name')
+    at main-4f2a9c.js:1:48293      ← 어디인지 전혀 알 수 없다</code></pre>
+</div>
+
+<p><b>소스맵</b>은 <b>"압축된 파일의 1번 줄 48293번째 글자는 원본 <code>UserCard.tsx</code>의 27번째 줄"</b>이라는
+대응표입니다. 빌드 도구가 <code>.map</code> 파일로 만들어 주고, 파일 끝의 주석이 그 위치를 가리킵니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="text">// 번들 파일 마지막 줄
+//# sourceMappingURL=main-4f2a9c.js.map
+
+브라우저 개발자 도구와 에러 추적 도구(Sentry 등, 79장)가 이 파일을 읽어
+압축된 위치를 원본 파일·줄·변수 이름으로 되돌려 보여 준다.</code></pre>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 프로덕션 소스맵을 어떻게 할 것인가</p>
+<ol style="margin-bottom:0">
+<li><b>소스맵을 아예 안 만든다</b> → 에러 로그가 <code>a.js:1:48293</code>으로만 남아 <b>디버깅이 사실상 불가능</b>합니다. 권하지 않습니다.</li>
+<li><b>공개 배포한다</b> → 누구나 원본 소스를 복원할 수 있습니다. 오픈소스라면 문제없지만,
+사내 로직이 그대로 노출됩니다.</li>
+<li><b>권장: "숨김 소스맵"</b> — 소스맵을 생성하되 <b>번들에 <code>sourceMappingURL</code> 주석을 남기지 않고</b>,
+파일은 <b>Sentry 같은 <span class="term" data-term="sentry">에러 추적</span> 서비스에만 업로드</b>합니다. 일반 사용자는 볼 수 없고, 에러 로그는 원본으로 읽힙니다.</li>
+<li>어떤 경우든 <b><code>.map</code> 파일을 저장소에 <span class="term" data-term="commit">커밋</span>하지 마세요.</b> 빌드 산출물입니다.</li>
+</ol>
+</div>
+
+<h2 id="wasm">웹어셈블리(WebAssembly) 한 눈에</h2>
+
+<p><b>WebAss<span class="term" data-term="em">em</span>bly(Wasm)</b>는 <span class="term" data-term="browser">브라우저</span>가 실행할 수 있는 <b>저수준 바이너리 형식</b>입니다.
+C·C++·Rust로 짠 코드를 컴파일해 웹에서 돌릴 수 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">알아야 할 사실 다섯 가지</span>
+<pre><code data-lang="text">1. JavaScript를 대체하지 않는다. 함께 쓴다.
+   무거운 계산 부분만 Wasm으로 두고 나머지는 JS가 맡는다.
+
+2. DOM에 직접 접근할 수 없다. JS를 거쳐야 한다.
+
+3. 항상 빠른 것도 아니다. JS ↔ Wasm 경계를 오가는 비용이 있어서,
+   자잘한 호출이 많으면 오히려 느려질 수 있다.
+
+4. 실제로 쓰이는 곳: 이미지·영상 처리(ffmpeg.wasm), 3D·게임 엔진,
+   디자인 툴(Figma), 암호화, 물리 시뮬레이션, 브라우저 안의 코드 실행기.
+
+5. 일반적인 웹 서비스(쇼핑몰, 대시보드, 블로그)에는 거의 필요 없다.
+   "느리다"의 원인은 대개 네트워크와 렌더링이다 (83장).</code></pre>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>컴파일러</b>는 미리 전부 번역, <b>인터프리터</b>는 한 줄씩 실행. 현대 JS 엔진은 <b>둘 다</b> 쓴다.</li>
+<li>코드는 <b>토큰 → AST(트리)</b>로 바뀐다. ESLint·Prettier·Babel·<span class="term" data-term="bundler">번들러</span>가 전부 AST 위에서 동작한다.</li>
+<li><b>JIT</b>: 자주 쓰이는 함수를 실행 중에 기계어로 컴파일한다. <b>가정이 깨지면 되돌린다</b>(역최적화).</li>
+<li>실무 조언은 하나 — <b>타입과 객체 모양을 일정하게</b>. 그 이상의 미시 튜닝은 하지 않는다.</li>
+<li><b>트랜스파일</b>은 고수준 → 고수준 번역. TypeScript는 <b>타입을 지울 뿐</b>이라 런타임을 지켜 주지 않는다.</li>
+<li><b>소스맵</b>은 압축된 위치를 원본으로 되돌리는 대응표. <b>숨김 소스맵 + 에러 추적 서비스 업로드</b>가 권장 조합이다.</li>
+<li><b>Wasm</b>은 JS의 대체가 아니라 <b>무거운 계산용 보조</b>. 대부분의 웹 서비스에는 필요 없다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/JavaScript/Reference/Statements/debugger" target="_blank" rel="noopener">MDN — debugger 문</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/WebAssembly" target="_blank" rel="noopener">MDN — WebAssembly (영문)</a></li>
+<li><a href="https://v8.dev/blog/sparkplug" target="_blank" rel="noopener">V8 블로그 — Sparkplug 베이스라인 컴파일러 (영문)</a></li>
+<li><a href="https://developer.chrome.com/docs/devtools/javascript/source-maps" target="_blank" rel="noopener">Chrome DevTools — 소스맵 (영문)</a></li>
+<li><a href="https://astexplorer.net" target="_blank" rel="noopener">AST Explorer — AST를 눈으로 보기 (영문)</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "\"JavaScript는 인터프리터 언어라서 느리다\"는 설명이 부정확한 이유는?",
+    o: [
+      "JavaScript는 사실 순수 컴파일 언어이기 때문",
+      "현대 엔진은 처음엔 바이트코드를 해석하다가 자주 실행되는 함수를 기계어로 컴파일하는 JIT 방식을 쓰기 때문",
+      "브라우저가 코드를 서버에서 미리 컴파일해 오기 때문",
+      "인터프리터 언어는 원래 컴파일 언어보다 빠르기 때문"
+    ],
+    a: 1,
+    e: "인터프리터냐 컴파일러냐는 <b>언어가 아니라 구현이 정합니다</b>. V8은 <b>Ignition</b>으로 바이트코드를 해석하면서 실행 통계를 모으고, 뜨거운 함수를 <b>최적화 컴파일러</b>로 기계어화합니다. 그래서 현대 JS는 <b>하이브리드</b>입니다."
+  },
+  {
+    q: "ESLint, Prettier, Babel, 번들러가 공통으로 사용하는 코드 표현은?",
+    o: [
+      "정규표현식으로 매칭한 문자열",
+      "AST(추상 구문 트리) — 코드를 토큰으로 쪼갠 뒤 구조를 나타내는 트리로 변환한 것",
+      "바이트코드",
+      "소스맵"
+    ],
+    a: 1,
+    e: "코드를 <b>글자</b>가 아니라 <b>구조</b>로 다루어야 안전하게 검사하고 변형할 수 있습니다. Prettier가 내가 어떻게 띄어 썼든 항상 같은 결과를 내는 이유도 <b>AST만 남기고 원래 서식을 버린 뒤 처음부터 다시 출력</b>하기 때문입니다. AST는 82장에서 배운 트리 구조입니다."
+  },
+  {
+    q: "JIT의 '역최적화(deoptimization)'가 일어나는 상황은?",
+    o: [
+      "메모리가 부족할 때",
+      "최적화 컴파일 때 세운 가정(예: 이 인자는 항상 숫자다)이 실제 실행에서 깨졌을 때",
+      "함수가 너무 오래 실행될 때",
+      "코드에 문법 오류가 있을 때"
+    ],
+    a: 1,
+    e: "엔진은 관찰한 실행 패턴을 <b>가정</b>으로 삼아 빠른 기계어를 만듭니다. 그런데 같은 함수에 갑자기 문자열이 들어오면 <b>그 기계어를 쓸 수 없으므로</b> 버리고 바이트코드로 되돌아갑니다. 그래서 <b>타입과 객체 모양을 일정하게 유지</b>하는 것이 유일하게 의미 있는 실무 조언입니다."
+  },
+  {
+    q: "TypeScript 컴파일 결과에 대해 옳은 것은?",
+    o: [
+      "타입 검사 코드가 런타임에 삽입되어 잘못된 값이 들어오면 오류를 던진다",
+      "타입 표기가 제거된 순수 JavaScript가 나온다. 런타임 검사는 생기지 않으므로 API 응답 등 외부 데이터는 별도 검증이 필요하다",
+      "기계어로 컴파일되어 브라우저가 더 빠르게 실행한다",
+      "타입 정보가 번들에 포함되어 브라우저가 검사한다"
+    ],
+    a: 1,
+    e: "TypeScript는 <b>타입을 지우는(type erasure)</b> 방식입니다. 빌드 후에는 타입이 흔적도 없이 사라지므로, 서버가 약속을 어긴 데이터를 보내도 막아 주지 못합니다. <b>경계에서의 런타임 검증</b>(Zod 등)이 별도로 필요합니다."
+  },
+  {
+    q: "프로덕션 배포에서 소스맵을 다루는 권장 방식은?",
+    o: [
+      "소스맵을 아예 만들지 않는다",
+      "소스맵을 생성하되 번들에 sourceMappingURL 주석을 남기지 않고, 파일은 에러 추적 서비스에만 업로드한다",
+      "소스맵을 항상 공개 경로에 함께 배포한다",
+      "소스맵을 git에 커밋해 버전 관리한다"
+    ],
+    a: 1,
+    e: "소스맵이 없으면 에러 로그가 <code>a.js:1:48293</code>으로만 남아 <b>디버깅이 불가능</b>합니다. 반대로 공개하면 <b>원본 소스가 그대로 복원</b>됩니다. 그래서 <b>숨김 소스맵</b>(생성은 하되 주석 제거) + <b>Sentry 등에만 업로드</b>가 균형점입니다. <code>.map</code>은 빌드 산출물이므로 커밋하지 않습니다."
+  },
+  {
+    q: "WebAssembly에 대한 설명으로 옳은 것은?",
+    o: [
+      "JavaScript를 완전히 대체하는 차세대 언어다",
+      "무거운 계산을 담당하는 보조 수단이며, DOM에 직접 접근할 수 없어 JS를 거쳐야 하고, 경계를 오가는 비용 때문에 항상 빠른 것도 아니다",
+      "브라우저에서 C 코드를 그대로 해석해 실행한다",
+      "모든 웹 서비스가 성능을 위해 도입해야 하는 표준이다"
+    ],
+    a: 1,
+    e: "Wasm은 <b>JS와 함께</b> 쓰는 저수준 바이너리 형식입니다. DOM 접근은 JS를 통해야 하고, <b>JS ↔ Wasm 경계 이동 비용</b> 때문에 자잘한 호출이 많으면 오히려 느려집니다. 영상·이미지 처리, 3D, 디자인 툴처럼 <b>계산이 진짜 무거운 영역</b>에서 빛나고, 일반적인 웹 서비스에는 거의 필요 없습니다."
+  }
+]);
+</script>
+</body>
+</html>

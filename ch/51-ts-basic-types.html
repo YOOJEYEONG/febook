@@ -88,7 +88,7 @@ const [count, setCount] = useState(0);
 </div>
 
 <div class="box warn">
-<p class="box-title"><span class="box-ico">🕳️</span> 배열 인덱스 접근의 함정</p>
+<p class="box-title"><span class="box-ico">🕳️</span> 배열 <span class="term" data-term="db-index">인덱스</span> 접근의 함정</p>
 <div class="codeblock" style="margin:.6em 0 0">
 <pre><code data-lang="ts">const list: string[] = [];
 const first = list[0];      // 타입은 string 이지만 실제 값은 undefined!
@@ -124,7 +124,7 @@ if (user) {
 <p class="box-title"><span class="box-ico">💡</span> 유니온은 "이 중 하나"를 코드로 표현합니다</p>
 <p style="margin-bottom:0">JavaScript에서는 주석으로만 남기던 정보
 ("이 함수는 유저를 찾거나 null을 반환합니다")를
-<b>컴파일러가 검사할 수 있는 형태</b>로 만드는 것이 유니온입니다.
+<b><span class="term" data-term="compiler">컴파일러</span>가 검사할 수 있는 형태</b>로 만드는 것이 유니온입니다.
 그리고 <b>null 검사를 빠뜨리면 즉시 오류</b>가 나므로 실수를 원천 차단합니다.</p>
 </div>
 

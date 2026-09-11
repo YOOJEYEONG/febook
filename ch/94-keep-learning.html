@@ -1,4 +1,25 @@
-<!--desc: 신뢰할 수 있는 정보원, 변화하는 기술을 따라가는 법, 무엇을 배우고 무엇을 무시할지 판단하는 기준, 그리고 앞으로의 학습 방향을 제시합니다.-->
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>94장. 계속 학습하기 — 프엔북</title>
+<meta name="description" content="신뢰할 수 있는 정보원, 변화하는 기술을 따라가는 법, 무엇을 배우고 무엇을 무시할지 판단하는 기준, 그리고 앞으로의 학습 방향을 제시합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="94장. 계속 학습하기 — 프엔북">
+<meta property="og:description" content="신뢰할 수 있는 정보원, 변화하는 기술을 따라가는 법, 무엇을 배우고 무엇을 무시할지 판단하는 기준, 그리고 앞으로의 학습 방향을 제시합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="94-keep-learning">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">12부 · 실전과 커리어</p>
+    <h1>94장. 계속 학습하기</h1>
 
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
@@ -16,9 +37,9 @@
 
 <div class="tablewrap">
 <table>
-<thead><tr><th>등급</th><th>출처</th><th>특징</th></tr></thead>
+<thead><tr><th>등급</th><th><span class="term" data-term="origin">출처</span></th><th>특징</th></tr></thead>
 <tbody>
-<tr><td><b>1급 — 명세</b></td><td>WHATWG HTML, TC39, W3C CSS</td><td><b>가장 정확</b>하지만 읽기 어렵습니다. 논쟁이 있을 때 최종 근거</td></tr>
+<tr><td><b>1급 — 명세</b></td><td><span class="term" data-term="whatwg">WHATWG</span> <span class="term" data-term="html">HTML</span>, TC39, <span class="term" data-term="w3c">W3C</span> <span class="term" data-term="css">CSS</span></td><td><b>가장 정확</b>하지만 읽기 어렵습니다. 논쟁이 있을 때 최종 근거</td></tr>
 <tr><td><b>2급 — 공식 문서</b></td><td><b>MDN</b>, react.dev, typescriptlang.org, nextjs.org</td><td><b>일상적으로 볼 곳.</b> 정확하면서 읽을 만합니다</td></tr>
 <tr><td><b>3급 — 신뢰할 만한 매체</b></td><td>web.dev, Chrome·WebKit·Mozilla 블로그, 라이브러리 공식 블로그</td><td>배경과 의도를 설명해 줍니다</td></tr>
 <tr><td><b>4급 — 개인 글·영상</b></td><td>블로그, 유튜브, 커뮤니티</td><td><b>이해에는 도움, 근거로는 부족.</b> 반드시 교차 확인</td></tr>
@@ -29,12 +50,12 @@
 
 <div class="box warn">
 <p class="box-title"><span class="box-ico">📅</span> 날짜를 항상 확인하세요</p>
-<p style="margin-bottom:0">프론트엔드 자료는 <b>2~3년만 지나도 틀린 내용이 됩니다.</b>
+<p style="margin-bottom:0"><span class="term" data-term="frontend">프론트엔드</span> 자료는 <b>2~3년만 지나도 틀린 내용이 됩니다.</b>
 이 책에서도 여러 번 봤습니다.</p>
 <ul style="margin-bottom:0">
-<li>클래스 컴포넌트와 <code>componentDidMount</code> (2019년 이전)</li>
+<li>클래스 <span class="term" data-term="component">컴포넌트</span>와 <code>componentDidMount</code> (2019년 이전)</li>
 <li>"이미지에 <code>width</code>·<code>height</code>를 쓰지 마라" (지금은 반대, 8장)</li>
-<li>"HTTP 요청을 무조건 줄여라" (HTTP/2 이후 달라짐, 4장)</li>
+<li>"<span class="term" data-term="http">HTTP</span> 요청을 무조건 줄여라" (HTTP/2 이후 달라짐, 4장)</li>
 <li>Moment.js 사용 (43장)</li>
 <li><code>getServerSideProps</code> (Pages Router, 71장)</li>
 </ul>
@@ -44,9 +65,9 @@
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🤖</span> AI를 쓰는 법</p>
 <p>AI는 강력한 도구입니다. 다만 <b>그럴듯한 거짓말</b>을 합니다.
-존재하지 않는 API, 사라진 옵션, 옛 문법을 자신 있게 알려 줍니다.</p>
+존재하지 않는 <span class="term" data-term="api">API</span>, 사라진 옵션, 옛 문법을 자신 있게 알려 줍니다.</p>
 <ul style="margin-bottom:0">
-<li><b>좋은 용도</b> — 개념 설명, 코드 리뷰 요청, 오류 메시지 해석, 시작점 만들기, 반복 작업</li>
+<li><b>좋은 용도</b> — 개념 설명, <span class="term" data-term="code-review">코드 리뷰</span> 요청, 오류 메시지 해석, 시작점 만들기, 반복 작업</li>
 <li><b>위험한 용도</b> — <b>검증 없이 복사</b>, 보안 관련 코드, 최신 API 확인</li>
 <li><b>원칙</b> — <b>동작하는 이유를 설명할 수 없는 코드는 쓰지 마세요.</b>
 그 코드는 여러분이 유지보수할 수 없고, 면접에서도 설명할 수 없습니다.</li>
@@ -57,10 +78,10 @@
 <h2 id="pace">변화를 따라가되 휩쓸리지 않기</h2>
 
 <div class="box myth">
-<p class="box-title"><span class="box-ico">🌪️</span> "매주 새 프레임워크가 나온다"는 착각</p>
+<p class="box-title"><span class="box-ico">🌪️</span> "매주 새 <span class="term" data-term="framework">프레임워크</span>가 나온다"는 착각</p>
 <span class="mythline">실제로 <b>바뀌는 것</b>은 도구와 그 위의 유행입니다.</span>
 <span class="mythline">실제로 <b>바뀌지 않는 것</b>은 이 책의 대부분입니다.
-HTTP, 브라우저 렌더링, DOM, 스코프와 클로저, 이벤트 루프, 박스 모델, 접근성, 보안 원칙.
+HTTP, <span class="term" data-term="browser">브라우저</span> 렌더링, <span class="term" data-term="dom">DOM</span>, <span class="term" data-term="scope">스코프</span>와 <span class="term" data-term="closure">클로저</span>, <span class="term" data-term="event-loop">이벤트 루프</span>, <span class="term" data-term="box-model">박스 모델</span>, <span class="term" data-term="a11y">접근성</span>, 보안 원칙.
 <b>10년 전에도 그랬고 10년 뒤에도 그럴 것입니다.</b></span>
 <span class="mythline">기초가 튼튼하면 <b>새 도구를 배우는 데 며칠이면 충분합니다.</b>
 반대로 기초 없이 도구만 익히면 <b>도구가 바뀔 때마다 처음부터</b>입니다.</span>
@@ -101,9 +122,9 @@ HTTP, 브라우저 렌더링, DOM, 스코프와 클로저, 이벤트 루프, 박
 <thead><tr><th>방향</th><th>배울 것</th></tr></thead>
 <tbody>
 <tr><td><b>깊이 — 프론트엔드 심화</b></td><td>브라우저 내부 동작, 애니메이션·인터랙션, 웹 접근성 전문, 대규모 앱 아키텍처, 디자인 시스템</td></tr>
-<tr><td><b>넓이 — 풀스택</b></td><td>Node.js 서버, 데이터베이스와 SQL, 인증·인가, API 설계</td></tr>
-<tr><td><b>기반 — CS 기초</b></td><td>자료구조·알고리즘, 네트워크, 운영체제. <b>급하지 않지만 오래 갑니다</b></td></tr>
-<tr><td><b>주변</b></td><td>Docker·CI/CD, 클라우드 기초, 테스트 전략, 성능 엔지니어링</td></tr>
+<tr><td><b>넓이 — 풀<span class="term" data-term="stack">스택</span></b></td><td><span class="term" data-term="nodejs">Node.js</span> 서버, 데이터베이스와 <span class="term" data-term="sql">SQL</span>, 인증·인가, API 설계 (89장이 출발점)</td></tr>
+<tr><td><b>기반 — CS 기초</b></td><td><b>11부(80~89장)에서 실무에 필요한 만큼 다뤘습니다.</b> 더 깊이 가려면 알고리즘 문제 풀이, 운영체제, <span class="term" data-term="compiler">컴파일러</span> 순</td></tr>
+<tr><td><b>주변</b></td><td>Docker·<span class="term" data-term="ci">CI</span>/<span class="term" data-term="cd">CD</span>, 클라우드 기초, 테스트 전략, 성능 엔지니어링</td></tr>
 <tr><td><b>인접 분야</b></td><td>UX·디자인 기초, 제품 기획, 데이터 분석</td></tr>
 </tbody>
 </table>
@@ -113,11 +134,11 @@ HTTP, 브라우저 렌더링, DOM, 스코프와 클로저, 이벤트 루프, 박
 <p class="box-title"><span class="box-ico">🧭</span> 무엇부터 할까</p>
 <p style="margin-bottom:0"><b>지금 하는 일에서 가장 답답한 것</b>부터 하세요.</p>
 <ul style="margin-bottom:0">
-<li>API가 왜 이렇게 생겼는지 모르겠다 → <b>백엔드 기초</b></li>
+<li>API가 왜 이렇게 생겼는지 모르겠다 → <b><span class="term" data-term="backend">백엔드</span> 기초</b></li>
 <li>배포가 블랙박스처럼 느껴진다 → <b>인프라 기초</b></li>
 <li>코드가 커지면 감당이 안 된다 → <b>아키텍처·테스트</b></li>
 <li>화면이 항상 어설프다 → <b>디자인 기초</b></li>
-<li>알고리즘 문제가 나오면 막힌다 → <b>자료구조·알고리즘</b></li>
+<li>알고리즘 문제가 나오면 막힌다 → <b>11부를 다시 읽고</b>, 그다음 알고리즘 문제 풀이 연습</li>
 </ul>
 <p style="margin-bottom:0"><b>남이 좋다는 것보다 내가 막히는 것</b>이 훨씬 좋은 학습 동기입니다.</p>
 </div>
@@ -127,10 +148,10 @@ HTTP, 브라우저 렌더링, DOM, 스코프와 클로저, 이벤트 루프, 박
 <div class="box tip">
 <p class="box-title"><span class="box-ico">📈</span> 효과가 큰 순서</p>
 <ol style="margin-bottom:0">
-<li><b>만들기</b> — 압도적 1위입니다. 읽기만 해서는 늘지 않습니다(81장).</li>
+<li><b>만들기</b> — 압도적 1위입니다. 읽기만 해서는 늘지 않습니다(91장).</li>
 <li><b>남의 코드 읽기</b> — 오픈소스, 팀 동료의 PR. <b>다른 사고방식</b>을 배웁니다.</li>
 <li><b>가르치기</b> — 블로그 글, 팀 공유. <b>설명하려면 정확히 알아야</b> 합니다.</li>
-<li><b>코드 리뷰 받기</b> — 혼자서는 절대 알 수 없는 것을 배웁니다(82장).</li>
+<li><b>코드 리뷰 받기</b> — 혼자서는 절대 알 수 없는 것을 배웁니다(92장).</li>
 <li><b>공식 문서 읽기</b> — 목적 없이 훑는 것도 의외로 효과가 큽니다.</li>
 <li><b>강의·책</b> — 체계를 잡는 데 좋지만 <b>실습이 없으면 남지 않습니다</b>.</li>
 </ol>
@@ -172,11 +193,11 @@ SNS에는 항상 새 기술을 쓰는 사람들이 보입니다.<br>
 <h2 id="end">마치며</h2>
 
 <div class="box recap">
-<p class="box-title"><span class="box-ico">🎓</span> 84개 챕터를 지나온 여러분에게</p>
+<p class="box-title"><span class="box-ico">🎓</span> 94개 챕터를 지나온 여러분에게</p>
 <p>1장에서 <b>"프론트엔드는 사용자의 브라우저에서 실행되는 코드"</b>라는 정의로 시작했습니다.
 이제 여러분은 그 한 문장 뒤에 있는 것들을 알고 있습니다.</p>
 <p>요청이 서버에 닿기까지의 여정, 브라우저가 픽셀을 그리는 과정,
-JavaScript가 한 번에 하나씩 처리하면서도 멈추지 않는 이유,
+<span class="term" data-term="javascript">JavaScript</span>가 한 번에 하나씩 처리하면서도 멈추지 않는 이유,
 상태를 선언하면 화면이 따라오게 만드는 방식,
 그리고 <b>그 모든 것 위에서 누군가가 실제로 서비스를 쓴다</b>는 사실까지.</p>
 <p><b>이 책을 다 읽었다고 실력이 생기지는 않습니다.</b>
@@ -219,7 +240,19 @@ JavaScript가 한 번에 하나씩 처리하면서도 멈추지 않는 이유,
 <li><a href="https://github.com/topics/awesome" target="_blank" rel="noopener">Awesome 목록</a> — 분야별 자료 모음</li>
 </ul>
 
-<script data-quiz>
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
 FB_QUIZ([
   {
     q: "기술 자료를 볼 때 날짜 확인이 특히 중요한 이유는?",
@@ -252,7 +285,7 @@ FB_QUIZ([
       "한 프레임워크만 깊게 파고 나머지는 무시한다"
     ],
     a: 1,
-    e: "이 책의 84개 챕터 중 <b>대부분이 도구와 무관한 내용</b>입니다. 도구만 익힌 사람은 도구가 바뀔 때마다 처음부터 시작하지만, 기초가 있는 사람은 \"이건 결국 그것이구나\"로 빠르게 적응합니다."
+    e: "이 책의 94개 챕터 중 <b>대부분이 도구와 무관한 내용</b>입니다. 도구만 익힌 사람은 도구가 바뀔 때마다 처음부터 시작하지만, 기초가 있는 사람은 \"이건 결국 그것이구나\"로 빠르게 적응합니다."
   },
   {
     q: "다음 학습 주제를 고르는 가장 좋은 기준은?",
@@ -274,7 +307,9 @@ FB_QUIZ([
       "책 읽기"
     ],
     a: 1,
-    e: "튜토리얼을 따라 치는 것과 <b>요구사항만 보고 스스로 만드는 것</b>은 완전히 다른 경험입니다(81장). 막히고, 검색하고, 고치는 과정에서만 지식이 자기 것이 됩니다. 강의와 책은 <b>체계를 잡는 데</b> 좋지만 실습이 없으면 남지 않습니다."
+    e: "튜토리얼을 따라 치는 것과 <b>요구사항만 보고 스스로 만드는 것</b>은 완전히 다른 경험입니다(91장). 막히고, 검색하고, 고치는 과정에서만 지식이 자기 것이 됩니다. 강의와 책은 <b>체계를 잡는 데</b> 좋지만 실습이 없으면 남지 않습니다."
   }
 ]);
 </script>
+</body>
+</html>

@@ -266,8 +266,8 @@ JavaScript에 적어 둔 비밀은 HTTPS와 무관하게 그대로 노출됩니�
 <thead><tr><th>버전</th><th>핵심 변화</th><th>남은 문제</th></tr></thead>
 <tbody>
 <tr><td><b>HTTP/1.1</b><br>(1997)</td><td>연결을 재사용(keep-alive). 텍스트 기반</td><td>한 연결에서 <b>요청을 하나씩</b> 처리. 앞 요청이 느리면 뒤가 전부 밀립니다(HOL 블로킹)</td></tr>
-<tr><td><b>HTTP/2</b><br>(2015)</td><td>하나의 연결에서 <b>여러 요청을 동시에</b>(멀티플렉싱). 헤더 <span class="term" data-term="minify">압축</span>. 이진 형식</td><td><span class="term" data-term="tcp">TCP</span> 자체의 특성 때문에 <b><span class="term" data-term="packet">패킷</span> 하나가 유실되면</b> 그 연결의 모든 스트림이 함께 기다립니다</td></tr>
-<tr><td><b>HTTP/3</b><br>(2022)</td><td>TCP 대신 <b>QUIC</b>(UDP 기반)을 사용해 TCP 수준의 막힘을 제거. 연결 수립도 더 빠릅니다</td><td>—</td></tr>
+<tr><td><b>HTTP/2</b><br>(2015)</td><td>하나의 연결에서 <b>여러 요청을 동시에</b>(<span class="term" data-term="multiplexing">멀티플렉싱</span>). 헤더 <span class="term" data-term="minify">압축</span>. 이진 형식</td><td><span class="term" data-term="tcp">TCP</span> 자체의 특성 때문에 <b><span class="term" data-term="packet">패킷</span> 하나가 유실되면</b> 그 연결의 모든 스트림이 함께 기다립니다</td></tr>
+<tr><td><b>HTTP/3</b><br>(2022)</td><td>TCP 대신 <b><span class="term" data-term="quic">QUIC</span></b>(<span class="term" data-term="udp">UDP</span> 기반)을 사용해 TCP 수준의 막힘을 제거. 연결 수립도 더 빠릅니다</td><td>—</td></tr>
 </tbody>
 </table>
 </div>

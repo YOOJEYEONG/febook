@@ -26,7 +26,7 @@
 <ul>
   <li><b>Observer 삼형제</b> — 스크롤 이벤트를 쓰지 않고 감지하기</li>
   <li><b>History <span class="term" data-term="api">API</span></b> — 새로고침 없이 주소 바꾸기</li>
-  <li><b>Web Worker</b> — 진짜 별도 스레드에서 계산하기</li>
+  <li><b>Web Worker</b> — 진짜 별도 <span class="term" data-term="thread">스레드</span>에서 계산하기</li>
   <li><code>matchMedia</code>·클립보드·<code>&lt;dialog&gt;</code> 등 실무 API</li>
 </ul>
 </div>
@@ -132,7 +132,7 @@ mo.observe(container, { childList: true, subtree: true, attributes: true });</co
 <pre><code data-lang="js">observer.unobserve(element);   // 특정 요소만 해제
 observer.disconnect();          // 전부 해제</code></pre>
 </div>
-<p style="margin-bottom:0">해제하지 않으면 요소가 사라진 뒤에도 <span class="term" data-term="reference">참조</span>가 남아 <b>메모리 누수</b>가 됩니다.
+<p style="margin-bottom:0">해제하지 않으면 요소가 사라진 뒤에도 <span class="term" data-term="reference">참조</span>가 남아 <b><span class="term" data-term="memory-leak">메모리 누수</span></b>가 됩니다.
 <span class="term" data-term="react">React</span>에서는 <code>useEffect</code>의 <span class="term" data-term="cleanup">정리 함수</span>에서 <code>disconnect()</code>를 호출합니다(61장).</p>
 </div>
 
@@ -168,7 +168,7 @@ history.forward();</code></pre>
 <h2 id="worker">Web Worker — 진짜 별도 스레드</h2>
 
 <p>35장에서 본 것처럼 무거운 계산은 화면을 멈추게 합니다.
-Web Worker는 <b>완전히 다른 스레드</b>에서 코드를 실행해 메인 스레드를 자유롭게 둡니다.</p>
+Web Worker는 <b>완전히 다른 스레드</b>에서 코드를 실행해 <span class="term" data-term="main-thread">메인 스레드</span>를 자유롭게 둡니다.</p>
 
 <div class="codeblock">
 <span class="cb-label">worker.js</span>
