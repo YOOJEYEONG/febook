@@ -38,39 +38,36 @@
 <p><span class="term" data-term="internet">인터넷</span>은 <b>층으로 나뉘어</b> 있습니다. 각 층은 아래 층이 <b>어떻게</b> 동작하는지 몰라도 됩니다.
 이 덕분에 Wi-Fi가 5G로 바뀌어도 <code>fetch</code> 코드는 그대로입니다.</p>
 
-<div class="codeblock">
-<span class="cb-label"><span class="term" data-term="tcp">TCP</span>/IP 4계층 — 우리가 실제로 쓰는 모델</span>
-<pre><code data-lang="text">응용 계층      HTTP, WebSocket, DNS        ← 우리 코드가 사는 곳
-                "무엇을 주고받을 것인가"
-
-전송 계층      TCP, UDP                    ← 순서·재전송 담당
-                "빠짐없이, 순서대로 보낼 것인가"
-
-인터넷 계층    IP                          ← 주소와 길 찾기
-                "어느 컴퓨터로 보낼 것인가"
-
-링크 계층      이더넷, Wi-Fi, LTE          ← 실제 전기·전파
-                "물리적으로 어떻게 전달할 것인가"
-
-편지에 비유하면
-  응용 = 편지 내용 / 전송 = 등기 여부 / 인터넷 = 주소 / 링크 = 트럭·비행기</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>계층</th><th>정하는 것 <span style="font-weight:400">(편지 비유)</span></th></tr></thead>
+<tbody>
+<tr><td><b class="nw">응용</b> ★<br><span class="nw">HTTP</span>, <span class="nw">WebSocket</span>, <span class="term" data-term="dns">DNS</span></td><td>무엇을 주고받을 것인가<br><i>편지 내용</i></td></tr>
+<tr><td><b class="nw">전송</b><br><span class="term" data-term="tcp">TCP</span>, UDP</td><td>빠짐없이, 순서대로 보낼 것인가<br><i>등기 여부</i></td></tr>
+<tr><td><b class="nw">인터넷</b><br>IP</td><td>어느 컴퓨터로 보낼 것인가<br><i>주소</i></td></tr>
+<tr><td><b class="nw">링크</b><br><span class="nw">이더넷</span>, <span class="nw">Wi-Fi</span>, LTE</td><td>물리적으로 어떻게 전달할 것인가<br><i>트럭·비행기</i></td></tr>
+</tbody>
+</table>
 </div>
+
+<p class="ch-meta" style="margin-top:-.4em">★ 우리 코드가 사는 곳은 <b>응용 계층</b>입니다.</p>
 
 <p>교과서에 나오는 <b>OSI 7계층</b>은 더 잘게 나눈 이론 모델입니다.
 면접에 이름이 나올 수 있지만, <b>실무에서는 위의 4계층으로 충분</b>합니다.</p>
 
 <h3 id="tcp-udp">TCP와 UDP</h3>
 
-<div class="codeblock">
-<pre><code data-lang="text">TCP                                  UDP
-────────────────────────             ────────────────────────
-연결을 맺고 시작한다                   그냥 보낸다
-빠진 조각을 다시 보낸다                 빠져도 신경 안 쓴다
-순서를 보장한다                        순서 안 맞을 수 있다
-느리지만 정확하다                      빠르지만 손실 가능
-
-웹 페이지, 파일 전송, 이메일           실시간 영상·음성 통화, 게임
-HTTP/1.1, HTTP/2                     HTTP/3(QUIC), WebRTC</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>TCP</th><th>UDP</th></tr></thead>
+<tbody>
+<tr><td><b>시작</b></td><td>연결을 맺고 시작한다</td><td>그냥 보낸다</td></tr>
+<tr><td><b>유실</b></td><td>빠진 조각을 다시 보낸다</td><td>빠져도 신경 안 쓴다</td></tr>
+<tr><td><b>순서</b></td><td>보장한다</td><td>안 맞을 수 있다</td></tr>
+<tr><td><b>성격</b></td><td>느리지만 정확하다</td><td>빠르지만 손실 가능</td></tr>
+<tr><td><b>쓰는 곳</b></td><td>웹 페이지, 파일 전송, 이메일<br>HTTP/1.1, HTTP/2</td><td>실시간 영상·음성 통화, 게임<br>HTTP/3(QUIC), WebRTC</td></tr>
+</tbody>
+</table>
 </div>
 
 <h2 id="handshake">요청 하나가 거치는 단계</h2>
@@ -133,7 +130,7 @@ HTTP/1.1, HTTP/2                     HTTP/3(QUIC), WebRTC</code></pre>
 <code>Promise.all</code>로 묶을 수 있는지 항상 확인하세요.</li>
 <li><b>연결을 미리 맺어 둔다.</b> 외부 도메인을 쓸 것이 확실하면
 <code>&lt;link rel="preconnect" href="https://api.example.com"&gt;</code>로
-<span class="term" data-term="dns">DNS</span>·TCP·TLS를 미리 끝내 둡니다. <b>단, 꼭 쓸 도메인에만</b> — 남발하면 오히려 손해입니다.</li>
+DNS·TCP·TLS를 미리 끝내 둡니다. <b>단, 꼭 쓸 도메인에만</b> — 남발하면 오히려 손해입니다.</li>
 <li><b>측정할 때 네트워크를 조절하세요.</b> <span class="term" data-term="devtools">DevTools</span> Network 패널의 <span class="term" data-term="throttle">스로틀</span>링을
 <b>Fast 4G / Slow 4G</b>로 두고 테스트해야 실제 사용자 환경이 보입니다.
 사무실 유선 인터넷 기준으로 만들면 현장에서 무너집니다.</li>
@@ -188,11 +185,12 @@ HTTP/1.1, HTTP/2                     HTTP/3(QUIC), WebRTC</code></pre>
 · 연결 수립이 빠르다
   → TCP 핸드셰이크 + TLS 핸드셰이크가 하나로 합쳐진다
 · 연결 마이그레이션
-  → Wi-Fi에서 셀룰러로 바뀌어도 연결이 유지된다 (모바일에서 특히 유용)
-
-"UDP는 못 믿는 프로토콜 아닌가?" → 신뢰성 기능을 QUIC이 직접 구현했다.
-TCP를 안 쓰는 이유는 TCP가 운영체제 커널에 있어 바꾸기가 사실상 불가능하기 때문이다.</code></pre>
+  → Wi-Fi에서 셀룰러로 바뀌어도 연결이 유지된다 (모바일에서 특히 유용)</code></pre>
 </div>
+
+<p>"UDP는 못 믿는 프로토콜 아닌가?" 싶지만, <b>신뢰성 기능은 QUIC이 직접 구현했습니다.</b>
+TCP를 고치지 않고 UDP 위에 새로 만든 이유는 <b>TCP가 운영체제 커널에 들어 있어
+전 세계 기기를 업데이트하는 것이 사실상 불가능하기 때문</b>입니다.</p>
 
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 버전이 실무에 주는 영향</p>
@@ -210,20 +208,16 @@ TCP를 안 쓰는 이유는 TCP가 운영체제 커널에 있어 바꾸기가 �
 
 <h2 id="realtime">실시간 통신 — 무엇을 고를까</h2>
 
-<div class="codeblock">
-<pre><code data-lang="text">폴링(Polling)          일정 간격으로 계속 물어본다
-                       가장 단순. 낭비가 크고 지연도 있다. 그러나 대부분 충분하다.
-
-SSE                    서버 → 클라이언트 단방향 스트림. HTTP 그대로 사용.
-(Server-Sent Events)   자동 재연결 내장. 알림, 진행률, AI 응답 스트리밍에 적합.
-                       EventSource API. 텍스트만 보낼 수 있다.
-
-WebSocket              양방향 실시간. 연결을 한 번 맺고 계속 유지.
-                       채팅, 협업 편집, 게임, 실시간 시세.
-                       재연결·하트비트를 직접 구현해야 한다.
-
-WebRTC                 브라우저 ↔ 브라우저 직접 연결. 화상 통화.
-                       난도가 높다. 보통 라이브러리·서비스를 쓴다.</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>방식</th><th>성격</th><th>어디에</th></tr></thead>
+<tbody>
+<tr><td><b>폴링</b></td><td>일정 간격으로 계속 물어봅니다. 가장 단순하고, 낭비와 지연이 있지만 <b>대부분 충분합니다</b></td><td>느긋한 갱신</td></tr>
+<tr><td><b>SSE</b></td><td>서버 → <span class="term" data-term="client">클라이언트</span> <b>단방향</b> 스트림. HTTP 그대로 쓰고 <code>EventSource</code>가 <b>자동 재연결</b>합니다. 텍스트만</td><td>알림, 진행률, AI 응답 <span class="term" data-term="streaming">스트리밍</span></td></tr>
+<tr><td><b>WebSocket</b></td><td><b>양방향</b> 실시간. 연결을 한 번 맺고 유지합니다. 재연결·하트<span class="term" data-term="bit">비트</span>는 직접 구현</td><td>채팅, 협업 편집, 게임, 실시간 시세</td></tr>
+<tr><td><b>WebRTC</b></td><td>브라우저 ↔ 브라우저 직접 연결. 난도가 높아 보통 라이브러리·서비스를 씁니다</td><td>화상 통화</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box tip">
@@ -235,33 +229,24 @@ WebRTC                 브라우저 ↔ 브라우저 직접 연결. 화상 통�
 
 <h2 id="devtools">Network 패널 타이밍 읽기</h2>
 
-<div class="codeblock">
-<span class="cb-label">요청 하나를 클릭 → Timing 탭</span>
-<pre><code data-lang="text">Queueing            브라우저가 아직 보내지 않고 대기 중
-                    → 길면: 동시 요청이 너무 많거나 우선순위가 낮음
-
-Stalled             연결을 기다리는 중
-                    → 길면: HTTP/1.1의 연결 수 제한에 걸렸을 가능성
-
-DNS Lookup          도메인 → IP 조회
-                    → 길면: preconnect·dns-prefetch 검토
-
-Initial connection  TCP 핸드셰이크
-SSL                 TLS 핸드셰이크
-                    → 둘 다 길면: 서버가 물리적으로 멀다 → CDN
-
-TTFB                요청을 보낸 뒤 첫 바이트가 올 때까지
-(Waiting for        → 길면: 서버 처리가 느리다 (DB 쿼리, 렌더링)
- server response)     프론트엔드가 고칠 수 없는 경우가 많다. 백엔드와 이야기하세요.
-
-Content Download    응답 본문을 받는 시간
-                    → 길면: 파일이 크다 → 압축·이미지 최적화·코드 스플리팅 (76장)</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>구간</th><th>무엇</th><th>길다면</th></tr></thead>
+<tbody>
+<tr><td><b>Queueing</b></td><td>아직 보내지 않고 대기 중</td><td>동시 요청이 너무 많거나 우선순위가 낮음</td></tr>
+<tr><td><b>Stalled</b></td><td>연결을 기다리는 중</td><td>HTTP/1.1의 연결 수 제한에 걸렸을 가능성</td></tr>
+<tr><td><b>DNS Lookup</b></td><td>도메인 → IP 조회</td><td><code>preconnect</code>·<code>dns-prefetch</code> 검토</td></tr>
+<tr><td><b>Initial connection<br>SSL</b></td><td>TCP · TLS 핸드셰이크</td><td>서버가 물리적으로 멀다 → <b>CDN</b></td></tr>
+<tr><td><b><span class="term" data-term="ttfb">TTFB</span></b><br>(Waiting for server response)</td><td>요청 후 첫 <span class="term" data-term="byte">바이트</span>가 올 때까지</td><td><b>서버 처리가 느리다</b>(DB 쿼리, 렌더링). <span class="term" data-term="frontend">프론트엔드</span>가 고칠 수 없는 경우가 많습니다 — <span class="term" data-term="backend">백엔드</span>와 이야기하세요</td></tr>
+<tr><td><b>Content Download</b></td><td>응답 본문을 받는 시간</td><td><b>파일이 크다</b> → 압축·이미지 최적화·코드 스플리팅 (76장)</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 이 표가 실무에서 하는 일</p>
 <p style="margin-bottom:0">"페이지가 느려요"라는 제보를 받으면 <b>추측하지 말고 이 타이밍을 보세요.</b>
-<b><span class="term" data-term="ttfb">TTFB</span>가 길면 <span class="term" data-term="backend">백엔드</span> 문제</b>고, <b>Content Download가 길면 <span class="term" data-term="frontend">프론트엔드</span> 문제</b>입니다.
+<b>TTFB가 길면 백엔드 문제</b>고, <b>Content Download가 길면 프론트엔드 문제</b>입니다.
 이 한 가지 구분만 할 줄 알아도 <b>엉뚱한 곳을 파느라 하루를 쓰는 일</b>이 사라집니다.
 전체 화면 로딩 지표는 76장의 Core Web Vitals로 봅니다.</p>
 </div>

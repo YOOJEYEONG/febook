@@ -46,17 +46,18 @@
 
 <h2 id="db">데이터베이스 — SQL과 NoSQL</h2>
 
-<div class="codeblock">
-<pre><code data-lang="text">관계형(SQL)                     문서형 등(NoSQL)
-PostgreSQL, MySQL               MongoDB, DynamoDB, Redis, Firestore
-─────────────────────           ─────────────────────
-표(테이블)와 관계로 저장          JSON 비슷한 문서로 저장
-스키마가 정해져 있다              구조가 유연하다
-여러 표를 조인해 질의             중첩 구조를 통째로 읽는다
-트랜잭션이 강력하다               제품마다 지원 수준이 다르다
-
-기본값으로 삼기 좋다              특정 용도에 좋다
-(대부분의 서비스)                 (캐시=Redis, 로그, 초대용량, 실시간 동기화)</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>관계형(SQL)</th><th>문서형 등(NoSQL)</th></tr></thead>
+<tbody>
+<tr><td><b>제품</b></td><td>PostgreSQL, MySQL</td><td>MongoDB, DynamoDB, Redis, Firestore</td></tr>
+<tr><td><b>저장</b></td><td>표(테이블)와 관계로</td><td>JSON 비슷한 문서로</td></tr>
+<tr><td><b>구조</b></td><td>스키마가 정해져 있다</td><td>유연하다</td></tr>
+<tr><td><b>질의</b></td><td>여러 표를 조인해서</td><td>중첩 구조를 통째로 읽는다</td></tr>
+<tr><td><b>트랜잭션</b></td><td>강력하다</td><td>제품마다 지원 수준이 다르다</td></tr>
+<tr><td><b>언제</b></td><td><b>기본값으로 삼기 좋다</b> (대부분의 서비스)</td><td>특정 용도에 (캐시=Redis, 로그, 초대용량, 실시간 동기화)</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box tip">
@@ -91,15 +92,16 @@ DB는 <b>전부 훑습니다</b>(풀 스캔). 83장의 O(n)입니다.</p>
 <p><b>인덱스</b>는 <b>책 뒤의 찾아보기</b>와 같습니다. 특정 열에 대해 <b>정렬된 별도의 구조</b>(보통 B-트리)를 만들어 두면
 <b>O(log n)</b>으로 찾습니다. 1,000만 행에서 <b>스무 번 남짓</b>이면 도달합니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">공짜는 아닙니다</span>
-<pre><code data-lang="text">+ 조회가 극적으로 빨라진다
-− 저장 공간을 더 쓴다
-− INSERT/UPDATE/DELETE 가 느려진다 (색인도 같이 고쳐야 하니까)
-
-그래서 '자주 조회 조건으로 쓰는 열'에만 건다.
-프론트엔드가 할 일: "이 화면은 category와 created_at 으로 정렬·필터합니다"를
-백엔드에 정확히 알려 주는 것. 그래야 맞는 인덱스를 걸 수 있다.</code></pre>
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚖️</span> 공짜는 아닙니다</p>
+<ul style="margin-bottom:0">
+<li><b>조회가 극적으로 빨라집니다.</b></li>
+<li>저장 공간을 더 씁니다.</li>
+<li><b><code>INSERT</code>·<code>UPDATE</code>·<code>DELETE</code>가 느려집니다</b> — 색인도 같이 고쳐야 하니까요.</li>
+</ul>
+<p style="margin-bottom:0">그래서 <b>자주 조회 조건으로 쓰는 열에만</b> 겁니다.
+프론트엔드가 할 일은 <b>"이 화면은 <code>category</code>와 <code>created_at</code>으로 정렬·필터합니다"</b>를
+백엔드에 정확히 알려 주는 것입니다. 그래야 맞는 인덱스를 걸 수 있습니다.</p>
 </div>
 
 <h2 id="nplus1">N+1 문제 — 프론트엔드도 만든다</h2>
@@ -188,53 +190,48 @@ fetch("/api/orders", {
 
 <h2 id="api-style">REST, GraphQL, 그리고 API 설계 읽는 법</h2>
 
-<div class="codeblock">
-<pre><code data-lang="text">REST      자원마다 URL. GET /users/1, POST /orders
-          + 단순하고 캐시가 잘 듣는다(HTTP 캐시 그대로)
-          − 오버페칭(안 쓰는 필드까지 옴) / 언더페칭(여러 번 불러야 함)
-
-GraphQL   클라이언트가 필요한 필드를 질의로 지정
-          + 필요한 만큼만, 한 번에
-          − HTTP 캐시를 쓰기 어렵다, 서버 복잡도 증가, 학습 곡선
-
-tRPC      TypeScript로 서버·클라이언트가 타입을 공유
-          + 타입 안전성이 뛰어나다
-          − 한 저장소에 TS 서버가 있을 때만 쓸 수 있다
-
-정답은 없습니다. 팀 구성과 클라이언트 종류에 따라 다릅니다.
-대부분의 서비스에서 잘 설계된 REST로 충분합니다.</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>방식</th><th>장점</th><th>단점</th></tr></thead>
+<tbody>
+<tr><td><b>REST</b><br>자원마다 URL<br><code>GET /users/1</code></td><td>단순하고 <b>HTTP 캐시가 그대로 듣는다</b></td><td>오버페칭(안 쓰는 필드까지 옴) · 언더페칭(여러 번 불러야 함)</td></tr>
+<tr><td><b>GraphQL</b><br>필요한 필드를 질의로 지정</td><td>필요한 만큼만, 한 번에</td><td>HTTP 캐시를 쓰기 어렵다 · 서버 복잡도 · 학습 곡선</td></tr>
+<tr><td><b>tRPC</b><br>서버·클라이언트가 타입 공유</td><td>타입 안전성이 뛰어나다</td><td>한 저장소에 TS 서버가 있을 때만</td></tr>
+</tbody>
+</table>
 </div>
+
+<p class="ch-meta" style="margin-top:-.4em">정답은 없습니다. 팀 구성과 클라이언트 종류에 따라 다르고,
+<b>대부분의 서비스는 잘 설계된 REST로 충분합니다.</b></p>
 
 <h3 id="pagination">페이지네이션 — 오프셋 vs 커서</h3>
 
-<div class="codeblock">
-<pre><code data-lang="text">오프셋 방식   GET /posts?page=3&amp;size=20     (SQL의 OFFSET 40 LIMIT 20)
-  + 특정 페이지로 바로 이동할 수 있다 (1 2 3 … 10)
-  − 뒤 페이지로 갈수록 느려진다 (앞의 행을 세고 버려야 하므로)
-  − 새 글이 추가되면 항목이 밀려 중복·누락이 생긴다
-
-커서 방식     GET /posts?after=cursor_abc&amp;size=20
-  + 항상 일정하게 빠르다
-  + 중간에 데이터가 추가돼도 중복·누락이 없다
-  − 특정 페이지로 점프할 수 없다
-
-→ 무한 스크롤·피드에는 커서, 페이지 번호 UI에는 오프셋.
-  화면 설계를 정할 때 이 차이를 미리 백엔드와 맞춰야 합니다.</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>오프셋 방식</th><th>커서 방식</th></tr></thead>
+<tbody>
+<tr><td><b>요청</b></td><td><code>?page=3</code><br><code>&amp;size=20</code></td><td><code>?after=cursor_abc</code><br><code>&amp;size=20</code></td></tr>
+<tr><td><b>속도</b></td><td>뒤 페이지로 갈수록 느려진다 (앞의 행을 세고 버려야 함)</td><td><b>항상 일정하게 빠르다</b></td></tr>
+<tr><td><b>데이터가 바뀌면</b></td><td>새 글이 추가되면 항목이 밀려 <b>중복·누락</b></td><td>중복·누락이 없다</td></tr>
+<tr><td><b>페이지 점프</b></td><td><b>가능</b> (1 2 3 … 10)</td><td>불가능</td></tr>
+<tr><td><b>어디에</b></td><td>페이지 번호 UI</td><td>무한 스크롤 · 피드</td></tr>
+</tbody>
+</table>
 </div>
+
+<p class="ch-meta" style="margin-top:-.4em">화면 설계를 정할 때 이 차이를 <b>미리 백엔드와 맞춰야</b> 합니다.</p>
 
 <h2 id="auth">인증 — 토큰을 어디에 둘 것인가</h2>
 
-<div class="codeblock">
-<pre><code data-lang="text">세션 쿠키 방식
-  서버가 세션을 저장하고 브라우저에 세션 ID 쿠키를 준다
-  + 서버에서 즉시 무효화할 수 있다 (강제 로그아웃)
-  − 서버가 상태를 가져야 한다
-
-JWT(토큰) 방식
-  서명된 토큰 자체에 정보가 들어 있다. 서버는 서명만 검증한다
-  + 서버가 상태를 안 가져도 된다, 여러 서비스에서 공유하기 쉽다
-  − 한 번 발급하면 만료 전까지 무효화하기 어렵다
-    → 그래서 '짧은 액세스 토큰 + 긴 리프레시 토큰' 조합을 쓴다</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>세션 쿠키</th><th>JWT(토큰)</th></tr></thead>
+<tbody>
+<tr><td><b>방식</b></td><td>서버가 세션을 저장하고 브라우저에 세션 ID 쿠키를 준다</td><td>서명된 토큰 자체에 정보가 들어 있고 서버는 서명만 검증한다</td></tr>
+<tr><td><b>장점</b></td><td><b>서버에서 즉시 무효화 가능</b> (강제 로그아웃)</td><td>서버가 상태를 안 가져도 되고, 여러 서비스에서 공유하기 쉽다</td></tr>
+<tr><td><b>단점</b></td><td>서버가 상태를 가져야 한다</td><td>발급 후 만료 전까지 <b>무효화가 어렵다</b> → '짧은 액세스 토큰 + 긴 리프레시 토큰' 조합을 쓴다</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box warn">

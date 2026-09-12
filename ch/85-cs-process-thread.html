@@ -35,11 +35,15 @@
 
 <h2 id="basics">프로그램, 프로세스, 스레드</h2>
 
-<div class="codeblock">
-<span class="cb-label">세 단어의 차이</span>
-<pre><code data-lang="text">프로그램   디스크에 저장된 파일. 아직 아무것도 하지 않는다. (Chrome.app)
-프로세스   실행되어 메모리를 받은 상태. 자기만의 주소 공간을 갖는다.
-스레드     프로세스 안에서 실제로 코드를 실행하는 흐름. 여러 개일 수 있다.</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>단어</th><th>무엇</th></tr></thead>
+<tbody>
+<tr><td><b>프로그램</b></td><td>디스크에 저장된 파일. 아직 아무것도 하지 않습니다. (Chrome.app)</td></tr>
+<tr><td><b>프로세스</b></td><td>실행되어 메모리를 받은 상태. <b>자기만의 주소 공간</b>을 갖습니다.</td></tr>
+<tr><td><b>스레드</b></td><td>프로세스 안에서 실제로 코드를 실행하는 흐름. 여러 개일 수 있습니다.</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="codeblock">
@@ -60,21 +64,24 @@
 <p>초기 브라우저는 <b>전체가 하나의 프로세스</b>였습니다. 탭 하나가 죽으면 <b>브라우저 전체가 죽었습니다.</b>
 지금의 브라우저는 역할별로 프로세스를 나눕니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">Chrome 계열의 프로세스 구성 (개략)</span>
-<pre><code data-lang="text">브라우저 프로세스    주소창, 탭, 북마크, 나머지 프로세스 관리
-렌더러 프로세스      실제 웹 페이지를 그린다. ★ 우리 코드가 도는 곳
-                    보통 탭/사이트마다 따로 만들어진다
-네트워크 프로세스    HTTP 요청 처리
-GPU 프로세스        화면 합성·그리기 가속
-유틸리티 프로세스    오디오, 확장 프로그램 등</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>프로세스</th><th>하는 일</th></tr></thead>
+<tbody>
+<tr><td><b>브라우저</b></td><td>주소창, 탭, 북마크, 나<span class="term" data-term="merge">머지</span> 프로세스 관리</td></tr>
+<tr><td><b>렌더러</b> ★</td><td>실제 웹 페이지를 그립니다. <b>우리 코드가 도는 곳.</b> 보통 탭·사이트마다 따로 만들어집니다</td></tr>
+<tr><td><b>네트워크</b></td><td><span class="term" data-term="http">HTTP</span> 요청 처리</td></tr>
+<tr><td><b>GPU</b></td><td>화면 합성·그리기 가속</td></tr>
+<tr><td><b>유틸리티</b></td><td>오디오, 확장 프로그램 등</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🛡️</span> 사이트 격리 (Site Isolation)</p>
 <p style="margin-bottom:0">현대 브라우저는 <b>서로 다른 사이트를 다른 렌더러 프로세스에 둡니다.</b>
 <code>&lt;iframe&gt;</code>으로 들어온 광고도 별도 프로세스입니다.</p>
-<p style="margin-bottom:0">이유는 두 가지입니다. <b>① 안정성</b> — 한 탭이 뻗어도 나<span class="term" data-term="merge">머지</span>는 살아 있습니다.
+<p style="margin-bottom:0">이유는 두 가지입니다. <b>① 안정성</b> — 한 탭이 뻗어도 나머지는 살아 있습니다.
 <b>② 보안</b> — CPU 취약점(Spectre 계열)을 이용해 <b>같은 프로세스 메모리</b>를 훔쳐보는 공격이 가능하다는 것이 밝혀졌습니다.
 사이트를 물리적으로 다른 프로세스에 두면, 애초에 읽을 메모리가 거기 없습니다.</p>
 <p style="margin-bottom:0">대가는 <b>메모리 사용량</b>입니다. "Chrome이 램을 많이 먹는다"는 말은 상당 부분 이 설계 때문이고,
@@ -120,16 +127,14 @@ GPU 프로세스        화면 합성·그리기 가속
 
 <h2 id="concurrency">동시성과 병렬성은 다른 말이다</h2>
 
-<div class="codeblock">
-<span class="cb-label">요리사 비유 — 이 구분만은 정확히</span>
-<pre><code data-lang="text">동시성(Concurrency)   요리사 1명이 여러 요리를 번갈아 다룬다.
-                      국이 끓는 동안 채소를 썬다.
-                      → 진짜 동시에 하는 건 아니지만 기다림이 사라진다
-                      → JavaScript의 이벤트 루프 (35장)
-
-병렬성(Parallelism)   요리사 3명이 각자 다른 요리를 정말로 동시에 만든다.
-                      → CPU 코어가 여러 개여야 가능
-                      → Web Worker, 서버의 멀티프로세스</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>비유</th><th>웹에서는</th></tr></thead>
+<tbody>
+<tr><td><b>동시성</b><br>Concurrency</td><td>요리사 <b>1명</b>이 여러 요리를 번갈아 다룹니다. 국이 끓는 동안 채소를 썹니다. 진짜 동시는 아니지만 <b>기다림이 사라집니다</b></td><td>JavaScript의 이벤트 루프 (35장)</td></tr>
+<tr><td><b>병렬성</b><br>Parallelism</td><td>요리사 <b>3명</b>이 각자 다른 요리를 <b>정말로 동시에</b> 만듭니다. CPU 코어가 여러 개여야 가능합니다</td><td>Web Worker, 서버의 멀티프로세스</td></tr>
+</tbody>
+</table>
 </div>
 
 <p><b>JavaScript는 싱글 스레드</b>입니다. 하지만 느려 보이지 않는 이유는 <b>동시성</b> 덕분입니다.

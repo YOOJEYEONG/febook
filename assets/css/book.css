@@ -349,6 +349,9 @@ pre code { background: none; border: 0; padding: 0; font-size: inherit; word-bre
 
 /* ---------- 9. 표 ---------- */
 .tablewrap { overflow-x: auto; margin: 1.4em 0; border: 1px solid var(--border); border-radius: var(--radius); }
+/* 표 안에서 절대 쪼개지면 안 되는 짧은 표기(O(n log n) 같은 것)에 쓴다.
+   body 의 overflow-wrap:anywhere 때문에 좁은 칸에서 글자 중간이 끊기는 것을 막는다. */
+.nw { white-space: nowrap; overflow-wrap: normal; }
 table { border-collapse: collapse; width: 100%; font-size: .93em; }
 th, td { padding: 9px 13px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
 thead th { background: var(--bg-sunken); font-weight: 700; white-space: nowrap; }
@@ -581,6 +584,11 @@ td code, th code { white-space: nowrap; }
 @media (max-width: 860px) {
   :root { --reading: 16.5px; }
   .layout { grid-template-columns: minmax(0, 1fr); }
+
+  /* 좁은 화면에서는 표가 가로로 길어지지 않게 줄바꿈을 허용한다.
+     데스크톱에서는 코드 토큰과 머리글이 안 끊기는 편이 읽기 좋아 그대로 둔다. */
+  thead th { white-space: normal; }
+  td code, th code { white-space: normal; word-break: break-all; }
   #menu-btn { display: inline-flex; }
   .page { padding: 20px 18px 110px; }
   .hdr-search { flex: 1 1 auto; }

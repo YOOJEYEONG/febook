@@ -17,13 +17,17 @@
 <p><b>스택(stack)</b>은 <b>쌓아 올린 접시</b>입니다. 넣을 때도 위, 뺄 때도 위.
 마지막에 넣은 것이 가장 먼저 나오므로 <b>LIFO</b>(Last In, First Out)라고 부릅니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">프론트엔드에서 스택이 쓰이는 곳</span>
-<pre><code data-lang="text">콜 스택            함수를 호출하면 쌓이고, 끝나면 걷어낸다 (30·35장)
-실행 취소(Undo)     마지막 동작부터 되돌린다
-브라우저 히스토리   뒤로 가기는 가장 최근 방문부터
-괄호 · 태그 짝 검사  여는 것을 쌓고, 닫는 것이 오면 꺼내서 맞춰 본다
-DFS(깊이 우선 탐색) 재귀 자체가 콜 스택을 쓰는 것</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>어디</th><th>어떻게</th></tr></thead>
+<tbody>
+<tr><td><b>콜 스택</b></td><td>함수를 호출하면 쌓이고, 끝나면 걷어냅니다 (30·35장)</td></tr>
+<tr><td><b>실행 취소(Undo)</b></td><td>마지막 동작부터 되돌립니다</td></tr>
+<tr><td><b>브라우저 히스토리</b></td><td>뒤로 가기는 가장 최근 방문부터</td></tr>
+<tr><td><b>괄호·태그 짝 검사</b></td><td>여는 것을 쌓고, 닫는 것이 오면 꺼내 맞춰 봅니다</td></tr>
+<tr><td><b>DFS(깊이 우선 탐색)</b></td><td>재귀 자체가 콜 스택을 쓰는 것입니다</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="runner" data-lang="js" data-title="스택으로 괄호 검사하기" data-note="배열의 push/pop이 곧 스택입니다. 편집기의 괄호 매칭이 이 원리입니다.">
@@ -148,10 +152,13 @@ runWithLimit([1, 2, 3, 4, 5, 6, 7].map(makeTask), 3)
 
 <div class="codeblock">
 <span class="cb-label">배열 vs 연결 리스트</span>
-<pre><code data-lang="text">배열        [10][20][30][40]     인덱스 접근 즉시 / 중간 삽입은 전부 이동
-연결 리스트  10 → 20 → 30 → 40    인덱스 접근은 처음부터 / 중간 삽입은 참조만 바꾸면 끝
+<pre><code data-lang="text">배열        [10][20][30][40]
+            인덱스 접근 즉시 / 중간 삽입은 전부 이동
 
-                     ↓ 20과 30 사이에 25 삽입
+연결 리스트  10 → 20 → 30 → 40
+            인덱스 접근은 처음부터 / 중간 삽입은 참조만 바꾸면 끝
+
+  ↓ 20과 30 사이에 25 삽입
             10 → 20 → 25 → 30 → 40     (이동 없음)</code></pre>
 </div>
 
@@ -172,14 +179,18 @@ React는 렌더링마다 그 사슬을 순서대로 따라갑니다.</p>
 <p><b>트리</b>는 하나의 <b>루트</b>에서 가지가 뻗어 나가되 <b>고리가 생기지 않는</b> 구조입니다.
 프론트엔드 개발자는 트리를 하루 종일 다룹니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">전부 같은 구조입니다</span>
-<pre><code data-lang="text">DOM 트리          html → body → div → p           (5·38장)
-컴포넌트 트리      App → Layout → Sidebar → Item   (58장)
-폴더 구조         src/ → components/ → Button.tsx
-JSON 데이터       { user: { address: { city } } }
-라우트 트리        / → /posts → /posts/[id]        (68·71장)
-카테고리 · 댓글    대댓글은 댓글의 자식</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>무엇</th><th>예</th></tr></thead>
+<tbody>
+<tr><td><b>DOM 트리</b> (5·38장)</td><td><code>html → body → div → p</code></td></tr>
+<tr><td><b>컴포넌트 트리</b> (58장)</td><td><code>App → Layout → Sidebar → Item</code></td></tr>
+<tr><td><b>폴더 구조</b></td><td><code>src/ → components/ → Button.tsx</code></td></tr>
+<tr><td><b>JSON 데이터</b></td><td><code>{ user: { address: { city } } }</code></td></tr>
+<tr><td><b>라우트 트리</b> (68·71장)</td><td><code>/ → /posts → /posts/[id]</code></td></tr>
+<tr><td><b>카테고리 · 댓글</b></td><td>대댓글은 댓글의 자식</td></tr>
+</tbody>
+</table>
 </div>
 
 <p>용어는 가족 관계로 부릅니다. <b>루트</b>(맨 위), <b>부모·자식</b>, <b>형제</b>,
@@ -311,12 +322,16 @@ while (queue.length) {
 <p><b>그래프</b>는 트리에서 제약을 푼 것입니다. <b>노드끼리 자유롭게 연결</b>되고, <b>고리(순환)</b>가 있어도 됩니다.
 트리는 "고리 없는 그래프"의 특수한 경우입니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">프론트엔드에서 만나는 그래프</span>
-<pre><code data-lang="text">모듈 의존성 그래프   A가 B를 import하고 B가 C를 import… (47장 번들러)
-순환 참조            A → B → A  로 되돌아오는 import. 값이 undefined로 보이는 버그의 원인
-링크 구조            페이지끼리 서로 연결
-상태 전이            로딩 → 성공 → 다시 로딩 …</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>무엇</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>모듈 의존성 그래프</b></td><td>A가 B를 import하고 B가 C를 import… (47장 번들러)</td></tr>
+<tr><td><b>순환 참조</b></td><td><code>A → B → A</code>로 되돌아오는 import. 값이 <code>undefined</code>로 보이는 버그의 원인</td></tr>
+<tr><td><b>링크 구조</b></td><td>페이지끼리 서로 연결</td></tr>
+<tr><td><b>상태 전이</b></td><td>로딩 → 성공 → 다시 로딩 …</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="runner" data-lang="js" data-title="순환 참조 찾기" data-note="번들러가 'Circular dependency detected' 경고를 내는 원리입니다.">

@@ -41,19 +41,23 @@
 CPU 캐시부터 <span class="term" data-term="cd">CD</span>N까지 <b>전부 같은 아이디어</b>입니다. 다른 건 "느린 곳"과 "빠른 곳"이 무엇이냐뿐입니다.</p>
 </div>
 
-<div class="codeblock">
-<span class="cb-label">속도 계층 — 단위가 다릅니다</span>
-<pre><code data-lang="text">CPU 레지스터        1 사이클 미만
-L1 캐시             약 1 ns
-L2 캐시             약 4 ns
-L3 캐시             약 10~40 ns
-메인 메모리(RAM)     약 100 ns          ← L1의 약 100배
-SSD                 약 50~100 μs        ← RAM의 약 1,000배
-같은 지역 네트워크   약 0.5~5 ms
-대륙 간 네트워크     약 100~250 ms       ← RAM의 약 100만 배
-
-(수치는 대략적인 자릿수 감각용입니다. 기기마다 다릅니다.)</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>어디</th><th>걸리는 시간</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td>CPU 레지스터</td><td>1 사이클 미만</td><td></td></tr>
+<tr><td>L1 캐시</td><td>약 1 ns</td><td></td></tr>
+<tr><td>L2 캐시</td><td>약 4 ns</td><td></td></tr>
+<tr><td>L3 캐시</td><td>약 10~40 ns</td><td></td></tr>
+<tr><td>메인 메모리(RAM)</td><td>약 100 ns</td><td>L1의 약 100배</td></tr>
+<tr><td>SSD</td><td>약 50~100 μs</td><td>RAM의 약 1,000배</td></tr>
+<tr><td>같은 지역 네트워크</td><td>약 0.5~5 ms</td><td></td></tr>
+<tr><td><b>대륙 간 네트워크</b></td><td><b>약 100~250 ms</b></td><td><b>RAM의 약 100만 배</b></td></tr>
+</tbody>
+</table>
 </div>
+
+<p class="ch-meta" style="margin-top:-.4em">대략적인 자릿수 감각용 수치입니다. 기기마다 다릅니다.</p>
 
 <p>이 표에서 읽어야 할 건 정확한 숫자가 아니라 <b>자릿수 차이</b>입니다.
 <b>네트워크는 메모리보다 백만 배 느립니다.</b>
@@ -73,36 +77,42 @@ SSD                 약 50~100 μs        ← RAM의 약 1,000배
 
 <h2 id="layers">웹 요청이 지나는 캐시 계층</h2>
 
-<div class="codeblock">
-<span class="cb-label">위에서부터 순서대로 확인합니다</span>
-<pre><code data-lang="text">① 메모리 캐시        탭이 살아 있는 동안. 가장 빠름. (DevTools: from memory cache)
-② Service Worker     코드로 직접 제어하는 캐시. 오프라인 지원의 핵심.
-③ 디스크 캐시(HTTP)  Cache-Control 헤더에 따름. 브라우저 종료 후에도 유지.
-④ CDN 엣지 캐시      사용자와 가까운 서버. (3장)
-⑤ 서버 캐시          Redis 등
-⑥ 데이터베이스        진짜 원본
-
-위에서 찾으면(캐시 히트) 아래로 가지 않는다.
-①에서 끝나면 0ms, ⑥까지 가면 수백 ms.</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>층</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b>① 메모리 캐시</b></td><td>탭이 살아 있는 동안. 가장 빠릅니다 (<span class="term" data-term="devtools">DevTools</span>에 <code>from memory cache</code>)</td></tr>
+<tr><td><b>② Service Worker</b></td><td>코드로 직접 제어하는 캐시. 오프라인 지원의 핵심</td></tr>
+<tr><td><b>③ 디스크 캐시(<span class="term" data-term="http">HTTP</span>)</b></td><td><code>Cache-Control</code> 헤더에 따름. 브라우저 종료 후에도 유지</td></tr>
+<tr><td><b>④ CDN 엣지 캐시</b></td><td>사용자와 가까운 서버 (3장)</td></tr>
+<tr><td><b>⑤ 서버 캐시</b></td><td>Redis 등</td></tr>
+<tr><td><b>⑥ 데이터베이스</b></td><td>진짜 원본</td></tr>
+</tbody>
+</table>
 </div>
+
+<p class="ch-meta" style="margin-top:-.4em">위에서 찾으면(캐시 히트) 아래로 가지 않습니다.
+①에서 끝나면 0ms, ⑥까지 가면 수백 ms입니다.</p>
 
 <h2 id="http-cache">HTTP 캐시 — 헤더가 전부다</h2>
 
 <p>브라우저가 파일을 얼마나 오래 보관할지는 <b>서버가 내려준 헤더</b>가 정합니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">Cache-Control 주요 지시어</span>
-<pre><code data-lang="text">max-age=3600          3600초 동안은 서버에 묻지 않고 그냥 쓴다
-no-cache              저장은 하되, 쓰기 전에 매번 서버에 "바뀌었나요?" 물어본다
-no-store              저장 자체를 하지 않는다
-must-revalidate       유효기간이 지나면 반드시 서버에 확인한다
-immutable             유효기간 안에는 새로고침해도 재검증하지 않는다
-s-maxage=86400        CDN 같은 공유 캐시에만 적용되는 max-age
-private               브라우저만 저장 가능. CDN은 저장 금지 (개인화된 응답)
-public                공유 캐시도 저장 가능
-stale-while-revalidate=60
-                      만료 후 60초 동안은 일단 옛 응답을 주고,
-                      뒤에서 조용히 새로 받아 둔다 (체감 속도가 크게 좋아진다)</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>지시어</th><th>뜻</th></tr></thead>
+<tbody>
+<tr><td><code>max-age=3600</code></td><td>3600초 동안은 서버에 묻지 않고 그냥 씁니다</td></tr>
+<tr><td><code>no-cache</code></td><td><b>저장은 하되</b>, 쓰기 전에 매번 서버에 "바뀌었나요?" 물어봅니다</td></tr>
+<tr><td><code>no-store</code></td><td><b>저장 자체를 하지 않습니다</b></td></tr>
+<tr><td><code>must-revalidate</code></td><td>유효기간이 지나면 반드시 서버에 확인합니다</td></tr>
+<tr><td><code>immutable</code></td><td>유효기간 안에는 새로고침해도 <span class="term" data-term="revalidate">재검증</span>하지 않습니다</td></tr>
+<tr><td><code>s-maxage=86400</code></td><td>CDN 같은 <b>공유 캐시에만</b> 적용되는 max-age</td></tr>
+<tr><td><code>private</code></td><td>브라우저만 저장 가능. CDN은 저장 금지 (개인화된 응답)</td></tr>
+<tr><td><code>public</code></td><td>공유 캐시도 저장 가능</td></tr>
+<tr><td><code>stale-while-revalidate=60</code></td><td>만료 후 60초 동안은 <b>일단 옛 응답을 주고</b> 뒤에서 조용히 새로 받아 둡니다 (체감 속도가 크게 좋아집니다)</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box myth">
@@ -201,7 +211,7 @@ Vercel·Netlify·Cloudflare Pages는 <b>위 캐시 헤더를 알아서 설정</b
 
 <h2 id="app-cache">앱 레벨 캐시</h2>
 
-<p><span class="term" data-term="http">HTTP</span> 캐시 외에 <b>애플리케이션이 직접 관리하는 캐시</b>도 있습니다.</p>
+<p>HTTP 캐시 외에 <b>애플리케이션이 직접 관리하는 캐시</b>도 있습니다.</p>
 
 <div class="codeblock">
 <span class="cb-label"><span class="term" data-term="tanstack-query">TanStack Query</span> (67장)</span>
@@ -223,26 +233,24 @@ Vercel·Netlify·Cloudflare Pages는 <b>위 캐시 헤더를 알아서 설정</b
 "왜 뒤로 가기 했을 때 데이터가 없지?"의 답은 대개 <code>gcTime</code>입니다.</p>
 </div>
 
-<div class="codeblock">
-<span class="cb-label">Service Worker 캐시 전략</span>
-<pre><code data-lang="text">Cache First       캐시에 있으면 그걸 쓰고, 없을 때만 네트워크
-                  → 폰트, 아이콘, 로고처럼 안 바뀌는 것
-
-Network First     네트워크를 먼저 시도하고, 실패하면 캐시
-                  → 최신성이 중요한 API. 오프라인 대비용
-
-Stale While       캐시를 즉시 보여 주고, 동시에 네트워크로 갱신해 다음에 반영
-Revalidate        → 대부분의 화면에 잘 맞는 균형점
-
-주의: Service Worker는 한 번 등록되면 계속 살아 있습니다.
-     잘못 등록하면 사용자가 옛 버전에 갇힐 수 있어
-     업데이트·해제 경로를 반드시 함께 설계해야 합니다.</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>전략</th><th>동작</th><th>어디에</th></tr></thead>
+<tbody>
+<tr><td><b>Cache First</b></td><td>캐시에 있으면 그걸 쓰고, 없을 때만 네트워크</td><td>폰트, 아이콘, 로고처럼 안 바뀌는 것</td></tr>
+<tr><td><b>Network First</b></td><td>네트워크를 먼저 시도하고, 실패하면 캐시</td><td>최신성이 중요한 <span class="term" data-term="api">API</span>. 오프라인 대비용</td></tr>
+<tr><td><b>Stale While<br>Revalidate</b></td><td>캐시를 즉시 보여 주고, 동시에 네트워크로 갱신해 다음에 반영</td><td>대부분의 화면에 맞는 균형점</td></tr>
+</tbody>
+</table>
 </div>
+
+<p class="ch-meta" style="margin-top:-.4em"><b>주의</b> — Service Worker는 한 번 등록되면 계속 살아 있습니다.
+잘못 등록하면 사용자가 옛 버전에 갇힐 수 있어 <b>업데이트·해제 경로를 반드시 함께 설계</b>해야 합니다.</p>
 
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 캐시 디버깅 순서</p>
 <ol style="margin-bottom:0">
-<li><b><span class="term" data-term="devtools">DevTools</span> Network 패널의 Size 칼럼</b>을 봅니다.
+<li><b>DevTools Network 패널의 Size 칼럼</b>을 봅니다.
 <code>(memory cache)</code>, <code>(disk cache)</code>, <code>(ServiceWorker)</code>로 어디서 왔는지 바로 보입니다.</li>
 <li><b>"내 화면만 안 바뀌어요"</b> → Network 패널의 <b>Disable cache</b> 체크 후 새로고침해 보세요.
 그걸로 해결되면 캐시 문제입니다.</li>
@@ -259,7 +267,7 @@ Application → Service Workers에서 <b>Unregister</b>가 필요할 수 있습�
 <li>캐시는 <b>느린 곳의 결과를 빠른 곳에 두는 것</b>. CPU부터 CDN까지 원리가 같다.</li>
 <li><b>네트워크는 메모리보다 자릿수로 백만 배 느리다.</b> 요청 하나를 없애는 게 가장 큰 개선이다.</li>
 <li><b><code>no-cache</code>는 "저장하되 매번 확인"</b>, <b><code>no-store</code>는 "저장 금지"</b>. 헷갈리면 안 된다.</li>
-<li><span class="term" data-term="revalidate">재검증</span>은 <b>ETag/If-None-Match</b>로 하고, 안 바뀌었으면 <b>304(본문 없음)</b>가 온다.</li>
+<li>재검증은 <b>ETag/If-None-Match</b>로 하고, 안 바뀌었으면 <b>304(본문 없음)</b>가 온다.</li>
 <li><b>파일명 해싱</b> + <b>에셋 1년 <code>immutable</code></b> + <b><code>index.html</code>은 <code>no-cache</code></b>가 표준 조합이다.</li>
 <li><code>index.html</code>을 오래 캐시하면 <b>새 배포가 영원히 도달하지 않는다.</b></li>
 <li>CDN에는 <b>개인화된 응답을 캐시하지 않도록</b> <code>private</code>·<code>no-store</code>를 쓴다.</li>

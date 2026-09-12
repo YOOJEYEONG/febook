@@ -30,16 +30,22 @@
 
 <h2 id="orders">복잡도 계급표</h2>
 
-<div class="codeblock">
-<span class="cb-label">입력 n이 커질 때 작업 횟수 (대략)</span>
-<pre><code data-lang="text">표기         이름          n=10      n=1,000      n=1,000,000   예시
-O(1)        상수           1           1                1       obj.key, map.get, arr[i], push
-O(log n)    로그          ~3          ~10              ~20       정렬된 배열의 이진 탐색
-O(n)        선형          10        1,000        1,000,000       for 한 번, find, includes, map
-O(n log n)  선형로그       33       10,000       20,000,000      sort
-O(n²)       제곱         100    1,000,000    1,000,000,000,000   이중 for, 반복문 안의 find
-O(2ⁿ)       지수       1,024   우주가 끝남              ―        메모이제이션 없는 재귀</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>표기</th><th>n=1,000일 때</th><th>대표 예시</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">O(1)</b><br>상수</td><td>1번</td><td><code>obj.key</code>, <code>map.get</code>, <code>arr[i]</code>, <code>push</code></td></tr>
+<tr><td><b class="nw">O(log n)</b><br>로그</td><td>약 10번</td><td>정렬된 배열의 이진 탐색</td></tr>
+<tr><td><b class="nw">O(n)</b><br>선형</td><td>1,000번</td><td><code>for</code> 한 번, <code>find</code>, <code>includes</code>, <code>map</code></td></tr>
+<tr><td><b class="nw">O(n log n)</b><br>선형로그</td><td>약 1만 번</td><td><code>sort</code></td></tr>
+<tr><td><b class="nw">O(n²)</b><br>제곱</td><td><b>100만 번</b></td><td>이중 <code>for</code>, 반복문 안의 <code>find</code></td></tr>
+<tr><td><b class="nw">O(2ⁿ)</b><br>지수</td><td>사실상 끝나지 않음</td><td>메모이제이션 없는 재귀</td></tr>
+</tbody>
+</table>
 </div>
+
+<p class="ch-meta" style="margin-top:-.4em">n=10일 때는 각각 1 · 3 · 10 · 33 · 100 · 1,024번입니다.
+<b>작을 땐 차이가 없다가 커질 때 벌어진다</b>는 것이 핵심입니다.</p>
 
 <p>표에서 봐야 할 것은 <b>가로가 아니라 세로</b>입니다.
 n이 1,000일 때 O(n)은 1,000번, O(n²)은 <b>100만 번</b>입니다.
@@ -48,25 +54,20 @@ n이 1,000일 때 O(n)은 1,000번, O(n²)은 <b>100만 번</b>입니다.
 
 <h3 id="js-cost">JavaScript 메서드별 비용</h3>
 
-<div class="codeblock">
-<span class="cb-label">자주 쓰는 것들 (평균 기준)</span>
-<pre><code data-lang="text">O(1)   arr[i]                    인덱스 접근
-       arr.push() / arr.pop()    끝에서 넣고 빼기 (분할 상환 기준)
-       obj.key / map.get()       키 조회
-       set.has() / map.has()     존재 확인
-
-O(n)   arr.find() / findIndex()  앞에서부터 훑는다
-       arr.includes() / indexOf()
-       arr.filter() / map() / forEach() / reduce()
-       arr.shift() / unshift()   전부 밀어야 한다
-       arr.splice()              뒤를 당겨야 한다
-       [...arr] / Object.keys()  전부 복사·나열
-       JSON.stringify / parse
-
-O(n log n)
-       arr.sort()
-
-O(n·m) arr.join() 같은 문자열 결합 계열은 총 길이에 비례</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>비용</th><th>메서드</th><th>왜</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">O(1)</b></td><td><code>arr[i]</code></td><td>주소를 계산해 바로 간다</td></tr>
+<tr><td><b class="nw">O(1)</b></td><td><code>push()</code> · <code>pop()</code></td><td>끝에서만 넣고 뺀다 (분할 상환 기준)</td></tr>
+<tr><td><b class="nw">O(1)</b></td><td><code>obj.key</code> · <code>map.get()</code> · <code>set.has()</code></td><td>해시로 자리를 계산한다</td></tr>
+<tr><td><b class="nw">O(n)</b></td><td><code>find()</code> · <code>findIndex()</code> · <code>includes()</code> · <code>indexOf()</code></td><td>앞에서부터 훑는다</td></tr>
+<tr><td><b class="nw">O(n)</b></td><td><code>filter()</code> · <code>map()</code> · <code>forEach()</code> · <code>reduce()</code></td><td>전부 한 번씩 본다</td></tr>
+<tr><td><b class="nw">O(n)</b></td><td><code>shift()</code> · <code>unshift()</code> · <code>splice()</code></td><td>나머지를 전부 밀거나 당긴다</td></tr>
+<tr><td><b class="nw">O(n)</b></td><td><code>[...arr]</code> · <code>Object.keys()</code> · <code>JSON.stringify()</code></td><td>전부 복사하거나 나열한다</td></tr>
+<tr><td><b class="nw">O(n log n)</b></td><td><code>sort()</code></td><td>비교하며 정렬한다</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box warn">

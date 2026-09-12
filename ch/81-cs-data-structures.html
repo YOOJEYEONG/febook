@@ -196,17 +196,20 @@ console.log("결과 동일 :", slow[10].name === fast[10].name);
 
 <p>둘 다 "키 → 값" 저장소지만 성격이 다릅니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">비교</span>
-<pre><code data-lang="text">                   Object                        Map
-키 타입            문자열 · 심볼만               무엇이든 (객체·숫자·함수도 키)
-숫자 키            "1" 문자열로 변환됨           1과 "1"이 서로 다른 키
-키 순서            규칙이 있음 (아래 설명)        항상 삽입한 순서
-크기               Object.keys(o).length         map.size
-순회               Object.entries() 등           for…of 로 바로
-프로토타입         toString 등이 딸려 옴          없음 (깨끗함)
-JSON               JSON.stringify 바로 됨        직접 변환 필요
-용도               고정된 구조의 레코드           자주 넣고 빼는 사전</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>Object</th><th><span class="term" data-term="map-object">Map</span></th></tr></thead>
+<tbody>
+<tr><td><b>키 타입</b></td><td>문자열 · 심볼만</td><td>무엇이든 (객체·숫자·함수도)</td></tr>
+<tr><td><b>숫자 키</b></td><td><code>"1"</code> 문자열로 변환됨</td><td><code>1</code>과 <code>"1"</code>이 서로 다른 키</td></tr>
+<tr><td><b>키 순서</b></td><td>규칙이 있음 (아래 설명)</td><td>항상 삽입한 순서</td></tr>
+<tr><td><b>크기</b></td><td><code>Object.keys(o).length</code></td><td><code>map.size</code></td></tr>
+<tr><td><b>순회</b></td><td><code>Object.entries()</code> 등</td><td><code>for…of</code>로 바로</td></tr>
+<tr><td><b><span class="term" data-term="prototype">프로토타입</span></b></td><td><code>toString</code> 등이 딸려 옴</td><td>없음 (깨끗함)</td></tr>
+<tr><td><b><span class="term" data-term="json">JSON</span></b></td><td><code>JSON.stringify</code> 바로 됨</td><td>직접 변환 필요</td></tr>
+<tr><td><b>용도</b></td><td>고정된 구조의 레코드</td><td>자주 넣고 빼는 사전</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="runner" data-lang="js" data-title="객체의 키 순서 규칙" data-note="흔히 '객체 키 순서는 보장 안 된다'고 하지만, 명세에 정해진 규칙이 있습니다.">
@@ -252,7 +255,7 @@ console.log(safe.get("toString"));   // undefined ← 안전
 <div class="box warn">
 <p class="box-title"><span class="box-ico">⚠️</span> 사용자 입력을 객체의 <b>키</b>로 쓸 때</p>
 <p style="margin-bottom:0">사용자가 <code>__proto__</code>나 <code>constructor</code>를 키로 보내면
-객체의 동작이 바뀌거나 검사 로직이 뚫릴 수 있습니다(<b><span class="term" data-term="prototype">프로토타입</span> 오염</b>, 78장).
+객체의 동작이 바뀌거나 검사 로직이 뚫릴 수 있습니다(<b>프로토타입 오염</b>, 78장).
 <b>키를 외부에서 받는 저장소는 <code>Map</code>이나 <code>Object.create(null)</code></b>을 쓰세요.
 <code>Object.create(null)</code>로 만든 객체는 프로토타입이 없어 <code>toString</code> 같은 게 딸려 오지 않습니다.</p>
 </div>
@@ -299,7 +302,7 @@ console.log(s.size);   // 2 ← 참조가 다르기 때문 (25장)
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 실무 선택 기준</p>
 <ol style="margin-bottom:0">
-<li><b>구조가 고정된 데이터</b>(<span class="term" data-term="api">API</span> 응답 한 건, <span class="term" data-term="component">컴포넌트</span> <span class="term" data-term="props">props</span>) → <b>객체</b>. <span class="term" data-term="json">JSON</span>으로 바로 오가고 구조 분해가 편합니다.</li>
+<li><b>구조가 고정된 데이터</b>(<span class="term" data-term="api">API</span> 응답 한 건, <span class="term" data-term="component">컴포넌트</span> <span class="term" data-term="props">props</span>) → <b>객체</b>. JSON으로 바로 오가고 구조 분해가 편합니다.</li>
 <li><b>키가 동적으로 계속 늘고 줄어드는 사전</b>(id → 항목 조회표, 캐시) → <b><code>Map</code></b>.</li>
 <li><b>"있냐 없냐"만 묻는 것</b>(선택된 ID 목록, 방문한 <span class="term" data-term="url">URL</span>) → <b><code>Set</code></b>.</li>
 <li><b>순서와 인덱스가 의미 있는 목록</b>(화면에 그릴 리스트) → <b>배열</b>. React 렌더링에는 결국 배열이 필요합니다.</li>

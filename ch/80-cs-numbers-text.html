@@ -177,11 +177,15 @@ console.log(9007199254740993n);              // 9007199254740993n ← BigInt는 
 
 <p>컴퓨터에는 숫자만 있습니다. 그래서 <b>"글자 하나에 번호 하나"</b>를 붙이기로 약속했습니다. 이 약속이 <b>문자 집합</b>입니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">문자 인코딩의 역사, 세 줄 요약</span>
-<pre><code data-lang="text">ASCII (1963)     영문자·숫자·기호 128개. 1바이트로 충분했다.
-국가별 인코딩      한국은 EUC-KR, 일본은 Shift_JIS … 서로 호환 안 됨 → 글자 깨짐(뷁)
-유니코드 + UTF-8  전 세계 모든 문자에 번호 하나씩. 지금의 표준.</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>시기</th><th>무엇</th></tr></thead>
+<tbody>
+<tr><td><b>AS<span class="term" data-term="ci">CI</span>I</b> (1963)</td><td>영문자·숫자·기호 128개. 1바이트로 충분했습니다.</td></tr>
+<tr><td><b>국가별 인코딩</b></td><td>한국은 EUC-KR, 일본은 Shift_JIS… <b>서로 호환되지 않아</b> 글자가 깨졌습니다(뷁).</td></tr>
+<tr><td><b>유니코드 + UTF-8</b></td><td>전 세계 모든 문자에 번호 하나씩. 지금의 표준입니다.</td></tr>
+</tbody>
+</table>
 </div>
 
 <p><b>유니코드</b>는 <b>"어떤 글자에 몇 번을 줄 것인가"</b>를 정한 표입니다. 이 번호를 <b>코드 포인트</b>라 하고
@@ -189,15 +193,19 @@ console.log(9007199254740993n);              // 9007199254740993n ← BigInt는 
 
 <p><b>UTF-8</b>은 <b>"그 번호를 실제 바이트로 어떻게 적을 것인가"</b>를 정한 방식입니다. 핵심은 <b>가변 길이</b>라는 점입니다.</p>
 
-<div class="codeblock">
-<span class="cb-label">UTF-8 — 글자에 따라 1~4바이트</span>
-<pre><code data-lang="text">A       U+0041     1바이트     ← 영문·숫자는 ASCII와 완전히 동일
-é       U+00E9     2바이트
-가      U+AC00     3바이트     ← 한글·한자·대부분의 문자
-😀      U+1F600    4바이트     ← 이모지</code></pre>
+<div class="tablewrap">
+<table>
+<thead><tr><th>글자</th><th>코드 포인트</th><th>바이트</th><th>비고</th></tr></thead>
+<tbody>
+<tr><td>A</td><td><code>U+0041</code></td><td><b>1</b></td><td>영문·숫자는 ASCII와 완전히 동일</td></tr>
+<tr><td>é</td><td><code>U+00E9</code></td><td><b>2</b></td><td></td></tr>
+<tr><td>가</td><td><code>U+AC00</code></td><td><b>3</b></td><td>한글·한자 등 대부분의 문자</td></tr>
+<tr><td>😀</td><td><code>U+1F600</code></td><td><b>4</b></td><td>이모지</td></tr>
+</tbody>
+</table>
 </div>
 
-<p>영문이 1바이트라 <b>기존 AS<span class="term" data-term="ci">CI</span>I 문서가 그대로 유효한 UTF-8 문서</b>가 됩니다.
+<p>영문이 1바이트라 <b>기존 ASCII 문서가 그대로 유효한 UTF-8 문서</b>가 됩니다.
 이 하위 호환성 덕분에 UTF-8이 웹의 표준이 됐고, <span class="term" data-term="html">HTML</span> 명세는 <code>&lt;meta charset="utf-8"&gt;</code>를 쓰라고 규정합니다.</p>
 
 <div class="runner" data-lang="js" data-title="바이트 수 직접 세어 보기" data-note="TextEncoder가 문자열을 UTF-8 바이트로 바꿔 줍니다.">
