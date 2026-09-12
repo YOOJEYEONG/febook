@@ -179,14 +179,14 @@ console.log("결과 동일 :", slow[10].name === fast[10].name);
 <table>
 <thead><tr><th></th><th>Object</th><th>Map</th></tr></thead>
 <tbody>
-<tr><td><b>키 타입</b></td><td>문자열 · 심볼만</td><td>무엇이든 (객체·숫자·함수도)</td></tr>
-<tr><td><b>숫자 키</b></td><td><code>"1"</code> 문자열로 변환됨</td><td><code>1</code>과 <code>"1"</code>이 서로 다른 키</td></tr>
-<tr><td><b>키 순서</b></td><td>규칙이 있음 (아래 설명)</td><td>항상 삽입한 순서</td></tr>
-<tr><td><b>크기</b></td><td><code>Object.keys(o).length</code></td><td><code>map.size</code></td></tr>
-<tr><td><b>순회</b></td><td><code>Object.entries()</code> 등</td><td><code>for…of</code>로 바로</td></tr>
-<tr><td><b>프로토타입</b></td><td><code>toString</code> 등이 딸려 옴</td><td>없음 (깨끗함)</td></tr>
-<tr><td><b>JSON</b></td><td><code>JSON.stringify</code> 바로 됨</td><td>직접 변환 필요</td></tr>
-<tr><td><b>용도</b></td><td>고정된 구조의 레코드</td><td>자주 넣고 빼는 사전</td></tr>
+<tr><td><b class="nw">키 타입</b></td><td>문자열 · 심볼만</td><td>무엇이든 (객체·숫자·함수도)</td></tr>
+<tr><td><b class="nw">숫자 키</b></td><td><code>"1"</code> 문자열로 변환됨</td><td><code>1</code>과 <code>"1"</code>이 서로 다른 키</td></tr>
+<tr><td><b class="nw">키 순서</b></td><td>규칙이 있음 (아래 설명)</td><td>항상 삽입한 순서</td></tr>
+<tr><td><b class="nw">크기</b></td><td><code>Object.keys(o).length</code></td><td><code>map.size</code></td></tr>
+<tr><td><b class="nw">순회</b></td><td><code>Object.entries()</code> 등</td><td><code>for…of</code>로 바로</td></tr>
+<tr><td><b class="nw">프로토타입</b></td><td><code>toString</code> 등이 딸려 옴</td><td>없음 (깨끗함)</td></tr>
+<tr><td><b class="nw">JSON</b></td><td><code>JSON.stringify</code> 바로 됨</td><td>직접 변환 필요</td></tr>
+<tr><td><b class="nw">용도</b></td><td>고정된 구조의 레코드</td><td>자주 넣고 빼는 사전</td></tr>
 </tbody>
 </table>
 </div>

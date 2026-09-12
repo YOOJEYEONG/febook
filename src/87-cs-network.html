@@ -40,11 +40,11 @@
 <table>
 <thead><tr><th></th><th>TCP</th><th>UDP</th></tr></thead>
 <tbody>
-<tr><td><b>시작</b></td><td>연결을 맺고 시작한다</td><td>그냥 보낸다</td></tr>
-<tr><td><b>유실</b></td><td>빠진 조각을 다시 보낸다</td><td>빠져도 신경 안 쓴다</td></tr>
-<tr><td><b>순서</b></td><td>보장한다</td><td>안 맞을 수 있다</td></tr>
-<tr><td><b>성격</b></td><td>느리지만 정확하다</td><td>빠르지만 손실 가능</td></tr>
-<tr><td><b>쓰는 곳</b></td><td>웹 페이지, 파일 전송, 이메일<br>HTTP/1.1, HTTP/2</td><td>실시간 영상·음성 통화, 게임<br>HTTP/3(QUIC), WebRTC</td></tr>
+<tr><td><b class="nw">시작</b></td><td>연결을 맺고 시작한다</td><td>그냥 보낸다</td></tr>
+<tr><td><b class="nw">유실</b></td><td>빠진 조각을 다시 보낸다</td><td>빠져도 신경 안 쓴다</td></tr>
+<tr><td><b class="nw">순서</b></td><td>보장한다</td><td>안 맞을 수 있다</td></tr>
+<tr><td><b class="nw">성격</b></td><td>느리지만 정확하다</td><td>빠르지만 손실 가능</td></tr>
+<tr><td><b class="nw">쓰는 곳</b></td><td>웹 페이지, 파일 전송, 이메일<br>HTTP/1.1, HTTP/2</td><td>실시간 영상·음성 통화, 게임<br>HTTP/3(QUIC), WebRTC</td></tr>
 </tbody>
 </table>
 </div>
@@ -191,10 +191,10 @@ TCP를 고치지 않고 UDP 위에 새로 만든 이유는 <b>TCP가 운영체�
 <table>
 <thead><tr><th>방식</th><th>성격</th><th>어디에</th></tr></thead>
 <tbody>
-<tr><td><b>폴링</b></td><td>일정 간격으로 계속 물어봅니다. 가장 단순하고, 낭비와 지연이 있지만 <b>대부분 충분합니다</b></td><td>느긋한 갱신</td></tr>
-<tr><td><b>SSE</b></td><td>서버 → 클라이언트 <b>단방향</b> 스트림. HTTP 그대로 쓰고 <code>EventSource</code>가 <b>자동 재연결</b>합니다. 텍스트만</td><td>알림, 진행률, AI 응답 스트리밍</td></tr>
+<tr><td><b class="nw">폴링</b></td><td>일정 간격으로 계속 물어봅니다. 가장 단순하고, 낭비와 지연이 있지만 <b>대부분 충분합니다</b></td><td>느긋한 갱신</td></tr>
+<tr><td><b class="nw">SSE</b></td><td>서버 → 클라이언트 <b>단방향</b> 스트림. HTTP 그대로 쓰고 <code>EventSource</code>가 <b>자동 재연결</b>합니다. 텍스트만</td><td>알림, 진행률, AI 응답 스트리밍</td></tr>
 <tr><td><b>WebSocket</b></td><td><b>양방향</b> 실시간. 연결을 한 번 맺고 유지합니다. 재연결·하트비트는 직접 구현</td><td>채팅, 협업 편집, 게임, 실시간 시세</td></tr>
-<tr><td><b>WebRTC</b></td><td>브라우저 ↔ 브라우저 직접 연결. 난도가 높아 보통 라이브러리·서비스를 씁니다</td><td>화상 통화</td></tr>
+<tr><td><b class="nw">WebRTC</b></td><td>브라우저 ↔ 브라우저 직접 연결. 난도가 높아 보통 라이브러리·서비스를 씁니다</td><td>화상 통화</td></tr>
 </tbody>
 </table>
 </div>
@@ -213,10 +213,10 @@ TCP를 고치지 않고 UDP 위에 새로 만든 이유는 <b>TCP가 운영체�
 <thead><tr><th>구간</th><th>무엇</th><th>길다면</th></tr></thead>
 <tbody>
 <tr><td><b>Queueing</b></td><td>아직 보내지 않고 대기 중</td><td>동시 요청이 너무 많거나 우선순위가 낮음</td></tr>
-<tr><td><b>Stalled</b></td><td>연결을 기다리는 중</td><td>HTTP/1.1의 연결 수 제한에 걸렸을 가능성</td></tr>
+<tr><td><b class="nw">Stalled</b></td><td>연결을 기다리는 중</td><td>HTTP/1.1의 연결 수 제한에 걸렸을 가능성</td></tr>
 <tr><td><b>DNS Lookup</b></td><td>도메인 → IP 조회</td><td><code>preconnect</code>·<code>dns-prefetch</code> 검토</td></tr>
 <tr><td><b>Initial connection<br>SSL</b></td><td>TCP · TLS 핸드셰이크</td><td>서버가 물리적으로 멀다 → <b>CDN</b></td></tr>
-<tr><td><b>TTFB</b><br>(Waiting for server response)</td><td>요청 후 첫 바이트가 올 때까지</td><td><b>서버 처리가 느리다</b>(DB 쿼리, 렌더링). 프론트엔드가 고칠 수 없는 경우가 많습니다 — 백엔드와 이야기하세요</td></tr>
+<tr><td><b class="nw">TTFB</b><br>(Waiting for server response)</td><td>요청 후 첫 바이트가 올 때까지</td><td><b>서버 처리가 느리다</b>(DB 쿼리, 렌더링). 프론트엔드가 고칠 수 없는 경우가 많습니다 — 백엔드와 이야기하세요</td></tr>
 <tr><td><b>Content Download</b></td><td>응답 본문을 받는 시간</td><td><b>파일이 크다</b> → 압축·이미지 최적화·코드 스플리팅 (76장)</td></tr>
 </tbody>
 </table>

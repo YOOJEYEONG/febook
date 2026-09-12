@@ -21,10 +21,10 @@
 <table>
 <thead><tr><th></th><th>컴파일러 (번역가)</th><th>인터프리터 (통역사)</th></tr></thead>
 <tbody>
-<tr><td><b>방식</b></td><td>실행 전에 전부 번역해 기계어 파일을 만든다</td><td>한 줄씩 읽으며 그때그때 실행</td></tr>
-<tr><td><b>장점</b></td><td>실행이 빠르다 · 오류를 미리 잡는다</td><td>바로 실행된다 · 플랫폼을 안 가린다</td></tr>
-<tr><td><b>단점</b></td><td>빌드 시간이 필요하다 · 플랫폼별로 다시 빌드</td><td>매번 해석하므로 느리다 · 오류를 실행해 봐야 안다</td></tr>
-<tr><td><b>예</b></td><td>C, Rust, Go</td><td>초창기 JavaScript, Python</td></tr>
+<tr><td><b class="nw">방식</b></td><td>실행 전에 전부 번역해 기계어 파일을 만든다</td><td>한 줄씩 읽으며 그때그때 실행</td></tr>
+<tr><td><b class="nw">장점</b></td><td>실행이 빠르다 · 오류를 미리 잡는다</td><td>바로 실행된다 · 플랫폼을 안 가린다</td></tr>
+<tr><td><b class="nw">단점</b></td><td>빌드 시간이 필요하다 · 플랫폼별로 다시 빌드</td><td>매번 해석하므로 느리다 · 오류를 실행해 봐야 안다</td></tr>
+<tr><td><b class="nw">예</b></td><td>C, Rust, Go</td><td>초창기 JavaScript, Python</td></tr>
 </tbody>
 </table>
 </div>
@@ -66,11 +66,11 @@
 <table>
 <thead><tr><th>도구</th><th>AST로 무엇을 하나</th></tr></thead>
 <tbody>
-<tr><td><b>ESLint</b> (48장)</td><td>트리를 훑으며 규칙 위반을 찾습니다. "<code>VariableDeclaration</code> 중 <code>kind</code>가 <code>var</code>인 노드" → <code>no-var</code> 경고</td></tr>
+<tr><td><b class="nw">ESLint</b> (48장)</td><td>트리를 훑으며 규칙 위반을 찾습니다. "<code>VariableDeclaration</code> 중 <code>kind</code>가 <code>var</code>인 노드" → <code>no-var</code> 경고</td></tr>
 <tr><td><b>Prettier</b></td><td>트리를 읽고 <b>원래 서식을 버린 뒤 처음부터 다시 출력</b>합니다. 그래서 내가 어떻게 띄어 썼든 결과가 같습니다</td></tr>
-<tr><td><b>Babel</b> (47장)</td><td>트리를 변형합니다. 화살표 함수 노드를 일반 함수 노드로 바꾸는 식입니다</td></tr>
+<tr><td><b class="nw">Babel</b> (47장)</td><td>트리를 변형합니다. 화살표 함수 노드를 일반 함수 노드로 바꾸는 식입니다</td></tr>
 <tr><td><b>TypeScript</b></td><td>트리에 타입 정보를 얹어 검사하고, <b>타입을 지운 트리</b>를 출력합니다</td></tr>
-<tr><td><b>번들러</b> (82장)</td><td><code>import</code>/<code>export</code> 노드를 읽어 의존성 그래프를 만듭니다</td></tr>
+<tr><td><b class="nw">번들러</b> (82장)</td><td><code>import</code>/<code>export</code> 노드를 읽어 의존성 그래프를 만듭니다</td></tr>
 </tbody>
 </table>
 </div>

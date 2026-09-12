@@ -53,9 +53,9 @@
 <table>
 <thead><tr><th>호출 방식</th><th><code>this</code>는</th></tr></thead>
 <tbody>
-<tr><td><b>① 그냥 호출</b> <code>fn()</code></td><td><span class="term" data-term="strict-mode">엄격 모드</span>: <code>undefined</code><br>느슨한 모드: 전역 객체(<code>window</code>)</td></tr>
+<tr><td><b class="nw">① 그냥 호출</b> <code>fn()</code></td><td><span class="term" data-term="strict-mode">엄격 모드</span>: <code>undefined</code><br>느슨한 모드: 전역 객체(<code>window</code>)</td></tr>
 <tr><td><b>② 메서드 호출</b> <code>obj.fn()</code></td><td><b><code>obj</code></b> — 점 왼쪽의 객체</td></tr>
-<tr><td><b>③ 명시 호출</b> <code>fn.call(x)</code></td><td><b><code>x</code></b> — 직접 지정한 값</td></tr>
+<tr><td><b class="nw">③ 명시 호출</b> <code>fn.call(x)</code></td><td><b><code>x</code></b> — 직접 지정한 값</td></tr>
 <tr><td><b>④ <code>new</code> 호출</b> <code>new Fn()</code></td><td><b>새로 만들어진 객체</b></td></tr>
 </tbody>
 </table>

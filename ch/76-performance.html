@@ -47,9 +47,9 @@
 <table>
 <thead><tr><th>지표</th><th>측정하는 것</th><th>좋음</th><th>개선 필요</th></tr></thead>
 <tbody>
-<tr><td><b>LCP</b><br>Largest Contentful Paint</td><td><b>가장 큰 콘텐츠</b>가 보이기까지</td><td><b>2.5초 이하</b></td><td>4초 초과</td></tr>
-<tr><td><b>INP</b><br>Interaction to Next Paint</td><td><b>상호작용 후 화면이 반응</b>하기까지</td><td><b>200ms 이하</b></td><td>500ms 초과</td></tr>
-<tr><td><b>CLS</b><br>Cumulative Layout Shift</td><td><b>레이아웃이 얼마나 흔들렸는지</b></td><td><b>0.1 이하</b></td><td>0.25 초과</td></tr>
+<tr><td><b class="nw">LCP</b><br>Largest Contentful Paint</td><td><b>가장 큰 콘텐츠</b>가 보이기까지</td><td><b>2.5초 이하</b></td><td>4초 초과</td></tr>
+<tr><td><b class="nw">INP</b><br>Interaction to Next Paint</td><td><b>상호작용 후 화면이 반응</b>하기까지</td><td><b>200ms 이하</b></td><td>500ms 초과</td></tr>
+<tr><td><b class="nw">CLS</b><br>Cumulative Layout Shift</td><td><b>레이아웃이 얼마나 흔들렸는지</b></td><td><b>0.1 이하</b></td><td>0.25 초과</td></tr>
 </tbody>
 </table>
 </div>
@@ -128,7 +128,7 @@ LCP는 네 단계로 나뉘고, 어디가 느린지 알아야 고칠 수 있습�
 <table>
 <thead><tr><th>원인</th><th>대응</th></tr></thead>
 <tbody>
-<tr><td><b>긴 작업</b> (50ms 초과)</td><td>쪼개기, <b>Web Worker</b>(40장), 알고리즘 개선</td></tr>
+<tr><td><b class="nw">긴 작업</b> (50ms 초과)</td><td>쪼개기, <b>Web Worker</b>(40장), 알고리즘 개선</td></tr>
 <tr><td>무거운 렌더링</td><td><b><code>useTransition</code></b>(69장), 가상 스크롤, 구조 개선(64장)</td></tr>
 <tr><td>과도한 JS 실행</td><td>번들 줄이기, <b><span class="term" data-term="code-splitting">코드 분할</span></b>(47·68장)</td></tr>
 <tr><td><span class="term" data-term="hydration">하이드레이션</span>이 오래 걸림</td><td><b><span class="term" data-term="rsc">서버 컴포넌트</span></b>로 <span class="term" data-term="client">클라이언트</span> 코드 줄이기(69·71장)</td></tr>
@@ -193,7 +193,7 @@ npx vite-bundle-visualizer       # 무엇이 큰지 시각화</code></pre>
 <tr><td><b>필요한 것만 import</b></td><td><code>import * as _</code> 금지(47장)</td></tr>
 <tr><td><b>무거운 라이브러리 교체</b></td><td>날짜 표시는 <code>Intl</code>로 충분한 경우가 많습니다(43장)</td></tr>
 <tr><td><b>서드파티 재검토</b></td><td>정말 필요한지 다시 묻기(73장)</td></tr>
-<tr><td><b>서버 <span class="term" data-term="component">컴포넌트</span></b></td><td>해당 코드가 <b>번들에 아예 없습니다</b>(69장)</td></tr>
+<tr><td><b class="nw">서버 <span class="term" data-term="component">컴포넌트</span></b></td><td>해당 코드가 <b>번들에 아예 없습니다</b>(69장)</td></tr>
 </tbody>
 </table>
 </div>

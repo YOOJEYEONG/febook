@@ -233,8 +233,8 @@ XSS가 발생하더라도 <b>공격자의 스크립트가 실행되지 못하게
 <table>
 <thead><tr><th>방식</th><th>동작</th><th>특징</th></tr></thead>
 <tbody>
-<tr><td><b>세션 쿠키</b></td><td>서버가 세션을 저장, 쿠키에는 식별자만</td><td><b>서버에서 즉시 무효화 가능</b>. <code>HttpOnly</code>로 안전하게</td></tr>
-<tr><td><b>JWT</b></td><td>토큰 자체에 정보가 들어 있고 서명으로 검증</td><td>서버가 상태를 안 가져도 됨. <b>만료 전에 취소하기 어려움</b></td></tr>
+<tr><td><b class="nw">세션 쿠키</b></td><td>서버가 세션을 저장, 쿠키에는 식별자만</td><td><b>서버에서 즉시 무효화 가능</b>. <code>HttpOnly</code>로 안전하게</td></tr>
+<tr><td><b class="nw">JWT</b></td><td>토큰 자체에 정보가 들어 있고 서명으로 검증</td><td>서버가 상태를 안 가져도 됨. <b>만료 전에 취소하기 어려움</b></td></tr>
 <tr><td><b>OAuth / 소셜 로그인</b></td><td>다른 서비스에 인증을 위임</td><td>비밀번호를 다루지 않아도 됩니다</td></tr>
 </tbody>
 </table>

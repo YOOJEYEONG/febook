@@ -71,12 +71,12 @@
 <table>
 <thead><tr><th></th><th>관계형(SQL)</th><th>문서형 등(NoSQL)</th></tr></thead>
 <tbody>
-<tr><td><b>제품</b></td><td>PostgreSQL, MySQL</td><td>MongoDB, DynamoDB, Redis, Firestore</td></tr>
-<tr><td><b>저장</b></td><td>표(테이블)와 관계로</td><td><span class="term" data-term="json">JSON</span> 비슷한 문서로</td></tr>
-<tr><td><b>구조</b></td><td>스키마가 정해져 있다</td><td>유연하다</td></tr>
-<tr><td><b>질의</b></td><td>여러 표를 조인해서</td><td>중첩 구조를 통째로 읽는다</td></tr>
-<tr><td><b>트랜잭션</b></td><td>강력하다</td><td>제품마다 지원 수준이 다르다</td></tr>
-<tr><td><b>언제</b></td><td><b>기본값으로 삼기 좋다</b> (대부분의 서비스)</td><td>특정 용도에 (캐시=Redis, 로그, 초대용량, 실시간 동기화)</td></tr>
+<tr><td><b class="nw">제품</b></td><td>PostgreSQL, MySQL</td><td>MongoDB, DynamoDB, Redis, Firestore</td></tr>
+<tr><td><b class="nw">저장</b></td><td>표(테이블)와 관계로</td><td><span class="term" data-term="json">JSON</span> 비슷한 문서로</td></tr>
+<tr><td><b class="nw">구조</b></td><td>스키마가 정해져 있다</td><td>유연하다</td></tr>
+<tr><td><b class="nw">질의</b></td><td>여러 표를 조인해서</td><td>중첩 구조를 통째로 읽는다</td></tr>
+<tr><td><b class="nw">트랜잭션</b></td><td>강력하다</td><td>제품마다 지원 수준이 다르다</td></tr>
+<tr><td><b class="nw">언제</b></td><td><b>기본값으로 삼기 좋다</b> (대부분의 서비스)</td><td>특정 용도에 (캐시=Redis, 로그, 초대용량, 실시간 동기화)</td></tr>
 </tbody>
 </table>
 </div>
@@ -215,9 +215,9 @@ fetch("/api/orders", {
 <table>
 <thead><tr><th>방식</th><th>장점</th><th>단점</th></tr></thead>
 <tbody>
-<tr><td><b>REST</b><br>자원마다 <span class="term" data-term="url">URL</span><br><code>GET /users/1</code></td><td>단순하고 <b><span class="term" data-term="http">HTTP</span> 캐시가 그대로 듣는다</b></td><td>오버페칭(안 쓰는 필드까지 옴) · 언더페칭(여러 번 불러야 함)</td></tr>
-<tr><td><b>GraphQL</b><br>필요한 필드를 질의로 지정</td><td>필요한 만큼만, 한 번에</td><td>HTTP 캐시를 쓰기 어렵다 · 서버 복잡도 · 학습 곡선</td></tr>
-<tr><td><b>tRPC</b><br>서버·클라이언트가 타입 공유</td><td>타입 안전성이 뛰어나다</td><td>한 저장소에 TS 서버가 있을 때만</td></tr>
+<tr><td><b class="nw">REST</b><br>자원마다 <span class="term" data-term="url">URL</span><br><code>GET /users/1</code></td><td>단순하고 <b><span class="term" data-term="http">HTTP</span> 캐시가 그대로 듣는다</b></td><td>오버페칭(안 쓰는 필드까지 옴) · 언더페칭(여러 번 불러야 함)</td></tr>
+<tr><td><b class="nw">GraphQL</b><br>필요한 필드를 질의로 지정</td><td>필요한 만큼만, 한 번에</td><td>HTTP 캐시를 쓰기 어렵다 · 서버 복잡도 · 학습 곡선</td></tr>
+<tr><td><b class="nw">tRPC</b><br>서버·클라이언트가 타입 공유</td><td>타입 안전성이 뛰어나다</td><td>한 저장소에 TS 서버가 있을 때만</td></tr>
 </tbody>
 </table>
 </div>
@@ -231,11 +231,11 @@ fetch("/api/orders", {
 <table>
 <thead><tr><th></th><th>오프셋 방식</th><th>커서 방식</th></tr></thead>
 <tbody>
-<tr><td><b>요청</b></td><td><code>?page=3</code><br><code>&amp;size=20</code></td><td><code>?after=cursor_abc</code><br><code>&amp;size=20</code></td></tr>
-<tr><td><b>속도</b></td><td>뒤 페이지로 갈수록 느려진다 (앞의 행을 세고 버려야 함)</td><td><b>항상 일정하게 빠르다</b></td></tr>
+<tr><td><b class="nw">요청</b></td><td><code>?page=3</code><br><code>&amp;size=20</code></td><td><code>?after=cursor_abc</code><br><code>&amp;size=20</code></td></tr>
+<tr><td><b class="nw">속도</b></td><td>뒤 페이지로 갈수록 느려진다 (앞의 행을 세고 버려야 함)</td><td><b>항상 일정하게 빠르다</b></td></tr>
 <tr><td><b>데이터가 바뀌면</b></td><td>새 글이 추가되면 항목이 밀려 <b>중복·누락</b></td><td>중복·누락이 없다</td></tr>
-<tr><td><b>페이지 점프</b></td><td><b>가능</b> (1 2 3 … 10)</td><td>불가능</td></tr>
-<tr><td><b>어디에</b></td><td>페이지 번호 UI</td><td>무한 스크롤 · 피드</td></tr>
+<tr><td><b class="nw">페이지 점프</b></td><td><b>가능</b> (1 2 3 … 10)</td><td>불가능</td></tr>
+<tr><td><b class="nw">어디에</b></td><td>페이지 번호 UI</td><td>무한 스크롤 · 피드</td></tr>
 </tbody>
 </table>
 </div>
@@ -248,9 +248,9 @@ fetch("/api/orders", {
 <table>
 <thead><tr><th></th><th>세션 <span class="term" data-term="cookie">쿠키</span></th><th><span class="term" data-term="jwt">JWT</span>(토큰)</th></tr></thead>
 <tbody>
-<tr><td><b>방식</b></td><td>서버가 세션을 저장하고 브라우저에 세션 ID 쿠키를 준다</td><td>서명된 토큰 자체에 정보가 들어 있고 서버는 서명만 검증한다</td></tr>
-<tr><td><b>장점</b></td><td><b>서버에서 즉시 무효화 가능</b> (강제 로그아웃)</td><td>서버가 상태를 안 가져도 되고, 여러 서비스에서 공유하기 쉽다</td></tr>
-<tr><td><b>단점</b></td><td>서버가 상태를 가져야 한다</td><td>발급 후 만료 전까지 <b>무효화가 어렵다</b> → '짧은 액세스 토큰 + 긴 리프레시 토큰' 조합을 쓴다</td></tr>
+<tr><td><b class="nw">방식</b></td><td>서버가 세션을 저장하고 브라우저에 세션 ID 쿠키를 준다</td><td>서명된 토큰 자체에 정보가 들어 있고 서버는 서명만 검증한다</td></tr>
+<tr><td><b class="nw">장점</b></td><td><b>서버에서 즉시 무효화 가능</b> (강제 로그아웃)</td><td>서버가 상태를 안 가져도 되고, 여러 서비스에서 공유하기 쉽다</td></tr>
+<tr><td><b class="nw">단점</b></td><td>서버가 상태를 가져야 한다</td><td>발급 후 만료 전까지 <b>무효화가 어렵다</b> → '짧은 액세스 토큰 + 긴 리프레시 토큰' 조합을 쓴다</td></tr>
 </tbody>
 </table>
 </div>

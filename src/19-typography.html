@@ -72,10 +72,10 @@
 <thead><tr><th>방법</th><th>내용</th></tr></thead>
 <tbody>
 <tr><td><b>woff2 사용</b></td><td>웹 전용 압축 포맷. ttf·otf 대비 <b>30~50% 작습니다</b>. 모든 현대 브라우저가 지원하므로 <b>woff2 하나만</b> 넣으면 됩니다</td></tr>
-<tr><td><b>서브셋</b></td><td>실제로 쓰는 글자만 남기고 잘라냅니다. 한자·특수문자를 빼는 것만으로 크게 줄어듭니다</td></tr>
+<tr><td><b class="nw">서브셋</b></td><td>실제로 쓰는 글자만 남기고 잘라냅니다. 한자·특수문자를 빼는 것만으로 크게 줄어듭니다</td></tr>
 <tr><td><b><code>unicode-range</code> 분할</b></td><td>글꼴을 문자 범위별 여러 파일로 나누면 <b>페이지에 실제로 등장한 범위만</b> 내려받습니다. 구글 폰트의 한글 글꼴이 이 방식을 씁니다</td></tr>
-<tr><td><b>굵기 줄이기</b></td><td>400·700 두 가지면 대부분 충분합니다. 굵기 6종을 다 넣지 마세요</td></tr>
-<tr><td><b>가변 폰트</b></td><td>한 파일에 모든 굵기가 들어 있습니다. 여러 굵기를 쓴다면 오히려 총량이 줄어듭니다</td></tr>
+<tr><td><b class="nw">굵기 줄이기</b></td><td>400·700 두 가지면 대부분 충분합니다. 굵기 6종을 다 넣지 마세요</td></tr>
+<tr><td><b class="nw">가변 폰트</b></td><td>한 파일에 모든 굵기가 들어 있습니다. 여러 굵기를 쓴다면 오히려 총량이 줄어듭니다</td></tr>
 </tbody>
 </table>
 </div>
@@ -124,11 +124,11 @@
 <table>
 <thead><tr><th>항목</th><th>권장</th><th>이유</th></tr></thead>
 <tbody>
-<tr><td><b>본문 크기</b></td><td>16~18px</td><td>16px 미만은 모바일에서 읽기 힘들고, iOS Safari는 16px 미만 입력 칸에서 <b>자동 확대</b>합니다</td></tr>
-<tr><td><b>행간</b></td><td>1.5~1.9 (<b>단위 없이</b>)</td><td>한글은 영문보다 글자가 빽빽해 <b>더 넉넉한 행간</b>이 필요합니다</td></tr>
-<tr><td><b>글줄 길이</b></td><td>45~75자 (<code>max-width: 65ch</code>)</td><td>너무 길면 다음 줄 첫머리를 찾기 어려워집니다</td></tr>
-<tr><td><b>자간</b></td><td>본문은 <code>0</code>, 큰 제목은 <code>-0.02em</code> 정도</td><td>큰 글자는 자간이 넓어 보입니다</td></tr>
-<tr><td><b>정렬</b></td><td><code>text-align: left</code></td><td>양쪽 정렬은 단어 사이 간격이 들쭉날쭉해져 <b>난독 사용자에게 특히 불리</b>합니다</td></tr>
+<tr><td><b class="nw">본문 크기</b></td><td>16~18px</td><td>16px 미만은 모바일에서 읽기 힘들고, iOS Safari는 16px 미만 입력 칸에서 <b>자동 확대</b>합니다</td></tr>
+<tr><td><b class="nw">행간</b></td><td>1.5~1.9 (<b>단위 없이</b>)</td><td>한글은 영문보다 글자가 빽빽해 <b>더 넉넉한 행간</b>이 필요합니다</td></tr>
+<tr><td><b class="nw">글줄 길이</b></td><td>45~75자 (<code>max-width: 65ch</code>)</td><td>너무 길면 다음 줄 첫머리를 찾기 어려워집니다</td></tr>
+<tr><td><b class="nw">자간</b></td><td>본문은 <code>0</code>, 큰 제목은 <code>-0.02em</code> 정도</td><td>큰 글자는 자간이 넓어 보입니다</td></tr>
+<tr><td><b class="nw">정렬</b></td><td><code>text-align: left</code></td><td>양쪽 정렬은 단어 사이 간격이 들쭉날쭉해져 <b>난독 사용자에게 특히 불리</b>합니다</td></tr>
 </tbody>
 </table>
 </div>

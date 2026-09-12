@@ -29,12 +29,12 @@
 <table>
 <thead><tr><th>부위</th><th>예</th><th>하는 일</th></tr></thead>
 <tbody>
-<tr><td><b>스킴</b><br>scheme</td><td><code>https:</code></td><td>어떤 규칙으로 통신할지. <code>http</code>, <code>https</code>, <code>file</code>(내 컴퓨터 파일), <code>mailto</code>(메일 앱 열기) 등</td></tr>
-<tr><td><b>호스트</b><br>host</td><td><code>shop.example.com</code></td><td>어느 서버인지. 도메인 이름 또는 IP 주소</td></tr>
-<tr><td><b>포트</b><br>port</td><td><code>:443</code></td><td>서버의 어느 프로그램인지. 기본값(80·443)이면 생략</td></tr>
-<tr><td><b>경로</b><br>path</td><td><code>/products/42</code></td><td>그 서버 안에서 무엇을 원하는지</td></tr>
-<tr><td><b>질의 문자열</b><br>query string</td><td><code>?color=red&amp;size=m</code></td><td>추가 조건. <code>이름=값</code> 쌍을 <code>&amp;</code>로 잇는다</td></tr>
-<tr><td><b>프래그먼트</b><br>fragment</td><td><code>#reviews</code></td><td>문서 안의 특정 위치. <b>서버로 전송되지 않고</b> 브라우저 안에서만 쓰인다</td></tr>
+<tr><td><b class="nw">스킴</b><br>scheme</td><td><code>https:</code></td><td>어떤 규칙으로 통신할지. <code>http</code>, <code>https</code>, <code>file</code>(내 컴퓨터 파일), <code>mailto</code>(메일 앱 열기) 등</td></tr>
+<tr><td><b class="nw">호스트</b><br>host</td><td><code>shop.example.com</code></td><td>어느 서버인지. 도메인 이름 또는 IP 주소</td></tr>
+<tr><td><b class="nw">포트</b><br>port</td><td><code>:443</code></td><td>서버의 어느 프로그램인지. 기본값(80·443)이면 생략</td></tr>
+<tr><td><b class="nw">경로</b><br>path</td><td><code>/products/42</code></td><td>그 서버 안에서 무엇을 원하는지</td></tr>
+<tr><td><b class="nw">질의 문자열</b><br>query string</td><td><code>?color=red&amp;size=m</code></td><td>추가 조건. <code>이름=값</code> 쌍을 <code>&amp;</code>로 잇는다</td></tr>
+<tr><td><b class="nw">프래그먼트</b><br>fragment</td><td><code>#reviews</code></td><td>문서 안의 특정 위치. <b>서버로 전송되지 않고</b> 브라우저 안에서만 쓰인다</td></tr>
 </tbody>
 </table>
 </div>
@@ -118,12 +118,12 @@ console.log("size 값:", url.searchParams.get("size"));
 <table>
 <thead><tr><th>레코드</th><th>뜻</th></tr></thead>
 <tbody>
-<tr><td><b>A</b></td><td>이 도메인의 IPv4 주소</td></tr>
-<tr><td><b>AAAA</b></td><td>이 도메인의 IPv6 주소</td></tr>
-<tr><td><b>CNAME</b></td><td>"이 이름은 저 이름의 별칭이다". 배포 서비스에 도메인을 연결할 때 자주 씁니다</td></tr>
-<tr><td><b>MX</b></td><td>이 도메인의 메일을 받을 서버</td></tr>
-<tr><td><b>TXT</b></td><td>자유 텍스트. 도메인 소유 증명 등에 쓰입니다</td></tr>
-<tr><td><b>TTL</b></td><td>레코드가 아니라 <b>설정값</b>. "이 답을 몇 초 동안 캐시해도 되는지"</td></tr>
+<tr><td><b class="nw">A</b></td><td>이 도메인의 IPv4 주소</td></tr>
+<tr><td><b class="nw">AAAA</b></td><td>이 도메인의 IPv6 주소</td></tr>
+<tr><td><b class="nw">CNAME</b></td><td>"이 이름은 저 이름의 별칭이다". 배포 서비스에 도메인을 연결할 때 자주 씁니다</td></tr>
+<tr><td><b class="nw">MX</b></td><td>이 도메인의 메일을 받을 서버</td></tr>
+<tr><td><b class="nw">TXT</b></td><td>자유 텍스트. 도메인 소유 증명 등에 쓰입니다</td></tr>
+<tr><td><b class="nw">TTL</b></td><td>레코드가 아니라 <b>설정값</b>. "이 답을 몇 초 동안 캐시해도 되는지"</td></tr>
 </tbody>
 </table>
 </div>
@@ -167,8 +167,8 @@ console.log("size 값:", url.searchParams.get("size"));
 <table>
 <thead><tr><th>종류</th><th>설명</th><th>예</th></tr></thead>
 <tbody>
-<tr><td><b>정적 호스팅</b></td><td>HTML·CSS·JS·이미지 <b>파일 그대로</b> 돌려주는 방식. 서버가 계산할 게 없어 매우 빠르고 저렴합니다</td><td>Vercel, Netlify, GitHub Pages, Cloudflare Pages</td></tr>
-<tr><td><b>서버 호스팅</b></td><td>요청마다 서버에서 코드를 실행해 결과를 만들어 보냅니다. 로그인·주문 처리 같은 일이 가능합니다</td><td>Vercel Functions, AWS, 일반 클라우드 서버</td></tr>
+<tr><td><b class="nw">정적 호스팅</b></td><td>HTML·CSS·JS·이미지 <b>파일 그대로</b> 돌려주는 방식. 서버가 계산할 게 없어 매우 빠르고 저렴합니다</td><td>Vercel, Netlify, GitHub Pages, Cloudflare Pages</td></tr>
+<tr><td><b class="nw">서버 호스팅</b></td><td>요청마다 서버에서 코드를 실행해 결과를 만들어 보냅니다. 로그인·주문 처리 같은 일이 가능합니다</td><td>Vercel Functions, AWS, 일반 클라우드 서버</td></tr>
 </tbody>
 </table>
 </div>

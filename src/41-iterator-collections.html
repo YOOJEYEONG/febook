@@ -139,13 +139,13 @@ console.log([...combined()]);
 <table>
 <thead><tr><th></th><th>일반 객체 <code>{}</code></th><th><code>Map</code></th></tr></thead>
 <tbody>
-<tr><td><b>키의 타입</b></td><td>문자열·심볼만 (숫자도 문자열로 변환)</td><td><b>무엇이든</b> — 객체, 함수, 숫자</td></tr>
-<tr><td><b>순서</b></td><td>정수 키가 먼저 오는 등 규칙이 복잡</td><td><b>넣은 순서 그대로</b></td></tr>
-<tr><td><b>크기</b></td><td><code>Object.keys(o).length</code></td><td><b><code>map.size</code></b></td></tr>
-<tr><td><b>순회</b></td><td><code>Object.entries()</code> 필요</td><td><b>바로 <code>for...of</code></b></td></tr>
-<tr><td><b>기본 키 충돌</b></td><td><code>toString</code> 등 상속 속성과 충돌 가능</td><td><b>없음</b></td></tr>
+<tr><td><b class="nw">키의 타입</b></td><td>문자열·심볼만 (숫자도 문자열로 변환)</td><td><b>무엇이든</b> — 객체, 함수, 숫자</td></tr>
+<tr><td><b class="nw">순서</b></td><td>정수 키가 먼저 오는 등 규칙이 복잡</td><td><b>넣은 순서 그대로</b></td></tr>
+<tr><td><b class="nw">크기</b></td><td><code>Object.keys(o).length</code></td><td><b><code>map.size</code></b></td></tr>
+<tr><td><b class="nw">순회</b></td><td><code>Object.entries()</code> 필요</td><td><b>바로 <code>for...of</code></b></td></tr>
+<tr><td><b class="nw">기본 키 충돌</b></td><td><code>toString</code> 등 상속 속성과 충돌 가능</td><td><b>없음</b></td></tr>
 <tr><td><b>잦은 추가·삭제</b></td><td>상대적으로 불리</td><td><b>유리</b></td></tr>
-<tr><td><b>JSON 변환</b></td><td><b>그대로 가능</b></td><td>불가 — 배열로 변환 필요</td></tr>
+<tr><td><b class="nw">JSON 변환</b></td><td><b>그대로 가능</b></td><td>불가 — 배열로 변환 필요</td></tr>
 </tbody>
 </table>
 </div>
@@ -250,7 +250,7 @@ function process(element) {
 <thead><tr><th>제약</th><th>내용</th></tr></thead>
 <tbody>
 <tr><td>키는 <b>객체만</b></td><td>문자열·숫자 불가</td></tr>
-<tr><td><b>순회 불가</b></td><td><code>keys()</code>, <code>size</code>, <code>for...of</code> 없음 — 언제 사라질지 모르기 때문</td></tr>
+<tr><td><b class="nw">순회 불가</b></td><td><code>keys()</code>, <code>size</code>, <code>for...of</code> 없음 — 언제 사라질지 모르기 때문</td></tr>
 <tr><td>용도</td><td><b>객체에 부가 정보를 붙이되 수명은 그 객체를 따르게</b> 할 때</td></tr>
 </tbody>
 </table>

@@ -143,7 +143,7 @@ export default function robots() {
 <tbody>
 <tr><td><b>WebP·AVIF 변환</b></td><td>이미지마다 여러 포맷을 만들고 <code>&lt;picture&gt;</code>를 써야 합니다(8장)</td></tr>
 <tr><td><b>크기별 생성 + <code>srcset</code></b></td><td>손으로 리사이즈하고 <code>srcset</code>·<code>sizes</code>를 작성</td></tr>
-<tr><td><b><span class="term" data-term="lazy-loading">지연 로딩</span></b></td><td><code>loading="lazy"</code>를 빠뜨리기 쉽습니다</td></tr>
+<tr><td><b class="nw"><span class="term" data-term="lazy-loading">지연 로딩</span></b></td><td><code>loading="lazy"</code>를 빠뜨리기 쉽습니다</td></tr>
 <tr><td><b>레이아웃 이동 방지</b></td><td><code>width</code>·<code>height</code>로 공간 확보(8장 <span class="term" data-term="cls">CLS</span>)</td></tr>
 <tr><td>흐릿한 자리 표시자</td><td>별도 구현 필요</td></tr>
 </tbody>
@@ -208,7 +208,7 @@ export default function RootLayout({ children }) {
 <table>
 <thead><tr><th>해 주는 것</th><th>왜 중요한가</th></tr></thead>
 <tbody>
-<tr><td><b>자체 <span class="term" data-term="hosting">호스팅</span></b></td><td>외부 폰트 서버로의 <b>추가 연결</b>이 사라집니다. 개인정보·성능 모두 이득</td></tr>
+<tr><td><b class="nw">자체 <span class="term" data-term="hosting">호스팅</span></b></td><td>외부 폰트 서버로의 <b>추가 연결</b>이 사라집니다. 개인정보·성능 모두 이득</td></tr>
 <tr><td><b><code>preload</code> 자동</b></td><td><code>crossorigin</code>을 빠뜨리는 실수를 막아 줍니다(19장)</td></tr>
 <tr><td><b>대체 폰트 자동 조정</b></td><td>폰트 교체 시 <b>레이아웃이 튀지 않습니다</b>(19장의 <code>size-adjust</code>)</td></tr>
 <tr><td><b>빌드 시점 처리</b></td><td>실행 중에 계산하지 않습니다</td></tr>

@@ -39,10 +39,10 @@
 <table>
 <thead><tr><th></th><th>프론트엔드</th><th>백엔드</th></tr></thead>
 <tbody>
-<tr><td><b>실행되는 곳</b></td><td>사용자의 기기(휴대폰·노트북)에 설치된 <span class="term" data-term="browser">브라우저</span></td><td>회사가 운영하는 <span class="term" data-term="server">서버</span> 컴퓨터</td></tr>
+<tr><td><b class="nw">실행되는 곳</b></td><td>사용자의 기기(휴대폰·노트북)에 설치된 <span class="term" data-term="browser">브라우저</span></td><td>회사가 운영하는 <span class="term" data-term="server">서버</span> 컴퓨터</td></tr>
 <tr><td><b>주로 쓰는 언어</b></td><td>HTML, CSS, JavaScript(및 TypeScript)</td><td>제한 없음 — Java, Python, Go, Node.js, Ruby 등</td></tr>
 <tr><td><b>코드 공개 여부</b></td><td>사용자에게 <b>전부 전달된다</b>. 누구나 열어볼 수 있다</td><td>서버 안에만 있다. 외부에서 볼 수 없다</td></tr>
-<tr><td><b>대표적인 일</b></td><td>화면 구성, 상호작용, 입력 검증, 성능·접근성</td><td>데이터 저장, 인증, 결제, 비즈니스 규칙</td></tr>
+<tr><td><b class="nw">대표적인 일</b></td><td>화면 구성, 상호작용, 입력 검증, 성능·접근성</td><td>데이터 저장, 인증, 결제, 비즈니스 규칙</td></tr>
 </tbody>
 </table>
 </div>
@@ -172,13 +172,13 @@ button.addEventListener("click", () =&gt; {
 <table>
 <thead><tr><th>일</th><th>구체적으로</th><th>이 책에서</th></tr></thead>
 <tbody>
-<tr><td><b>화면 구현</b></td><td>디자이너가 준 시안을 실제로 동작하는 화면으로 만든다</td><td>2·3부</td></tr>
-<tr><td><b>상태 관리</b></td><td>"장바구니에 담긴 상품", "로그인 여부" 같은 <b>변하는 정보</b>를 화면과 어긋나지 않게 관리한다</td><td>8부</td></tr>
-<tr><td><b>서버 연동</b></td><td>백엔드가 만든 <span class="term" data-term="api">API</span>를 호출해 데이터를 받아 화면에 뿌린다. 로딩 중·실패 상황까지 처리한다</td><td>5·8부</td></tr>
-<tr><td><b>성능</b></td><td>페이지가 늦게 뜨면 사용자는 떠납니다. 무엇이 느린지 측정하고 고친다</td><td>10부</td></tr>
-<tr><td><b>접근성</b></td><td>눈이 보이지 않는 사용자, 마우스를 못 쓰는 사용자도 쓸 수 있게 만든다</td><td>11장·77장</td></tr>
-<tr><td><b>원인 파악</b></td><td>"왜 이 화면만 느리지", "왜 이 글자가 깨지지", "왜 메모리가 계속 늘지"를 <b>추측이 아니라 근거로</b> 좁혀 나간다</td><td>11부</td></tr>
-<tr><td><b>협업</b></td><td>Git으로 코드를 관리하고, 코드 리뷰를 하고, 기획·디자인·백엔드와 조율한다</td><td>6부·92장</td></tr>
+<tr><td><b class="nw">화면 구현</b></td><td>디자이너가 준 시안을 실제로 동작하는 화면으로 만든다</td><td>2·3부</td></tr>
+<tr><td><b class="nw">상태 관리</b></td><td>"장바구니에 담긴 상품", "로그인 여부" 같은 <b>변하는 정보</b>를 화면과 어긋나지 않게 관리한다</td><td>8부</td></tr>
+<tr><td><b class="nw">서버 연동</b></td><td>백엔드가 만든 <span class="term" data-term="api">API</span>를 호출해 데이터를 받아 화면에 뿌린다. 로딩 중·실패 상황까지 처리한다</td><td>5·8부</td></tr>
+<tr><td><b class="nw">성능</b></td><td>페이지가 늦게 뜨면 사용자는 떠납니다. 무엇이 느린지 측정하고 고친다</td><td>10부</td></tr>
+<tr><td><b class="nw">접근성</b></td><td>눈이 보이지 않는 사용자, 마우스를 못 쓰는 사용자도 쓸 수 있게 만든다</td><td>11장·77장</td></tr>
+<tr><td><b class="nw">원인 파악</b></td><td>"왜 이 화면만 느리지", "왜 이 글자가 깨지지", "왜 메모리가 계속 늘지"를 <b>추측이 아니라 근거로</b> 좁혀 나간다</td><td>11부</td></tr>
+<tr><td><b class="nw">협업</b></td><td>Git으로 코드를 관리하고, 코드 리뷰를 하고, 기획·디자인·백엔드와 조율한다</td><td>6부·92장</td></tr>
 </tbody>
 </table>
 </div>
@@ -201,9 +201,9 @@ button.addEventListener("click", () =&gt; {
 <table>
 <thead><tr><th>렌더링 엔진</th><th>쓰는 브라우저</th></tr></thead>
 <tbody>
-<tr><td><b>Blink</b></td><td>Chrome, Edge, Opera, 삼성 인터넷, 웨일 등 대다수</td></tr>
-<tr><td><b>WebKit</b></td><td>Safari (그리고 iOS에서는 오랫동안 모든 브라우저가 이 엔진을 써야 했습니다)</td></tr>
-<tr><td><b>Gecko</b></td><td>Firefox</td></tr>
+<tr><td><b class="nw">Blink</b></td><td>Chrome, Edge, Opera, 삼성 인터넷, 웨일 등 대다수</td></tr>
+<tr><td><b class="nw">WebKit</b></td><td>Safari (그리고 iOS에서는 오랫동안 모든 브라우저가 이 엔진을 써야 했습니다)</td></tr>
+<tr><td><b class="nw">Gecko</b></td><td>Firefox</td></tr>
 </tbody>
 </table>
 </div>

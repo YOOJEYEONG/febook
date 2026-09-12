@@ -18,9 +18,9 @@
 <table>
 <thead><tr><th>단어</th><th>무엇</th></tr></thead>
 <tbody>
-<tr><td><b>프로그램</b></td><td>디스크에 저장된 파일. 아직 아무것도 하지 않습니다. (Chrome.app)</td></tr>
-<tr><td><b>프로세스</b></td><td>실행되어 메모리를 받은 상태. <b>자기만의 주소 공간</b>을 갖습니다.</td></tr>
-<tr><td><b>스레드</b></td><td>프로세스 안에서 실제로 코드를 실행하는 흐름. 여러 개일 수 있습니다.</td></tr>
+<tr><td><b class="nw">프로그램</b></td><td>디스크에 저장된 파일. 아직 아무것도 하지 않습니다. (Chrome.app)</td></tr>
+<tr><td><b class="nw">프로세스</b></td><td>실행되어 메모리를 받은 상태. <b>자기만의 주소 공간</b>을 갖습니다.</td></tr>
+<tr><td><b class="nw">스레드</b></td><td>프로세스 안에서 실제로 코드를 실행하는 흐름. 여러 개일 수 있습니다.</td></tr>
 </tbody>
 </table>
 </div>
@@ -47,11 +47,11 @@
 <table>
 <thead><tr><th>프로세스</th><th>하는 일</th></tr></thead>
 <tbody>
-<tr><td><b>브라우저</b></td><td>주소창, 탭, 북마크, 나머지 프로세스 관리</td></tr>
-<tr><td><b>렌더러</b> ★</td><td>실제 웹 페이지를 그립니다. <b>우리 코드가 도는 곳.</b> 보통 탭·사이트마다 따로 만들어집니다</td></tr>
-<tr><td><b>네트워크</b></td><td>HTTP 요청 처리</td></tr>
-<tr><td><b>GPU</b></td><td>화면 합성·그리기 가속</td></tr>
-<tr><td><b>유틸리티</b></td><td>오디오, 확장 프로그램 등</td></tr>
+<tr><td><b class="nw">브라우저</b></td><td>주소창, 탭, 북마크, 나머지 프로세스 관리</td></tr>
+<tr><td><b class="nw">렌더러</b> ★</td><td>실제 웹 페이지를 그립니다. <b>우리 코드가 도는 곳.</b> 보통 탭·사이트마다 따로 만들어집니다</td></tr>
+<tr><td><b class="nw">네트워크</b></td><td>HTTP 요청 처리</td></tr>
+<tr><td><b class="nw">GPU</b></td><td>화면 합성·그리기 가속</td></tr>
+<tr><td><b class="nw">유틸리티</b></td><td>오디오, 확장 프로그램 등</td></tr>
 </tbody>
 </table>
 </div>
@@ -110,8 +110,8 @@
 <table>
 <thead><tr><th></th><th>비유</th><th>웹에서는</th></tr></thead>
 <tbody>
-<tr><td><b>동시성</b><br>Concurrency</td><td>요리사 <b>1명</b>이 여러 요리를 번갈아 다룹니다. 국이 끓는 동안 채소를 썹니다. 진짜 동시는 아니지만 <b>기다림이 사라집니다</b></td><td>JavaScript의 이벤트 루프 (35장)</td></tr>
-<tr><td><b>병렬성</b><br>Parallelism</td><td>요리사 <b>3명</b>이 각자 다른 요리를 <b>정말로 동시에</b> 만듭니다. CPU 코어가 여러 개여야 가능합니다</td><td>Web Worker, 서버의 멀티프로세스</td></tr>
+<tr><td><b class="nw">동시성</b><br>Concurrency</td><td>요리사 <b>1명</b>이 여러 요리를 번갈아 다룹니다. 국이 끓는 동안 채소를 썹니다. 진짜 동시는 아니지만 <b>기다림이 사라집니다</b></td><td>JavaScript의 이벤트 루프 (35장)</td></tr>
+<tr><td><b class="nw">병렬성</b><br>Parallelism</td><td>요리사 <b>3명</b>이 각자 다른 요리를 <b>정말로 동시에</b> 만듭니다. CPU 코어가 여러 개여야 가능합니다</td><td>Web Worker, 서버의 멀티프로세스</td></tr>
 </tbody>
 </table>
 </div>

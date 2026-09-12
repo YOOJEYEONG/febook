@@ -63,13 +63,13 @@ Cache-Control: max-age=3600
 <table>
 <thead><tr><th>메서드</th><th>의미</th><th>안전</th><th>멱등</th></tr></thead>
 <tbody>
-<tr><td><b>GET</b></td><td>가져오기. 조회</td><td>O</td><td>O</td></tr>
-<tr><td><b>HEAD</b></td><td>GET과 같지만 <b>본문 없이 헤더만</b></td><td>O</td><td>O</td></tr>
-<tr><td><b>POST</b></td><td>보내서 <b>새로 만들기</b> 또는 처리 요청</td><td>X</td><td><b>X</b></td></tr>
-<tr><td><b>PUT</b></td><td>통째로 <b>바꿔 넣기</b></td><td>X</td><td>O</td></tr>
-<tr><td><b>PATCH</b></td><td>일부만 수정</td><td>X</td><td>X (보장 안 됨)</td></tr>
-<tr><td><b>DELETE</b></td><td>삭제</td><td>X</td><td>O</td></tr>
-<tr><td><b>OPTIONS</b></td><td>이 주소에 무엇이 허용되는지 묻기. CORS에서 쓰입니다(37장)</td><td>O</td><td>O</td></tr>
+<tr><td><b class="nw">GET</b></td><td>가져오기. 조회</td><td>O</td><td>O</td></tr>
+<tr><td><b class="nw">HEAD</b></td><td>GET과 같지만 <b>본문 없이 헤더만</b></td><td>O</td><td>O</td></tr>
+<tr><td><b class="nw">POST</b></td><td>보내서 <b>새로 만들기</b> 또는 처리 요청</td><td>X</td><td><b>X</b></td></tr>
+<tr><td><b class="nw">PUT</b></td><td>통째로 <b>바꿔 넣기</b></td><td>X</td><td>O</td></tr>
+<tr><td><b class="nw">PATCH</b></td><td>일부만 수정</td><td>X</td><td>X (보장 안 됨)</td></tr>
+<tr><td><b class="nw">DELETE</b></td><td>삭제</td><td>X</td><td>O</td></tr>
+<tr><td><b class="nw">OPTIONS</b></td><td>이 주소에 무엇이 허용되는지 묻기. CORS에서 쓰입니다(37장)</td><td>O</td><td>O</td></tr>
 </tbody>
 </table>
 </div>
@@ -104,11 +104,11 @@ GET은 안전하다고 약속된 메서드라서 브라우저·CDN·검색엔진
 <table>
 <thead><tr><th>대</th><th>뜻</th><th>한 줄 해석</th></tr></thead>
 <tbody>
-<tr><td><b>1xx</b></td><td>정보</td><td>"계속 진행 중" (직접 볼 일 거의 없음)</td></tr>
-<tr><td><b>2xx</b></td><td>성공</td><td>"됐습니다"</td></tr>
-<tr><td><b>3xx</b></td><td>리다이렉션</td><td>"거기 아니고 저기로 가세요"</td></tr>
-<tr><td><b>4xx</b></td><td>클라이언트 오류</td><td>"<b>당신</b>이 잘못 요청했습니다"</td></tr>
-<tr><td><b>5xx</b></td><td>서버 오류</td><td>"<b>우리</b>가 잘못했습니다"</td></tr>
+<tr><td><b class="nw">1xx</b></td><td>정보</td><td>"계속 진행 중" (직접 볼 일 거의 없음)</td></tr>
+<tr><td><b class="nw">2xx</b></td><td>성공</td><td>"됐습니다"</td></tr>
+<tr><td><b class="nw">3xx</b></td><td>리다이렉션</td><td>"거기 아니고 저기로 가세요"</td></tr>
+<tr><td><b class="nw">4xx</b></td><td>클라이언트 오류</td><td>"<b>당신</b>이 잘못 요청했습니다"</td></tr>
+<tr><td><b class="nw">5xx</b></td><td>서버 오류</td><td>"<b>우리</b>가 잘못했습니다"</td></tr>
 </tbody>
 </table>
 </div>
@@ -245,8 +245,8 @@ JavaScript에 적어 둔 비밀은 HTTPS와 무관하게 그대로 노출됩니�
 <thead><tr><th>버전</th><th>핵심 변화</th><th>남은 문제</th></tr></thead>
 <tbody>
 <tr><td><b>HTTP/1.1</b><br>(1997)</td><td>연결을 재사용(keep-alive). 텍스트 기반</td><td>한 연결에서 <b>요청을 하나씩</b> 처리. 앞 요청이 느리면 뒤가 전부 밀립니다(HOL 블로킹)</td></tr>
-<tr><td><b>HTTP/2</b><br>(2015)</td><td>하나의 연결에서 <b>여러 요청을 동시에</b>(멀티플렉싱). 헤더 압축. 이진 형식</td><td>TCP 자체의 특성 때문에 <b>패킷 하나가 유실되면</b> 그 연결의 모든 스트림이 함께 기다립니다</td></tr>
-<tr><td><b>HTTP/3</b><br>(2022)</td><td>TCP 대신 <b>QUIC</b>(UDP 기반)을 사용해 TCP 수준의 막힘을 제거. 연결 수립도 더 빠릅니다</td><td>—</td></tr>
+<tr><td><b class="nw">HTTP/2</b><br>(2015)</td><td>하나의 연결에서 <b>여러 요청을 동시에</b>(멀티플렉싱). 헤더 압축. 이진 형식</td><td>TCP 자체의 특성 때문에 <b>패킷 하나가 유실되면</b> 그 연결의 모든 스트림이 함께 기다립니다</td></tr>
+<tr><td><b class="nw">HTTP/3</b><br>(2022)</td><td>TCP 대신 <b>QUIC</b>(UDP 기반)을 사용해 TCP 수준의 막힘을 제거. 연결 수립도 더 빠릅니다</td><td>—</td></tr>
 </tbody>
 </table>
 </div>

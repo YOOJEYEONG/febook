@@ -79,10 +79,10 @@ export default async function ProductPage({ params }) {
 <table>
 <thead><tr><th>층</th><th>저장하는 것</th><th>목적</th></tr></thead>
 <tbody>
-<tr><td><b>데이터 캐시</b></td><td><code>fetch</code>·DB 조회 결과</td><td>같은 데이터를 반복 조회하지 않기</td></tr>
+<tr><td><b class="nw">데이터 캐시</b></td><td><code>fetch</code>·DB 조회 결과</td><td>같은 데이터를 반복 조회하지 않기</td></tr>
 <tr><td><b>전체 라우트 캐시</b></td><td>렌더링된 <span class="term" data-term="html">HTML</span></td><td>정적 페이지를 즉시 응답(<span class="term" data-term="ssg">SSG</span>·<span class="term" data-term="isr">ISR</span>, 70장)</td></tr>
 <tr><td><b>요청 <span class="term" data-term="memoization">메모이제이션</span></b></td><td>같은 요청 중의 동일 호출</td><td>한 렌더링 안에서 <b>중복 호출 제거</b></td></tr>
-<tr><td><b>라우터 캐시</b></td><td>방문한 페이지</td><td>뒤로 가기를 즉시 표시</td></tr>
+<tr><td><b class="nw">라우터 캐시</b></td><td>방문한 페이지</td><td>뒤로 가기를 즉시 표시</td></tr>
 </tbody>
 </table>
 </div>

@@ -50,9 +50,9 @@
 <table>
 <thead><tr><th>방법</th><th>코드</th><th>쓰임</th></tr></thead>
 <tbody>
-<tr><td><b>외부 파일</b></td><td><code>&lt;link rel="stylesheet" href="style.css"&gt;</code></td><td><b>기본.</b> 여러 페이지가 공유하고 캐시된다</td></tr>
-<tr><td><b>내부 스타일</b></td><td><code>&lt;style&gt; … &lt;/style&gt;</code></td><td>그 페이지에만 필요한 소량. 첫 화면 최적화에도 쓰인다</td></tr>
-<tr><td><b>인라인 스타일</b></td><td><code>&lt;p style="color:red"&gt;</code></td><td><b>피한다.</b> 재사용 불가, 명시도가 매우 높아 덮어쓰기 어려움</td></tr>
+<tr><td><b class="nw">외부 파일</b></td><td><code>&lt;link rel="stylesheet" href="style.css"&gt;</code></td><td><b>기본.</b> 여러 페이지가 공유하고 캐시된다</td></tr>
+<tr><td><b class="nw">내부 스타일</b></td><td><code>&lt;style&gt; … &lt;/style&gt;</code></td><td>그 페이지에만 필요한 소량. 첫 화면 최적화에도 쓰인다</td></tr>
+<tr><td><b class="nw">인라인 스타일</b></td><td><code>&lt;p style="color:red"&gt;</code></td><td><b>피한다.</b> 재사용 불가, 명시도가 매우 높아 덮어쓰기 어려움</td></tr>
 </tbody>
 </table>
 </div>
@@ -150,9 +150,9 @@ p::first-line { font-weight: 700; }  /* 첫 줄만 */
 <table>
 <thead><tr><th>자리</th><th>세는 것</th><th>예</th></tr></thead>
 <tbody>
-<tr><td><b>A</b></td><td>id 선택자 개수</td><td><code>#header</code></td></tr>
-<tr><td><b>B</b></td><td>클래스, 속성 선택자, 가상 클래스 개수</td><td><code>.card</code>, <code>[type=text]</code>, <code>:hover</code></td></tr>
-<tr><td><b>C</b></td><td>요소 선택자, 가상 요소 개수</td><td><code>div</code>, <code>::before</code></td></tr>
+<tr><td><b class="nw">A</b></td><td>id 선택자 개수</td><td><code>#header</code></td></tr>
+<tr><td><b class="nw">B</b></td><td>클래스, 속성 선택자, 가상 클래스 개수</td><td><code>.card</code>, <code>[type=text]</code>, <code>:hover</code></td></tr>
+<tr><td><b class="nw">C</b></td><td>요소 선택자, 가상 요소 개수</td><td><code>div</code>, <code>::before</code></td></tr>
 </tbody>
 </table>
 </div>
