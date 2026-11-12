@@ -1,19 +1,25 @@
-<!--desc: TypeScript가 실제로 막아 주는 버그, 설치와 tsconfig 핵심 옵션, 타입 추론, 그리고 타입은 런타임에 사라진다는 사실을 다룹니다.-->
+<!--desc: TypeScript가 실제로 막아 주는 버그, Playground로 바로 실습하는 법, 설치와 tsconfig 핵심 옵션, 타입 추론, 그리고 타입은 런타임에 사라진다는 사실을 다룹니다.-->
 
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
 <ul>
   <li>TypeScript가 <b>실제로 막아 주는 버그</b></li>
-  <li>설치하고 실행하는 법</li>
-  <li><b><code>tsconfig.json</code></b>에서 꼭 알아야 할 옵션</li>
+  <li><b>TS Playground</b>에서 설치 없이 바로 실습하는 법</li>
+  <li>설치하고 실행하는 법, 그리고 2026년의 도구 지형(TypeScript 7, Node의 타입 제거)</li>
+  <li><b><code>tsconfig.json</code></b>에서 꼭 알아야 할 옵션 4개</li>
   <li><b>타입 추론</b> — 대부분은 안 써도 됩니다</li>
   <li><b>타입은 실행 시점에 사라진다</b>는 결정적 사실</li>
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 20분 · 실무 채용 공고의 대부분이 요구합니다</p>
+<p class="ch-meta">읽는 데 약 30분 · 사전 지식: JavaScript 함수·객체(27·28장), npm(46장), 번들러(47장)</p>
 
 <h2 id="why">왜 필요한가</h2>
+
+<p>JavaScript는 관대한 언어입니다. 숫자 자리에 문자열을 넣어도, 인자를 하나 빠뜨려도
+일단 실행해 보고 어떻게든 결과를 만들어 냅니다. 작은 스크립트에서는 이 관대함이 편하지만,
+파일이 수백 개로 늘고 여러 사람이 함께 고치기 시작하면 이야기가 달라집니다.
+<b>잘못된 값이 조용히 흘러가다가 엉뚱한 곳에서 터지기</b> 때문입니다. 아래 코드를 보세요.</p>
 
 <div class="codeblock">
 <span class="cb-label">JavaScript에서 실제로 일어나는 일</span>
@@ -27,6 +33,10 @@ getDiscount(10000, "10%");   // NaN
 // 어느 것도 오류를 내지 않습니다. 화면에 NaN이 뜬 뒤에야 압니다.</code></pre>
 </div>
 
+<p>세 호출 모두 오류 메시지 하나 없이 지나갑니다. 문제는 결제 화면에 "NaN원"이 찍힌 뒤,
+그것도 사용자가 신고한 뒤에야 드러납니다. 같은 함수를 TypeScript로 쓰면 매개변수 뒤에
+<code>: number</code>를 붙여 "여기에는 숫자만 와야 한다"고 적어 둘 수 있습니다.</p>
+
 <div class="codeblock">
 <span class="cb-label">TypeScript</span>
 <pre><code data-lang="ts">function getDiscount(price: number, rate: number): number {
@@ -37,6 +47,12 @@ getDiscount("10000", 0.1);
 // ❌ Argument of type 'string' is not assignable to parameter of type 'number'.
 //    → 코드를 저장하는 순간, 편집기에서 빨간 줄로 표시됩니다</code></pre>
 </div>
+
+<p>오류 메시지를 풀어 읽으면 "<code>string</code> 타입의 인자는 <code>number</code> 타입 매개변수에 넣을 수 없다"입니다.
+핵심은 <b>언제</b> 알게 되느냐입니다. 사용자가 겪은 뒤가 아니라, 코드를 저장하는 순간 편집기가 알려 줍니다.
+비유하자면 TypeScript는 <b>워드 프로세서의 맞춤법 검사기</b>와 같습니다.
+글을 인쇄하기 전에 빨간 밑줄로 틀린 곳을 짚어 주지만, 글의 내용이 사실인지까지 확인해 주지는 않습니다.
+이 비유는 이 챕터 뒷부분의 "타입은 사라진다"를 이해할 때도 그대로 쓰입니다.</p>
 
 <div class="tablewrap">
 <table>
@@ -51,8 +67,13 @@ getDiscount("10000", 0.1);
 </table>
 </div>
 
+<p>표에서 가장 과소평가되는 항목이 <b>자동 완성</b>입니다. 타입을 알고 있으면 편집기가
+<code>user.</code>까지만 쳐도 <code>name</code>, <code>email</code> 같은 후보를 보여 줍니다.
+오타로 존재하지 않는 속성을 읽는 실수(<code>user.nmae</code>)가 원천적으로 사라집니다.
+처음 TypeScript를 쓰는 사람이 가장 먼저 체감하는 장점도 오류 검사보다 이쪽입니다.</p>
+
 <div class="box myth">
-<p class="box-title"><span class="box-ico">⚠️</span> TypeScript가 <b>해 주지 않는</b> 것</p>
+<p class="box-title"><span class="box-ico">⚠️</span> 자주 하는 오해 — TypeScript가 <b>해 주지 않는</b> 것</p>
 <span class="mythline"><b class="no">오해</b> — TypeScript를 쓰면 런타임 오류가 사라진다.</span>
 <span class="mythline"><b class="yes">사실</b> — <b>타입은 빌드가 끝나면 완전히 사라집니다.</b>
 실행되는 것은 평범한 JavaScript입니다.<br>
@@ -62,7 +83,33 @@ TypeScript는 <b>"내가 쓴 코드끼리 앞뒤가 맞는가"</b>를 검사할 
 <b>바깥에서 들어오는 값</b>은 여전히 런타임에 검증해야 합니다(54장).</span>
 </div>
 
-<h2 id="install">시작하기</h2>
+<h2 id="playground">설치 없이 바로 해 보기 — TS Playground</h2>
+
+<p>TypeScript를 배우는 가장 빠른 방법은 <b>직접 틀려 보는 것</b>입니다.
+그런데 프로젝트를 만들고 설정 파일을 잡는 것부터 시작하면 정작 타입을 실험하기도 전에 지칩니다.
+그래서 이 부(50~56장)의 예제는 모두 공식 온라인 실습장인
+<a href="https://www.typescriptlang.org/play" target="_blank" rel="noopener"><b>TS Playground</b></a>(https://www.typescriptlang.org/play)에서
+바로 돌려 볼 수 있게 안내합니다. 이 책의 실행기는 JavaScript만 실행하므로, TypeScript 예제는 Playground를 쓰세요.
+설치도, 로그인도 필요 없습니다.</p>
+
+<ol>
+<li><b>주소를 열면</b> 왼쪽에 코드 편집기, 오른쪽에 결과 패널이 나옵니다. 편집기의 기본 코드는 지우고 시작하세요.</li>
+<li><b>예제를 붙여 넣으면</b> 문제가 있는 곳에 즉시 빨간 물결 밑줄이 생깁니다. 밑줄에 마우스를 올리면 오류 메시지가 보입니다.</li>
+<li><b>변수 이름 위에 마우스를 올리면</b> TypeScript가 추론한 타입이 말풍선으로 나옵니다. 이 습관이 가장 좋은 학습법입니다.</li>
+<li>오른쪽 패널의 <b><code>.JS</code> 탭</b>에서는 타입이 지워진 변환 결과를, <b>Errors 탭</b>에서는 오류 목록을 볼 수 있습니다.</li>
+<li><b>Run</b> 버튼을 누르면 변환된 JavaScript가 실행되고, <code>console.log</code> 결과가 <b>Logs 탭</b>에 찍힙니다.</li>
+<li>상단의 <b>TS Config</b> 메뉴에서 <code>strict</code> 같은 옵션을 켜고 끌 수 있습니다. 기본값은 <code>strict</code>가 켜진 상태입니다.</li>
+</ol>
+
+<p>앞의 <code>getDiscount</code> 예제를 Playground에 붙여 보세요. 빨간 줄을 확인한 다음,
+<code>"10000"</code>을 <code>10000</code>으로 고치면 밑줄이 사라지는 것을 볼 수 있습니다.
+이후 챕터에서 <b>▶ Playground에 붙여 보세요</b>라는 안내가 나오면 같은 방법으로 실험하면 됩니다.
+예제에 일부러 넣어 둔 <code>❌</code> 줄은 실제로 오류가 나는 것이 정상입니다.</p>
+
+<h2 id="install">내 컴퓨터에서 시작하기</h2>
+
+<p>Playground로 감을 잡았다면 실제 프로젝트에서는 어떻게 쓰는지 봅시다.
+대부분은 직접 설정할 필요가 없습니다. 47장에서 본 Vite가 TypeScript용 템플릿을 제공하기 때문입니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="bash"># 새 프로젝트라면 도구가 알아서 설정해 줍니다
@@ -76,6 +123,9 @@ npx tsc --init        # tsconfig.json 생성
 npx tsc --noEmit</code></pre>
 </div>
 
+<p><code>tsc</code>는 TypeScript 컴파일러의 명령 이름입니다. <code>--noEmit</code>은 "결과 파일은 만들지 말고 검사만 하라"는 뜻입니다.
+검사를 통과하면 아무것도 출력되지 않고, 문제가 있으면 파일 이름과 줄 번호가 담긴 오류 목록이 나옵니다.</p>
+
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🔧</span> 요즘은 <code>tsc</code>가 변환을 하지 않습니다</p>
 <p style="margin-bottom:0">실무에서는 <b>Vite·esbuild·SWC가 타입을 그냥 떼어내고</b> JavaScript로 바꿉니다(47장).
@@ -84,36 +134,83 @@ npx tsc --noEmit</code></pre>
 그래서 <code>npx tsc --noEmit</code>(검사만)을 CI에서 돌립니다.</p>
 </div>
 
-<h2 id="tsconfig">tsconfig.json</h2>
+<h3 id="landscape-2026">2026년의 도구 지형</h3>
+
+<p>TypeScript 주변 도구는 최근 몇 년 사이 크게 바뀌었습니다. 2026년 11월 기준으로 알아 둘 변화는 두 가지입니다.</p>
+
+<ul>
+<li><b>TypeScript 7 — 컴파일러가 Go로 다시 작성되었습니다.</b>
+2026년 7월 8일 정식 출시된 TypeScript 7.0은 컴파일러를 Go 언어로 옮긴 <b>네이티브 버전</b>입니다.
+공식 블로그 발표 기준으로 전체 빌드가 대체로 <b>8~12배 빨라졌습니다.</b>
+설치 방법은 그대로 <code>npm install -D typescript</code>이고, 명령도 그대로 <code>tsc</code>입니다.
+또 2026년 3월의 TypeScript 6.0부터 <code>strict</code>가 <b>기본값으로 켜졌고</b>, 6.0에서 '곧 없어질 옵션'으로 예고된 것들(<code>target: es5</code>, <code>baseUrl</code> 등)은 7.0에서 오류가 됩니다.
+다만 아직 프로그래밍용 API가 없어서 Vue·Svelte·Astro·MDX 같은 도구는 당분간 TypeScript 6.0을 함께 쓰도록 안내되어 있습니다.</li>
+<li><b>Node.js가 <code>.ts</code> 파일을 바로 실행합니다.</b>
+Node 22.18·23.6부터 <code>node app.ts</code>가 별도 설정 없이 동작하고, 24.12·25.2에서 안정 기능이 되었습니다.
+원리는 <b>타입 표기를 공백으로 지우고 실행</b>하는 것(타입 제거, type stripping)입니다.
+그래서 <b>타입 검사는 하지 않으며</b>, 지우기만으로 처리할 수 없는 문법(대표적으로 <code>enum</code>, 51장)은 실행되지 않습니다.</li>
+</ul>
+
+<p>두 변화가 가리키는 방향은 같습니다. <b>"변환은 타입을 지우기만 하는 빠른 도구가, 검사는 <code>tsc</code>가"</b>라는 분업이 굳어지고 있습니다.
+아래 <code>tsconfig.json</code>에 새로 들어간 옵션 두 개도 이 흐름에서 나왔습니다.</p>
+
+<h2 id="tsconfig">tsconfig.json — 꼭 알아야 할 옵션 4개</h2>
+
+<p><code>tsconfig.json</code>은 TypeScript에게 "이 프로젝트를 어떤 규칙으로 검사할지" 알려 주는 설정 파일입니다.
+옵션이 백 개가 넘지만, 처음에는 대부분 도구가 정해 준 값을 그대로 쓰면 됩니다.
+직접 이해하고 있어야 하는 것은 아래 네 개뿐입니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="json">{
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,                 // ① 엄격한 검사 — 가장 중요
+    "noEmit": true,                 // ② 검사만, 변환은 번들러가 담당
+    "verbatimModuleSyntax": true,   // ③ 타입 import는 import type 으로
+    "erasableSyntaxOnly": true      // ④ 지우기만으로 없앨 수 있는 문법만 허용
 
-    "strict": true,                    // ⭐ 가장 중요
-    "noUncheckedIndexedAccess": true,  // 배열 인덱스 접근을 안전하게
-    "noUnusedLocals": true,
-
-    "jsx": "react-jsx",
-    "skipLibCheck": true,              // 라이브러리 타입 검사 생략 (빠름)
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "noEmit": true,                    // 변환은 번들러가 담당
-
-    "paths": { "@/*": ["./src/*"] }    // import 경로 별칭
+    // …나머지는 Vite 템플릿이 정해 준 값 그대로 (아래 접은 표 참고)
   },
   "include": ["src"]
 }</code></pre>
 </div>
 
+<ol>
+<li><b><code>strict</code></b> — 여러 엄격한 검사를 한 번에 켭니다. 바로 아래 상자에서 자세히 봅니다. 꺼 두면 TypeScript의 이득 대부분이 사라집니다.</li>
+<li><b><code>noEmit</code></b> — <code>tsc</code>가 JavaScript 파일을 만들지 않게 합니다. 변환은 Vite가 하므로 <code>tsc</code>는 검사만 하면 됩니다.</li>
+<li><b><code>verbatimModuleSyntax</code></b>(TypeScript 5.0+) — 타입만 가져올 때는 <code>import type { User } from "./types"</code>처럼
+<b><code>type</code>을 명시</b>하게 합니다. 타입을 지우기만 하는 도구는 <code>User</code>가 타입인지 값인지 모르기 때문에,
+이렇게 표시해 두어야 실행 시점에 "없는 값을 가져오려 한다"는 오류가 나지 않습니다.</li>
+<li><b><code>erasableSyntaxOnly</code></b>(TypeScript 5.8+) — <code>enum</code>처럼 <b>JavaScript 코드를 새로 만들어 내는 TypeScript 문법</b>을 금지합니다.
+그런 문법은 Node의 타입 제거나 일부 도구에서 동작하지 않기 때문입니다. 대신 쓸 방법은 51장에서 봅니다.</li>
+</ol>
+
+<p>③·④는 2026년 기준 Vite의 <code>react-ts</code> 템플릿과 Node.js 공식 문서가 모두 권장하는 설정입니다.
+템플릿으로 프로젝트를 만들었다면 이미 들어 있습니다.</p>
+
+<details>
+<summary>나중에 보면 되는 옵션 (Vite 템플릿에 들어 있는 것들)</summary>
+<div class="tablewrap">
+<table>
+<thead><tr><th>옵션</th><th>하는 일</th></tr></thead>
+<tbody>
+<tr><td><code>target</code></td><td>어느 버전의 JavaScript 문법으로 검사·출력할지 (예: <code>es2023</code>)</td></tr>
+<tr><td><code>lib</code></td><td>어떤 내장 API의 타입을 쓸지. 브라우저라면 <code>"DOM"</code>을 포함</td></tr>
+<tr><td><code>module</code></td><td>모듈 문법 방식 (34장). 보통 <code>esnext</code></td></tr>
+<tr><td><code>moduleResolution</code></td><td><code>import</code> 경로를 찾는 규칙. 번들러를 쓰면 <code>bundler</code></td></tr>
+<tr><td><code>jsx</code></td><td>JSX 처리 방식. React라면 <code>react-jsx</code> (56장)</td></tr>
+<tr><td><code>skipLibCheck</code></td><td>라이브러리의 타입 정의 파일 검사를 생략해 빠르게</td></tr>
+<tr><td><code>noUnusedLocals</code></td><td>쓰지 않는 변수를 오류로</td></tr>
+<tr><td><code>noUncheckedIndexedAccess</code></td><td>배열 인덱스 접근 결과에 <code>undefined</code> 가능성을 더함 (51장). 템플릿에는 없지만 켜기를 권함</td></tr>
+<tr><td><code>paths</code></td><td><code>@/components</code> 같은 import 경로 별칭</td></tr>
+</tbody>
+</table>
+</div>
+</details>
+
 <div class="box warn">
 <p class="box-title"><span class="box-ico">⭐</span> <code>"strict": true</code>는 반드시 켜세요</p>
 <p>이 옵션 하나가 여러 검사를 한꺼번에 켭니다. 그중 가장 중요한 것은
-<b><code>strictNullChecks</code></b>입니다.</p>
+<b><code>strictNullChecks</code></b>입니다. "이 값이 <code>null</code>일 수도 있다"는 가능성을 끝까지 추적하는 검사입니다.</p>
 <div class="codeblock" style="margin:.6em 0 0">
 <pre><code data-lang="ts">// strict: false — null 검사를 안 해도 통과합니다
 function getLength(text: string) {
@@ -127,12 +224,18 @@ function getLength(text: string | null) {
   //    → null 검사를 강제합니다
 }</code></pre>
 </div>
-<p style="margin-bottom:0"><code>strict: false</code>로 쓰는 TypeScript는
+<p style="margin-bottom:0"><code>string | null</code>은 "문자열이거나 <code>null</code>"이라는 뜻입니다(51장의 유니온 타입).
+<code>strict: false</code>로 쓰는 TypeScript는
 <b>이득의 절반 이상을 버리는 것</b>입니다.
-"Cannot read properties of null" — JavaScript에서 가장 흔한 런타임 오류를 막아 주는 것이 바로 이 옵션입니다.</p>
+"Cannot read properties of null" — JavaScript에서 가장 흔한 런타임 오류를 막아 주는 것이 바로 이 옵션입니다.
+TypeScript 6.0부터는 아예 기본값이 되었습니다.</p>
 </div>
 
 <h2 id="infer">타입 추론 — 대부분은 안 써도 됩니다</h2>
+
+<p>"TypeScript를 쓰면 모든 변수에 타입을 붙여야 한다"고 생각하기 쉽지만 그렇지 않습니다.
+TypeScript는 <b>초기값을 보고 타입을 스스로 알아냅니다.</b> 이것을 <b>타입 추론</b>이라고 합니다.
+<code>const age = 20</code>을 보면 굳이 말하지 않아도 <code>age</code>가 숫자라는 것을 압니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">// ❌ 불필요합니다. TypeScript가 이미 압니다
@@ -151,18 +254,54 @@ function double(n: number) {
 }</code></pre>
 </div>
 
+<p>▶ Playground에 붙여 보세요. 위쪽 세 줄과 아래쪽 세 줄은 이름이 겹쳐 오류가 나므로 한쪽씩 붙이면 됩니다.
+변수 이름에 마우스를 올리면 추론 결과가 보입니다. <code>string[]</code>은 "문자열의 배열"이라는 뜻입니다.
+추론에 맡기면 코드가 짧아질 뿐 아니라, 초기값을 바꿀 때 타입 표기를 함께 고칠 필요도 없습니다.</p>
+
 <div class="box tip">
 <p class="box-title"><span class="box-ico">✍️</span> 타입을 명시해야 하는 곳</p>
 <ul style="margin-bottom:0">
 <li><b>함수의 매개변수</b> — 추론할 근거가 없습니다. <b>반드시</b> 써야 합니다.</li>
-<li><b>빈 배열·객체로 시작할 때</b> — <code>const list: User[] = [];</code>
-(안 쓰면 <code>never[]</code>가 되어 아무것도 넣을 수 없습니다)</li>
+<li><b>빈 배열을 객체 속성이나 상태의 초기값으로 둘 때</b> — 아래 예시처럼 요소 타입을 알 수 없으면 <code>never[]</code>가 됩니다.</li>
 <li><b>공개 API의 반환 타입</b> — 의도를 문서화하고, 실수로 반환 타입이 바뀌는 것을 막습니다.</li>
 <li><b>추론 결과가 너무 넓거나 좁을 때</b></li>
 </ul>
 </div>
 
+<div class="codeblock">
+<span class="cb-label">빈 배열이 never[]가 되는 경우</span>
+<pre><code data-lang="ts">const cart = { items: [] };        // items: never[]
+cart.items.push("사과");
+// ❌ Argument of type 'string' is not assignable to parameter of type 'never'.
+
+// ✅ 요소 타입을 알려 줍니다
+const cart2: { items: string[] } = { items: [] };
+cart2.items.push("사과");          // ✅
+
+// 참고: 단독 변수는 다릅니다
+const list = [];                   // strict에서는 '진화하는 배열'로 취급
+list.push("사과");                 // 이후 list는 string[] 로 추적됩니다</code></pre>
+</div>
+
+<p><b><code>never</code></b>는 "<b>어떤 값도 들어갈 수 없는</b> 타입"입니다. 그래서 <code>never[]</code>는 무엇도 넣을 수 없는 배열입니다.
+객체 속성 안의 빈 배열은 TypeScript가 요소 타입을 짐작할 단서가 없어서 이렇게 됩니다.
+React의 <code>useState([])</code>도 같은 이유로 <code>never[]</code>가 됩니다(56장).
+반면 <code>const list = []</code>처럼 단독 변수는 이후의 <code>push</code>를 따라가며 타입을 넓혀 주지만,
+의도를 분명히 하려면 이때도 <code>const list: string[] = []</code>로 적는 편이 읽기 좋습니다.</p>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🤔</span> 자주 하는 오해 — 타입을 많이 적을수록 안전하다</p>
+<span class="mythline"><b class="no">오해</b> — 모든 변수에 타입을 직접 적어야 TypeScript를 제대로 쓰는 것이다.</span>
+<span class="mythline"><b class="yes">사실</b> — 추론된 타입과 직접 적은 타입은 <b>안전성이 똑같습니다.</b>
+오히려 불필요한 표기는 초기값이 바뀔 때 함께 고쳐야 할 곳만 늘립니다.
+<b>매개변수처럼 추론할 근거가 없는 곳</b>에만 적는 것이 실무의 기본입니다.</span>
+</div>
+
 <h2 id="erase">타입은 사라집니다</h2>
+
+<p>앞에서 TypeScript를 맞춤법 검사기에 비유했습니다. 맞춤법 검사기의 빨간 밑줄은 인쇄물에 찍히지 않습니다.
+TypeScript의 타입도 마찬가지로 <b>빌드가 끝나면 흔적 없이 지워집니다.</b>
+브라우저가 실제로 받는 것은 타입 표기가 빠진 평범한 JavaScript입니다. Playground의 <code>.JS</code> 탭에서 직접 확인할 수 있습니다.</p>
 
 <div class="codeblock">
 <span class="cb-label">변환 전후</span>
@@ -179,6 +318,10 @@ function greet(user) {
 // interface는 흔적도 없이 사라집니다</code></pre>
 </div>
 
+<p><code>interface</code>는 객체의 모양(어떤 속성이 어떤 타입인지)에 이름을 붙이는 문법입니다(52장에서 자세히).
+이 사실에서 중요한 결론이 하나 나옵니다. 실행 중에는 타입이 존재하지 않으므로,
+<b>"이 값이 정말 <code>User</code>인가?"를 타입으로 물어볼 방법이 없습니다.</b></p>
+
 <div class="box warn">
 <p class="box-title"><span class="box-ico">👻</span> 그래서 이런 것이 불가능합니다</p>
 <div class="codeblock" style="margin:.6em 0 0">
@@ -191,12 +334,18 @@ function isUser(value: unknown): value is User {
   return typeof value === "object" &amp;&amp; value !== null &amp;&amp; "id" in value;
 }</code></pre>
 </div>
+<p>마지막 함수의 반환 타입 자리에 있는 <b><code>value is User</code></b>는 처음 보는 문법입니다.
+"이 함수가 <code>true</code>를 돌려주면 그 뒤로는 <code>value</code>를 <code>User</code>로 봐도 된다"는 약속으로,
+<b>타입 가드</b>라고 부릅니다. 지금은 "실행 중 검사는 평범한 JavaScript 조건문으로 직접 한다"는 것만 기억하고, 자세한 내용은 54장에서 봅니다.</p>
 <p style="margin-bottom:0">서버 응답처럼 <b>믿을 수 없는 데이터</b>는
 <b>Zod</b> 같은 검증 라이브러리로 런타임에 확인하는 것이 실무 표준입니다.
 "타입을 선언했으니 안전하다"는 착각이 실제 사고로 이어집니다.</p>
 </div>
 
 <h2 id="any">any는 탈출구입니다</h2>
+
+<p>TypeScript에는 "이 값은 검사하지 마"라고 선언하는 특별한 타입 <code>any</code>가 있습니다.
+급할 때는 편리하지만, <b>안전벨트를 풀고 운전하는 것</b>과 같습니다. 평소에는 차이를 못 느끼다가 사고가 날 때 차이가 드러납니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">let value: any = "문자열";
@@ -205,6 +354,10 @@ value.아무거나.해도.됩니다;  // 전부 통과
 
 // any를 쓰는 순간 그 값에 대한 모든 검사가 꺼집니다</code></pre>
 </div>
+
+<p>더 큰 문제는 <code>any</code>가 <b>퍼진다</b>는 점입니다. <code>any</code> 값에서 꺼낸 속성도, 그것을 넘겨받은 변수도 <code>any</code>가 되어
+검사가 꺼진 영역이 코드 곳곳으로 번집니다. 그래서 "타입을 모르겠다"는 상황에는 <code>any</code> 대신 <b><code>unknown</code></b>을 씁니다.
+<code>unknown</code>은 "무엇인지 모른다. 그러니 <b>확인하기 전에는 쓰지 마라</b>"는 뜻입니다.</p>
 
 <div class="tablewrap">
 <table>
@@ -226,6 +379,9 @@ value.아무거나.해도.됩니다;  // 전부 통과
 }</code></pre>
 </div>
 
+<p>▶ Playground에 붙여 보세요. 주석 처리된 <code>value.length</code>의 주석을 풀면 오류가 나고,
+<code>if</code> 안쪽에서는 같은 코드가 통과합니다. 조건문을 통과하는 순간 타입이 좁아지는 이 동작이 54장의 주제입니다.</p>
+
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — TypeScript 도입 순서</p>
 <ol>
@@ -243,20 +399,23 @@ value.아무거나.해도.됩니다;  // 전부 통과
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
 <li>TypeScript는 <b>실행 전에</b> 타입 오류를 잡고, <b>자동 완성과 안전한 리팩터링</b>을 제공한다.</li>
+<li>실습은 <b>TS Playground</b>에서 한다. 마우스를 올려 추론 결과를 확인하는 습관이 핵심이다.</li>
 <li><b>타입은 빌드 후 완전히 사라진다.</b> 런타임 오류를 없애 주지 않는다.</li>
 <li>외부에서 들어오는 데이터는 <b>런타임 검증이 따로 필요</b>하다.</li>
-<li><b><code>"strict": true</code>는 필수.</b> 특히 <code>strictNullChecks</code>가 핵심 가치다.</li>
-<li>실무에서는 <b><code>tsc</code>는 검사, 변환은 번들러</b>가 담당한다.</li>
-<li>대부분은 <b>추론에 맡긴다.</b> 매개변수와 빈 배열은 명시한다.</li>
+<li><b><code>"strict": true</code>는 필수.</b> 특히 <code>strictNullChecks</code>가 핵심 가치다. TypeScript 6.0부터는 기본값이다.</li>
+<li>실무에서는 <b><code>tsc</code>는 검사, 변환은 번들러</b>가 담당한다. <code>verbatimModuleSyntax</code>·<code>erasableSyntaxOnly</code>가 이 분업을 돕는다.</li>
+<li>대부분은 <b>추론에 맡긴다.</b> 매개변수와, 단서가 없는 빈 배열은 명시한다.</li>
 <li><b><code>any</code> 대신 <code>unknown</code></b>을 쓴다.</li>
 </ul>
 </div>
 
 <h2 id="refs">참고 자료</h2>
 <ul>
+<li><a href="https://www.typescriptlang.org/play" target="_blank" rel="noopener">TypeScript Playground</a> — 브라우저에서 바로 실험, 변환 결과도 확인 가능</li>
 <li><a href="https://www.typescriptlang.org/docs/handbook/intro.html" target="_blank" rel="noopener">TypeScript 핸드북 (공식)</a></li>
 <li><a href="https://www.typescriptlang.org/tsconfig/" target="_blank" rel="noopener">tsconfig 전체 옵션 설명</a></li>
-<li><a href="https://www.typescriptlang.org/play" target="_blank" rel="noopener">TypeScript Playground</a> — 브라우저에서 바로 실험, 변환 결과도 확인 가능</li>
+<li><a href="https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/" target="_blank" rel="noopener">Announcing TypeScript 7.0 (공식 블로그, 2026-07)</a></li>
+<li><a href="https://nodejs.org/api/typescript.html" target="_blank" rel="noopener">Node.js 공식 문서 — TypeScript 실행(타입 제거)</a></li>
 <li><a href="https://zod.dev/" target="_blank" rel="noopener">Zod</a> — 런타임 검증 라이브러리</li>
 </ul>
 
@@ -265,57 +424,68 @@ FB_QUIZ([
   {
     q: "\"TypeScript를 쓰면 런타임 오류가 사라진다\"는 말의 문제는?",
     o: [
-      "맞는 말이다",
-      "타입은 빌드 후 완전히 제거되므로, 서버 응답이나 사용자 입력처럼 외부에서 들어오는 값은 여전히 런타임에 검증해야 한다",
-      "TypeScript는 오류를 전혀 잡지 못한다",
-      "런타임 오류만 잡고 컴파일 오류는 못 잡는다"
+      "타입은 빌드 후 사라져, 외부에서 들어온 값은 따로 검증해야 한다",
+      "strict 모드를 켰을 때만 런타임 오류가 사라진다",
+      "타입 검사를 통과한 코드는 실행 중에도 타입을 다시 확인한다",
+      "런타임 오류는 사라지지만 대신 실행 속도가 느려진다"
     ],
-    a: 1,
-    e: "TypeScript는 <b>내가 쓴 코드끼리의 정합성</b>을 검사합니다. 빌드 결과는 평범한 JavaScript이고 타입 정보는 남지 않습니다. API가 예상과 다른 형태를 보내면 아무것도 막지 못하므로 Zod 같은 <b>런타임 검증</b>이 별도로 필요합니다."
+    a: 0,
+    e: "TypeScript는 <b>내가 쓴 코드끼리의 정합성</b>을 실행 전에 검사합니다. 빌드 결과는 평범한 JavaScript이고 타입 정보는 남지 않으므로, 실행 중에 다시 확인하는 일도 없습니다. API가 예상과 다른 형태를 보내면 아무것도 막지 못하므로 Zod 같은 <b>런타임 검증</b>이 별도로 필요합니다."
   },
   {
-    q: "<code>tsconfig.json</code>에서 가장 중요한 옵션과 그 이유는?",
+    q: "<code>tsconfig.json</code>에서 가장 중요한 옵션은?",
     o: [
-      "<code>target</code> — 출력 문법 버전을 정하므로",
-      "<code>strict: true</code> — 특히 strictNullChecks가 \"Cannot read properties of null\" 류의 가장 흔한 런타임 오류를 막아 주므로",
-      "<code>skipLibCheck</code> — 빌드가 빨라지므로",
-      "<code>paths</code> — import가 짧아지므로"
+      "<code>target</code> — 출력 문법 버전을 정한다",
+      "<code>strict</code> — null 가능성 등 엄격한 검사를 켠다",
+      "<code>skipLibCheck</code> — 라이브러리 검사를 건너뛴다",
+      "<code>noEmit</code> — 결과 파일을 만들지 않는다"
     ],
     a: 1,
-    e: "<code>strict</code>를 끄면 <code>null</code>·<code>undefined</code> 가능성을 무시하고 통과시켜 TypeScript의 가장 큰 이득이 사라집니다. 새 프로젝트는 <b>처음부터 켜는</b> 것이 원칙입니다. 나중에 켜면 오류가 한꺼번에 수천 개 발생합니다."
+    e: "<code>strict</code>를 끄면 <code>null</code>·<code>undefined</code> 가능성을 무시하고 통과시켜, \"Cannot read properties of null\" 같은 가장 흔한 런타임 오류를 막지 못합니다. 새 프로젝트는 <b>처음부터 켜는</b> 것이 원칙이고, TypeScript 6.0부터는 기본값입니다. 나머지 옵션은 대개 도구가 정해 준 값을 씁니다."
   },
   {
-    q: "다음 중 타입을 <b>반드시 명시해야</b> 하는 곳은?",
+    q: "<code>const cart = { items: [] }; cart.items.push(\"사과\");</code> 가 strict 모드에서 오류인 이유는?",
     o: [
-      "<code>const name = \"홍길동\"</code>",
-      "함수의 매개변수 — 추론할 근거가 없기 때문",
-      "<code>const nums = [1, 2, 3]</code>",
-      "<code>function double(n: number) { return n * 2 }</code> 의 반환 타입"
+      "<code>const</code>로 선언한 객체는 내부 배열도 바꿀 수 없어서",
+      "요소 타입 단서가 없어 <code>items</code>가 <code>never[]</code>로 추론되어서",
+      "빈 배열은 <code>any[]</code>로 추론되는데 strict가 any를 금지해서",
+      "<code>push</code>는 문자열 배열에만 쓸 수 있어서"
     ],
     a: 1,
-    e: "초기값이 있는 변수와 반환식이 있는 함수는 <b>추론이 정확</b>합니다. 반면 매개변수는 호출되기 전까지 무엇이 올지 알 수 없으므로 반드시 적어야 합니다. 빈 배열(<code>[]</code>)도 <code>never[]</code>로 추론되므로 명시가 필요합니다."
+    e: "객체 속성 안의 빈 배열은 요소 타입을 짐작할 근거가 없어 <code>never[]</code>가 됩니다. <code>never</code>는 어떤 값도 들어갈 수 없는 타입이라 <code>push</code>가 실패합니다. <code>{ items: string[] }</code>처럼 명시해야 합니다. <code>const</code>는 변수 재할당만 막을 뿐 내부 변경은 막지 않으며, 단독 변수 <code>const list = []</code>는 strict에서 push를 따라 타입이 넓어지는 '진화하는 배열'로 처리됩니다."
   },
   {
     q: "<code>any</code>보다 <code>unknown</code>을 권장하는 이유는?",
     o: [
-      "unknown이 더 빠르므로",
-      "any는 모든 검사를 꺼 버리지만, unknown은 타입을 확인하기 전에는 사용할 수 없게 강제하기 때문",
-      "any는 구형 TypeScript 전용이므로",
-      "unknown은 자동으로 타입을 추론해 주므로"
+      "unknown은 담긴 값의 타입을 자동으로 추론해 주므로",
+      "any는 TypeScript 7에서 제거될 예정이므로",
+      "unknown은 확인하기 전에는 사용할 수 없게 강제하므로",
+      "unknown은 런타임에 값의 형태를 검증해 주므로"
     ],
-    a: 1,
-    e: "<code>any</code>는 \"검사하지 마\"라는 선언이라 그 값이 코드 전체로 퍼지며 안전성을 갉아먹습니다. <code>unknown</code>은 <b>먼저 확인하라</b>고 강제하므로, <code>typeof</code> 검사나 타입 가드를 통과한 뒤에야 쓸 수 있습니다."
+    a: 2,
+    e: "<code>any</code>는 \"검사하지 마\"라는 선언이라 그 값이 코드 전체로 퍼지며 안전성을 갉아먹습니다. <code>unknown</code>은 <b>먼저 확인하라</b>고 강제하므로, <code>typeof</code> 검사나 타입 가드를 통과한 뒤에야 쓸 수 있습니다. 런타임 검증을 해 주는 것은 아니고, 검증 코드를 쓰도록 강제할 뿐입니다."
   },
   {
     q: "<code>interface User</code>를 선언한 뒤 <code>value instanceof User</code>로 검사하면?",
     o: [
-      "정상 동작한다",
-      "컴파일 오류가 난다. interface는 타입일 뿐 런타임에 존재하는 값이 아니기 때문",
+      "User의 속성을 모두 가진 객체면 true가 된다",
+      "컴파일 오류가 난다. interface는 런타임에 존재하지 않는다",
       "항상 false를 반환한다",
-      "any 타입으로 변환된다"
+      "TypeScript가 자동으로 속성 검사 코드로 바꿔 준다"
     ],
     a: 1,
-    e: "<code>instanceof</code>는 <b>런타임에 존재하는 생성자 함수</b>를 필요로 합니다. <code>interface</code>는 빌드 시 사라지므로 값으로 쓸 수 없습니다. 런타임 확인이 필요하면 <code>typeof</code>·<code>in</code> 검사를 조합한 <b>타입 가드 함수</b>를 직접 만들어야 합니다(54장)."
+    e: "<code>instanceof</code>는 <b>런타임에 존재하는 생성자 함수</b>를 필요로 합니다. <code>interface</code>는 빌드 시 사라지므로 값으로 쓸 수 없고, TypeScript가 검사 코드를 대신 만들어 주지도 않습니다. 런타임 확인이 필요하면 <code>typeof</code>·<code>in</code> 검사를 조합한 <b>타입 가드 함수</b>를 직접 만들어야 합니다(54장)."
+  },
+  {
+    q: "Node.js 22.18 이상에서 <code>node app.ts</code>로 TypeScript 파일을 실행할 때 맞는 설명은?",
+    o: [
+      "실행 전에 tsconfig.json 설정대로 타입 검사를 한다",
+      "타입 표기만 지우고 실행하므로 타입 오류가 있어도 실행된다",
+      "enum을 포함한 모든 TypeScript 문법을 지원한다",
+      "TypeScript 7 컴파일러가 내장되어 있어 빌드 결과를 만든다"
+    ],
+    a: 1,
+    e: "Node.js의 타입 제거(type stripping)는 타입 표기를 공백으로 바꾸고 실행할 뿐 <b>타입 검사를 하지 않으며</b> tsconfig.json도 읽지 않습니다. <code>enum</code>처럼 JavaScript 코드를 만들어야 하는 문법은 지원하지 않으므로 <code>erasableSyntaxOnly</code> 옵션으로 미리 막아 두는 것이 권장됩니다. 검사는 여전히 <code>tsc</code>로 따로 돌립니다."
   }
 ]);
 </script>

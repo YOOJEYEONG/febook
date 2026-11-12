@@ -9,7 +9,7 @@ require(path.join(root, "assets/data/toc.js"));
 const FLAT = global.window.BOOK_FLAT;
 const byNum = new Map(FLAT.map(c => [c.n, c]));
 
-let quizTotal = 0, quizProblems = 0, refProblems = 0;
+let quizTotal = 0, quizProblems = 0, refProblems = 0, quizHints = 0;
 const refs = [];
 
 for (const chapter of FLAT) {
@@ -39,6 +39,15 @@ for (const chapter of FLAT) {
         const plain = q.o.map(o => String(o).replace(/<[^>]+>/g, "").trim());
         if (new Set(plain).size !== plain.length) { console.log(`[보기 중복] ${at}`); quizProblems++; }
         if (plain.some(o => !o)) { console.log(`[빈 보기] ${at}`); quizProblems++; }
+        /* 경고(실패 아님): 정답 보기만 유독 길면 내용을 몰라도 답이 보인다 */
+        if (typeof q.a === "number" && plain[q.a]) {
+          const others = plain.filter((_, i) => i !== q.a).map(o => o.length);
+          const maxOther = Math.max(...others);
+          if (plain[q.a].length > maxOther * 2 && plain[q.a].length - maxOther > 15) {
+            if (process.argv.includes("--verbose")) console.log(`[경고: 정답만 김] ${at} (${plain[q.a].length}자 vs ${maxOther}자)`);
+            quizHints++;
+          }
+        }
       });
     }
   }
@@ -56,6 +65,6 @@ for (const chapter of FLAT) {
   }
 }
 
-console.log(`\n퀴즈 ${quizTotal}문항 · 문제 ${quizProblems}건`);
+console.log(`\n퀴즈 ${quizTotal}문항 · 문제 ${quizProblems}건 · 경고(정답 보기만 2배 이상 김) ${quizHints}건${quizHints ? " — --verbose 로 목록" : ""}`);
 console.log(`상호 참조 ${refs.length}건 · 없는 챕터 참조 ${refProblems}건`);
-fs.writeFileSync("/tmp/refs.json", JSON.stringify(refs, null, 0));
+fs.writeFileSync(path.join(require("os").tmpdir(), "fenbook-refs.json"), JSON.stringify(refs, null, 0));

@@ -4,10 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>27장. 함수 — 프엔북</title>
-<meta name="description" content="함수 선언문과 표현식, 화살표 함수의 차이, 매개변수 기본값과 나머지 매개변수, 콜백과 고차 함수, 순수 함수까지 다룹니다.">
+<meta name="description" content="함수가 무엇인지(레시피·자판기 비유)부터 함수 선언문과 표현식, 화살표 함수의 차이, 매개변수 기본값과 나머지 매개변수, 콜백과 고차 함수, 순수 함수까지 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="27장. 함수 — 프엔북">
-<meta property="og:description" content="함수 선언문과 표현식, 화살표 함수의 차이, 매개변수 기본값과 나머지 매개변수, 콜백과 고차 함수, 순수 함수까지 다룹니다.">
+<meta property="og:description" content="함수가 무엇인지(레시피·자판기 비유)부터 함수 선언문과 표현식, 화살표 함수의 차이, 매개변수 기본값과 나머지 매개변수, 콜백과 고차 함수, 순수 함수까지 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
 <link rel="stylesheet" href="../assets/css/book.css">
 </head>
@@ -32,7 +38,40 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 24분 · <span class="term" data-term="javascript">JavaScript</span>의 심장부입니다</p>
+<p class="ch-meta">읽는 데 약 30분 · 사전 지식: 24장(변수와 <code>const</code>·<code>let</code>), 26장(<code>if</code>·<code>for</code>)</p>
+
+<h2 id="what">함수란 — 이름 붙인 레시피, 자판기</h2>
+
+<p>같은 일을 여러 번 해야 할 때마다 코드를 복사해 붙이면, 고칠 때 모든 복사본을 찾아 고쳐야 합니다.
+그래서 <b>여러 줄의 동작을 한 번 묶어 이름을 붙여 두고, 필요할 때 이름으로 불러 쓰는</b> 것이 함수입니다.</p>
+
+<p><b>자판기</b>를 떠올려 보세요. 돈과 버튼 번호를 넣으면(입력) 안에서 정해진 일을 하고 음료를 내줍니다(출력).
+안이 어떻게 생겼는지 몰라도, 무엇을 넣으면 무엇이 나오는지만 알면 쓸 수 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">자판기와 함수</span>
+<pre><code data-lang="text">            ┌──────────────── 함수 add ────────────────┐
+ 입력 2, 3 → │ 투입구: (a, b)   안에서: a + b 계산       │ → 출력 5
+            │ 매개변수         본문                    │   return
+            └─────────────────────────────────────────┘</code></pre>
+</div>
+
+<div class="codeblock">
+<pre><code data-lang="js">// ① 정의 — 자판기를 설치한다 (아직 아무 일도 안 일어남)
+function add(a, b) {   // a, b: 매개변수 = 투입구
+  return a + b;        // return: 결과를 내보내는 출구
+}
+
+// ② 호출 — 자판기에 값을 넣고 버튼을 누른다
+const result = add(2, 3);   // 2, 3: 인자 = 실제로 넣는 값
+console.log(result);         // 5</code></pre>
+</div>
+
+<ul>
+<li><b>정의</b>와 <b>호출</b>은 다릅니다. 정의만 하면 아무 일도 일어나지 않고, <code>이름()</code>처럼 <b>괄호를 붙여 호출해야</b> 실행됩니다.</li>
+<li><b>매개변수</b>(parameter)는 함수 쪽의 빈칸 이름, <b>인자</b>(argument)는 호출할 때 실제로 넣는 값입니다.</li>
+<li><b><code>return</code></b>은 결과를 호출한 쪽으로 돌려줍니다. 돌려받은 값은 변수에 담거나 바로 출력할 수 있습니다.</li>
+</ul>
 
 <h2 id="three-ways">함수를 만드는 세 가지 방법</h2>
 
@@ -51,14 +90,16 @@ const subtract = function (a, b) {
 const multiply = (a, b) =&gt; a * b;</code></pre>
 </div>
 
+<p>지금 당장 중요한 차이는 표의 <b>첫 줄(<span class="term" data-term="hoisting">호이스팅</span>)</b>뿐입니다. 나머지 줄은 각각 해당 챕터에서 배운 뒤 돌아와 보면 됩니다.</p>
+
 <div class="tablewrap">
 <table>
 <thead><tr><th></th><th>선언문</th><th>표현식</th><th>화살표</th></tr></thead>
 <tbody>
-<tr><td><span class="term" data-term="hoisting">호이스팅</span></td><td><b>전체가 준비됨</b> — 위에서 호출 가능</td><td>변수 규칙(<span class="term" data-term="tdz">TDZ</span>)</td><td>변수 규칙(TDZ)</td></tr>
-<tr><td><code>this</code></td><td>호출 방식에 따라 결정</td><td>호출 방식에 따라 결정</td><td><b>없음</b> — 바깥에서 가져옴</td></tr>
-<tr><td><code>arguments</code></td><td>있음</td><td>있음</td><td><b>없음</b></td></tr>
-<tr><td><code>new</code>로 호출</td><td>가능</td><td>가능</td><td><b>불가능</b></td></tr>
+<tr><td>호이스팅</td><td><b>전체가 준비됨</b> — 위에서 호출 가능</td><td>변수 규칙(<span class="term" data-term="tdz">TDZ</span>)</td><td>변수 규칙(TDZ)</td></tr>
+<tr><td><code>this</code> (30장)</td><td>호출 방식에 따라 결정</td><td>호출 방식에 따라 결정</td><td><b>없음</b> — 바깥에서 가져옴</td></tr>
+<tr><td><code>arguments</code> (받은 인자 목록)</td><td>있음</td><td>있음</td><td><b>없음</b></td></tr>
+<tr><td><code>new</code>로 호출 (32장)</td><td>가능</td><td>가능</td><td><b>불가능</b></td></tr>
 <tr><td>이름</td><td>필수</td><td>선택</td><td>선택</td></tr>
 </tbody>
 </table>
@@ -105,6 +146,8 @@ const counter2 = {
 };
 
 // ❌ DOM 이벤트 핸들러에서 this로 요소를 가리키려 할 때
+//    (addEventListener·event.currentTarget은 38장에서 배웁니다.
+//     "버튼을 클릭하면 이 함수를 실행해 줘"라는 등록 코드입니다)
 button.addEventListener("click", () =&gt; {
   this.classList.add("on");   // this가 요소가 아님
 });
@@ -139,6 +182,7 @@ show(1, 2, 3);    // 남는 인자는 그냥 무시됩니다
 console.log("--- ③ 나머지 매개변수 (...) ---");
 function sum(...numbers) {     // 배열로 모아 줍니다
   console.log("받은 인자:", numbers);
+  // reduce(29장): 배열의 값을 차례로 하나로 합칩니다. 여기선 전부 더하기
   return numbers.reduce((total, n) => total + n, 0);
 }
 console.log(sum(1, 2, 3));
@@ -146,11 +190,12 @@ console.log(sum(1, 2, 3, 4, 5));
 
 console.log("--- ④ 앞에 고정 매개변수와 함께 ---");
 function log(level, ...messages) {
-  console.log(`[${level}]`, messages.join(" "));
+  console.log(`[${level}]`, messages.join(" "));   // join(29장): 배열을 " "로 이어 붙인 문자열
 }
 log("INFO", "서버", "시작됨");
 
 console.log("--- ⑤ 객체로 받기 (이름 있는 인자) ---");
+// { } 안에 이름을 적으면 객체에서 그 이름의 값을 꺼내 받습니다 (구조 분해, 28장)
 function createUser({ name, age = 0, city = "미정" }) {
   return `${name} (${age}세, ${city})`;
 }
@@ -206,6 +251,7 @@ function bad() {
 <p>값을 여러 개 돌려주고 싶으면 <b>객체나 배열</b>로 묶습니다.</p>
 <div class="codeblock">
 <pre><code data-lang="js">function getMinMax(numbers) {
+  // ...numbers: 배열을 낱개 값으로 펼쳐 넘깁니다 (전개 구문, 28장)
   return { min: Math.min(...numbers), max: Math.max(...numbers) };
 }
 const { min, max } = getMinMax([3, 1, 4, 1, 5]);   // 구조 분해 (28장)</code></pre>
@@ -213,8 +259,12 @@ const { min, max } = getMinMax([3, 1, 4, 1, 5]);   // 구조 분해 (28장)</cod
 
 <h2 id="first-class">함수는 값이다</h2>
 
-<p>JavaScript에서 함수는 <b>일급 객체</b>입니다. 숫자나 문자열처럼
-<b>변수에 담고, 인자로 넘기고, 반환할 수 있습니다.</b></p>
+<p><span class="term" data-term="javascript">JavaScript</span>에서 함수는 <b>일급 객체</b>(first-<span class="term" data-term="class">class</span>)입니다. 어려운 말 같지만 뜻은 단순합니다.
+<b>"숫자·문자열 같은 다른 값과 똑같은 대우를 받는다"</b>는 뜻입니다. 그래서 함수도
+<b>변수에 담고, 다른 함수에 인자로 넘기고, 함수의 결과로 반환할 수 있습니다.</b></p>
+
+<p>자판기 비유로 말하면, 자판기 자체를 트럭에 실어 다른 곳에 보내거나(인자로 넘기기), 자판기 공장이 새 자판기를 만들어 내보내는(반환하기) 것도 가능하다는 뜻입니다.
+다른 함수에 넘겨져 <b>나중에 불리는 함수</b>를 <b>콜백</b>(callback), 함수를 받거나 돌려주는 함수를 <b>고차 함수</b>라고 부릅니다.</p>
 
 <div class="runner" data-lang="js" data-title="함수를 값처럼 다루기" data-note="이 개념이 29장의 map·filter와 8부 React 전체의 토대입니다.">
 <textarea class="rn-src">
@@ -248,7 +298,8 @@ const tenTimes = makeMultiplier(10);
 console.log(triple(5));     // 15
 console.log(tenTimes(5));   // 50
 
-console.log("--- ⑤ 실전: 배열 메서드가 바로 이 방식입니다 ---");
+console.log("--- ⑤ 실전: 배열 메서드가 바로 이 방식입니다 (29장) ---");
+// map: 각 값을 바꾼 새 배열, filter: 조건에 맞는 값만 남긴 새 배열
 const numbers = [1, 2, 3, 4, 5];
 console.log(numbers.map(n => n * 2));
 console.log(numbers.filter(n => n % 2 === 0));
@@ -257,6 +308,7 @@ console.log("--- ⑥ 함수 호출과 함수 자체는 다릅니다 ---");
 function hello() { return "hi"; }
 console.log(hello);     // 함수 그 자체
 console.log(hello());   // 실행한 결과
+// setTimeout(35장)은 "잠시 뒤에 이 함수를 실행해 줘"입니다
 // setTimeout(hello, 100)   ✅ 나중에 실행하라고 넘김
 // setTimeout(hello(), 100) ❌ 지금 실행해서 결과(문자열)를 넘김
 </textarea>
@@ -265,7 +317,8 @@ console.log(hello());   // 실행한 결과
 <div class="box warn">
 <p class="box-title"><span class="box-ico">💥</span> 신입이 가장 많이 하는 실수</p>
 <div class="codeblock" style="margin:.6em 0 0">
-<pre><code data-lang="js">// ❌ 지금 즉시 실행되고, 그 결과(undefined)가 등록됩니다
+<pre><code data-lang="js">// (addEventListener는 38장. "클릭되면 이 함수를 실행해 줘"라는 등록입니다)
+// ❌ 지금 즉시 실행되고, 그 결과(undefined)가 등록됩니다
 button.addEventListener("click", handleClick());
 
 // ✅ 함수 자체를 넘깁니다. 클릭할 때 실행됩니다
@@ -306,7 +359,7 @@ function addItemBad(list, item) {
 
 // ✅ 새 배열을 만들어 반환합니다
 function addItem(list, item) {
-  return [...list, item];
+  return [...list, item];   // 기존 값을 펼쳐 담은 새 배열 (전개 구문, 28장)
 }</code></pre>
 </div>
 
@@ -328,6 +381,7 @@ function addItem(list, item) {
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
+<li>함수는 <b>이름 붙인 레시피·자판기</b>다. 매개변수로 받고 <code>return</code>으로 돌려준다. 정의만으로는 실행되지 않고 <b>호출해야</b> 실행된다.</li>
 <li>함수 선언문은 <b>통째로 호이스팅</b>되어 위에서 호출할 수 있다. 표현식·화살표는 아니다.</li>
 <li>화살표 함수는 <b><code>this</code>·<code>arguments</code>가 없고 <code>new</code>로 호출할 수 없다.</b></li>
 <li>객체 메서드에는 <b>메서드 축약 문법</b>을 쓴다. 화살표 함수는 부적절하다.</li>
@@ -362,37 +416,48 @@ function addItem(list, item) {
 <script>
 FB_QUIZ([
   {
-    q: "<code>button.addEventListener(\"click\", handleClick())</code> 의 문제는?",
+    q: "<code>function hi() { console.log(\"hi\"); }</code> 한 줄만 있는 파일을 실행하면?",
     o: [
-      "문법 오류다",
-      "handleClick이 즉시 실행되고 그 반환값(대개 undefined)이 핸들러로 등록되어, 클릭해도 아무 일이 일어나지 않는다",
-      "이벤트가 두 번 등록된다",
-      "문제없다"
+      "hi가 한 번 출력된다",
+      "아무것도 출력되지 않는다",
+      "hi가 무한히 출력된다",
+      "함수 이름이 출력된다"
     ],
     a: 1,
-    e: "괄호는 <b>지금 실행하라</b>는 뜻입니다. 콜백으로 넘길 때는 <b>함수 자체</b>인 <code>handleClick</code>을 넘겨야 합니다. 인자를 전달해야 한다면 <code>() =&gt; handleClick(id)</code>처럼 감싸세요."
+    e: "함수를 <b>정의</b>하는 것은 자판기를 설치하는 것일 뿐입니다. <code>hi()</code>처럼 괄호를 붙여 <b>호출</b>해야 본문이 실행됩니다."
   },
   {
-    q: "객체의 메서드를 화살표 함수로 정의하면 안 되는 이유는?",
+    q: "<code>button.addEventListener(\"click\", handleClick())</code> 를 쓰면 어떻게 되나요?",
     o: [
-      "문법 오류가 나기 때문",
-      "화살표 함수에는 자신의 this가 없어 객체를 가리키지 못하고 바깥 스코프의 this를 가져오기 때문",
-      "화살표 함수는 객체 안에서 쓸 수 없기 때문",
-      "성능이 느리기 때문"
+      "클릭할 때마다 handleClick이 실행된다",
+      "등록 시점에 한 번 실행되고 클릭엔 반응 없다",
+      "클릭할 때마다 두 번씩 실행된다",
+      "첫 클릭 때만 handleClick이 실행된다"
     ],
     a: 1,
-    e: "화살표 함수는 <b>자신의 <code>this</code>를 갖지 않고</b> 정의된 위치의 바깥 <code>this</code>를 그대로 씁니다. 객체 리터럴은 스코프를 만들지 않으므로 <code>this</code>가 객체가 아니라 바깥(모듈이면 <code>undefined</code>)을 가리킵니다. 메서드 축약 문법 <code>increase() { … }</code>를 쓰세요."
+    e: "괄호는 <b>지금 실행하라</b>는 뜻입니다. 등록하는 순간 실행되고, 그 반환값(대개 <code>undefined</code>)이 핸들러로 등록되어 클릭해도 아무 일이 없습니다. 함수 자체인 <code>handleClick</code>을 넘기고, 인자가 필요하면 <code>() =&gt; handleClick(id)</code>로 감싸세요."
+  },
+  {
+    q: "객체의 메서드를 화살표 함수로 정의하면 생기는 문제는?",
+    o: [
+      "객체 안에서는 문법 오류가 난다",
+      "this가 그 객체를 가리키지 않는다",
+      "메서드를 한 번밖에 호출할 수 없다",
+      "다른 메서드보다 항상 늦게 실행된다"
+    ],
+    a: 1,
+    e: "화살표 함수는 <b>자신의 <code>this</code>를 갖지 않고</b> 정의된 위치의 바깥 <code>this</code>를 그대로 씁니다(30장). 객체 리터럴은 스코프를 만들지 않으므로 <code>this</code>가 객체가 아닙니다. 메서드 축약 문법 <code>increase() { … }</code>를 쓰세요."
   },
   {
     q: "<code>const makeUser = name =&gt; { name: name };</code> 를 호출하면 무엇이 반환되나요?",
     o: [
       "<code>{ name: \"…\" }</code> 객체",
-      "<code>undefined</code> — 중괄호가 객체 리터럴이 아니라 함수 본문으로 해석되기 때문",
-      "문자열",
-      "문법 오류"
+      "<code>undefined</code>",
+      "넘긴 name 문자열 그대로",
+      "SyntaxError로 정의부터 실패"
     ],
     a: 1,
-    e: "화살표 함수 뒤의 <code>{</code>는 <b>함수 본문의 시작</b>으로 해석됩니다. 안의 <code>name:</code>은 레이블 문법이 되고 <code>return</code>이 없어 <code>undefined</code>가 반환됩니다. 객체를 반환하려면 <code>name =&gt; ({ name })</code>처럼 <b>괄호로 감싸야</b> 합니다."
+    e: "화살표 뒤의 <code>{</code>는 <b>함수 본문의 시작</b>으로 해석됩니다. 안의 <code>name:</code>은 레이블 문법이 되어 오류도 나지 않고, <code>return</code>이 없으니 <code>undefined</code>가 반환됩니다. 객체를 반환하려면 <code>name =&gt; ({ name })</code>처럼 괄호로 감싸야 합니다."
   },
   {
     q: "다음 중 <b>순수 함수</b>인 것은?",
@@ -406,15 +471,15 @@ FB_QUIZ([
     e: "순수 함수는 <b>같은 입력에 항상 같은 출력</b>이고 <b>바깥을 바꾸지 않습니다</b>. 두 번째는 인자로 받은 배열을 수정하고, 세 번째는 저장소를 바꾸며, 네 번째는 호출마다 결과가 다릅니다. 첫 번째만 두 조건을 모두 만족합니다."
   },
   {
-    q: "함수 선언문과 함수 표현식의 가장 실용적인 차이는?",
+    q: "<code>sayHi(); const sayHi = function () {};</code> 를 실행하면?",
     o: [
-      "선언문은 화살표 함수를 쓸 수 없다",
-      "선언문은 통째로 호이스팅되어 정의보다 위에서 호출할 수 있지만, 표현식은 변수 규칙(TDZ)을 따라 정의 이전에 호출하면 오류가 난다",
-      "표현식은 인자를 받을 수 없다",
-      "선언문은 this를 갖지 않는다"
+      "정상 실행된다",
+      "ReferenceError가 난다",
+      "undefined가 출력된다",
+      "TypeError: sayHi is not a function"
     ],
     a: 1,
-    e: "함수 선언문은 실행 전에 <b>함수 전체가 준비</b>되어 위에서 호출해도 동작합니다. 함수 표현식은 <code>const</code>·<code>let</code> 변수에 담긴 값이므로 <b>TDZ</b> 규칙을 따라 선언 전에 호출하면 <code>ReferenceError</code>가 납니다."
+    e: "함수 <b>표현식</b>은 <code>const</code> 변수에 담긴 값이라 변수 규칙(<b>TDZ</b>, 24장)을 따릅니다. 선언 전에 접근하면 <code>ReferenceError</code>입니다. <code>var</code>에 담았다면 <code>undefined</code>를 호출하려 해 TypeError가 나고, 함수 <b>선언문</b>이었다면 정상 실행됩니다."
   }
 ]);
 </script>

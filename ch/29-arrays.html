@@ -6,6 +6,12 @@
 <title>29장. 배열과 고차 함수 — 프엔북</title>
 <meta name="description" content="배열 생성과 접근, 원본을 바꾸는 메서드와 새 배열을 만드는 메서드의 구분, map·filter·reduce 등 고차 함수, sort의 함정을 정리합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="29장. 배열과 고차 함수 — 프엔북">
 <meta property="og:description" content="배열 생성과 접근, 원본을 바꾸는 메서드와 새 배열을 만드는 메서드의 구분, map·filter·reduce 등 고차 함수, sort의 함정을 정리합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -382,9 +388,9 @@ FB_QUIZ([
     q: "<code>[1, 10, 2, 20].sort()</code> 의 결과는?",
     o: [
       "[1, 2, 10, 20]",
-      "[1, 10, 2, 20] — 기본 정렬은 요소를 문자열로 바꿔 사전 순으로 비교하기 때문",
+      "[1, 10, 2, 20]",
       "[20, 10, 2, 1]",
-      "오류가 발생한다"
+      "[1, 2, 20, 10]"
     ],
     a: 1,
     e: "<code>sort()</code>는 비교 함수를 넘기지 않으면 각 요소를 <b>문자열로 변환한 뒤 사전 순</b>으로 정렬합니다. 문자열 <code>\"10\"</code>이 <code>\"2\"</code>보다 앞서므로 이런 결과가 나옵니다. 숫자 정렬에는 <code>(a, b) =&gt; a - b</code>가 필수입니다."
@@ -393,20 +399,20 @@ FB_QUIZ([
     q: "<code>const sorted = arr.sort()</code> 이후 <code>arr</code>은 어떻게 되나요?",
     o: [
       "원본 그대로 유지된다",
-      "원본도 정렬된다. sort는 제자리에서 원본을 바꾸고 같은 배열을 반환하기 때문",
+      "원본도 정렬된다",
       "arr이 undefined가 된다",
-      "arr이 비어 있는 배열이 된다"
+      "정렬된 사본만 arr에 남고 sorted는 비어 있다"
     ],
     a: 1,
-    e: "<code>sort()</code>는 <b>원본을 직접 정렬</b>하고 그 배열을 그대로 반환합니다. 따라서 <code>arr === sorted</code>가 <code>true</code>입니다. 원본을 지키려면 <code>[...arr].sort()</code>나 <code>arr.toSorted()</code>를 쓰세요."
+    e: "sort는 제자리에서 원본을 바꾸고 같은 배열을 반환합니다. <code>sort()</code>는 <b>원본을 직접 정렬</b>하고 그 배열을 그대로 반환합니다. 따라서 <code>arr === sorted</code>가 <code>true</code>입니다. 원본을 지키려면 <code>[...arr].sort()</code>나 <code>arr.toSorted()</code>를 쓰세요."
   },
   {
     q: "<code>forEach</code> 대신 <code>for...of</code>를 써야 하는 상황은?",
     o: [
-      "배열이 클 때",
-      "조건을 만족하면 반복을 중간에 멈춰야 할 때. forEach는 break로 중단할 수 없다",
-      "객체를 순회할 때",
-      "인덱스가 필요할 때"
+      "배열 요소가 1000개를 넘을 때",
+      "조건을 만족하면 반복을 멈춰야 할 때",
+      "요소의 인덱스가 필요할 때",
+      "콜백 안에서 배열을 수정할 때"
     ],
     a: 1,
     e: "<code>forEach</code>는 콜백을 모든 요소에 대해 호출하며 <b><code>break</code>로 중단할 수 없습니다</b>(<code>return</code>은 그 회차만 건너뜁니다). 중도 종료가 필요하면 <code>for...of</code> + <code>break</code>, 또는 <code>some</code>/<code>find</code>를 씁니다. 인덱스는 <code>forEach</code>의 두 번째 인자로 받을 수 있습니다."
@@ -416,11 +422,11 @@ FB_QUIZ([
     o: [
       "0을 반환한다",
       "undefined를 반환한다",
-      "TypeError가 발생한다. 초기값도 요소도 없어 시작할 값이 없기 때문",
+      "TypeError가 발생한다",
       "빈 배열을 반환한다"
     ],
     a: 2,
-    e: "초기값이 없으면 <code>reduce</code>는 <b>첫 번째 요소를 초기값으로</b> 씁니다. 빈 배열에는 그 요소조차 없어 <code>TypeError: Reduce of empty array with no initial value</code>가 납니다. 초기값을 항상 명시하는 것이 안전합니다."
+    e: "초기값도 요소도 없어 시작할 값이 없기 때문입니다. 초기값이 없으면 <code>reduce</code>는 <b>첫 번째 요소를 초기값으로</b> 씁니다. 빈 배열에는 그 요소조차 없어 <code>TypeError: Reduce of empty array with no initial value</code>가 납니다. 초기값을 항상 명시하는 것이 안전합니다."
   },
   {
     q: "배열에서 조건에 맞는 <b>객체 하나</b>를 찾을 때 가장 적절한 메서드는?",

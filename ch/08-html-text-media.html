@@ -6,6 +6,12 @@
 <title>8장. 텍스트, 링크, 이미지, 미디어 — 프엔북</title>
 <meta name="description" content="텍스트 관련 태그, 목록, 링크의 모든 것, 이미지 alt와 반응형 이미지, 비디오·오디오까지 콘텐츠를 담는 태그들을 정리합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="8장. 텍스트, 링크, 이미지, 미디어 — 프엔북">
 <meta property="og:description" content="텍스트 관련 태그, 목록, 링크의 모든 것, 이미지 alt와 반응형 이미지, 비디오·오디오까지 콘텐츠를 담는 태그들을 정리합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -385,9 +391,9 @@ FB_QUIZ([
     q: "이미지에 <code>width</code>·<code>height</code> 속성을 쓰는 가장 중요한 이유는?",
     o: [
       "CSS 없이도 크기를 고정하기 위해",
-      "브라우저가 이미지 도착 전에 가로세로 비율로 자리를 확보해, 이미지가 뜰 때 글이 밀리는 레이아웃 이동(CLS)을 막기 위해",
+      "이미지 도착 전에 자리를 잡아 화면 밀림을 막으려고",
       "이미지 파일 용량을 줄이기 위해",
-      "검색엔진이 이미지를 색인하게 하기 위해"
+      "작은 화면에서 이미지가 넘치지 않게 하려고"
     ],
     a: 1,
     e: "크기를 모르면 브라우저는 자리를 0으로 잡았다가 이미지 도착 후 밀어냅니다. 이것이 <b>CLS</b>이고 검색 순위에도 반영됩니다. CSS로 <code>width:100%; height:auto</code>를 쓰더라도 HTML 속성은 원본 크기로 함께 적는 것이 현재 권장 사항입니다."
@@ -396,9 +402,9 @@ FB_QUIZ([
     q: "페이지 최상단의 큰 대표 이미지에 <code>loading=\"lazy\"</code>를 붙이면?",
     o: [
       "초기 로딩이 빨라져 항상 이득이다",
-      "이미 화면에 보이는 이미지의 다운로드가 오히려 늦어져 LCP 지표가 나빠진다",
-      "이미지가 아예 표시되지 않는다",
-      "아무 차이가 없다"
+      "보이는 이미지가 오히려 늦게 떠 LCP가 나빠진다",
+      "이미지가 스크롤하기 전까지 표시되지 않는다",
+      "이미지 해상도가 낮아진다"
     ],
     a: 1,
     e: "<code>lazy</code>는 \"화면에 가까워질 때까지 미루라\"는 뜻입니다. 이미 화면에 있는 이미지에 붙이면 브라우저의 우선순위 판단을 방해해 <b>더 늦게</b> 뜹니다. 원칙은 \"처음부터 보이는 것은 즉시, 스크롤해야 보이는 것만 lazy\"입니다."
@@ -406,8 +412,8 @@ FB_QUIZ([
   {
     q: "<code>&lt;a href=\"…\" target=\"_blank\"&gt;</code> 에 <code>rel=\"noopener\"</code>를 함께 쓰는 이유는?",
     o: [
-      "링크 속도를 높이기 위해",
-      "새로 열린 페이지가 원래 페이지를 조종해 가짜 화면으로 바꿔치기하는 공격을 막기 위해",
+      "링크 클릭 속도를 높이기 위해",
+      "새 페이지가 원래 탭을 조종하지 못하게 하려고",
       "검색엔진이 링크를 따라가지 못하게 하려고",
       "새 탭 대신 새 창으로 열기 위해"
     ],

@@ -238,18 +238,33 @@ function Page() {
 
 <h2 id="compiler">React Compiler</h2>
 
-<p>React 팀은 <b>메모이제이션을 자동으로 넣어 주는 컴파일러</b>를 만들고 있습니다.
-빌드 시점에 코드를 분석해 <code>useMemo</code>·<code>useCallback</code>·<code>memo</code>를
-<b>필요한 곳에 알아서 적용</b>합니다.</p>
+<p><b>React Compiler</b>는 <b>메모이제이션을 자동으로 넣어 주는 도구</b>입니다.
+2025년 10월 <b>1.0 정식판</b>이 나왔습니다.
+빌드 시점에 코드를 분석해 <code>useMemo</code>·<code>useCallback</code>·<code>memo</code>가 하던 일을
+<b>필요한 곳에 알아서 적용</b>합니다. React 17 이상에서 쓸 수 있습니다(19가 아니면 추가 설정 필요).</p>
+
+<div class="codeblock">
+<span class="cb-label">Next.js 16에서 켜기</span>
+<pre><code data-lang="bash">npm install -D babel-plugin-react-compiler</code></pre>
+<pre><code data-lang="ts">// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  reactCompiler: true,   // Next.js 16에서 실험 옵션에서 정식 옵션으로 올라왔습니다
+};
+
+export default nextConfig;</code></pre>
+</div>
 
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🤖</span> 무엇이 달라지나</p>
-<p style="margin-bottom:0">컴파일러가 널리 쓰이게 되면 <b>손으로 메모이제이션을 붙일 일이 크게 줄어듭니다.</b>
-지금 <code>useCallback</code>을 습관적으로 붙이는 코드는 <b>미래에 불필요한 잡음</b>이 됩니다.<br>
+<p style="margin-bottom:0">컴파일러를 켜면 <b>손으로 메모이제이션을 붙일 일이 크게 줄어듭니다.</b>
+<code>useCallback</code>을 습관적으로 붙이는 코드는 <b>불필요한 잡음</b>이 됩니다.
+다만 기존 코드베이스에서는 이미 손으로 붙인 메모이제이션이 많으니, 이 장의 개념은 여전히 코드를 읽는 데 필요합니다.<br>
 다만 컴파일러가 제대로 동작하려면 <b>컴포넌트가 규칙을 지켜야</b> 합니다 —
 렌더링 중 부수 효과 없음, 상태를 직접 수정하지 않음, 훅 규칙 준수.
 <b>결국 "React를 규칙대로 쓰는 것"이 최선의 최적화</b>라는 결론은 변하지 않습니다.
-도입 여부는 프로젝트의 React 버전과 공식 안내를 확인하세요.</p>
+기본으로 켜져 있는 기능은 아니므로, 프로젝트에서 켜져 있는지 설정 파일을 먼저 확인하세요. (기준: React Compiler 1.0, Next.js 16)</p>
 </div>
 
 <div class="box recap">
@@ -263,6 +278,7 @@ function Page() {
 <li><code>useMemo</code>·<code>useCallback</code>도 <b>비용이 있다.</b> 싼 계산에 쓰면 손해다.</li>
 <li><b>측정 → 구조 개선 → 그래도 안 되면 메모이제이션 → 재측정.</b></li>
 <li>상태를 <b>필요한 곳으로 내리는 것</b>이 대부분의 렌더링 문제를 해결한다.</li>
+<li><b>React Compiler 1.0</b>(2025년 10월 정식)은 메모이제이션을 자동으로 넣는다. Next.js 16에서는 <code>reactCompiler: true</code>로 켠다.</li>
 </ul>
 </div>
 
@@ -272,6 +288,8 @@ function Page() {
 <li><a href="https://ko.react.dev/reference/react/useMemo" target="_blank" rel="noopener">React — useMemo (언제 쓸지에 대한 상세한 안내 포함)</a></li>
 <li><a href="https://ko.react.dev/reference/react/memo" target="_blank" rel="noopener">React — memo</a></li>
 <li><a href="https://ko.react.dev/learn/react-compiler" target="_blank" rel="noopener">React — React Compiler</a></li>
+<li><a href="https://react.dev/blog/2025/10/07/react-compiler-1" target="_blank" rel="noopener">React 블로그 — React Compiler v1.0 (2025.10)</a></li>
+<li><a href="https://nextjs.org/docs/app/api-reference/config/next-config-js/reactCompiler" target="_blank" rel="noopener">Next.js — reactCompiler 옵션</a></li>
 <li><a href="https://ko.react.dev/learn/manipulating-the-dom-with-refs" target="_blank" rel="noopener">React — ref로 DOM 조작하기</a></li>
 </ul>
 
@@ -280,46 +298,46 @@ FB_QUIZ([
   {
     q: "\"불필요한 렌더링을 줄이려고\" 화면에 표시되는 카운터 값을 <code>useRef</code>로 관리하면?",
     o: [
-      "성능이 좋아진다",
-      "값은 바뀌지만 렌더링이 일어나지 않아 화면이 갱신되지 않는다. 화면에 보이는 값은 상태여야 한다",
-      "오류가 발생한다",
-      "자동으로 상태로 변환된다"
+      "렌더링이 줄어 화면도 더 빠르게 갱신된다",
+      "값은 바뀌지만 다시 렌더링되지 않아 화면이 그대로다",
+      "ref 값이 바뀔 때마다 자식만 다시 렌더링된다",
+      "다음 렌더링 때 ref 값이 처음 값으로 초기화된다"
     ],
     a: 1,
-    e: "<code>ref.current</code> 변경은 <b>React가 감지하지 않습니다</b>. 그것이 ref의 목적입니다. 화면에 반영되어야 하는 값은 반드시 <code>useState</code>로 관리해야 하고, ref는 타이머 ID·DOM 참조처럼 렌더링과 무관한 값에 씁니다."
+    e: "<code>ref.current</code> 변경은 <b>React가 감지하지 않습니다</b>. 그것이 ref의 목적입니다. ref 값은 렌더링 사이에 유지되지만 화면을 갱신하지 않으므로, 화면에 보이는 값은 <code>useState</code>로 관리하고 ref는 타이머 ID·DOM 참조처럼 렌더링과 무관한 값에 씁니다."
   },
   {
     q: "<code>memo</code>로 감쌌는데도 자식이 계속 다시 렌더링됩니다. 가장 흔한 원인은?",
     o: [
-      "memo가 동작하지 않는 버전이라서",
-      "props로 넘기는 객체·배열·함수가 매 렌더링마다 새로 만들어져 얕은 비교에서 매번 다르다고 판정되기 때문",
-      "자식에 상태가 있어서",
-      "key를 안 줘서"
+      "memo는 props가 바뀌었는지 깊게 비교하느라 시간이 오래 걸려서",
+      "매 렌더링마다 새로 만든 객체·함수를 props로 넘겨서",
+      "자식 컴포넌트에 key를 주지 않아서",
+      "memo는 개발 모드에서만 동작해서"
     ],
     a: 1,
     e: "<code>memo</code>는 props를 <b>얕게(<code>Object.is</code>) 비교</b>합니다. <code>items.filter(...)</code>나 <code>() =&gt; {}</code>는 내용이 같아도 <b>매번 새 참조</b>입니다(25장). <code>useMemo</code>·<code>useCallback</code>으로 참조를 안정시켜야 효과가 납니다."
   },
   {
-    q: "<code>const doubled = useMemo(() =&gt; count * 2, [count])</code> 의 문제는?",
+    q: "<code>const doubled = useMemo(() =&gt; count * 2, [count])</code>의 문제는?",
     o: [
-      "문법 오류다",
-      "곱셈 자체가 의존성 비교보다 싸기 때문에 오히려 손해이고, 코드만 읽기 어려워진다",
-      "count가 변하지 않는다",
-      "useMemo는 숫자에 쓸 수 없다"
+      "의존성 배열에 <code>doubled</code>도 넣어야 해서 오류가 난다",
+      "곱셈이 의존성 비교보다 싸서 오히려 손해다",
+      "<code>useMemo</code> 안에서는 상태 값을 읽을 수 없다",
+      "<code>count</code>가 바뀌어도 값이 다시 계산되지 않는다"
     ],
     a: 1,
-    e: "<code>useMemo</code>는 공짜가 아닙니다. 의존성 배열 생성·비교·이전 값 보관 비용이 듭니다. <b>계산이 비교보다 싸면 순손실</b>입니다. 정렬·필터링 같은 실제로 무거운 작업에만 쓰고, 그것도 <b>측정한 뒤</b> 적용해야 합니다."
+    e: "<code>useMemo</code>는 공짜가 아닙니다. 의존성 배열 생성·비교·이전 값 보관 비용이 듭니다. <b>계산이 비교보다 싸면 순손실</b>이고 코드만 읽기 어려워집니다. 정렬·필터링 같은 실제로 무거운 작업에만, 그것도 <b>측정한 뒤</b> 적용합니다."
   },
   {
     q: "검색 입력창 때문에 무거운 목록이 매번 다시 렌더링됩니다. memo보다 먼저 시도할 방법은?",
     o: [
-      "모든 컴포넌트에 memo를 적용한다",
-      "검색어 상태를 입력창 컴포넌트 안으로 내리거나, 무거운 목록을 children으로 받아 부모 렌더링의 영향을 받지 않게 한다",
-      "useRef로 검색어를 관리한다",
-      "setTimeout으로 렌더링을 늦춘다"
+      "앱의 모든 컴포넌트를 memo로 감싼다",
+      "검색어 상태를 입력창 안으로 내리거나 목록을 children으로 받는다",
+      "검색어를 useRef로 바꿔 렌더링을 막는다",
+      "목록 컴포넌트에 useCallback을 붙인다"
     ],
     a: 1,
-    e: "<b>구조를 고치는 것이 먼저</b>입니다. 상태를 필요한 곳까지 내리면 무거운 형제가 아예 다시 렌더링되지 않습니다. children으로 받은 요소는 <b>부모에서 이미 만들어진</b> 것이라 재생성되지 않습니다. memo 없이 해결되는 경우가 많습니다."
+    e: "<b>구조를 고치는 것이 먼저</b>입니다. 상태를 필요한 곳까지 내리면 무거운 형제가 아예 다시 렌더링되지 않습니다. children으로 받은 요소는 <b>부모에서 이미 만들어진</b> 것이라 재생성되지 않습니다. useRef로 바꾸면 입력값이 화면에 반영되지 않습니다."
   },
   {
     q: "React 컴포넌트가 다시 렌더링되는 원인이 <b>아닌</b> 것은?",
@@ -331,6 +349,17 @@ FB_QUIZ([
     ],
     a: 3,
     e: "<code>ref.current</code> 변경은 <b>렌더링을 유발하지 않습니다</b>. 이것이 state와 ref의 결정적 차이이며, 렌더링과 무관한 값을 담는 용도로 ref를 쓰는 이유입니다."
+  },
+  {
+    q: "React Compiler에 대한 설명으로 맞는 것은? (2026년 기준)",
+    o: [
+      "아직 실험 단계라 실제 서비스에는 쓸 수 없다",
+      "1.0 정식판이 나왔고 메모이제이션을 빌드 때 자동으로 넣는다",
+      "규칙을 어긴 컴포넌트도 알아서 고쳐서 최적화한다",
+      "React 19에서 기본으로 켜져 있어 설치가 필요 없다"
+    ],
+    a: 1,
+    e: "React Compiler는 2025년 10월 1.0 정식판이 나왔고, Next.js 16에서는 <code>reactCompiler: true</code> 옵션으로 켭니다(<code>babel-plugin-react-compiler</code> 설치 필요). 기본으로 켜져 있지는 않으며, 렌더링 중 부수 효과처럼 <b>React 규칙을 어긴 코드는 최적화하지 못합니다</b>."
   }
 ]);
 </script>

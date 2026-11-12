@@ -420,20 +420,20 @@ FB_QUIZ([
   {
     q: "사용자가 입력한 댓글을 화면에 표시할 때 <code>innerHTML</code> 대신 <code>textContent</code>를 써야 하는 이유는?",
     o: [
-      "innerHTML이 더 느려서",
-      "innerHTML은 문자열을 HTML로 해석하므로 <code>&lt;img onerror=…&gt;</code> 같은 입력이 실제 코드로 실행되는 XSS 취약점이 생기기 때문",
-      "textContent가 줄바꿈을 지원해서",
-      "innerHTML은 구형 브라우저에서 동작하지 않아서"
+      "innerHTML은 줄바꿈 문자를 지워 버려서",
+      "입력이 HTML로 해석되어 코드가 실행될 수 있어서",
+      "textContent만 기존 이벤트 리스너를 지켜 줘서",
+      "innerHTML 안의 <code>&lt;script&gt;</code>가 그대로 실행되어서"
     ],
     a: 1,
-    e: "<code>innerHTML</code>은 문자열을 <b>마크업으로 파싱</b>합니다. <code>&lt;script&gt;</code>는 실행되지 않지만 <code>onerror</code>·<code>onload</code> 같은 이벤트 속성은 실행되어 쿠키 탈취 등이 가능합니다. <code>textContent</code>는 무조건 글자로만 취급하므로 안전합니다."
+    e: "<code>innerHTML</code>은 문자열을 HTML로 해석하므로 <code>&lt;img onerror=…&gt;</code> 같은 입력이 실제 코드로 실행되는 XSS 취약점이 생깁니다. <code>innerHTML</code>은 문자열을 <b>마크업으로 파싱</b>합니다. <code>&lt;script&gt;</code>는 실행되지 않지만 <code>onerror</code>·<code>onload</code> 같은 이벤트 속성은 실행되어 쿠키 탈취 등이 가능합니다. <code>textContent</code>는 무조건 글자로만 취급하므로 안전합니다."
   },
   {
     q: "이벤트 위임을 쓰는 가장 큰 실용적 이점은?",
     o: [
-      "코드가 짧아진다",
-      "나중에 동적으로 추가된 요소에도 리스너를 다시 붙이지 않고 자동으로 동작한다",
-      "이벤트가 더 빨리 발생한다",
+      "이벤트 객체를 따로 받지 않아도 된다",
+      "나중에 추가된 요소에도 자동으로 동작한다",
+      "이벤트가 버블링 없이 바로 전달된다",
       "preventDefault를 쓸 수 있다"
     ],
     a: 1,
@@ -442,35 +442,35 @@ FB_QUIZ([
   {
     q: "<code>document.querySelectorAll(\"li\").map(...)</code> 가 오류를 내는 이유는?",
     o: [
-      "li 요소가 없어서",
-      "반환값이 NodeList이며 배열이 아니라 map 메서드가 없기 때문. <code>[...list]</code>나 <code>Array.from()</code>으로 변환해야 한다",
-      "querySelectorAll은 문자열을 반환해서",
-      "map은 DOM에서 쓸 수 없어서"
+      "li 요소가 없으면 null이 반환되어서",
+      "NodeList는 배열이 아니라 map이 없어서",
+      "querySelectorAll은 첫 요소 하나만 반환해서",
+      "NodeList에는 forEach도 map도 없어서"
     ],
     a: 1,
-    e: "NodeList는 배열과 비슷하지만 <b>배열이 아닙니다</b>. <code>forEach</code>는 있지만 <code>map</code>·<code>filter</code>·<code>reduce</code>는 없습니다. 전개 구문이나 <code>Array.from()</code>으로 진짜 배열로 바꿔야 합니다."
+    e: "<code>[...list]</code>나 <code>Array.from()</code>으로 변환해야 합니다. NodeList는 배열과 비슷하지만 <b>배열이 아닙니다</b>. <code>forEach</code>는 있지만 <code>map</code>·<code>filter</code>·<code>reduce</code>는 없습니다. 전개 구문이나 <code>Array.from()</code>으로 진짜 배열로 바꿔야 합니다."
   },
   {
     q: "드롭다운이 바로 닫히는 문제를 <code>stopPropagation()</code>으로 해결하는 것이 위험한 이유는?",
     o: [
-      "성능이 나빠져서",
-      "문서 전체를 감시하던 다른 기능들(바깥 클릭 감지, 분석 도구, 접근성 스크립트)이 조용히 망가지기 때문",
-      "구형 브라우저에서 지원되지 않아서",
-      "preventDefault와 함께 쓸 수 없어서"
+      "이벤트의 기본 동작까지 함께 취소되어서",
+      "상위에서 이벤트를 기다리던 다른 기능이 망가져서",
+      "같은 요소의 다른 리스너도 모두 막혀서",
+      "다음 클릭부터 이벤트가 아예 발생하지 않아서"
     ],
     a: 1,
-    e: "<code>stopPropagation()</code>은 그 이벤트가 <b>위로 올라가는 길을 끊습니다</b>. 내 문제는 해결되지만 상위에서 이벤트를 기다리던 다른 코드는 아무 신호도 받지 못합니다. 대개 <code>event.target</code> 검사나 <code>closest()</code>로 해결하는 편이 안전합니다."
+    e: "문서 전체를 감시하던 바깥 클릭 감지, 분석 도구, 접근성 스크립트 같은 기능이 조용히 망가집니다. 기본 동작 취소는 <code>preventDefault()</code>, 같은 요소의 다른 리스너까지 막는 것은 <code>stopImmediatePropagation()</code>의 역할입니다. <code>stopPropagation()</code>은 그 이벤트가 <b>위로 올라가는 길을 끊습니다</b>. 내 문제는 해결되지만 상위에서 이벤트를 기다리던 다른 코드는 아무 신호도 받지 못합니다. 대개 <code>event.target</code> 검사나 <code>closest()</code>로 해결하는 편이 안전합니다."
   },
   {
     q: "반복문에서 <code>el.style.height = el.offsetHeight + 10 + \"px\"</code> 를 실행하면 느려지는 이유는?",
     o: [
-      "px 단위 계산이 무거워서",
-      "쓰기 직후에 계산된 값을 읽으면 브라우저가 그때마다 레이아웃을 강제로 다시 계산하기 때문(레이아웃 스래싱)",
-      "style 속성이 원래 느려서",
-      "반복문 자체가 느려서"
+      "문자열 \"px\"를 붙이는 연산이 무거워서",
+      "쓰고 바로 읽을 때마다 레이아웃을 다시 계산해서",
+      "style 속성은 매번 CSS 파일을 다시 읽어서",
+      "offsetHeight가 매번 화면을 새로 그려서"
     ],
     a: 1,
-    e: "<code>offsetHeight</code>·<code>getBoundingClientRect()</code>는 <b>최신 레이아웃 값</b>을 요구하므로, 직전에 스타일을 바꿨다면 브라우저가 <b>즉시 레이아웃을 다시 계산</b>합니다. 읽기를 모두 먼저 하고 쓰기를 모아서 하면 이 반복을 없앨 수 있습니다."
+    e: "쓰기 직후에 계산된 값을 읽으면 브라우저가 그때마다 레이아웃을 강제로 다시 계산합니다(레이아웃 스래싱). <code>offsetHeight</code>·<code>getBoundingClientRect()</code>는 <b>최신 레이아웃 값</b>을 요구하므로, 직전에 스타일을 바꿨다면 브라우저가 <b>즉시 레이아웃을 다시 계산</b>합니다. 읽기를 모두 먼저 하고 쓰기를 모아서 하면 이 반복을 없앨 수 있습니다."
   }
 ]);
 </script>

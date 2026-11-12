@@ -1,4 +1,4 @@
-<!--desc: var·let·const의 차이, 블록 스코프와 함수 스코프, 호이스팅의 정확한 의미, TDZ(일시적 사각지대)를 코드로 확인하며 배웁니다.-->
+<!--desc: 변수가 무엇인지(이름표 붙은 상자)부터 var·let·const의 차이, 블록 스코프와 함수 스코프, 호이스팅의 정확한 의미, TDZ(일시적 사각지대)를 코드로 확인하며 배웁니다.-->
 
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
@@ -11,9 +11,55 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 22분 · 면접 단골 주제입니다</p>
+<p class="ch-meta">읽는 데 약 27분 · 사전 지식: 23장(프로그램은 위에서부터 한 줄씩 실행된다, <code>console.log</code>)</p>
+
+<h2 id="what-is-variable">변수란 — 이름표 붙은 상자</h2>
+
+<p>프로그램은 값을 계속 다룹니다. 사용자 이름, 장바구니 개수, 오늘 날짜… 이 값들을 <b>나중에 다시 꺼내 쓰려면</b> 어딘가에 넣어 두고 이름을 붙여야 합니다.
+그 "이름표 붙은 상자"가 <b>변수</b>입니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="js">let count = 0;        // "count"라는 이름표를 붙인 상자를 만들고 0을 넣는다
+console.log(count);   // 0  — 이름표로 상자 안의 값을 꺼내 본다
+count = 5;            // 상자 안의 값을 5로 바꾼다 (재할당)
+console.log(count);   // 5</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">그림으로 보면</span>
+<pre><code data-lang="text">let count = 0;           count = 5;
+
+ ┌─ count ─┐             ┌─ count ─┐
+ │    0    │     →       │    5    │
+ └─────────┘             └─────────┘
+ 상자를 만들고 0을 넣음     같은 상자에 5를 다시 넣음</code></pre>
+</div>
+
+<ul>
+<li><b>선언</b>: 상자를 만드는 것. <code>let</code>·<code>const</code>·<code>var</code> 키워드로 합니다.</li>
+<li><b>할당</b>: <code>=</code>로 상자에 값을 넣는 것. 수학의 "같다"가 아니라 <b>"오른쪽 값을 왼쪽 상자에 넣어라"</b>라는 뜻입니다.</li>
+<li><b>재할당</b>: 이미 있는 상자에 다른 값을 다시 넣는 것.</li>
+</ul>
+
+<h3 id="why-care">이걸 모르면 만나는 버그</h3>
+<p>선언 키워드를 대충 고르면 이런 일이 생깁니다. 이 챕터는 전부 이 버그들을 피하는 이야기입니다.</p>
+<ul>
+<li>반복문으로 버튼 세 개에 동작을 달았는데, <b>어느 버튼을 눌러도 마지막 번호</b>만 나온다 → <a href="#loop"><code>var</code> 사고</a></li>
+<li>함수 안에서 잠깐 쓰려던 변수가 <b>다른 파일의 같은 이름 변수를 덮어써</b> 엉뚱한 곳이 고장 난다 → <a href="#global">전역 변수</a></li>
+<li><code>const</code>로 만들었는데 <b>내용이 바뀌어서</b> "왜 상수가 바뀌지?" 한참 헤맨다 → <a href="#const">const의 진짜 의미</a></li>
+<li>선언하기 전에 변수를 써서 <b>오류가 나거나, 더 나쁘게는 조용히 <code>undefined</code>로</b> 진행된다 → <a href="#hoisting">호이스팅과 TDZ</a></li>
+</ul>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧭</span> 이 챕터의 코드에 나오는 아직 안 배운 문법</p>
+<p style="margin-bottom:0">예제에 <code>if</code>·<code>for</code>(26장), <code>function</code>(27장), <code>setTimeout</code>(35장), <code>try</code>/<code>catch</code>(33장)가 나옵니다.
+지금은 <code>if</code>는 "조건이 맞으면 중괄호 안을 실행", <code>for</code>는 "중괄호 안을 여러 번 반복", <code>function</code>은 "여러 줄을 묶어 이름 붙인 것",
+<code>setTimeout</code>은 "잠시 뒤에 실행", <code>try</code>/<code>catch</code>는 "오류가 나도 멈추지 말고 catch 쪽으로 가라" 정도로만 읽으면 충분합니다.</p>
+</div>
 
 <h2 id="three">세 가지 선언 키워드</h2>
+
+<p>상자를 만드는 키워드는 세 개입니다. 상자에 <b>값을 바꿔 넣을 수 있는지</b>, 상자가 <b>어디까지 보이는지</b>가 다릅니다.</p>
 
 <div class="tablewrap">
 <table>
@@ -22,7 +68,7 @@
 <tr><td>스코프</td><td><b>함수</b></td><td><b>블록</b></td><td><b>블록</b></td></tr>
 <tr><td>재선언</td><td>가능 (위험)</td><td>불가</td><td>불가</td></tr>
 <tr><td>재할당</td><td>가능</td><td>가능</td><td><b>불가</b></td></tr>
-<tr><td>선언 전 접근</td><td><code>undefined</code></td><td><b>오류(TDZ)</b></td><td><b>오류(TDZ)</b></td></tr>
+<tr><td>선언 전 접근</td><td><code>undefined</code> (아래 <a href="#tdz">TDZ</a> 참고)</td><td><b>오류(TDZ)</b></td><td><b>오류(TDZ)</b></td></tr>
 <tr><td>선언만 하고 값 생략</td><td>가능</td><td>가능</td><td><b>불가</b> — 반드시 초기값 필요</td></tr>
 </tbody>
 </table>
@@ -41,7 +87,7 @@
 "이 변수를 여기서 쓸 수 있는가"를 결정합니다.</p>
 
 <div class="codeblock">
-<span class="cb-label">블록 스코프 vs 함수 스코프</span>
+<span class="cb-label">블록 스코프 vs 함수 스코프 — function(27장)·if(26장)</span>
 <pre><code data-lang="js">function test() {
   if (true) {
     var varValue = "var";     // 함수 전체에서 살아 있음
@@ -56,6 +102,9 @@
 <code>var</code>는 이 중괄호를 <b>무시하고</b> 함수 전체를 범위로 삼습니다. 직관에 어긋나고 버그의 원인이 됩니다.</p>
 
 <h3 id="loop">가장 유명한 <code>var</code> 사고</h3>
+
+<p>"버튼 세 개에 1·2·3번을 달았는데 다 3이 나온다"는 버그의 정체입니다. 아래 예제의 <code>for</code>(26장)는 중괄호 안을 세 번 반복하고,
+<code>setTimeout</code>(35장)은 안쪽 코드를 <b>잠시 뒤에</b> 실행합니다. 버튼 클릭처럼 "나중에 실행되는 코드"를 흉내 낸 것입니다.</p>
 
 <div class="runner" data-lang="js" data-title="var와 let의 반복문 차이" data-note="아래 var를 let으로 바꿔서 결과가 어떻게 달라지는지 확인해 보세요.">
 <textarea class="rn-src">
@@ -148,7 +197,9 @@ JavaScript 엔진은 코드를 실행하기 <b>전에</b> 스코프를 미리 �
 <p><b>TDZ</b>(Temporal Dead Zone)는 <b>스코프가 시작된 시점부터 선언문에 도달할 때까지</b>의 구간입니다.
 이 구간에서 그 변수에 접근하면 오류가 납니다.</p>
 
-<div class="runner" data-lang="js" data-title="호이스팅과 TDZ 직접 확인" data-note="맨 아래 주석을 풀면 TDZ 오류를 직접 볼 수 있습니다.">
+<p>아래 예제는 오류가 나도 멈추지 않고 다음 줄로 가도록 <code>try</code>/<code>catch</code>(33장)로 감쌌습니다. <code>try</code> 안에서 오류가 나면 <code>catch</code> 안이 실행되고, 거기서 오류 이름을 출력합니다.</p>
+
+<div class="runner" data-lang="js" data-title="호이스팅과 TDZ 직접 확인" data-note="각 try 블록이 어떤 오류를 내는지 비교해 보세요.">
 <textarea class="rn-src">
 // ① var — 등록되고 undefined로 초기화되어 있음
 console.log("var 선언 전:", varValue);   // undefined (오류 아님)
@@ -271,6 +322,7 @@ console.log(count);  // 10 — 함수 안에서 만들었는데 전역이 되어
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
+<li>변수는 <b>값에 이름표를 붙인 상자</b>다. <code>=</code>는 "오른쪽 값을 왼쪽 상자에 넣어라"라는 뜻이다.</li>
 <li><b>기본은 <code>const</code>, 필요할 때만 <code>let</code>, <code>var</code>는 쓰지 않는다.</b></li>
 <li><code>var</code>는 <b>함수 스코프</b>, <code>let</code>·<code>const</code>는 <b>블록 스코프</b>.</li>
 <li>변수는 <b>안쪽에서 바깥쪽으로</b> 찾는다(스코프 체인). 반대는 불가능.</li>
@@ -292,12 +344,23 @@ console.log(count);  // 10 — 함수 안에서 만들었는데 전역이 되어
 <script data-quiz>
 FB_QUIZ([
   {
+    q: "<code>let score = 10; score = 20;</code> 에서 두 번째 줄 <code>=</code>의 뜻은?",
+    o: [
+      "score와 20이 같은지 비교한다",
+      "score 상자에 20을 다시 넣는다",
+      "score라는 새 변수를 하나 더 만든다",
+      "10과 20을 더해 score에 넣는다"
+    ],
+    a: 1,
+    e: "<code>=</code>는 수학의 \"같다\"가 아니라 <b>할당</b>입니다. 이미 있는 상자에 값을 다시 넣는 것을 재할당이라고 합니다. 비교는 <code>===</code>(26장)로 합니다."
+  },
+  {
     q: "\"호이스팅\"의 정확한 설명은?",
     o: [
-      "선언문이 실제로 코드 맨 위로 이동한다",
-      "코드 실행 전에 엔진이 스코프를 훑어 변수와 함수를 미리 등록해 두는 과정이며, 코드 자체는 움직이지 않는다",
-      "변수를 함수 밖으로 꺼내는 최적화 기법이다",
-      "let과 const에는 일어나지 않는다"
+      "선언문이 실제로 코드 맨 위로 옮겨진다",
+      "실행 전에 엔진이 선언을 미리 등록해 둔다",
+      "var에만 일어나고 let·const에는 없다",
+      "함수만 해당되고 변수는 해당되지 않는다"
     ],
     a: 1,
     e: "코드는 이동하지 않습니다. 엔진이 실행 전에 스코프 안의 선언을 미리 <b>등록</b>하기 때문에 결과적으로 위에서 참조 가능한 것처럼 보입니다. <code>let</code>·<code>const</code>도 <b>등록은 됩니다</b>. 다만 초기화되지 않아 TDZ에 머무를 뿐입니다."
@@ -305,41 +368,41 @@ FB_QUIZ([
   {
     q: "<code>const user = { name: \"홍길동\" }</code> 다음에 <code>user.name = \"김철수\"</code>를 실행하면?",
     o: [
-      "TypeError가 발생한다",
-      "정상 동작한다. const는 이름이 가리키는 대상의 재할당만 막고 대상의 내부 변경은 막지 않기 때문",
-      "user가 undefined가 된다",
-      "브라우저마다 다르다"
+      "const라서 TypeError가 발생한다",
+      "정상 동작해 name이 김철수로 바뀐다",
+      "오류 없이 무시되고 홍길동 그대로다",
+      "user 전체가 새 객체로 바뀐다"
     ],
     a: 1,
-    e: "<code>const</code>는 <b>바인딩(이름 ↔ 값의 연결)</b>을 고정합니다. 객체 내부 속성은 자유롭게 바꿀 수 있고, <code>user = {…}</code>처럼 <b>다른 객체를 다시 대입</b>할 때만 오류가 납니다. 내부까지 막으려면 <code>Object.freeze()</code>가 필요합니다."
+    e: "<code>const</code>는 <b>이름이 가리키는 대상</b>을 고정할 뿐 대상의 내용은 막지 않습니다. <code>user = {…}</code>처럼 <b>다른 객체를 다시 대입</b>할 때만 오류가 납니다. 내부까지 막으려면 <code>Object.freeze()</code>가 필요합니다."
   },
   {
     q: "<code>for (var i = 0; i &lt; 3; i++) { setTimeout(() =&gt; console.log(i), 0) }</code> 의 출력은?",
-    o: ["0 1 2", "3 3 3", "0 0 0", "아무것도 출력되지 않는다"],
+    o: ["0 1 2", "3 3 3", "2 2 2", "0 0 0"],
     a: 1,
-    e: "<code>var i</code>는 함수 스코프라 반복문 전체에 <b>단 하나만</b> 존재합니다. <code>setTimeout</code> 콜백은 반복이 모두 끝난 뒤 실행되므로 그때 <code>i</code>는 이미 3입니다. <code>let</code>으로 바꾸면 반복마다 새 바인딩이 만들어져 0 1 2가 출력됩니다."
+    e: "<code>var i</code>는 함수 스코프라 반복문 전체에 <b>단 하나만</b> 존재합니다. 콜백은 반복이 모두 끝난 뒤 실행되고, 그때 <code>i</code>는 조건 검사에서 멈춘 값 3입니다(2가 아닙니다). <code>let</code>으로 바꾸면 반복마다 새 변수가 생겨 0 1 2가 출력됩니다."
   },
   {
     q: "<code>console.log(x); let x = 5;</code> 를 실행하면?",
     o: [
       "undefined가 출력된다",
       "5가 출력된다",
-      "ReferenceError가 발생한다. let은 등록은 되지만 초기화되지 않아 선언 전 구간이 TDZ이기 때문",
+      "ReferenceError가 발생한다",
       "null이 출력된다"
     ],
     a: 2,
     e: "<code>let</code>·<code>const</code>는 스코프 시작 시점에 <b>등록되지만 초기화되지 않습니다</b>. 선언문에 도달하기 전 구간이 <b>TDZ</b>이고, 여기서 접근하면 <code>ReferenceError</code>가 납니다. <code>undefined</code>가 나오는 것은 <code>var</code>의 동작입니다."
   },
   {
-    q: "함수 안에서 <code>count = 10;</code> 처럼 키워드 없이 대입하면 어떻게 되나요?",
+    q: "느슨한 모드의 함수 안에서 <code>count = 10;</code> 처럼 키워드 없이 대입하면?",
     o: [
-      "함수 안에서만 쓰이는 지역 변수가 만들어진다",
-      "느슨한 모드에서는 전역 변수가 만들어져 전역을 오염시키고, 엄격 모드(모듈 포함)에서는 ReferenceError가 난다",
-      "항상 오류가 난다",
-      "const로 선언한 것과 같다"
+      "함수 안에서만 쓰이는 지역 변수가 생긴다",
+      "전역 변수가 만들어져 함수 밖에서도 보인다",
+      "let으로 선언한 것과 똑같이 동작한다",
+      "const로 선언한 것과 똑같이 동작한다"
     ],
     a: 1,
-    e: "선언 키워드 없는 대입은 느슨한 모드에서 <b>전역 객체의 속성</b>을 만듭니다. 오타 하나로 전역이 오염되고 추적이 어려워집니다. 엄격 모드에서는 오류로 즉시 막아 주며, ES 모듈은 자동 엄격 모드입니다."
+    e: "선언 키워드 없는 대입은 느슨한 모드에서 <b>전역 객체의 속성</b>을 만듭니다. 오타 하나로 전역이 오염되고 추적이 어려워집니다. 엄격 모드(ES 모듈 포함)에서는 <code>ReferenceError</code>로 즉시 막아 줍니다."
   }
 ]);
 </script>

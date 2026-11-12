@@ -8,10 +8,11 @@
   <li>트리 셰이킹 · 코드 분할 · 소스맵 · 해시</li>
   <li>Vite가 빠른 이유</li>
   <li>환경 변수를 안전하게 다루기</li>
+  <li><b>실습</b> — <code>npm create vite</code>로 첫 React 앱을 띄우고 고쳐 보기</li>
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 22분</p>
+<p class="ch-meta">읽는 데 약 32분 · 사전 지식: 44장 터미널, 46장 Node.js 설치 · 실습이 필요한 챕터입니다</p>
 
 <h2 id="why">번들러가 푸는 문제</h2>
 
@@ -48,7 +49,8 @@ import React from "/node_modules/react/index.js";   // ✅ 이렇게 바꿔 줘�
 <tr><td><b class="nw">Vite</b></td><td><b>현재 사실상 표준.</b> 개발 서버가 매우 빠르고 설정이 간단합니다</td></tr>
 <tr><td><b class="nw">webpack</b></td><td>오래된 강자. 기존 프로젝트에 많고, 설정이 복잡한 대신 유연합니다</td></tr>
 <tr><td><b>Turbopack</b></td><td>Next.js에 통합된 번들러. Rust로 작성되어 빠릅니다</td></tr>
-<tr><td><b>esbuild / SWC / Rolldown</b></td><td>Go·Rust로 만든 <b>초고속 변환·번들 엔진</b>. 위 도구들의 내부에서 쓰입니다</td></tr>
+<tr><td><b>Rolldown / Oxc</b></td><td>Rust로 만든 <b>번들 엔진</b>(Rolldown)과 <b>파싱·변환·압축 도구 모음</b>(Oxc). Vite 8부터 Vite 내부가 이 둘로 바뀌었습니다</td></tr>
+<tr><td><b>esbuild / SWC</b></td><td>Go(esbuild)·Rust(SWC)로 만든 <b>초고속 변환 엔진</b>. esbuild는 Vite 7까지의 개발 서버, SWC는 Next.js 등의 내부에서 쓰였거나 쓰이고 있습니다</td></tr>
 <tr><td><b class="nw">Babel</b></td><td>번들러가 아니라 <b>트랜스파일러</b>. 최신 문법을 구형 문법으로 바꿉니다</td></tr>
 </tbody>
 </table>
@@ -59,10 +61,20 @@ import React from "/node_modules/react/index.js";   // ✅ 이렇게 바꿔 줘�
 <ul style="margin-bottom:0">
 <li><b>개발 중에는 번들하지 않습니다.</b> 브라우저의 <b>네이티브 ES 모듈</b>(34장)을 그대로 씁니다.
 파일을 고치면 <b>그 파일 하나만</b> 다시 보내면 됩니다. 프로젝트가 커져도 시작 속도가 거의 그대로입니다.</li>
-<li>변환은 Go로 만든 <b>esbuild</b>가 담당해 JavaScript로 만든 도구보다 훨씬 빠릅니다.</li>
-<li><b>배포용 빌드에서만</b> 실제로 번들합니다. (Rollup 계열 엔진 사용)</li>
+<li>변환(JSX·TypeScript를 브라우저용 JavaScript로 바꾸기)과 압축은 Rust로 만든 <b>Oxc</b>가, 번들은 역시 Rust로 만든 <b>Rolldown</b>이 담당해
+JavaScript로 만든 도구보다 훨씬 빠릅니다. (2026년 11월 기준 최신 메이저인 <b>Vite 8</b> 기준)</li>
+<li><b>배포용 빌드에서만</b> 앱 코드 전체를 실제로 번들합니다.</li>
 </ul>
 <p style="margin-bottom:0">webpack은 개발 중에도 전체를 번들해서 시작이 느렸습니다. 이것이 체감 차이의 핵심입니다.</p>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> 자주 하는 오해</p>
+<span class="mythline"><b class="no">오해</b> — Vite는 개발할 때 esbuild, 배포할 때 Rollup을 쓴다.</span>
+<span class="mythline"><b class="yes">사실</b> — <b>Vite 7까지</b>의 설명입니다. 두 도구의 동작 차이로 "개발 때는 되는데 빌드하면 다르다"는 문제가 생기곤 해서,
+<b>Vite 8</b>은 둘을 하나로 합친 <b>Rolldown</b>과 <b>Oxc</b>로 내부를 바꿨습니다.
+2026년 이전에 쓰인 글이나 블로그에는 옛 설명이 많으니, 버전을 확인하고 읽으세요.
+쓰는 입장에서 명령(<code>npm run dev</code>, <code>npm run build</code>)은 달라지지 않습니다.</span>
 </div>
 
 <h2 id="transpile">트랜스파일과 폴리필 — 다른 것입니다</h2>
@@ -211,17 +223,116 @@ npx vite-bundle-visualizer     # 무엇이 용량을 차지하는지 시각화</
 </ol>
 </div>
 
+<h2 id="first-react-app">실습 — 첫 React 앱 띄우기</h2>
+
+<p>번들러를 직접 설정할 일은 생각보다 적습니다. 대부분은 <b>프로젝트 생성 도구</b>가 다 해 줍니다.
+여기서는 Vite로 React 앱을 만들어 화면에 띄우고, 코드를 고쳐 <b>저장하는 즉시 화면이 바뀌는 것</b>까지 확인합니다.
+React 문법은 57장부터 배우니 지금은 "어느 파일을 고치면 무엇이 바뀌는지"만 보면 됩니다.
+준비물은 46장에서 설치한 Node.js(<code>node --version</code>이 나오는 상태)입니다.</p>
+
+<h3 id="create">1단계 — 프로젝트 만들기</h3>
+<div class="codeblock">
+<pre><code data-lang="bash">cd ~/Desktop                    # 프로젝트를 만들 위치로 이동 (pwd로 확인)
+npm create vite@latest my-app   # my-app 이라는 폴더가 새로 생깁니다</code></pre>
+</div>
+<p>처음 실행하면 <code>Need to install the following packages: create-vite@… Ok to proceed? (y)</code>라고 묻습니다. <code>y</code>를 누르고 Enter.
+그다음 몇 가지 질문이 나옵니다. <b>화살표 키(↑↓)로 고르고 Enter</b>로 확정합니다.
+(아래는 2026년 11월 기준 <code>create-vite</code> 9의 질문입니다. 버전에 따라 순서나 문구가 조금 다를 수 있습니다.)</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>고를 것</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td><code>Project name</code></td><td>(묻지 않음)</td><td>명령 끝에 <code>my-app</code>을 적었으므로 생략됩니다. 안 적었다면 여기서 이름을 입력합니다</td></tr>
+<tr><td><code>Select a framework</code></td><td><b>React</b></td><td>Vanilla(순수 JS), Vue, Svelte 등도 같은 방식으로 만들 수 있습니다</td></tr>
+<tr><td><code>Select a variant</code></td><td><b>JavaScript</b></td><td>TypeScript는 50장 이후에 고르세요. "+ React Compiler"나 ↗ 표시(다른 도구로 넘어감)는 지금은 고르지 않습니다</td></tr>
+<tr><td><code>Which linter to use?</code></td><td>기본값 그대로</td><td>코드 검사 도구 선택입니다(48장). 어느 쪽이든 실습에는 영향이 없습니다</td></tr>
+<tr><td><code>Install with npm and start now?</code></td><td><b>No</b></td><td>Yes를 고르면 설치와 실행을 한 번에 해 줍니다. 처음에는 각 단계를 보기 위해 No로 하고 아래처럼 직접 실행합니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">2단계 — 설치하고 개발 서버 켜기</span>
+<pre><code data-lang="bash">cd my-app          # ← 빠뜨리기 쉬운 단계. 새로 생긴 폴더 안으로 들어가야 합니다
+npm install        # package.json을 읽어 node_modules 생성 (1~2분)
+npm run dev        # 개발 서버 시작</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">✅ 이렇게 보이면 성공</span>
+<pre><code data-lang="text">  VITE v8.x.x  ready in 300 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help</code></pre>
+</div>
+
+<p>브라우저 주소창에 <b><code>http://localhost:5173</code></b>을 입력합니다(macOS는 <code>Cmd</code>를, Windows는 <code>Ctrl</code>을 누른 채 터미널의 주소를 클릭해도 열립니다).
+Vite·React 로고와 <b>Count is 0</b> 버튼이 보이고, 버튼을 누르면 숫자가 올라가면 성공입니다.
+<b>이 터미널 창은 서버가 돌아가는 중이므로 닫지 마세요.</b> 다른 명령을 치려면 터미널을 하나 더 엽니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧭</span> 막혔을 때</p>
+<ul style="margin-bottom:0">
+<li><code>Missing script: "dev"</code> 또는 <code>Could not read package.json</code> — <code>cd my-app</code>을 안 했습니다. <code>pwd</code>로 위치를 확인하세요.</li>
+<li><code>npm: command not found</code> — Node.js 설치 문제입니다(46장).</li>
+<li>PowerShell에서 <code>running scripts is disabled</code> — 46장의 <code>Set-ExecutionPolicy</code> 상자를 보세요.</li>
+<li>주소가 <code>5174</code>로 나옴 — 5173번이 이미 쓰이고 있어 Vite가 다음 번호를 고른 것입니다. 터미널에 나온 주소를 그대로 쓰면 됩니다(44장 포트).</li>
+</ul>
+</div>
+
+<h3 id="structure">3단계 — 생성된 폴더 둘러보기</h3>
+<p>VS Code에서 <b>파일 → 폴더 열기</b>로 <code>my-app</code> 폴더를 엽니다.</p>
+<div class="codeblock">
+<span class="cb-label">my-app 폴더 구조</span>
+<pre><code data-lang="text">my-app/
+├── index.html        ← 브라우저가 처음 여는 HTML. &lt;div id="root"&gt; 하나와 main.jsx를 부르는 script가 전부
+├── package.json      ← scripts(dev·build·preview)와 의존성 목록 (46장)
+├── package-lock.json ← 정확한 설치 버전 기록. 커밋합니다
+├── vite.config.js    ← Vite 설정. React 플러그인 한 줄만 들어 있습니다
+├── .gitignore        ← node_modules, dist 등이 이미 적혀 있습니다
+├── node_modules/     ← npm install로 생긴 패키지들. 건드리지 않습니다
+├── public/           ← 가공 없이 그대로 복사될 파일 (favicon 등)
+└── src/              ← ⭐ 내가 코드를 쓰는 곳
+    ├── main.jsx      ← 시작점. App을 #root 안에 그립니다
+    ├── App.jsx       ← 화면에 보이는 내용. 처음에 고칠 파일
+    ├── App.css       ← App 화면의 스타일
+    ├── index.css     ← 전체 공통 스타일
+    └── assets/       ← import해서 쓰는 이미지</code></pre>
+</div>
+<p>흐름은 <b><code>index.html</code> → <code>src/main.jsx</code> → <code>src/App.jsx</code></b>입니다.
+<code>index.html</code>은 거의 비어 있고, 실제 화면은 JavaScript가 그린다는 점이 6장에서 만든 HTML 파일과 가장 큰 차이입니다.
+<code>.jsx</code>는 JavaScript 안에 HTML처럼 생긴 문법(JSX, 58장)을 쓸 수 있는 파일이고, 이것을 브라우저가 이해하는 JavaScript로 바꿔 주는 것이 바로 이 장에서 배운 Vite의 변환입니다.</p>
+
+<h3 id="edit">4단계 — App.jsx 고치고 즉시 반영 확인</h3>
+<ol>
+<li><code>src/App.jsx</code>를 엽니다.</li>
+<li><code>&lt;h1&gt;Get started&lt;/h1&gt;</code>을 찾아 <code>&lt;h1&gt;내 첫 React 앱&lt;/h1&gt;</code>으로 바꿉니다.</li>
+<li><b>저장</b>(<code>Ctrl</code>/<code>Cmd</code>+<code>S</code>)하고 브라우저를 봅니다. <b>새로고침하지 않아도</b> 제목이 바뀌어 있습니다.</li>
+<li>버튼을 몇 번 눌러 숫자를 올린 다음, 제목을 한 번 더 바꾸고 저장해 보세요. <b>숫자가 0으로 돌아가지 않고</b> 그대로 유지됩니다.</li>
+</ol>
+<p>이것이 <b>HMR</b>(Hot Module Replacement, 핫 모듈 교체)입니다. 페이지 전체를 다시 불러오지 않고 <b>바뀐 모듈 하나만 갈아 끼워서</b>,
+화면 상태를 유지한 채 변경을 보여 줍니다. 앞에서 본 "개발 중에는 번들하지 않고 바뀐 파일 하나만 다시 보낸다"는 Vite의 방식 덕분입니다.</p>
+
 <div class="box tip">
-<p class="box-title"><span class="box-ico">🚀</span> 처음 시작할 때</p>
-<div class="codeblock" style="margin:.6em 0 0">
-<pre><code data-lang="bash">npm create vite@latest my-app
-cd my-app
-npm install
-npm run dev</code></pre>
+<p class="box-title"><span class="box-ico">🧯</span> 오타를 내면?</p>
+<p style="margin-bottom:0">예를 들어 <code>&lt;/h1&gt;</code>을 지우고 저장하면 브라우저 화면 위에 <b>빨간 오류 창(오버레이)</b>이 뜨고, 터미널에도 같은 오류가 나옵니다.
+파일 이름과 줄 번호가 적혀 있으니 그 위치를 고치고 저장하면 오류 창이 사라집니다. 6장의 HTML과 달리 <b>JSX는 틀리면 오류를 냅니다.</b></p>
 </div>
-<p style="margin-bottom:0">설정 파일을 직접 만들 필요가 없습니다.
-<b>번들러 설정을 깊이 파는 것은 나중 일</b>이고, 대부분의 프로젝트는 기본값으로 충분합니다.</p>
+
+<h3 id="stop">5단계 — 서버 끄기와 빌드해 보기</h3>
+<div class="codeblock">
+<pre><code data-lang="bash"># 서버가 돌던 터미널에서
+Ctrl + C           # 개발 서버 종료 (macOS도 Cmd가 아니라 Ctrl)
+
+npm run build      # 배포용 번들 생성 → dist/ 폴더에 해시 붙은 파일들
+npm run preview    # 빌드 결과를 로컬에서 확인 (기본 주소 http://localhost:4173)</code></pre>
 </div>
+<p><code>Ctrl</code>+<code>C</code> 후 브라우저를 새로고침하면 "연결할 수 없음"이 뜹니다. 서버가 꺼졌다는 뜻이니 정상입니다.
+다시 작업할 때는 <code>my-app</code> 폴더에서 <code>npm run dev</code>만 하면 됩니다(<code>npm install</code>은 처음 한 번, 또는 의존성이 바뀌었을 때만).
+<code>dist/</code> 안의 파일 이름에 붙은 <code>index-…js</code> 해시가 앞에서 본 <a href="#hash">파일 이름 해시</a>입니다.
+이 폴더를 45장처럼 Git에 올리고 싶다면 <code>my-app</code> 폴더에서 <code>git init</code>부터 하면 되고, 배포는 74장에서 다룹니다.</p>
 
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
@@ -233,13 +344,15 @@ npm run dev</code></pre>
 <li><b>파일 이름 해시</b>가 캐시 문제를 구조적으로 해결한다.</li>
 <li><b>소스맵</b>으로 압축 코드를 원본으로 디버깅한다. 공개 배포 여부는 신중히.</li>
 <li><b>프론트엔드 환경 변수는 비밀이 아니다.</b> 빌드 시 코드에 박힌다.</li>
-<li>Vite는 개발 중 <b>번들하지 않고 네이티브 ESM</b>을 써서 빠르다.</li>
+<li>Vite는 개발 중 <b>번들하지 않고 네이티브 ESM</b>을 써서 빠르다. Vite 8부터 내부 엔진은 <b>Rolldown·Oxc</b>다.</li>
+<li><code>npm create vite@latest</code> → <code>cd</code> → <code>npm install</code> → <code>npm run dev</code>. <code>src/App.jsx</code>를 저장하면 HMR로 즉시 반영되고, 서버는 <code>Ctrl</code>+<code>C</code>로 끈다.</li>
 </ul>
 </div>
 
 <h2 id="refs">참고 자료</h2>
 <ul>
 <li><a href="https://ko.vite.dev/guide/" target="_blank" rel="noopener">Vite 공식 가이드 (한국어)</a></li>
+<li><a href="https://vite.dev/guide/why" target="_blank" rel="noopener">Vite — Why Vite</a> — Rolldown·Oxc로 바뀐 내부 구조 설명 (영문)</li>
 <li><a href="https://webpack.kr/concepts/" target="_blank" rel="noopener">webpack 개념 (한국어)</a></li>
 <li><a href="https://developer.mozilla.org/en-US/docs/Glossary/Polyfill" target="_blank" rel="noopener">MDN 용어사전 — 폴리필</a></li>
 <li><a href="https://browsersl.ist/" target="_blank" rel="noopener">Browserslist</a> — 지원 범위 설정 확인</li>
@@ -251,21 +364,21 @@ FB_QUIZ([
   {
     q: "브라우저가 <code>import React from \"react\"</code> 를 그대로 실행하지 못하는 이유는?",
     o: [
-      "React가 너무 커서",
-      "\"react\"는 패키지 이름일 뿐 파일 경로가 아니라, 브라우저가 어느 파일을 가져올지 알 수 없기 때문",
-      "import 문법을 지원하지 않아서",
-      "CORS 때문에"
+      "브라우저는 <code>import</code> 문법 자체를 지원하지 않아서",
+      "\"react\"는 파일 경로가 아닌 패키지 이름이라서",
+      "React 파일이 너무 커서 한 번에 받을 수 없어서",
+      "<code>node_modules</code>는 보안상 브라우저 접근이 금지되어서"
     ],
     a: 1,
-    e: "브라우저의 ESM은 <b>실제 경로</b>(<code>./x.js</code> 또는 URL)만 이해합니다. <code>\"react\"</code> 같은 패키지 이름을 <code>node_modules</code> 안의 실제 파일로 해석해 주는 것이 번들러(또는 import map)의 역할입니다."
+    e: "브라우저는 ES 모듈의 <code>import</code>를 지원하지만 <b>실제 경로</b>(<code>./x.js</code>나 URL)만 이해합니다. <code>\"react\"</code> 같은 패키지 이름(bare specifier)을 <code>node_modules</code> 안의 실제 파일로 해석해 주는 것이 번들러(또는 import map)의 역할입니다."
   },
   {
     q: "트랜스파일과 폴리필의 차이는?",
     o: [
-      "같은 말이다",
-      "트랜스파일은 문법을 구형 문법으로 다시 쓰는 것이고, 폴리필은 없는 API를 직접 구현해 채워 넣는 것이다",
-      "트랜스파일은 용량을 늘리고 폴리필은 줄인다",
-      "폴리필은 CSS 전용이다"
+      "트랜스파일은 압축, 폴리필은 난독화를 뜻한다",
+      "트랜스파일은 문법을 다시 쓰고, 폴리필은 없는 API를 채운다",
+      "트랜스파일은 API를 채우고, 폴리필은 문법을 다시 쓴다",
+      "트랜스파일은 개발 중에만, 폴리필은 배포 때만 쓰인다"
     ],
     a: 1,
     e: "화살표 함수를 <code>function</code>으로 바꾸는 것은 <b>문법</b> 변환이라 트랜스파일입니다. <code>Promise</code>나 <code>Array.prototype.at</code>처럼 <b>기능 자체가 없는</b> 경우는 구현체를 넣어 줘야 하며 이것이 폴리필입니다. 폴리필은 코드가 추가되므로 용량이 늘어납니다."
@@ -273,35 +386,68 @@ FB_QUIZ([
   {
     q: "빌드 결과 파일 이름에 <code>main.a3f19c2b.js</code> 처럼 해시를 붙이는 이유는?",
     o: [
-      "보안을 위해",
-      "내용이 바뀌면 파일 이름도 바뀌어 브라우저·CDN 캐시가 반드시 새 파일을 받게 하고, 안 바뀌면 캐시를 계속 쓰게 하기 위해",
-      "파일 크기를 줄이기 위해",
-      "정렬을 위해"
+      "파일 내용을 암호화해 소스 코드를 숨기기 위해",
+      "내용이 바뀔 때만 이름이 바뀌어 캐시가 정확히 갱신되게 하려고",
+      "같은 이름의 파일이 서버에서 덮어써지지 않게 하려고",
+      "브라우저가 파일 무결성을 검사할 수 있게 하려고"
     ],
     a: 1,
-    e: "캐시는 <b>URL 단위</b>로 동작합니다. 이름이 그대로면 옛 파일을 계속 씁니다. 내용 기반 해시를 붙이면 변경 시에만 새 URL이 되어 <b>\"배포했는데 옛 화면이 보이는\"</b> 문제가 구조적으로 사라집니다."
+    e: "캐시는 <b>URL 단위</b>로 동작합니다. 이름이 그대로면 옛 파일을 계속 씁니다. 내용 기반 해시를 붙이면 변경 시에만 새 URL이 되어 <b>\"배포했는데 옛 화면이 보이는\"</b> 문제가 사라지고, 안 바뀐 파일은 캐시를 계속 씁니다. 해시는 암호화가 아니며 코드는 그대로 읽힙니다."
+  },
+  {
+    q: "2026년 기준 최신 Vite(8)의 내부 동작에 대한 설명으로 옳은 것은?",
+    o: [
+      "개발 서버는 esbuild, 배포 빌드는 Rollup으로 따로 처리한다",
+      "번들은 Rolldown, 변환·압축은 Oxc가 맡는다",
+      "개발 중에도 webpack처럼 전체를 번들한 뒤 띄운다",
+      "Babel로 모든 파일을 변환한 뒤 SWC로 번들한다"
+    ],
+    a: 1,
+    e: "esbuild + Rollup 조합은 <b>Vite 7까지</b>의 구조입니다. 두 도구의 동작 차이를 없애려고 Vite 8은 Rust로 만든 <b>Rolldown</b>(번들)과 <b>Oxc</b>(파싱·변환·압축)로 바꿨습니다. 개발 중에 앱 코드를 번들하지 않고 네이티브 ESM을 쓰는 점은 그대로입니다."
+  },
+  {
+    q: "<code>npm create vite@latest my-app</code> 직후 <code>npm run dev</code>를 쳤더니 <code>Missing script: \"dev\"</code>가 납니다. 원인은?",
+    o: [
+      "<code>npm install</code>을 하지 않아서",
+      "<code>cd my-app</code>으로 폴더에 들어가지 않아서",
+      "variant로 TypeScript를 골라서",
+      "Node.js 버전이 LTS가 아니어서"
+    ],
+    a: 1,
+    e: "<code>npm run</code>은 <b>현재 폴더의 <code>package.json</code></b>에서 스크립트를 찾습니다. 생성 도구는 <code>my-app</code>이라는 새 폴더를 만들 뿐이므로, 그 안으로 <code>cd</code>하지 않으면 엉뚱한 폴더에서 찾게 됩니다. <code>npm install</code>을 빠뜨리면 스크립트는 있지만 <code>vite</code>를 찾지 못한다는 다른 오류가 납니다."
+  },
+  {
+    q: "Vite 개발 서버를 켠 채 <code>src/App.jsx</code>의 제목을 고치고 저장했습니다. 무슨 일이 일어나나요?",
+    o: [
+      "<code>npm run build</code>를 다시 해야 화면에 반영된다",
+      "새로고침 없이 바로 반영되고, 화면 상태도 대개 유지된다",
+      "서버를 <code>Ctrl</code>+<code>C</code>로 끄고 다시 켜야 반영된다",
+      "브라우저에서 수동으로 새로고침해야 반영된다"
+    ],
+    a: 1,
+    e: "Vite의 <b>HMR</b>(핫 모듈 교체)은 바뀐 모듈만 갈아 끼우므로 새로고침 없이 반영되고, 카운터 숫자 같은 상태도 대개 유지됩니다. <code>npm run build</code>는 배포용 결과물을 만드는 명령이라 개발 중 확인에는 필요 없습니다."
   },
   {
     q: "<code>VITE_API_KEY=secret123</code> 을 <code>.env</code>에 넣고 프론트엔드 코드에서 사용했습니다. 안전한가요?",
     o: [
-      "안전하다. .env는 커밋되지 않으므로",
-      "안전하지 않다. 빌드 시점에 값이 번들 코드에 그대로 박혀 누구나 볼 수 있다",
-      "HTTPS를 쓰면 안전하다",
-      "접두사가 VITE_라서 자동으로 암호화된다"
+      "안전하다. <code>.env</code>는 커밋되지 않으므로",
+      "안전하지 않다. 빌드 때 값이 번들에 그대로 들어간다",
+      "안전하다. HTTPS로 전송되므로 중간에서 볼 수 없다",
+      "안전하다. <code>VITE_</code> 접두사가 붙은 값은 자동으로 암호화된다"
     ],
     a: 1,
-    e: "프론트엔드 환경 변수는 <b>빌드 결과물에 문자열로 삽입</b>됩니다. <code>VITE_</code>·<code>NEXT_PUBLIC_</code> 접두사는 \"이 값은 공개된다\"는 <b>명시적 표시</b>일 뿐 보호 장치가 아닙니다. 비밀 키는 서버에 두고 서버를 경유해 호출해야 합니다."
+    e: "프론트엔드 환경 변수는 <b>빌드 결과물에 문자열로 삽입</b>되어 번들 파일을 연 누구나 볼 수 있습니다. HTTPS는 전송 구간만 보호할 뿐이고, <code>VITE_</code>·<code>NEXT_PUBLIC_</code> 접두사는 \"이 값은 공개된다\"는 표시입니다. 비밀 키는 서버에 두고 서버를 경유해 호출해야 합니다."
   },
   {
     q: "번들 크기를 줄이려 할 때 <b>가장 먼저</b> 해야 할 일은?",
     o: [
-      "모든 이미지를 압축한다",
-      "번들 분석 도구로 무엇이 용량을 차지하는지 확인한다",
+      "모든 이미지를 WebP로 바꾼다",
+      "번들 분석 도구로 무엇이 용량을 차지하는지 본다",
       "browserslist를 최신 브라우저만으로 좁힌다",
-      "라이브러리를 전부 제거한다"
+      "모든 import를 동적 <code>import()</code>로 바꾼다"
     ],
     a: 1,
-    e: "추측으로 최적화하면 시간만 낭비합니다. 분석 도구를 돌리면 대개 <b>특정 패키지 하나</b>가 범인임을 바로 알 수 있습니다. 그다음 전체 import 제거, 동적 import 분리, 중복 패키지 정리 순으로 접근합니다."
+    e: "추측으로 최적화하면 시간만 낭비합니다. 분석 도구를 돌리면 대개 <b>특정 패키지 하나</b>가 범인임을 바로 알 수 있습니다. 나머지 보기도 쓸모 있는 기법이지만, 원인을 확인한 뒤에 골라 적용하는 것이 순서입니다."
   }
 ]);
 </script>

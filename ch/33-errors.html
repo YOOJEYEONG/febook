@@ -6,6 +6,12 @@
 <title>33장. 에러 처리 — 프엔북</title>
 <meta name="description" content="try·catch·finally, Error 객체와 커스텀 에러, throw 시점, 비동기 에러 처리, 그리고 에러를 삼키지 않는 원칙을 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="33장. 에러 처리 — 프엔북">
 <meta property="og:description" content="try·catch·finally, Error 객체와 커스텀 에러, throw 시점, 비동기 에러 처리, 그리고 에러를 삼키지 않는 원칙을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -32,7 +38,7 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 18분</p>
+<p class="ch-meta">읽는 데 약 20분 · 사전 지식: 27장(함수), 23장(오류 메시지 읽기)</p>
 
 <h2 id="try">try / catch / finally</h2>
 
@@ -91,7 +97,9 @@ try {
 <p style="margin-bottom:0"><b>성공하든 실패하든 반드시 해야 하는 정리 작업</b>에 씁니다.
 로딩 스피너 끄기, 버튼 다시 활성화하기, 연결 닫기 같은 것입니다.</p>
 <div class="codeblock" style="margin:.6em 0 0">
-<pre><code data-lang="js">setLoading(true);
+<pre><code data-lang="js">// await(36장): 서버 응답처럼 시간이 걸리는 일이 끝날 때까지 기다렸다가 결과를 받습니다.
+//              기다리는 도중 실패하면 catch로 넘어갑니다
+setLoading(true);
 try {
   const data = await fetchData();
   render(data);
@@ -130,6 +138,10 @@ try {
 </div>
 
 <h2 id="custom">내가 만드는 에러</h2>
+
+<p>아래 예제의 <code>class … extends Error</code>는 "기본 <code>Error</code>를 바탕으로 새 종류의 에러를 만든다"는 문법입니다(<code>class</code>·<code>extends</code>·<code>super</code>는 32장).
+지금은 <b>"이름표와 추가 정보를 붙인 나만의 에러 종류"</b>를 만든다는 점만 보면 됩니다.
+<code>instanceof</code>는 "이 에러가 그 종류인가?"를 묻는 연산자입니다.</p>
 
 <div class="runner" data-lang="js" data-title="커스텀 에러 클래스" data-note="에러에 필요한 정보를 담아 두면 처리하는 쪽이 훨씬 편해집니다.">
 <textarea class="rn-src">
@@ -266,7 +278,7 @@ setTimeout(() =&gt; {
 </div>
 
 <div class="codeblock">
-<span class="cb-label">async/await 에서는 정상 동작합니다 (36장)</span>
+<span class="cb-label">async/await 에서는 정상 동작합니다 (36장) — 36·37장을 읽은 뒤 다시 보세요</span>
 <pre><code data-lang="js">async function loadUser(id) {
   try {
     const response = await fetch(`/api/users/${id}`);
@@ -353,24 +365,24 @@ FB_QUIZ([
   {
     q: "<code>try { setTimeout(() =&gt; { throw new Error(\"x\") }, 100) } catch (e) { … }</code> 에서 에러가 잡히지 않는 이유는?",
     o: [
-      "setTimeout은 에러를 던질 수 없어서",
-      "try 블록은 그 순간 실행되는 코드만 감싸는데, 콜백은 100ms 뒤 별도로 실행되어 이미 try를 벗어난 상태이기 때문",
-      "화살표 함수를 써서",
-      "지연 시간이 100ms라서"
+      "setTimeout 콜백 안에서는 throw를 쓸 수 없어서",
+      "콜백이 실행될 땐 이미 try를 빠져나와서",
+      "화살표 함수가 에러를 삼켜서",
+      "지연 시간을 0으로 바꾸면 잡힌다"
     ],
     a: 1,
-    e: "<code>setTimeout</code>은 콜백을 <b>예약만 하고 즉시 반환</b>합니다. <code>try</code> 블록은 그 시점에 이미 끝났고, 나중에 실행되는 콜백은 전혀 다른 실행 맥락에 있습니다. 에러 처리는 <b>콜백 안에서</b> 해야 합니다."
+    e: "<code>setTimeout</code>은 콜백을 <b>예약만 하고 즉시 반환</b>합니다. <code>try</code> 블록은 그 시점에 이미 끝났고, 나중에 실행되는 콜백은 다른 실행 맥락에 있습니다. 지연이 0이어도 마찬가지입니다(35장). 에러 처리는 <b>콜백 안에서</b> 해야 합니다."
   },
   {
-    q: "<code>catch (e) { }</code> 처럼 비워 두는 것이 위험한 이유는?",
+    q: "<code>catch (e) { }</code> 처럼 비워 두면 생기는 문제는?",
     o: [
-      "문법 오류이기 때문",
-      "오류가 조용히 무시되어 아무도 문제를 모르게 되고, 잘못된 상태가 나중에 엉뚱한 곳에서 증상으로 나타나기 때문",
-      "성능이 느려지기 때문",
-      "브라우저가 경고를 띄우기 때문"
+      "브라우저가 에러를 대신 처리해 준다",
+      "오류가 조용히 묻혀 나중에 엉뚱한 곳에서 터진다",
+      "같은 에러가 무한히 다시 발생한다",
+      "catch를 비우면 finally가 실행되지 않는다"
     ],
     a: 1,
-    e: "빈 <code>catch</code>는 <b>버그를 고치는 것이 아니라 숨기는 것</b>입니다. 최소한 <code>console.error</code>로 기록하거나, 사용자에게 알리거나, 대안을 실행하거나, 처리할 수 없다면 다시 던져야 합니다."
+    e: "빈 <code>catch</code>는 <b>버그를 고치는 것이 아니라 숨기는 것</b>입니다. 잘못된 상태로 계속 진행되다 엉뚱한 곳에서 증상이 나타납니다. 최소한 기록하고, 사용자에게 알리거나 대안을 실행하거나, 처리할 수 없다면 다시 던져야 합니다."
   },
   {
     q: "<code>finally</code> 블록이 실행되지 <b>않는</b> 경우는?",
@@ -386,24 +398,24 @@ FB_QUIZ([
   {
     q: "<code>class ValidationError extends Error</code> 처럼 커스텀 에러를 만드는 이점은?",
     o: [
-      "에러 발생을 막을 수 있다",
-      "<code>instanceof</code>로 종류를 구분해 상황별로 다르게 처리할 수 있고, 필드명 같은 추가 정보를 담을 수 있다",
-      "스택 트레이스가 짧아진다",
-      "try/catch 없이도 처리된다"
+      "에러가 발생하지 않도록 미리 막아 준다",
+      "instanceof로 종류별로 나눠 처리할 수 있다",
+      "try/catch 없이도 자동으로 처리된다",
+      "에러 메시지가 사용자 화면에 자동 표시된다"
     ],
     a: 1,
-    e: "메시지 문자열을 비교해 분기하는 것은 깨지기 쉽습니다. 에러 클래스를 나누면 <code>instanceof</code>로 안전하게 구분할 수 있고, <code>field</code>·<code>status</code> 같은 <b>처리에 필요한 데이터</b>를 함께 실어 보낼 수 있습니다."
+    e: "메시지 문자열을 비교해 분기하는 것은 깨지기 쉽습니다. 에러 클래스를 나누면 <code>instanceof</code>로 안전하게 구분할 수 있고, <code>field</code>·<code>status</code> 같은 <b>처리에 필요한 데이터</b>도 함께 실어 보낼 수 있습니다."
   },
   {
     q: "함수 안에서 어떤 에러를 <b>의미 있게 처리할 수 없을 때</b> 올바른 행동은?",
     o: [
-      "빈 catch로 잡아서 무시한다",
-      "잡지 말고 호출한 쪽으로 전파되게 두거나, 잡았다면 다시 던진다",
-      "false를 반환한다",
-      "프로그램을 종료한다"
+      "일단 catch로 잡고 false를 반환한다",
+      "잡지 않고 호출한 쪽으로 올려 보낸다",
+      "catch에서 console.log만 찍고 계속 진행한다",
+      "같은 코드를 성공할 때까지 반복한다"
     ],
     a: 1,
-    e: "에러 처리는 <b>그것을 처리할 수 있는 층</b>에서 해야 합니다. 아래 층에서 무작정 잡아 버리면 위층은 문제가 있었는지도 모릅니다. 문맥 정보를 덧붙이고 싶다면 <code>new Error(\"...\", { cause: error })</code>로 감싸 다시 던지면 됩니다."
+    e: "에러 처리는 <b>그것을 처리할 수 있는 층</b>에서 해야 합니다. 아래 층에서 잡아 <code>false</code>로 바꾸거나 기록만 하고 넘어가면 위층은 무엇이 잘못됐는지 모릅니다. 문맥을 덧붙이려면 <code>new Error(\"...\", { cause: error })</code>로 감싸 다시 던집니다."
   }
 ]);
 </script>

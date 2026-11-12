@@ -6,6 +6,12 @@
 <title>77장. 접근성 심화 — 프엔북</title>
 <meta name="description" content="WCAG의 네 원칙과 준수 수준, 키보드 포커스 관리, 모달과 동적 콘텐츠의 접근성, 스크린 리더 테스트, 자동 검사 도구를 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="77장. 접근성 심화 — 프엔북">
 <meta property="og:description" content="WCAG의 네 원칙과 준수 수준, 키보드 포커스 관리, 모달과 동적 콘텐츠의 접근성, 스크린 리더 테스트, 자동 검사 도구를 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -335,53 +341,53 @@ FB_QUIZ([
     q: "모달을 닫을 때 반드시 해야 하는 포커스 처리는?",
     o: [
       "포커스를 body로 옮긴다",
-      "모달을 열었던 버튼으로 포커스를 되돌린다. 그러지 않으면 키보드 사용자는 위치를 잃고 처음부터 Tab을 눌러야 한다",
-      "첫 번째 링크로 옮긴다",
-      "아무것도 하지 않아도 브라우저가 처리한다"
+      "모달을 열었던 버튼으로 포커스를 되돌린다",
+      "페이지의 첫 번째 링크로 옮긴다",
+      "<code>aria-hidden</code>만 해제하면 브라우저가 알아서 처리한다"
     ],
     a: 1,
-    e: "모달이 사라지면 포커스가 <code>body</code>로 떨어져 <b>다음 Tab이 페이지 처음부터</b> 시작됩니다. 열기 전 위치(<code>document.activeElement</code>)를 기억했다가 되돌려야 합니다. <code>&lt;dialog&gt;</code>의 <code>showModal()</code>은 이를 자동으로 처리합니다."
+    e: "모달이 사라지면 포커스가 <code>body</code>로 떨어져 <b>다음 Tab이 페이지 처음부터</b> 시작됩니다. 열기 전 위치(<code>document.activeElement</code>)를 기억했다가 되돌려야 합니다. <code>&lt;dialog&gt;</code>의 <code>showModal()</code>은 이를 자동으로 처리합니다. 되돌리지 않으면 키보드 사용자는 위치를 잃고 처음부터 Tab을 눌러야 합니다."
   },
   {
     q: "건너뛰기 링크를 <code>display: none</code>으로 숨기면 안 되는 이유는?",
     o: [
-      "CSS 문법 오류라서",
-      "display:none은 렌더 트리에서 제거되어 스크린 리더에서도 사라지므로, 화면 밖으로 밀어내는 방식을 써야 한다",
-      "링크가 동작하지 않아서",
-      "포커스를 받을 수 없어서"
+      "<code>visibility: hidden</code>보다 성능이 나빠서",
+      "스크린 리더와 키보드에서도 완전히 사라져서",
+      "링크의 <code>href</code>가 무시되어서",
+      "<code>:focus</code> 스타일이 적용되지 않아서"
     ],
     a: 1,
-    e: "5장에서 배운 대로 <code>display:none</code>은 <b>렌더 트리에서 제외</b>되고 접근성 트리에도 노출되지 않습니다. 시각적으로만 감추려면 <code>position:absolute; left:-9999px</code> 같은 방식을 쓰고, <code>:focus</code>에서 다시 보이게 합니다."
+    e: "5장에서 배운 대로 <code>display:none</code>은 <b>렌더 트리에서 제외</b>되고 접근성 트리에도 노출되지 않습니다. 시각적으로만 감추려면 <code>position:absolute; left:-9999px</code> 같은 방식을 쓰고, <code>:focus</code>에서 다시 보이게 합니다. <code>display:none</code>인 요소는 Tab으로 포커스를 받을 수도 없습니다."
   },
   {
     q: "<code>{error &amp;&amp; &lt;div role=\"alert\"&gt;{error}&lt;/div&gt;}</code> 방식의 문제는?",
     o: [
-      "문법 오류다",
-      "요소 자체가 새로 생성되면 스크린 리더가 변화를 놓칠 수 있다. 컨테이너는 항상 두고 내용만 바꿔야 안정적이다",
-      "role=\"alert\"는 존재하지 않는다",
-      "error가 0일 때 문제가 된다"
+      "<code>role=\"alert\"</code>는 <code>div</code>에 쓸 수 없다",
+      "요소가 새로 생기면 스크린 리더가 놓칠 수 있다",
+      "<code>role=\"alert\"</code>는 포커스를 강제로 옮겨 버린다",
+      "<code>aria-live</code>가 없으면 아무것도 읽지 않는다"
     ],
     a: 1,
-    e: "스크린 리더는 <b>이미 감시 중이던 live 영역의 내용 변화</b>를 알립니다. 영역 자체가 나타나면 감시가 시작되기 전이라 놓칠 수 있습니다. 빈 <code>role=\"alert\"</code> 컨테이너를 두고 내용만 채우는 편이 안정적입니다. (참고: <code>error</code>가 <code>0</code>일 때 화면에 0이 표시되는 문제도 별개로 존재합니다 — 60장.)"
+    e: "스크린 리더는 <b>이미 감시 중이던 live 영역의 내용 변화</b>를 알립니다. 영역 자체가 나타나면 감시가 시작되기 전이라 놓칠 수 있습니다. 빈 <code>role=\"alert\"</code> 컨테이너를 두고 내용만 채우는 편이 안정적입니다. (참고: <code>error</code>가 <code>0</code>일 때 화면에 0이 표시되는 문제도 별개로 존재합니다 — 60장.) <code>role=\"alert\"</code>는 포커스를 옮기지 않고, 그 자체로 <code>aria-live=\"assertive\"</code> 의미를 가집니다."
   },
   {
     q: "자동 접근성 검사 도구(axe, Lighthouse)의 한계로 옳은 것은?",
     o: [
-      "느려서 실무에 쓸 수 없다",
-      "전체 접근성 문제 중 절반에 못 미치는 비율만 발견한다. alt 내용의 적절성, 포커스 순서의 논리성, 실제 키보드 사용 가능 여부는 사람이 확인해야 한다",
-      "React 프로젝트에서는 동작하지 않는다",
+      "실행이 느려 CI에 넣을 수 없다",
+      "기계적으로 판정 가능한 일부 문제만 찾아낸다",
+      "React처럼 동적으로 그리는 화면은 검사하지 못한다",
       "WCAG A 수준만 검사한다"
     ],
     a: 1,
-    e: "자동 도구는 <b>기계적으로 판정 가능한 것</b>만 검사합니다. \"<code>alt</code>가 있는가\"는 알지만 \"<code>alt</code>가 <code>\"이미지\"</code>라는 무의미한 값인가\"는 판단하지 못합니다. 점수가 100점이어도 <b>키보드로 쓸 수 없는 사이트</b>일 수 있습니다."
+    e: "자동 도구는 <b>기계적으로 판정 가능한 것</b>만 검사합니다. \"<code>alt</code>가 있는가\"는 알지만 \"<code>alt</code>가 <code>\"이미지\"</code>라는 무의미한 값인가\"는 판단하지 못합니다. 점수가 100점이어도 <b>키보드로 쓸 수 없는 사이트</b>일 수 있습니다. 발견 비율은 전체 접근성 문제의 절반에 못 미친다고 알려져 있으며, 포커스 순서의 논리성이나 실제 키보드 사용 가능 여부는 사람이 확인해야 합니다."
   },
   {
     q: "탭 UI나 콤보박스를 직접 만들 때 권장되는 접근은?",
     o: [
-      "감각적으로 ARIA 속성을 붙인다",
-      "W3C ARIA 저작 실무 가이드(APG)의 패턴 문서를 참고하거나, 접근성이 검증된 컴포넌트 라이브러리를 사용한다",
-      "role 속성만 붙이면 충분하다",
-      "테스트에서 통과하면 문제없다"
+      "필요해 보이는 ARIA 속성을 최대한 많이 붙인다",
+      "ARIA 저작 실무 가이드(APG) 패턴이나 검증된 라이브러리를 쓴다",
+      "<code>role</code> 속성만 붙이면 키보드 동작은 브라우저가 처리한다",
+      "<code>div</code> 대신 <code>button</code>만 쓰면 충분하다"
     ],
     a: 1,
     e: "복합 위젯은 <b>필요한 ARIA 조합과 키보드 동작</b>(화살표 이동, Home/End, 타이핑 검색 등)이 정해져 있습니다. 감으로 만들면 거의 항상 틀립니다. APG에 패턴별 예제가 있고, Radix UI·React Aria 같은 라이브러리가 이를 구현해 두었습니다."

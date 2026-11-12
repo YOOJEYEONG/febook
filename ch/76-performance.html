@@ -6,6 +6,12 @@
 <title>76장. 성능 최적화와 Core Web Vitals — 프엔북</title>
 <meta name="description" content="Core Web Vitals(LCP·INP·CLS)의 의미와 기준, 측정 방법, 로딩·상호작용·레이아웃 각각의 개선 기법을 체계적으로 정리합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="76장. 성능 최적화와 Core Web Vitals — 프엔북">
 <meta property="og:description" content="Core Web Vitals(LCP·INP·CLS)의 의미와 기준, 측정 방법, 로딩·상호작용·레이아웃 각각의 개선 기법을 체계적으로 정리합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -299,57 +305,57 @@ FB_QUIZ([
   {
     q: "Core Web Vitals 세 지표와 각각의 \"좋음\" 기준으로 옳은 것은?",
     o: [
-      "LCP 4초, INP 500ms, CLS 0.25",
+      "LCP 4초 이하, INP 500ms 이하, CLS 0.25 이하",
       "LCP 2.5초 이하, INP 200ms 이하, CLS 0.1 이하",
-      "LCP 1초, INP 50ms, CLS 0",
-      "FCP 2초, FID 100ms, TTI 5초"
+      "LCP 1초 이하, INP 100ms 이하, CLS 0",
+      "FCP 1.8초 이하, FID 100ms 이하, CLS 0.1 이하"
     ],
     a: 1,
-    e: "<b>LCP 2.5초 · INP 200ms · CLS 0.1</b>이 \"좋음\" 기준입니다. 마지막 보기의 FID는 2024년 3월에 <b>INP로 대체</b>되었습니다. FID는 첫 상호작용의 지연만 봤지만 INP는 체류 중 모든 상호작용의 반응성을 봅니다."
+    e: "<b>LCP 2.5초 · INP 200ms · CLS 0.1</b>이 \"좋음\" 기준입니다. 마지막 보기의 FID는 2024년 3월에 <b>INP로 대체</b>되었습니다. FID는 첫 상호작용의 지연만 봤지만 INP는 체류 중 모든 상호작용의 반응성을 봅니다. 첫 보기의 수치는 \"나쁨\"이 시작되는 경계입니다."
   },
   {
     q: "Lighthouse 점수가 좋은데 실제 사용자 데이터에서는 INP가 나쁩니다. 이유는?",
     o: [
-      "Lighthouse가 고장 났다",
-      "Lighthouse는 실험실 환경에서 실제 상호작용 없이 측정하므로 INP를 제대로 잴 수 없고, 사용자의 기기·네트워크·사용 패턴도 다르기 때문",
-      "INP는 측정할 수 없는 지표라서",
-      "실제 사용자 데이터가 부정확해서"
+      "Lighthouse는 데스크톱 기준으로만 측정해서",
+      "실험실 측정엔 실제 상호작용이 없고 환경도 달라서",
+      "INP는 서버 응답 시간이라 브라우저에서 못 재서",
+      "실제 사용자 데이터는 광고 차단기 때문에 부정확해서"
     ],
     a: 1,
-    e: "INP는 <b>실제 클릭·입력이 있어야</b> 측정됩니다. Lighthouse는 페이지를 열고 로딩만 관찰하므로 이 지표에 한계가 있습니다. 또 개발자 기기는 대개 사용자보다 빠릅니다. <b>실제 데이터로 문제를 알고 실험실 도구로 원인을 찾는</b> 방식이 옳습니다."
+    e: "INP는 <b>실제 클릭·입력이 있어야</b> 측정됩니다. Lighthouse는 페이지를 열고 로딩만 관찰하므로 이 지표에 한계가 있습니다. 또 개발자 기기는 대개 사용자보다 빠릅니다. <b>실제 데이터로 문제를 알고 실험실 도구로 원인을 찾는</b> 방식이 옳습니다. 사용자의 기기·네트워크·사용 패턴도 실험실과 다릅니다."
   },
   {
     q: "LCP를 개선하려는데 첫 화면 대표 이미지에 <code>loading=\"lazy\"</code>가 붙어 있습니다. 어떻게 해야 하나요?",
     o: [
       "그대로 둔다. lazy는 항상 성능에 좋다",
-      "제거하고 필요하면 priority나 preload를 적용한다. 이미 보이는 이미지에 lazy를 붙이면 로드가 늦어져 LCP가 나빠진다",
-      "이미지를 배경 이미지로 바꾼다",
-      "이미지 크기를 줄이면 lazy는 상관없다"
+      "lazy를 빼고 필요하면 우선순위를 높인다",
+      "이미지를 CSS 배경 이미지로 바꾼다",
+      "이미지 용량만 줄이면 lazy는 상관없다"
     ],
     a: 1,
-    e: "<code>lazy</code>는 \"화면에 가까워질 때까지 미루라\"는 뜻입니다(8장). LCP 요소는 <b>처음부터 화면에 있는 가장 큰 콘텐츠</b>이므로 미루면 안 됩니다. 오히려 우선순위를 <b>올려야</b> 합니다. 매우 흔한 실수입니다."
+    e: "<code>lazy</code>는 \"화면에 가까워질 때까지 미루라\"는 뜻입니다(8장). LCP 요소는 <b>처음부터 화면에 있는 가장 큰 콘텐츠</b>이므로 미루면 안 됩니다. 오히려 우선순위를 <b>올려야</b> 합니다. 매우 흔한 실수입니다. Next.js라면 <code>priority</code>, 일반 HTML이라면 <code>fetchpriority=\"high\"</code>나 preload를 씁니다."
   },
   {
     q: "CLS를 개선하는 데 가장 효과가 큰 조치는?",
     o: [
-      "애니메이션을 제거한다",
-      "이미지·비디오·임베드에 크기(width/height 또는 aspect-ratio)를 명시해 미리 자리를 확보한다",
+      "모든 애니메이션을 제거한다",
+      "이미지·임베드에 크기를 명시해 자리를 확보한다",
       "JavaScript 번들을 줄인다",
-      "CDN을 사용한다"
+      "폰트를 <code>font-display: block</code>으로 바꾼다"
     ],
     a: 1,
-    e: "크기를 모르면 브라우저가 자리를 0으로 잡았다가 도착 후 밀어냅니다(8장). 이미지에 크기를 적는 것만으로 CLS 문제의 상당 부분이 해결되며, <b>투자 대비 효과가 가장 좋은 항목</b>입니다. 폰트 교체와 동적 삽입 배너도 주요 원인입니다."
+    e: "크기를 모르면 브라우저가 자리를 0으로 잡았다가 도착 후 밀어냅니다(8장). 이미지에 크기를 적는 것만으로 CLS 문제의 상당 부분이 해결되며, <b>투자 대비 효과가 가장 좋은 항목</b>입니다. 폰트 교체와 동적 삽입 배너도 주요 원인입니다. <code>width</code>/<code>height</code>나 <code>aspect-ratio</code>를 적으면 됩니다."
   },
   {
     q: "같은 100KB라도 이미지보다 JavaScript가 성능에 더 나쁜 이유는?",
     o: [
-      "JavaScript 파일이 압축되지 않아서",
-      "이미지는 다운로드 후 디코딩만 하면 되지만 JS는 다운로드·파싱·컴파일·실행을 거쳐 메인 스레드를 오래 점유하기 때문",
+      "JavaScript는 gzip으로 압축할 수 없어서",
+      "다운로드 뒤에도 파싱·컴파일·실행이 메인 스레드를 잡아서",
       "브라우저가 JavaScript를 캐시하지 않아서",
-      "JavaScript는 CDN을 쓸 수 없어서"
+      "JavaScript는 항상 이미지보다 늦게 요청되어서"
     ],
     a: 1,
-    e: "JS는 받은 뒤에도 <b>파싱·컴파일·실행</b>이라는 CPU 작업이 남습니다. 저사양 기기에서는 이 비용이 몇 배로 커집니다. 그래서 <b>번들 크기를 줄이는 것</b>이 프론트엔드 성능에서 가장 큰 레버이고, \"가장 빠른 코드는 보내지 않은 코드\"라는 말이 나옵니다."
+    e: "JS는 받은 뒤에도 <b>파싱·컴파일·실행</b>이라는 CPU 작업이 남습니다. 저사양 기기에서는 이 비용이 몇 배로 커집니다. 그래서 <b>번들 크기를 줄이는 것</b>이 프론트엔드 성능에서 가장 큰 레버이고, \"가장 빠른 코드는 보내지 않은 코드\"라는 말이 나옵니다. 이미지는 디코딩만 하면 되고 그마저 메인 스레드 밖에서 처리되는 경우가 많습니다."
   }
 ]);
 </script>

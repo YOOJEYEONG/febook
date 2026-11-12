@@ -6,6 +6,12 @@
 <title>12장. CSS 기초: 선택자, 명시도, 캐스케이드 — 프엔북</title>
 <meta name="description" content="CSS를 연결하는 세 가지 방법, 선택자 전체, 명시도 계산법, 캐스케이드와 상속의 규칙을 처음부터 설명합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="12장. CSS 기초: 선택자, 명시도, 캐스케이드 — 프엔북">
 <meta property="og:description" content="CSS를 연결하는 세 가지 방법, 선택자 전체, 명시도 계산법, 캐스케이드와 상속의 규칙을 처음부터 설명합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -211,7 +217,7 @@ style="…" (인라인)          → 어떤 선택자보다도 높음
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 이 순서대로 확인하세요</p>
 <ol style="margin-bottom:0">
-<li><b><span class="term" data-term="devtools">개발자 도구</span>에서 그 요소를 클릭</b>합니다. Styles 패널에 적용된 규칙이 전부 보입니다.</li>
+<li><b><span class="term" data-term="devtools">개발자 도구</span>(F12, mac은 Cmd+Option+I)를 열고 그 요소를 클릭</b>합니다. 페이지에서 요소를 마우스 오른쪽 클릭 → "검사"를 눌러도 됩니다. El<span class="term" data-term="em">em</span>ents 탭 옆의 Styles 패널에 적용된 규칙이 전부 보입니다.</li>
 <li><b>취소선이 그어진 선언</b>을 찾습니다. 그것이 <b>다른 규칙에 밀린</b> 것입니다. 어느 규칙에 밀렸는지도 바로 위에 보입니다.</li>
 <li>규칙 자체가 <b>목록에 없다면</b> 선택자가 안 걸린 것입니다. 오타, 클래스 이름 불일치, 잘못된 중첩 관계를 확인합니다.</li>
 <li>값이 <b>무효</b>면 <span class="term" data-term="browser">브라우저</span>가 그 선언만 버립니다. <code>color: #GGG</code>처럼 잘못된 값이나 단위 누락(<code>width: 100</code>)을 확인합니다.</li>
@@ -301,8 +307,8 @@ FB_QUIZ([
   {
     q: "<code>#main .text</code> 와 <code>.a .b .c .d .e .f .g .h .i .j .k</code> 중 어느 쪽이 이기나요?",
     o: [
-      "클래스가 11개인 두 번째. 점수 합이 더 크므로",
-      "<code>#main .text</code>. 명시도는 자릿수를 합산하지 않고 id 자리부터 차례로 비교하므로",
+      "클래스 11개 쪽. 점수 합(110)이 id(100)보다 커서",
+      "<code>#main .text</code>. id 자리부터 비교해서",
       "나중에 작성된 쪽",
       "둘은 같은 명시도를 가진다"
     ],
@@ -315,7 +321,7 @@ FB_QUIZ([
       "콜론을 두 개 써서",
       "<code>content</code> 속성이 없어서",
       "부모에 <code>position: relative</code>가 없어서",
-      "가상 요소는 Chrome에서만 동작해서"
+      "<code>display: block</code>을 주지 않아서"
     ],
     a: 1,
     e: "<code>::before</code>·<code>::after</code>는 <b><code>content</code> 속성이 있어야만</b> 생성됩니다. 빈 값이라도 <code>content: \"\"</code>가 필요합니다. 콜론은 하나(<code>:before</code>)여도 하위 호환으로 동작하며, 가상 요소는 모든 주요 브라우저가 지원합니다."
@@ -329,13 +335,13 @@ FB_QUIZ([
   {
     q: "버튼의 글꼴만 다른 글자와 다르게 보입니다. 가장 적절한 해결책은?",
     o: [
-      "<code>button { font-family: sans-serif; }</code> 로 직접 지정한다",
-      "<code>button, input, select, textarea { font: inherit; }</code> 를 추가한다",
-      "<code>button { font-size: 100%; }</code> 만 넣는다",
-      "브라우저 문제이므로 해결할 수 없다"
+      "<code>button { font-family: sans-serif; }</code>로 지정한다",
+      "<code>button, input { font: inherit; }</code>를 추가한다",
+      "<code>button { font-size: 100%; }</code>만 넣는다",
+      "<code>body</code>에 <code>!important</code>로 글꼴을 준다"
     ],
     a: 1,
-    e: "폼 요소는 브라우저 기본 스타일이 강해 <b>글꼴을 상속받지 않고</b> 운영체제 기본 글꼴을 씁니다. <code>font: inherit</code>은 글꼴·크기·굵기·행간을 한꺼번에 부모에서 물려받게 하므로, 대부분의 프로젝트가 초기 설정에 넣는 한 줄입니다."
+    e: "폼 요소는 브라우저 기본 스타일이 강해 <b>글꼴을 상속받지 않고</b> 운영체제 기본 글꼴을 씁니다. 그래서 <code>body</code>의 글꼴에 <code>!important</code>를 붙여도 상속이 일어나지 않으니 소용없습니다. <code>button, input, select, textarea { font: inherit; }</code>은 글꼴·크기·굵기·행간을 한꺼번에 부모에서 물려받게 하므로, 대부분의 프로젝트가 초기 설정에 넣는 한 줄입니다."
   },
   {
     q: "CSS 규칙이 겹칠 때 승자를 정하는 순서로 옳은 것은? (레이어·출처는 제외)",

@@ -6,6 +6,12 @@
 <title>63장. 컴포넌트 설계와 합성 — 프엔북</title>
 <meta name="description" content="합성으로 컴포넌트를 조립하는 법, props drilling 해결, 컴파운드 컴포넌트, 컨테이너와 프레젠테이션 분리, 폴더 구조를 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="63장. 컴포넌트 설계와 합성 — 프엔북">
 <meta property="og:description" content="합성으로 컴포넌트를 조립하는 법, props drilling 해결, 컴파운드 컴포넌트, 컨테이너와 프레젠테이션 분리, 폴더 구조를 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -153,7 +159,7 @@ Radix UI, Headless UI 같은 라이브러리가 이 방식을 씁니다.</p>
 <div class="box warn">
 <p class="box-title"><span class="box-ico">⚖️</span> 항상 좋은 것은 아닙니다</p>
 <p style="margin-bottom:0">컴파운드 패턴은 <b>구현이 복잡</b>하고 쓰는 쪽 코드도 길어집니다.
-<b>정말 다양한 조합이 필요한 컴포넌트</b>(디자인 시스템의 Select, Tabs, Accordion)에만 쓰세요.
+<b>정말 다양한 조합이 필요한 컴포넌트</b>(<span class="term" data-term="design-system">디자인 시스템</span>의 Select, Tabs, Accordion)에만 쓰세요.
 버튼 하나에 이 패턴을 적용하는 것은 과합니다.</p>
 </div>
 
@@ -164,7 +170,7 @@ Radix UI, Headless UI 같은 라이브러리가 이 방식을 씁니다.</p>
 <thead><tr><th>원칙</th><th>설명</th></tr></thead>
 <tbody>
 <tr><td><b>props 이름은 의도를</b></td><td><code>isRed</code>가 아니라 <code>variant="danger"</code>. 나중에 색이 바뀌어도 이름이 맞습니다</td></tr>
-<tr><td><b>불리언보다 유니온</b></td><td><code>isPrimary</code>+<code>isSecondary</code>는 둘 다 true인 <b>불가능한 상태</b>를 만듭니다(52장)</td></tr>
+<tr><td><b><span class="term" data-term="boolean">불리언</span>보다 유니온</b></td><td><code>isPrimary</code>+<code>isSecondary</code>는 둘 다 true인 <b>불가능한 상태</b>를 만듭니다(52장)</td></tr>
 <tr><td><b class="nw">기본값을 주기</b></td><td>대부분의 경우 아무것도 안 넘겨도 동작해야 합니다</td></tr>
 <tr><td><b>나<span class="term" data-term="merge">머지</span> props 전달</b></td><td><code>{...rest}</code>로 <code>aria-*</code>·<code>data-*</code>를 지원(56장)</td></tr>
 <tr><td><b>제어·비제어 둘 다</b></td><td><code>value</code>가 오면 제어, 없으면 내부 상태 사용</td></tr>
@@ -329,7 +335,7 @@ FB_QUIZ([
     q: "props를 4단계 아래로 전달해야 합니다. Context를 쓰기 전에 먼저 검토할 방법은?",
     o: [
       "전역 변수를 만든다",
-      "합성 — 필요한 데이터를 아는 곳에서 완성된 JSX를 만들어 children으로 내려보내면 중간 컴포넌트들이 그 데이터를 몰라도 된다",
+      "합성 — 완성된 JSX를 children으로 내려보낸다",
       "props를 객체 하나로 묶는다",
       "각 단계에서 상태를 복제한다"
     ],
@@ -340,18 +346,18 @@ FB_QUIZ([
     q: "버튼 컴포넌트의 props로 <code>isPrimary</code>, <code>isSecondary</code>, <code>isDanger</code> 세 개의 불리언을 두는 것의 문제는?",
     o: [
       "props가 많아 성능이 나빠진다",
-      "셋 다 true인 것처럼 불가능한 조합이 만들어질 수 있다. <code>variant: \"primary\" | \"secondary\" | \"danger\"</code>가 낫다",
-      "불리언은 props로 쓸 수 없다",
-      "TypeScript에서 지원되지 않는다"
+      "셋 다 true 같은 불가능한 조합이 생길 수 있다",
+      "불리언 props에는 기본값을 지정할 수 없다",
+      "불리언 props가 많으면 리렌더링이 늘어난다"
     ],
     a: 1,
-    e: "52·59장에서 본 <b>\"불가능한 상태를 표현할 수 없게 만들라\"</b>는 원칙입니다. 배타적인 선택지는 <b>하나의 유니온 prop</b>으로 표현해야 조합 폭발과 우선순위 고민이 사라집니다."
+    e: "52·59장에서 본 <b>\"불가능한 상태를 표현할 수 없게 만들라\"</b>는 원칙입니다. 배타적인 선택지는 <b>하나의 유니온 prop</b>으로 표현해야 조합 폭발과 우선순위 고민이 사라집니다. <code>variant: \"primary\" | \"secondary\" | \"danger\"</code> 하나로 바꾸는 편이 낫습니다."
   },
   {
     q: "컴파운드 컴포넌트 패턴(<code>&lt;Select.Option&gt;</code> 등)을 쓰기 적절한 경우는?",
     o: [
       "모든 컴포넌트에 항상 적용한다",
-      "Select·Tabs·Accordion처럼 내부 구조의 조합이 다양해야 하는 UI. 구현이 복잡하므로 단순한 컴포넌트에는 과하다",
+      "Select·Tabs처럼 내부 구조 조합이 다양한 UI",
       "props가 두 개 이하인 컴포넌트",
       "상태가 없는 컴포넌트"
     ],
@@ -362,9 +368,9 @@ FB_QUIZ([
     q: "폴더를 <code>components/</code>, <code>hooks/</code>, <code>utils/</code> 처럼 타입별로만 나누면 프로젝트가 커질 때 생기는 문제는?",
     o: [
       "빌드가 느려진다",
-      "하나의 기능을 수정하려면 여러 폴더를 오가야 하고, 어떤 파일이 어느 기능에 속하는지 알기 어려워진다",
+      "한 기능을 고치려고 여러 폴더를 오가야 한다",
       "import 경로가 길어진다",
-      "타입 검사가 실패한다"
+      "순환 import가 반드시 생긴다"
     ],
     a: 1,
     e: "<b>함께 바뀌는 것은 함께 두는 것</b>이 좋은 구조의 원칙입니다. 기능 단위로 묶으면 그 기능의 컴포넌트·훅·API·타입이 한곳에 있어 수정과 삭제가 쉽습니다. 다만 작은 프로젝트에서는 타입별 구조도 충분합니다."
@@ -373,9 +379,9 @@ FB_QUIZ([
     q: "\"세 번째 복사할 때 추출하라\"는 조언의 의미는?",
     o: [
       "코드는 세 번까지만 복사할 수 있다",
-      "두 번의 중복만으로는 공통점이 진짜인지 알기 어렵다. 성급한 추상화는 잘못된 추상화를 만들고 되돌리기 어렵기 때문",
+      "두 번의 중복만으로는 공통점이 진짜인지 알기 어려워서",
       "컴포넌트는 세 개 이상 만들어야 한다",
-      "세 번 테스트해야 한다"
+      "같은 코드가 세 줄을 넘으면 함수로 뺀다"
     ],
     a: 1,
     e: "두 곳이 비슷해 보여도 <b>우연히 비슷한 것</b>일 수 있습니다. 성급히 합치면 나중에 요구사항이 갈릴 때 조건 분기가 덕지덕지 붙은 컴포넌트가 됩니다. 중복은 눈에 보이지만 <b>잘못된 추상화는 보이지 않습니다.</b>"

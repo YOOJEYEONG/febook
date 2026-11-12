@@ -353,9 +353,9 @@ FB_QUIZ([
     q: "<code>flex: 1</code>과 <code>flex: auto</code>의 차이는?",
     o: [
       "둘은 완전히 같다",
-      "flex:1은 basis가 0이라 내용 길이와 무관하게 공간을 똑같이 나누고, flex:auto는 basis가 auto라 내용 크기를 먼저 확보한 뒤 남는 공간을 나눈다",
+      "1은 칸을 똑같이 나누고, auto는 내용 크기부터 챙긴다",
       "flex:1은 줄어들지 않고 flex:auto는 줄어든다",
-      "flex:auto는 구형 브라우저 전용 문법이다"
+      "flex:1은 한 칸만, auto는 모든 칸이 늘어난다"
     ],
     a: 1,
     e: "<code>flex: 1</code> = <code>1 1 0%</code>, <code>flex: auto</code> = <code>1 1 auto</code>입니다. basis가 0이면 시작 크기가 0이라 결과적으로 <b>모든 칸이 똑같은 너비</b>가 되고, auto면 내용이 긴 칸이 더 넓어집니다. 균등 분할이 목표라면 <code>flex: 1</code>입니다."
@@ -363,20 +363,20 @@ FB_QUIZ([
   {
     q: "flex 아이템 안의 긴 URL이 컨테이너를 뚫고 나가 가로 스크롤이 생깁니다. 가장 정확한 해결책은?",
     o: [
-      "<code>overflow: hidden</code>을 컨테이너에 준다",
-      "아이템에 <code>min-width: 0</code>을 준다. flex 아이템의 min-width 기본값이 auto라 내용보다 작아지지 않기 때문",
-      "<code>flex-shrink: 2</code>로 올린다",
-      "<code>flex-wrap: wrap</code>을 준다"
+      "컨테이너에 <code>overflow: hidden</code>을 준다",
+      "아이템에 <code>min-width: 0</code>을 준다",
+      "아이템에 <code>flex-shrink: 2</code>를 준다",
+      "컨테이너에 <code>flex-wrap: wrap</code>을 준다"
     ],
     a: 1,
-    e: "flex 아이템은 <code>min-width: auto</code>가 기본이라 <b>내용 최소 크기 아래로 줄지 않습니다</b>. <code>flex-shrink</code> 값을 아무리 올려도 이 하한에 막힙니다. <code>min-width: 0</code>(세로 방향이면 <code>min-height: 0</code>)이 정석적인 해결책이고, 긴 단어 자체를 끊으려면 <code>overflow-wrap: anywhere</code>를 함께 씁니다."
+    e: "flex 아이템의 <code>min-width</code> 기본값이 <code>auto</code>라서 내용보다 작아지지 않기 때문입니다. flex 아이템은 <code>min-width: auto</code>가 기본이라 <b>내용 최소 크기 아래로 줄지 않습니다</b>. <code>flex-shrink</code> 값을 아무리 올려도 이 하한에 막힙니다. <code>min-width: 0</code>(세로 방향이면 <code>min-height: 0</code>)이 정석적인 해결책이고, 긴 단어 자체를 끊으려면 <code>overflow-wrap: anywhere</code>를 함께 씁니다."
   },
   {
     q: "<code>order</code> 속성으로 아이템 순서를 시각적으로 바꿀 때 주의할 점은?",
     o: [
-      "구형 브라우저에서 지원되지 않는다",
-      "DOM 순서는 그대로이므로 Tab 이동 순서와 스크린 리더 읽기 순서가 화면과 어긋나게 된다",
       "order를 쓰면 flex-grow가 무시된다",
+      "Tab·스크린 리더 순서는 DOM 순서를 따른다",
+      "order는 같은 값끼리 위치가 무작위가 된다",
       "order는 음수를 쓸 수 없다"
     ],
     a: 1,
@@ -386,12 +386,12 @@ FB_QUIZ([
     q: "본문이 짧아도 푸터를 항상 화면 맨 아래에 붙이려면?",
     o: [
       "<code>footer { position: fixed; bottom: 0 }</code>",
-      "<code>body { display:flex; flex-direction:column; min-height:100dvh } main { flex:1 }</code>",
+      "<code>body</code>를 세로 flex로, <code>main { flex: 1 }</code>",
       "<code>footer { margin-top: 100% }</code>",
-      "<code>body { height: 100% }</code>"
+      "<code>body { height: 100%; overflow: auto }</code>"
     ],
     a: 1,
-    e: "본문에 <code>flex: 1</code>을 주면 <b>남는 세로 공간을 본문이 전부</b> 차지하므로 푸터가 자연스럽게 아래로 밀립니다. 내용이 길어지면 푸터도 그만큼 내려갑니다. <code>position: fixed</code>는 스크롤과 무관하게 화면에 <b>고정되어</b> 내용을 가리므로 이 목적에는 맞지 않습니다."
+    e: "<code>body { display:flex; flex-direction:column; min-height:100dvh }</code>에 <code>main { flex:1 }</code>을 줍니다. 본문에 <code>flex: 1</code>을 주면 <b>남는 세로 공간을 본문이 전부</b> 차지하므로 푸터가 자연스럽게 아래로 밀립니다. 내용이 길어지면 푸터도 그만큼 내려갑니다. <code>position: fixed</code>는 스크롤과 무관하게 화면에 <b>고정되어</b> 내용을 가리므로 이 목적에는 맞지 않습니다."
   }
 ]);
 </script>

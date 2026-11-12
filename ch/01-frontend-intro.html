@@ -6,6 +6,12 @@
 <title>1장. 프론트엔드 개발자는 무슨 일을 하나 — 프엔북</title>
 <meta name="description" content="프론트엔드 개발자가 실제로 무슨 일을 하는지, 백엔드와 무엇이 다른지, HTML·CSS·JavaScript가 각각 어떤 역할을 맡는지 비전공자 눈높이로 정리합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="1장. 프론트엔드 개발자는 무슨 일을 하나 — 프엔북">
 <meta property="og:description" content="프론트엔드 개발자가 실제로 무슨 일을 하는지, 백엔드와 무엇이 다른지, HTML·CSS·JavaScript가 각각 어떤 역할을 맡는지 비전공자 눈높이로 정리합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -317,8 +323,8 @@ FB_QUIZ([
     o: [
       "문제없다. 압축(번들링)하면 사람이 읽을 수 없다",
       "문제없다. HTTPS를 쓰면 암호화되어 안전하다",
-      "프론트엔드 코드는 사용자에게 그대로 전달되므로 누구나 키를 꺼내 쓸 수 있다",
-      "브라우저가 자동으로 민감한 문자열을 가려 준다"
+      "배포된 JS 파일에서 누구나 키를 꺼내 쓸 수 있다",
+      "문제없다. 브라우저가 민감한 문자열을 가려 준다"
     ],
     a: 2,
     e: "번들링·압축은 <b>보안 수단이 아니라 용량 최적화 수단</b>입니다. 읽기 어려워질 뿐 그대로 들어 있습니다. HTTPS는 <b>전송 구간</b>만 보호하므로, 도착한 뒤 브라우저 안에 있는 코드는 사용자가 전부 볼 수 있습니다. 비밀은 반드시 서버에 두고, 서버를 거쳐 호출해야 합니다. 78장에서 자세히 다룹니다."
@@ -326,10 +332,10 @@ FB_QUIZ([
   {
     q: "\"내 크롬에서는 잘 보이는데 아이폰 사파리에서 깨져요\"라는 상황이 생기는 근본 원인은?",
     o: [
-      "아이폰이 구형 기기라서",
-      "브라우저마다 렌더링 엔진이 달라 같은 코드의 처리 결과가 다를 수 있어서",
-      "사파리가 HTML을 지원하지 않아서",
-      "코드에 오타가 있을 때만 생기는 현상이라서"
+      "화면이 작은 기기에서는 CSS 일부가 무시되어서",
+      "브라우저마다 렌더링 엔진이 달라서",
+      "사파리는 HTML5 태그를 읽지 못해서",
+      "크롬만 코드의 오류를 자동으로 고쳐 줘서"
     ],
     a: 1,
     e: "Chrome·Edge는 Blink, Safari는 WebKit, Firefox는 Gecko라는 서로 다른 렌더링 엔진을 씁니다. 명세를 따르더라도 신기능 지원 시점과 세부 동작이 달라질 수 있습니다. 그래서 새 CSS·JavaScript 기능을 쓸 때는 Can I use 같은 자료로 지원 범위를 확인하는 습관이 필요합니다."
@@ -337,13 +343,13 @@ FB_QUIZ([
   {
     q: "이 책이 React를 배우기 전에 JavaScript를 두 개 부(4·5부)에 걸쳐 깊게 다루는 이유로 가장 적절한 것은?",
     o: [
-      "React가 JavaScript로 만들어져 있어, JavaScript 이해도가 곧 React 실력의 상한이 되기 때문",
-      "React는 실무에서 거의 쓰이지 않기 때문",
-      "JavaScript를 모르면 HTML도 쓸 수 없기 때문",
-      "React 공식 문서가 한국어를 지원하지 않기 때문"
+      "JavaScript 이해도가 곧 React 실력의 상한이라서",
+      "React를 쓰면 HTML·CSS는 몰라도 되어서",
+      "JavaScript를 모르면 HTML도 쓸 수 없어서",
+      "React는 JavaScript와 문법이 전혀 달라서"
     ],
     a: 0,
-    e: "React는 JavaScript 라이브러리입니다. 클로저·this·비동기·배열 고차 함수 같은 개념을 모르면 React 코드가 왜 그렇게 동작하는지 설명할 수 없고, 문제가 생겼을 때 검색으로도 해결되지 않습니다. HTML은 JavaScript와 독립적으로 배울 수 있으므로 세 번째 보기는 틀렸습니다."
+    e: "React는 JavaScript 라이브러리입니다. 클로저·this·비동기·배열 고차 함수 같은 개념을 모르면 React 코드가 왜 그렇게 동작하는지 설명할 수 없고, 문제가 생겼을 때 검색으로도 해결되지 않습니다. React도 결국 HTML·CSS를 만들어 내므로 둘을 몰라도 되는 것이 아니며, HTML은 JavaScript와 독립적으로 배울 수 있습니다."
   }
 ]);
 </script>

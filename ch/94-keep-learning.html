@@ -6,6 +6,12 @@
 <title>94장. 계속 학습하기 — 프엔북</title>
 <meta name="description" content="신뢰할 수 있는 정보원, 변화하는 기술을 따라가는 법, 무엇을 배우고 무엇을 무시할지 판단하는 기준, 그리고 앞으로의 학습 방향을 제시합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="94장. 계속 학습하기 — 프엔북">
 <meta property="og:description" content="신뢰할 수 있는 정보원, 변화하는 기술을 따라가는 법, 무엇을 배우고 무엇을 무시할지 판단하는 기준, 그리고 앞으로의 학습 방향을 제시합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -31,7 +37,7 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 16분 · 마지막 챕터입니다</p>
+<p class="ch-meta">읽는 데 약 16분 · 12부의 마지막 챕터입니다</p>
 
 <h2 id="sources">정보원의 등급</h2>
 
@@ -72,6 +78,7 @@
 <li><b>원칙</b> — <b>동작하는 이유를 설명할 수 없는 코드는 쓰지 마세요.</b>
 그 코드는 여러분이 유지보수할 수 없고, 면접에서도 설명할 수 없습니다.</li>
 <li>AI가 준 API 이름은 <b>MDN이나 공식 문서에서 실제로 확인</b>하세요.</li>
+<li>AI 코딩 도구에 일을 맡기고 결과를 검증하는 구체적인 방법은 <b>97장</b>에서 자세히 다룹니다.</li>
 </ul>
 </div>
 
@@ -121,10 +128,10 @@ HTTP, <span class="term" data-term="browser">브라우저</span> 렌더링, <spa
 <table>
 <thead><tr><th>방향</th><th>배울 것</th></tr></thead>
 <tbody>
-<tr><td><b>깊이 — 프론트엔드 심화</b></td><td>브라우저 내부 동작, 애니메이션·인터랙션, 웹 접근성 전문, 대규모 앱 아키텍처, 디자인 시스템</td></tr>
+<tr><td><b>깊이 — 프론트엔드 심화</b></td><td>브라우저 내부 동작, 애니메이션·인터랙션, 웹 접근성 전문, 대규모 앱 아키텍처, <span class="term" data-term="design-system">디자인 시스템</span></td></tr>
 <tr><td><b>넓이 — 풀<span class="term" data-term="stack">스택</span></b></td><td><span class="term" data-term="nodejs">Node.js</span> 서버, 데이터베이스와 <span class="term" data-term="sql">SQL</span>, 인증·인가, API 설계 (89장이 출발점)</td></tr>
 <tr><td><b>기반 — CS 기초</b></td><td><b>11부(80~89장)에서 실무에 필요한 만큼 다뤘습니다.</b> 더 깊이 가려면 알고리즘 문제 풀이, 운영체제, <span class="term" data-term="compiler">컴파일러</span> 순</td></tr>
-<tr><td><b class="nw">주변</b></td><td>Docker·<span class="term" data-term="ci">CI</span>/<span class="term" data-term="cd">CD</span>, 클라우드 기초, 테스트 전략, 성능 엔지니어링</td></tr>
+<tr><td><b class="nw">주변</b></td><td>Docker·<span class="term" data-term="cicd">CI/CD</span>, 클라우드 기초, 테스트 전략, 성능 엔지니어링</td></tr>
 <tr><td><b class="nw">인접 분야</b></td><td>UX·디자인 기초, 제품 기획, 데이터 분석</td></tr>
 </tbody>
 </table>
@@ -217,6 +224,12 @@ SNS에는 항상 새 기술을 쓰는 사람들이 보입니다.<br>
 가장 화려한 코드가 아니라 <b>가장 많은 사람이 쓸 수 있는 코드</b>가 좋은 코드입니다.</p>
 </div>
 
+<p>본편은 여기서 마무리되지만, 이어지는 <b>13부 "실무 확장"</b>에서 현업에 들어가면 바로 마주치는 세 가지 주제를 더 다룹니다.
+<b>95장 로그인과 인증 흐름 구현</b>에서는 <span class="term" data-term="cookie">쿠키</span>·토큰·세션이 실제 로그인 화면에서 어떻게 맞물리는지,
+<b>96장 디자인 시스템과 <span class="term" data-term="storybook">Storybook</span></b>에서는 디자이너와 함께 컴포넌트를 체계적으로 만들고 문서화하는 법을,
+<b>97장 AI 코딩 도구와 일하기</b>에서는 AI에게 일을 맡기고 그 결과를 검증하는 습관을 익힙니다.
+지금 당장 필요한 주제부터 골라 읽어도 괜찮습니다.</p>
+
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
@@ -258,19 +271,19 @@ FB_QUIZ([
     q: "기술 자료를 볼 때 날짜 확인이 특히 중요한 이유는?",
     o: [
       "오래된 글은 문법이 어려워서",
-      "프론트엔드는 변화가 빨라 2~3년만 지나도 권장 사항이 뒤집히는 경우가 많기 때문(이미지 크기 속성, HTTP 요청 최소화, 클래스 컴포넌트 등)",
-      "저작권 문제 때문에",
-      "검색 순위가 낮아서"
+      "변화가 빨라 몇 년 만에 권장 사항이 뒤집히기도 해서",
+      "오래된 글일수록 검색 결과에 많이 나와서",
+      "최신 글일수록 항상 정확해서"
     ],
     a: 1,
-    e: "이 책에서만도 여러 번 확인했습니다. \"이미지에 width·height를 쓰지 마라\"는 조언은 <b>지금은 정반대</b>이고(8장), \"HTTP 요청을 무조건 줄여라\"는 HTTP/2 이후 달라졌으며(4장), 클래스 컴포넌트는 더 이상 새로 배우지 않습니다."
+    e: "이 책에서만도 여러 번 확인했습니다. \"이미지에 width·height를 쓰지 마라\"는 조언은 <b>지금은 정반대</b>이고(8장), \"HTTP 요청을 무조건 줄여라\"는 HTTP/2 이후 달라졌으며(4장), 클래스 컴포넌트는 더 이상 새로 배우지 않습니다. 이미지 크기 속성, HTTP 요청 최소화, 클래스 컴포넌트 등이 그런 예입니다."
   },
   {
     q: "AI가 알려 준 코드를 사용할 때의 원칙은?",
     o: [
       "동작하면 그대로 사용한다",
-      "동작하는 이유를 설명할 수 없는 코드는 쓰지 않는다. API 이름과 옵션은 공식 문서에서 실제로 확인한다",
-      "AI 코드는 절대 쓰지 않는다",
+      "설명할 수 없는 코드는 쓰지 않고, API는 공식 문서로 확인한다",
+      "여러 AI에게 물어 같은 답이 나오면 믿는다",
       "테스트만 통과하면 된다"
     ],
     a: 1,
@@ -280,19 +293,19 @@ FB_QUIZ([
     q: "\"매주 새 프레임워크가 나와서 따라갈 수 없다\"는 고민에 대한 적절한 관점은?",
     o: [
       "모든 신기술을 즉시 학습해야 한다",
-      "변하는 것은 도구와 유행이고, HTTP·렌더링·DOM·스코프·이벤트 루프 같은 기초는 거의 변하지 않는다. 기초가 있으면 새 도구는 며칠이면 익힌다",
-      "프론트엔드는 오래 하기 어려운 분야다",
+      "변하는 건 도구이고, HTTP·DOM·이벤트 루프 같은 기초는 그대로다",
+      "새 도구가 나오면 기존 지식은 대부분 쓸모없어진다",
       "한 프레임워크만 깊게 파고 나머지는 무시한다"
     ],
     a: 1,
-    e: "이 책의 94개 챕터 중 <b>대부분이 도구와 무관한 내용</b>입니다. 도구만 익힌 사람은 도구가 바뀔 때마다 처음부터 시작하지만, 기초가 있는 사람은 \"이건 결국 그것이구나\"로 빠르게 적응합니다."
+    e: "이 책의 챕터 <b>대부분이 도구와 무관한 내용</b>입니다. 도구만 익힌 사람은 도구가 바뀔 때마다 처음부터 시작하지만, 기초가 있는 사람은 \"이건 결국 그것이구나\"로 빠르게 적응합니다. 기초가 있으면 새 도구는 며칠이면 익힙니다."
   },
   {
     q: "다음 학습 주제를 고르는 가장 좋은 기준은?",
     o: [
       "채용 공고에 가장 많이 등장하는 것",
       "지금 하는 일에서 가장 답답하고 막히는 부분",
-      "가장 새로운 기술",
+      "가장 최근에 나온 기술",
       "커뮤니티에서 화제인 것"
     ],
     a: 1,
@@ -301,10 +314,10 @@ FB_QUIZ([
   {
     q: "실력 향상에 가장 효과가 큰 활동은?",
     o: [
-      "강의 시청",
-      "직접 만들기. 읽거나 보는 것만으로는 늘지 않는다",
-      "기술 뉴스 구독",
-      "책 읽기"
+      "강의를 끝까지 여러 번 시청하기",
+      "요구사항만 보고 직접 만들어 보기",
+      "기술 뉴스와 뉴스레터 구독하기",
+      "튜토리얼 코드를 그대로 따라 치기"
     ],
     a: 1,
     e: "튜토리얼을 따라 치는 것과 <b>요구사항만 보고 스스로 만드는 것</b>은 완전히 다른 경험입니다(91장). 막히고, 검색하고, 고치는 과정에서만 지식이 자기 것이 됩니다. 강의와 책은 <b>체계를 잡는 데</b> 좋지만 실습이 없으면 남지 않습니다."

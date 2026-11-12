@@ -6,6 +6,12 @@
 <title>16장. Grid 완전 정복 — 프엔북</title>
 <meta name="description" content="CSS Grid의 행·열 정의, fr 단위, repeat와 minmax, auto-fit과 auto-fill의 차이, grid-template-areas로 레이아웃 그리기까지 전부 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="16장. Grid 완전 정복 — 프엔북">
 <meta property="og:description" content="CSS Grid의 행·열 정의, fr 단위, repeat와 minmax, auto-fit과 auto-fill의 차이, grid-template-areas로 레이아웃 그리기까지 전부 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -346,19 +352,19 @@ FB_QUIZ([
     q: "<code>grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))</code> 의 의미는?",
     o: [
       "항상 정확히 240px짜리 열을 만든다",
-      "열 하나의 최소 너비를 240px로 두고 들어갈 수 있는 만큼 열을 만들며, 남는 공간은 열들이 나눠 갖는다",
-      "화면 너비를 240등분한다",
-      "240개의 열을 만든다"
+      "240px 이상인 열을 들어가는 만큼 만든다",
+      "240px 열을 만들고 남는 공간은 비워 둔다",
+      "열 너비를 240px에서 1fr 사이로 무작위 배분한다"
     ],
     a: 1,
-    e: "<code>minmax(240px, 1fr)</code>가 \"최소 240px, 여유가 있으면 늘어남\"을 뜻하고, <code>auto-fit</code>이 \"공간이 허락하는 만큼 열을 만들라\"를 뜻합니다. 결과적으로 미디어 쿼리 없이 화면 폭에 따라 열 개수가 자동으로 바뀝니다."
+    e: "열 하나의 최소 너비를 240px로 두고 들어갈 수 있는 만큼 열을 만들며, 남는 공간은 열들이 나눠 갖습니다. <code>minmax(240px, 1fr)</code>가 \"최소 240px, 여유가 있으면 늘어남\"을 뜻하고, <code>auto-fit</code>이 \"공간이 허락하는 만큼 열을 만들라\"를 뜻합니다. 결과적으로 미디어 쿼리 없이 화면 폭에 따라 열 개수가 자동으로 바뀝니다."
   },
   {
     q: "아이템이 3개일 때 <code>auto-fit</code>과 <code>auto-fill</code>의 차이는?",
     o: [
       "차이가 없다",
-      "auto-fit은 빈 열을 0으로 접어 아이템들이 남은 공간까지 늘어나고, auto-fill은 빈 열을 유지해 아이템이 최소 크기에 머문다",
-      "auto-fill이 더 많은 아이템을 표시한다",
+      "fit은 빈 열을 접고, fill은 빈 열을 남긴다",
+      "fill은 빈 열을 접고, fit은 빈 열을 남긴다",
       "auto-fit은 세로 방향에만 적용된다"
     ],
     a: 1,
@@ -368,20 +374,20 @@ FB_QUIZ([
     q: "Grid 컨테이너에서 <code>grid-template-columns: 33.33% 33.33% 33.33%</code> 와 <code>gap: 16px</code>을 함께 쓰면 어떻게 되나요?",
     o: [
       "정확히 3등분된다",
-      "% 는 gap을 고려하지 않으므로 전체 너비를 넘어 넘친다. <code>1fr 1fr 1fr</code>을 써야 한다",
+      "% 가 gap을 빼지 않아 너비를 넘친다",
       "gap이 무시된다",
-      "브라우저가 자동으로 % 를 조정해 준다"
+      "마지막 열이 다음 줄로 내려간다"
     ],
     a: 1,
-    e: "<code>%</code>는 컨테이너 너비를 기준으로 계산되며 <b>gap을 빼지 않습니다</b>. 33.33%×3 = 약 100%에 gap 32px이 더해져 넘칩니다. <code>fr</code>은 <b>gap을 제외한 나머지</b>를 나누므로 정확히 맞습니다."
+    e: "<code>%</code>는 컨테이너 너비를 기준으로 계산되며 <b>gap을 빼지 않습니다</b>. 33.33%×3 = 약 100%에 gap 32px이 더해져 넘칩니다. Grid는 정해 둔 열 개수를 유지하므로 Flex의 wrap처럼 다음 줄로 내려가지도 않습니다. <code>1fr 1fr 1fr</code>을 쓰면 <code>fr</code>이 <b>gap을 제외한 나머지</b>를 나누므로 정확히 맞습니다."
   },
   {
     q: "<code>grid-template-areas</code>에서 각 줄의 칸 개수가 서로 다르면?",
     o: [
       "부족한 칸은 자동으로 빈 칸이 된다",
-      "선언 전체가 무효가 되어 areas 배치가 적용되지 않는다",
+      "선언 전체가 무효가 되어 무시된다",
       "가장 긴 줄에 맞춰 늘어난다",
-      "경고만 표시되고 정상 동작한다"
+      "짧은 줄의 마지막 영역이 늘어나 채운다"
     ],
     a: 1,
     e: "<code>grid-template-areas</code>는 <b>완전한 직사각형 격자</b>를 요구합니다. 줄마다 칸 수가 다르면 값이 무효가 되어 무시됩니다. 빈 칸이 필요하면 마침표 <code>.</code>로 명시해야 합니다."
@@ -391,7 +397,7 @@ FB_QUIZ([
     o: [
       "아이콘과 텍스트를 가로로 나란히 붙이기",
       "버튼 세 개를 한 줄에 늘어놓기",
-      "헤더·사이드바·본문·푸터로 이루어진 페이지 전체 골격 잡기",
+      "헤더·사이드바·본문·푸터 골격 잡기",
       "내비게이션 링크를 한 줄로 배치하기"
     ],
     a: 2,

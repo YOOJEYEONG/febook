@@ -1,0 +1,675 @@
+<!--desc: 디자인 시스템의 구성 요소, 원시·의미·컴포넌트 토큰 계층, 컴포넌트 API와 접근성, headless UI와 shadcn/ui, Storybook으로 문서화·테스트하기, Figma 핸드오프를 다룹니다.-->
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>디자인 시스템</b>이 무엇이고 회사들이 왜 만드는지</li>
+  <li><b>디자인 토큰</b>의 세 층(원시 → 의미 → 컴포넌트)과 CSS 변수 구현</li>
+  <li>variant·size props, 합성, <b>접근성을 내장한</b> 컴포넌트 API</li>
+  <li><b>headless UI</b>, shadcn/ui 방식, MUI 같은 패키지 라이브러리 비교</li>
+  <li><b>Storybook</b>으로 컴포넌트를 문서화하고 테스트하기</li>
+  <li>Figma로 디자이너와 협업하는 흐름</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 28분 · 사전 지식: CSS 변수와 토큰(21장), Tailwind(22장), 컴포넌트 설계(63장)</p>
+
+<h2 id="what">디자인 시스템이란</h2>
+
+<p>레고를 떠올려 보세요. 레고 블록은 크기와 결합 방식이 정해져 있습니다.
+그래서 처음 보는 사람끼리도 같은 블록으로 집도, 자동차도, 우주선도 만들 수 있고,
+어느 상자에서 꺼낸 블록이든 <b>서로 딱 맞습니다.</b></p>
+
+<p><b>디자인 시스템</b>은 제품을 만드는 레고 세트입니다.
+"버튼은 이렇게 생겼고, 간격은 4px 단위로, 주 색상은 이것"이라는 약속과
+그 약속대로 만들어진 <b>재사용 가능한 부품</b>, 그리고 그 부품을 쓰는 <b>설명서</b>까지를 묶은 것입니다.
+Google의 Material Design, IBM의 Carbon, 토스의 TDS 같은 것들이 모두 디자인 시스템입니다.</p>
+
+<h3 id="why">왜 회사들이 만드나</h3>
+
+<p>디자인 시스템이 없는 회사를 상상해 봅시다. 화면이 50개쯤 되면 이런 일이 생깁니다.</p>
+<ul>
+<li>파란색이 <code>#2563eb</code>, <code>#2463ea</code>, <code>#1d4ed8</code> 세 가지로 섞여 쓰입니다. 아무도 일부러 그런 게 아닙니다.</li>
+<li>버튼이 페이지마다 높이 36px, 38px, 40px로 조금씩 다릅니다.</li>
+<li>모달을 만들 때마다 누군가는 <kbd>Esc</kbd> 닫기를 넣고 누군가는 빠뜨립니다.</li>
+<li>브랜드 색을 바꾸자는 결정이 나면 수백 개 파일을 찾아다니며 고쳐야 합니다.</li>
+</ul>
+
+<p>디자인 시스템은 이 문제를 <b>한 번 잘 만들어서 모두가 가져다 쓰는</b> 방식으로 풉니다.
+얻는 것은 크게 세 가지입니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>얻는 것</th><th>설명</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">일관성</b></td><td>어느 화면을 열어도 같은 제품처럼 보이고 같은 방식으로 동작합니다</td></tr>
+<tr><td><b class="nw">속도</b></td><td>새 화면을 만들 때 버튼부터 다시 만들지 않습니다. 이미 있는 부품을 조립합니다</td></tr>
+<tr><td><b class="nw">품질</b></td><td>접근성·키보드 조작·다크 모드를 <b>부품 한 곳에서</b> 챙기면 모든 화면이 함께 좋아집니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="parts">구성 요소</h3>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>구성 요소</th><th>내용</th><th>레고에 비유하면</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">원칙</b></td><td>"명확함이 화려함보다 우선", "모든 기능은 키보드로" 같은 판단 기준</td><td>"블록은 아이가 삼킬 수 없는 크기로"</td></tr>
+<tr><td><b class="nw">토큰</b></td><td>색·간격·글자 크기·둥근 정도·그림자 값에 붙인 이름</td><td>블록의 표준 색상표와 돌기 간격</td></tr>
+<tr><td><b class="nw">컴포넌트</b></td><td>Button, Input, Dialog, Tabs 같은 실제 코드 부품</td><td>블록 그 자체</td></tr>
+<tr><td><b class="nw">문서</b></td><td>언제 쓰고 언제 쓰지 말지, 예시, 접근성 주의점</td><td>조립 설명서</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🤔</span> "디자인 시스템 = 컴포넌트 라이브러리"</p>
+<span class="mythline">흔한 오해입니다. 컴포넌트 라이브러리는 디자인 시스템의 <b>한 부분</b>일 뿐입니다.</span>
+<span class="mythline">원칙과 문서가 없으면 "버튼이 있긴 한데 primary를 한 화면에 몇 개 써도 되는지"를 아무도 모릅니다.
+결국 사람마다 다르게 써서 다시 일관성이 깨집니다.</span>
+<span class="mythline">또 디자인 시스템은 한 번 만들고 끝나는 <b>프로젝트가 아니라 계속 운영하는 제품</b>입니다.
+쓰는 팀의 요청을 받고, 버전을 올리고, 변경 사항을 알리는 일이 계속됩니다.</span>
+</div>
+
+<h2 id="tokens">디자인 토큰 — 세 층으로 나누기</h2>
+
+<p>21장에서 토큰을 <b>원시 토큰</b>과 <b>의미 토큰</b> 두 층으로 나눴습니다.
+디자인 시스템 규모가 되면 여기에 <b>컴포넌트 토큰</b>을 한 층 더 두는 경우가 많습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>층</th><th>질문</th><th>예</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">원시 토큰</b></td><td>"어떤 값들이 있나?"</td><td><code>--blue-600: #2563eb</code></td></tr>
+<tr><td><b class="nw">의미 토큰</b></td><td>"어디에 쓰는 값인가?"</td><td><code>--color-action: var(--blue-600)</code></td></tr>
+<tr><td><b class="nw">컴포넌트 토큰</b></td><td>"이 부품의 이 부분은?"</td><td><code>--button-primary-bg: var(--color-action)</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>화살표 방향이 중요합니다. <b>컴포넌트는 컴포넌트 토큰을, 컴포넌트 토큰은 의미 토큰을, 의미 토큰은 원시 토큰을</b> 가리킵니다.
+위층이 아래층을 건너뛰지 않습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">tokens.css — 세 층과 다크 모드</span>
+<pre><code data-lang="css">:root {
+  /* ① 원시 토큰 — 팔레트. 컴포넌트에서 직접 쓰지 않습니다 */
+  --blue-600: #2563eb;
+  --blue-400: #60a5fa;
+  --red-600:  #dc2626;
+  --gray-50:  #f9fafb;
+  --gray-900: #111827;
+  --space-2: 8px;
+  --space-4: 16px;
+  --radius-md: 8px;
+
+  /* ② 의미 토큰 — 역할 이름 */
+  --color-bg:        var(--gray-50);
+  --color-text:      var(--gray-900);
+  --color-action:    var(--blue-600);
+  --color-on-action: #ffffff;
+  --color-danger:    var(--red-600);
+
+  /* ③ 컴포넌트 토큰 — 부품별 이름 */
+  --button-primary-bg:   var(--color-action);
+  --button-primary-text: var(--color-on-action);
+  --button-radius:       var(--radius-md);
+  --button-padding-x:    var(--space-4);
+}
+
+/* 다크 모드: 의미 토큰이 가리키는 곳만 바꿉니다 */
+:root[data-theme="dark"] {
+  --color-bg:        var(--gray-900);
+  --color-text:      var(--gray-50);
+  --color-action:    var(--blue-400);
+  --color-on-action: var(--gray-900);
+}
+
+.button-primary {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
+  border-radius: var(--button-radius);
+  padding: var(--space-2) var(--button-padding-x);
+}</code></pre>
+</div>
+
+<p>다크 모드 블록에는 <b>버튼 이야기가 한 줄도 없습니다.</b> 그런데 버튼 색이 바뀝니다.
+<code>--button-primary-bg</code>가 <code>--color-action</code>을 가리키고, 그것이 다크 모드에서 다른 원시 토큰을 가리키기 때문입니다.
+반대로 "버튼만 조금 더 둥글게"라는 요청은 <code>--button-radius</code> 한 줄로 끝나고 다른 부품에는 영향이 없습니다.
+(세 가지 다크 모드 상태를 모두 처리하는 방법은 21장에서 다뤘습니다.)</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">⚖️</span> 컴포넌트 토큰은 필요할 때만</p>
+<p style="margin-bottom:0">모든 부품의 모든 속성에 컴포넌트 토큰을 만들면 토큰이 수천 개가 되어 아무도 관리하지 못합니다.
+처음에는 <b>원시·의미 두 층</b>으로 시작하고, "이 부품만 따로 조정해야 한다"는 요구가 실제로 생길 때 컴포넌트 토큰을 추가하세요.</p>
+</div>
+
+<h3 id="token-format">토큰을 JSON으로 — 표준 포맷</h3>
+
+<p>토큰은 CSS 파일 하나로 끝나지 않습니다. 같은 토큰을 iOS 앱, Android 앱, Figma에서도 써야 하기 때문입니다.
+그래서 보통 토큰을 <b>JSON 같은 중립 형식</b>으로 한 번 정의하고, 도구(예: Style Dictionary)로 각 플랫폼용 파일을 생성합니다.</p>
+
+<p>문제는 도구마다 JSON 모양이 달랐다는 것입니다. 이를 통일하려고 W3C의 <b>Design Tokens 커뮤니티 그룹(DTCG)</b>이 표준 포맷을 만들어 왔고,
+<b>2025년 10월 첫 안정 버전(2025.10)</b>을 발표했습니다(2026년 11월 공식 사이트 기준).
+커뮤니티 그룹 문서이므로 W3C 정식 "표준(Recommendation)"과는 지위가 다르지만, 여러 디자인 도구와 변환 도구가 이 포맷을 따르는 방향으로 가고 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">DTCG 포맷의 생김새 — $로 시작하는 키가 약속입니다</span>
+<pre><code data-lang="js">{
+  "color": {
+    "blue-600": { "$type": "color", "$value": "#2563eb" },
+    "action":   { "$type": "color", "$value": "{color.blue-600}" }
+  },
+  "space": {
+    "4": { "$type": "dimension", "$value": { "value": 16, "unit": "px" } }
+  }
+}</code></pre>
+</div>
+
+<p><code>{color.blue-600}</code>처럼 중괄호로 <b>다른 토큰을 참조</b>하는 것이 CSS의 <code>var()</code>와 같은 역할입니다.
+세부 문법은 버전마다 바뀔 수 있으니 실제로 쓸 때는 공식 사이트에서 최신 문서를 확인하세요.</p>
+
+<h3 id="tailwind-tokens">Tailwind와 토큰 연결</h3>
+
+<p>22장에서 본 Tailwind도 결국 토큰 체계입니다. <code>p-4</code>, <code>text-lg</code>는 정해진 척도 중 하나를 고르는 것이니까요.
+디자인 시스템과 함께 쓸 때는 <b>Tailwind의 기본 팔레트 대신 우리 회사 토큰</b>을 클래스로 쓰게 연결합니다.
+Tailwind v4에서는 CSS 파일 안 <code>@theme</code> 블록에 <code>--color-action: var(--blue-600);</code>처럼 변수를 선언하면
+<code>bg-action</code>, <code>text-action</code> 같은 클래스가 생기고, 값은 CSS 변수로 남아 다크 모드 전환도 그대로 따라옵니다.
+이렇게 하면 "Tailwind를 쓰지만 색은 디자인 시스템 것만" 쓰도록 자연스럽게 제한됩니다.</p>
+
+<div class="runner" data-lang="html" data-title="토큰으로 만드는 버튼 variant와 테마 전환" data-note="의미 토큰만 바꾸는 테마 블록에는 버튼 코드가 없는데도 모든 variant가 따라 바뀝니다. --button-radius 값을 바꿔 보고, 브랜드 테마의 --color-action을 다른 색으로 바꿔 보세요.">
+<textarea class="rn-src">
+<style>
+  :root {
+    /* ① 원시 토큰 */
+    --blue-600: #2563eb; --blue-400: #60a5fa;
+    --red-600: #dc2626;  --red-400: #f87171;
+    --violet-600: #7c3aed;
+    --gray-50: #f9fafb; --gray-200: #e5e7eb; --gray-700: #374151; --gray-900: #111827;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --radius-md: 8px;
+
+    /* ② 의미 토큰 */
+    --color-bg: #ffffff;
+    --color-text: var(--gray-900);
+    --color-border: var(--gray-200);
+    --color-action: var(--blue-600);
+    --color-on-action: #ffffff;
+    --color-danger: var(--red-600);
+    --color-focus: var(--blue-600);
+
+    /* ③ 컴포넌트 토큰 */
+    --button-radius: var(--radius-md);
+    --button-primary-bg: var(--color-action);
+    --button-primary-text: var(--color-on-action);
+    --button-danger-bg: var(--color-danger);
+  }
+  /* 테마 — 의미 토큰만 바꿉니다 */
+  [data-theme="dark"] {
+    --color-bg: var(--gray-900);
+    --color-text: var(--gray-50);
+    --color-border: var(--gray-700);
+    --color-action: var(--blue-400);
+    --color-on-action: var(--gray-900);
+    --color-danger: var(--red-400);
+    --color-focus: var(--blue-400);
+  }
+  [data-theme="brand"] {
+    --color-action: var(--violet-600);
+    --color-focus: var(--violet-600);
+  }
+
+  body { margin: 0; padding: var(--space-4); font-size: 13px;
+    background: var(--color-bg); color: var(--color-text);
+    font-family: system-ui, sans-serif; transition: background .2s, color .2s; }
+  .row { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); align-items: center; }
+
+  .btn { font: inherit; font-weight: 600; cursor: pointer;
+    border: 1px solid transparent; border-radius: var(--button-radius); }
+  .btn:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-sm { padding: var(--space-1) var(--space-2); font-size: 12px; }
+  .btn-md { padding: var(--space-2) var(--space-4); }
+  .btn-primary { background: var(--button-primary-bg); color: var(--button-primary-text); }
+  .btn-secondary { background: transparent; color: var(--color-action); border-color: var(--color-action); }
+  .btn-ghost { background: transparent; color: var(--color-text); }
+  .btn-ghost:hover { background: var(--color-border); }
+  .btn-danger { background: var(--button-danger-bg); color: var(--color-on-action); }
+
+  .themes button { font: inherit; font-size: 12px; padding: 4px 10px; cursor: pointer;
+    background: transparent; color: var(--color-text);
+    border: 1px solid var(--color-border); border-radius: 6px; }
+  .themes button[aria-pressed="true"] { border-color: var(--color-action); color: var(--color-action); }
+</style>
+
+<div class="row themes" role="group" aria-label="테마">
+  <button data-set="" aria-pressed="true">라이트</button>
+  <button data-set="dark" aria-pressed="false">다크</button>
+  <button data-set="brand" aria-pressed="false">브랜드</button>
+</div>
+
+<div class="row">
+  <button class="btn btn-md btn-primary">저장</button>
+  <button class="btn btn-md btn-secondary">미리보기</button>
+  <button class="btn btn-md btn-ghost">취소</button>
+  <button class="btn btn-md btn-danger">삭제</button>
+</div>
+<div class="row">
+  <button class="btn btn-sm btn-primary">작게</button>
+  <button class="btn btn-sm btn-secondary">작게</button>
+  <button class="btn btn-md btn-primary" disabled>비활성</button>
+</div>
+<p>Tab 키로 이동해 보세요. 포커스 링도 토큰(--color-focus)을 따릅니다.</p>
+
+<script>
+  const buttons = document.querySelectorAll(".themes button");
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () {
+      const theme = b.getAttribute("data-set");
+      if (theme) document.documentElement.setAttribute("data-theme", theme);
+      else document.documentElement.removeAttribute("data-theme");
+      buttons.forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
+      console.log("테마:", theme || "light(기본)");
+    });
+  });
+</script>
+</textarea>
+</div>
+
+<h2 id="api">컴포넌트 API 설계</h2>
+
+<p>토큰이 "재료"라면 컴포넌트는 "완제품"입니다. 디자인 시스템 컴포넌트는 수십 개 팀이 쓰기 때문에
+63장의 API 원칙이 훨씬 더 중요해집니다. 한 번 공개한 props 이름은 바꾸기가 아주 어렵습니다.</p>
+
+<h3 id="variant">variant와 size</h3>
+
+<p>디자인 시스템 컴포넌트는 보통 <b>두 축</b>으로 모양을 고릅니다.
+<code>variant</code>는 "어떤 역할인가"(primary·secondary·ghost·danger), <code>size</code>는 "얼마나 큰가"(sm·md·lg)입니다.
+두 축이 독립적이라 4 × 3 = 12가지 조합이 나오지만 props는 두 개뿐입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">Button.tsx — 타입으로 허용 값을 제한합니다(52장)</span>
+<pre><code data-lang="tsx">type ButtonProps = React.ComponentProps&lt;"button"&gt; &amp; {
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  size?: "sm" | "md" | "lg";
+};
+
+export function Button({
+  variant = "primary",
+  size = "md",
+  className,
+  type = "button",        // form 안에서 실수로 submit되지 않게
+  ...rest
+}: ButtonProps) {
+  return (
+    &lt;button
+      type={type}
+      className={cx("btn", `btn-${variant}`, `btn-${size}`, className)}
+      {...rest}           // aria-*, onClick, disabled 등은 그대로 전달
+    /&gt;
+  );
+}</code></pre>
+</div>
+
+<p><code>color="#ff0000"</code>처럼 <b>아무 값이나 받는 prop을 만들지 않는 것</b>이 핵심입니다.
+그런 prop을 열어 두는 순간 각 팀이 제각각 색을 넣고, 디자인 시스템을 만든 의미가 사라집니다.
+"정해진 선택지 중에서만 고르게" 하는 것이 디자인 시스템 API의 기본 태도입니다.</p>
+
+<h3 id="composition">합성으로 확장하기</h3>
+
+<p>요구가 생길 때마다 props를 추가하면 결국 <code>showIcon</code>, <code>iconPosition</code>, <code>iconColor</code>… 끝이 없습니다.
+63장에서 본 것처럼 <b>children과 컴파운드 컴포넌트로 구조를 쓰는 쪽에 맡기는</b> 편이 오래갑니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="tsx">// ❌ props 폭발
+&lt;Card title="요금제" subtitle="월간" showFooter footerText="변경" onFooterClick={…} /&gt;
+
+// ✅ 합성 — 무엇을 넣을지는 쓰는 쪽이 정합니다
+&lt;Card&gt;
+  &lt;Card.Header&gt;
+    &lt;Card.Title&gt;요금제&lt;/Card.Title&gt;
+  &lt;/Card.Header&gt;
+  &lt;Card.Body&gt;월 9,900원&lt;/Card.Body&gt;
+  &lt;Card.Footer&gt;
+    &lt;Button variant="secondary" size="sm"&gt;변경&lt;/Button&gt;
+  &lt;/Card.Footer&gt;
+&lt;/Card&gt;</code></pre>
+</div>
+
+<h3 id="a11y">접근성은 부품 안에 넣어 둔다</h3>
+
+<p>디자인 시스템의 가장 큰 장점 중 하나는 <b>접근성을 한 곳에서 해결</b>할 수 있다는 것입니다.
+Dialog 컴포넌트가 포커스 가두기와 <kbd>Esc</kbd> 닫기를 제대로 구현해 두면,
+그것을 쓰는 100개 화면은 아무 노력 없이 접근성을 얻습니다(포커스 관리는 77장).</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>부품</th><th>안에 넣어 둘 것</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">Button</b></td><td><code>&lt;button&gt;</code> 요소 사용, 눈에 보이는 <code>:focus-visible</code> 링, 아이콘만 있으면 <code>aria-label</code> 필수(타입으로 강제)</td></tr>
+<tr><td><b class="nw">Input</b></td><td><code>&lt;label&gt;</code> 연결, 오류 문구를 <code>aria-describedby</code>로 연결, <code>aria-invalid</code></td></tr>
+<tr><td><b class="nw">Dialog</b></td><td><code>role="dialog"</code>·<code>aria-modal</code>, 열릴 때 포커스 이동, 포커스 가두기, <kbd>Esc</kbd>로 닫기, 닫으면 원래 버튼으로 포커스 복귀</td></tr>
+<tr><td><b class="nw">Tabs</b></td><td><code>role="tablist"</code>/<code>tab</code>/<code>tabpanel</code>, 화살표 키 이동, <code>aria-selected</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">아이콘 버튼은 이름이 없으면 타입 에러가 나게</span>
+<pre><code data-lang="tsx">type IconButtonProps = React.ComponentProps&lt;"button"&gt; &amp; {
+  icon: React.ReactNode;
+  "aria-label": string;   // 선택이 아니라 필수
+};
+
+&lt;IconButton icon={&lt;TrashIcon /&gt;} /&gt;                    // ❌ 타입 에러
+&lt;IconButton icon={&lt;TrashIcon /&gt;} aria-label="삭제" /&gt;  // ✅</code></pre>
+</div>
+
+<h2 id="headless">headless UI와 "복사해서 소유하기"</h2>
+
+<p>Tabs, Combobox, Dialog의 키보드·포커스·ARIA 동작을 처음부터 정확히 구현하는 것은 생각보다 훨씬 어렵습니다.
+그래서 요즘은 이 <b>동작만</b> 라이브러리에 맡기는 방식이 널리 쓰입니다.</p>
+
+<p><b>headless UI</b>는 이름 그대로 "머리(겉모습)가 없는" 컴포넌트입니다.
+상태 관리, 키보드 조작, ARIA 속성은 다 해 주지만 <b>스타일은 하나도 없습니다.</b>
+모양은 우리 토큰으로 입히면 됩니다. 대표적으로 <b>Radix Primitives</b>, Adobe의 <b>React Aria</b>, <b>Headless UI</b>, <b>Base UI</b> 등이 있습니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">Radix Tabs — 동작은 라이브러리, 모양은 우리 클래스</span>
+<pre><code data-lang="tsx">import * as Tabs from "@radix-ui/react-tabs";
+
+&lt;Tabs.Root defaultValue="info"&gt;
+  &lt;Tabs.List className="tabs-list" aria-label="상품 정보"&gt;
+    &lt;Tabs.Trigger className="tab" value="info"&gt;상세&lt;/Tabs.Trigger&gt;
+    &lt;Tabs.Trigger className="tab" value="review"&gt;리뷰&lt;/Tabs.Trigger&gt;
+  &lt;/Tabs.List&gt;
+  &lt;Tabs.Content value="info"&gt;…&lt;/Tabs.Content&gt;
+  &lt;Tabs.Content value="review"&gt;…&lt;/Tabs.Content&gt;
+&lt;/Tabs.Root&gt;
+// 화살표 키 이동, role="tab", aria-selected는 자동으로 처리됩니다</code></pre>
+</div>
+
+<p><b>shadcn/ui</b>는 한 걸음 더 나간 방식입니다. npm 패키지로 설치하는 것이 아니라,
+명령어를 실행하면 headless 라이브러리 위에 Tailwind로 스타일을 입힌 <b>컴포넌트 소스 코드가 내 프로젝트 폴더에 복사</b>됩니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npx shadcn@latest init
+npx shadcn@latest add button dialog
+# → components/ui/button.tsx, components/ui/dialog.tsx 파일이 생깁니다
+#   이제 이 파일은 "내 코드"입니다. 마음대로 고쳐도 됩니다</code></pre>
+</div>
+
+<p>반대편에는 <b>MUI(Material UI)</b>, Ant Design, Chakra UI처럼 스타일까지 완성된 컴포넌트를 <b>npm 패키지로 받아 쓰는</b> 라이브러리가 있습니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>기준</th><th>완성형 패키지 (MUI 등)</th><th>headless (Radix·React Aria)</th><th>복사해서 소유 (shadcn/ui)</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">설치</b></td><td>npm 패키지</td><td>npm 패키지</td><td>소스 파일이 내 프로젝트로</td></tr>
+<tr><td><b class="nw">겉모습</b></td><td>완성되어 있음</td><td>없음 — 직접 입힘</td><td>기본 스타일 있음, 자유롭게 수정</td></tr>
+<tr><td><b class="nw">첫 화면 속도</b></td><td>가장 빠름</td><td>느림</td><td>빠름</td></tr>
+<tr><td><b class="nw">자기 디자인 반영</b></td><td>테마 설정 범위 안에서. 벗어나면 덮어쓰기 싸움</td><td>완전히 자유</td><td>완전히 자유</td></tr>
+<tr><td><b class="nw">업데이트</b></td><td>버전만 올리면 됨(큰 버전은 마이그레이션)</td><td>버전만 올리면 됨</td><td>복사한 코드는 자동으로 안 바뀜. 직접 비교·반영</td></tr>
+<tr><td><b class="nw">어울리는 곳</b></td><td>사내 관리 도구, 빠른 MVP</td><td>자체 디자인 시스템을 만드는 팀</td><td>Tailwind를 쓰는 제품, 소규모 팀의 출발점</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="choose">선택 기준</h3>
+<ol>
+<li><b>디자이너가 만든 고유한 디자인이 있는가?</b> 없고 빨리 만들어야 한다면 완성형 패키지가 효율적입니다.</li>
+<li><b>디자인이 기존 라이브러리와 많이 다른가?</b> 그렇다면 완성형 패키지의 스타일을 덮어쓰는 데 시간을 다 씁니다. headless나 shadcn/ui 쪽이 낫습니다.</li>
+<li><b>코드를 직접 유지보수할 여력이 있는가?</b> 복사한 코드는 버그 수정도 우리 몫입니다.</li>
+<li><b>이미 Tailwind를 쓰는가?</b> shadcn/ui는 Tailwind 전제입니다.</li>
+</ol>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🤔</span> "headless 라이브러리를 쓰면 접근성은 자동으로 완벽하다"</p>
+<span class="mythline">키보드 조작과 ARIA 속성은 맡길 수 있지만, <b>나머지는 여전히 우리 몫</b>입니다.</span>
+<span class="mythline">글자와 배경의 색 대비, 포커스 링을 지우지 않는 것, 아이콘 버튼에 이름 붙이기,
+라벨 문구를 이해하기 쉽게 쓰는 것은 라이브러리가 대신해 주지 못합니다.
+<code>outline: none</code> 한 줄로 라이브러리가 지켜 준 키보드 사용성을 망가뜨릴 수도 있습니다.</span>
+</div>
+
+<h2 id="storybook">Storybook — 부품 전시장</h2>
+
+<p>컴포넌트를 만들었는데 "로딩 중인 danger 버튼"이 어떻게 보이는지 확인하려면
+그 상태가 되는 화면을 찾아가 데이터를 맞춰야 합니다. 번거롭습니다.
+<b>Storybook</b>은 앱과 분리된 별도 화면에서 <b>컴포넌트를 상태별로 하나씩 띄워 보는 도구</b>입니다.
+레고 매장의 진열장처럼 모든 부품을 한곳에 전시합니다.
+이 책의 설명은 <b>Storybook 10</b>(2026년 11월 공식 문서 기준)을 따릅니다.</p>
+
+<h3 id="sb-install">설치</h3>
+
+<div class="codeblock">
+<span class="cb-label">기존 React 프로젝트 루트에서</span>
+<pre><code data-lang="bash">npm create storybook@latest
+# 프레임워크(React + Vite, Next.js 등)를 감지해 설정 파일과 예제를 만들어 줍니다
+
+npm run storybook
+# → 브라우저에서 http://localhost:6006 이 열립니다</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📎</span> <code>npx storybook@latest init</code>을 본 적이 있다면</p>
+<p style="margin-bottom:0">예전 글에서 많이 쓰던 명령어입니다. 현재 공식 문서는 <code>npm create storybook@latest</code>를 안내하고,
+<code>init</code> 명령은 8.3 이전 버전을 설치할 때 쓰는 방식으로 설명합니다.
+최신 Storybook은 Node.js 20 이상이 필요합니다.</p>
+</div>
+
+<h3 id="sb-stories">story 파일 작성 (CSF 3)</h3>
+
+<p>Storybook에서 <b>story</b>는 "컴포넌트의 한 가지 상태"입니다.
+<code>Button.stories.tsx</code> 같은 파일에 <b>CSF(Component Story Format)</b>라는 형식으로 씁니다.
+기본 내보내기(<code>meta</code>)는 "어떤 컴포넌트인가", 이름 있는 내보내기 하나하나가 story입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">src/components/Button.stories.tsx</span>
+<pre><code data-lang="tsx">import type { Meta, StoryObj } from "@storybook/react-vite";
+import { fn } from "storybook/test";
+import { Button } from "./Button";
+
+const meta = {
+  title: "Components/Button",     // 왼쪽 사이드바에 표시될 위치
+  component: Button,
+  tags: ["autodocs"],             // props 표가 있는 문서 페이지 자동 생성
+  args: { children: "저장", onClick: fn() },   // 모든 story 공통 기본값
+  argTypes: {
+    variant: { control: "select", options: ["primary", "secondary", "ghost", "danger"] },
+    size:    { control: "radio",  options: ["sm", "md", "lg"] },
+  },
+} satisfies Meta&lt;typeof Button&gt;;
+
+export default meta;
+type Story = StoryObj&lt;typeof meta&gt;;
+
+export const Primary: Story = {
+  args: { variant: "primary" },
+};
+
+export const Danger: Story = {
+  args: { variant: "danger", children: "삭제" },
+};
+
+export const Disabled: Story = {
+  args: { disabled: true },
+};</code></pre>
+</div>
+
+<p>첫 줄의 <code>@storybook/react-vite</code>는 프레임워크에 따라 달라집니다(Next.js라면 <code>@storybook/nextjs-vite</code> 등).
+설치 명령이 알맞은 것을 골라 주니 생성된 예제 파일의 import를 따라 쓰면 됩니다.
+<code>satisfies</code>는 "이 타입을 만족하는지 검사하되 더 구체적인 타입은 유지하라"는 TypeScript 문법입니다.</p>
+
+<h3 id="sb-args">args와 controls</h3>
+
+<p><b>args</b>는 story에 넘기는 props입니다. Storybook은 args를 보고 화면 아래 <b>Controls 패널</b>을 자동으로 만들어 줍니다.
+드롭다운으로 variant를 바꾸고, 텍스트 칸에 긴 문구를 넣어 보고, 체크박스로 disabled를 켜 보면서
+<b>코드를 고치지 않고</b> 모든 조합을 실험할 수 있습니다.
+디자이너나 기획자도 이 화면을 보며 "이 상태에서 글자가 넘치네요" 같은 의견을 줄 수 있습니다.
+<code>fn()</code>으로 만든 함수는 클릭될 때마다 Actions 패널에 기록되어 이벤트가 제대로 불리는지 볼 수 있습니다.</p>
+
+<h3 id="sb-a11y">접근성 애드온</h3>
+
+<div class="codeblock">
+<pre><code data-lang="bash">npx storybook add @storybook/addon-a11y</code></pre>
+</div>
+
+<p>설치하면 story마다 <b>Accessibility 패널</b>이 생기고, axe-core 엔진(77장)으로 색 대비 부족, 이름 없는 버튼,
+잘못된 ARIA 같은 문제를 찾아 줍니다. <code>parameters.a11y.test</code>를 <code>"todo"</code>로 두면 경고만,
+<code>"error"</code>로 두면 위반 시 테스트가 실패하게 할 수 있습니다.
+자동 검사는 문제의 일부만 잡으므로 키보드로 직접 조작해 보는 확인은 여전히 필요합니다.</p>
+
+<h3 id="visual">시각 회귀 테스트</h3>
+
+<p>75장의 테스트는 "동작"을 확인합니다. 그런데 디자인 시스템에서 자주 나는 사고는 <b>모양이 의도치 않게 바뀌는 것</b>입니다.
+토큰 하나를 고쳤더니 엉뚱한 화면의 여백이 무너지는 식입니다.</p>
+
+<p><b>시각 회귀 테스트(visual regression test)</b>는 각 story의 스크린샷을 찍어 두고,
+코드가 바뀔 때마다 새로 찍은 것과 <b>픽셀 단위로 비교</b>합니다. 차이가 나면 사람에게 보여 주고
+"의도한 변경이면 승인, 아니면 버그"를 고르게 합니다.
+Storybook에서는 Chromatic 같은 서비스가 이 역할을 하고, Playwright의 스크린샷 비교로 직접 구성하기도 합니다.
+story를 잘 만들어 두면 그것이 그대로 <b>테스트 목록</b>이 된다는 점이 Storybook의 큰 장점입니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 디자인 시스템 팀이 실제로 하는 일</p>
+<ol style="margin-bottom:0">
+<li><b>작게 시작합니다.</b> 처음부터 50개 컴포넌트를 만들지 않습니다. 가장 많이 쓰는 Button·Input·Dialog 정도와 토큰부터 시작합니다.</li>
+<li><b>"이건 어떻게 쓰나요?" 질문이 오면 문서가 부족하다는 신호</b>로 받아들이고 Storybook 문서에 예시를 추가합니다.</li>
+<li><b>props 이름을 바꾸는 것은 큰 변경</b>입니다. 옛 이름을 한동안 함께 지원하며 경고를 띄우고, 변경 내역(CHANGELOG)에 이전 방법을 적습니다.</li>
+<li><b>"한 화면에서만 쓰는 특수 버튼"은 디자인 시스템에 넣지 않습니다.</b> 세 군데 이상에서 필요해질 때 승격을 검토합니다(63장의 "세 번째 복사할 때 추출").</li>
+<li><b>PR마다 Storybook을 미리보기로 배포</b>해 디자이너가 리뷰에 참여하게 합니다(92장).</li>
+</ol>
+</div>
+
+<h2 id="figma">Figma 핸드오프 — 디자이너와 일하기</h2>
+
+<p>대부분의 회사에서 디자이너는 <b>Figma</b>로 화면을 그립니다. 디자인을 개발자에게 넘기는 과정을 <b>핸드오프(handoff)</b>라고 합니다.
+디자인 시스템이 있는 팀과 없는 팀의 핸드오프는 크게 다릅니다.</p>
+
+<ul>
+<li><b>없는 팀</b>: 개발자가 디자인을 보고 "이 파란색 코드가 뭐지?", "여백이 14px인가 16px인가?"를 하나하나 재 봅니다.</li>
+<li><b>있는 팀</b>: Figma의 버튼과 코드의 <code>&lt;Button variant="primary"&gt;</code>가 <b>같은 부품</b>이고, 색은 "color/action"처럼 <b>토큰 이름</b>으로 적혀 있습니다. 대화가 "primary 버튼, md 크기"로 끝납니다.</li>
+</ul>
+
+<h3 id="devmode">Dev Mode</h3>
+
+<p>Figma의 <b>Dev Mode</b>는 개발자를 위한 보기 방식입니다. 요소를 클릭하면 크기·간격·색과 CSS 코드 조각을 보여 주고,
+디자이너가 "개발 준비 완료"로 표시한 부분만 모아 볼 수 있습니다.
+Figma 컴포넌트를 실제 코드 컴포넌트와 연결해 두면 코드 사용 예를 함께 보여 주는 기능도 있습니다.
+다만 Dev Mode가 보여 주는 CSS를 <b>그대로 복사하면 안 됩니다.</b> <code>#2563eb</code> 같은 값이 나오면
+"이게 어떤 토큰이지?"를 찾아 <code>var(--color-action)</code>으로 쓰는 것이 올바른 방법입니다.</p>
+
+<h3 id="sync">토큰 동기화</h3>
+
+<p>Figma에는 <b>Variables</b>(변수) 기능이 있어서 색·간격 같은 값을 이름 붙여 관리하고 라이트/다크 같은 <b>모드</b>를 둘 수 있습니다.
+코드의 토큰과 같은 구조입니다. 이상적인 흐름은 다음과 같습니다.</p>
+
+<ol>
+<li>디자이너가 Figma Variables에서 토큰을 수정합니다.</li>
+<li>플러그인이나 API로 토큰을 JSON(가능하면 DTCG 포맷)으로 내보내 저장소에 PR로 올립니다.</li>
+<li>변환 도구가 JSON에서 <code>tokens.css</code>와 Tailwind 설정을 생성합니다.</li>
+<li>Storybook과 시각 회귀 테스트로 바뀐 모습을 확인하고 병합합니다.</li>
+</ol>
+
+<p>핵심은 <b>"토큰의 원본은 한 곳"</b>이라는 원칙입니다. Figma와 코드에 각자 따로 적어 두면 반드시 어긋납니다.
+작은 팀이라면 자동화 없이 "토큰 표를 한 문서에 두고 둘 다 거기서 가져온다"는 약속만으로도 효과가 큽니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">✍️</span> 직접 해 보기</p>
+<ol style="margin-bottom:0">
+<li>위 실행기에서 <code>[data-theme="brand"]</code> 블록에 <code>--color-danger</code>도 바꿔 보세요. 버튼 코드는 한 줄도 건드리지 않아야 합니다.</li>
+<li><code>.btn-lg</code> 크기를 추가해 보세요. 새 숫자를 쓰지 말고 이미 있는 <code>--space-*</code> 토큰만 조합합니다.</li>
+<li>"고대비" 테마를 하나 추가해 의미 토큰만으로 배경·글자 대비를 높여 보세요.</li>
+<li>React 프로젝트가 있다면 <code>npm create storybook@latest</code>로 설치하고, 63장의 Button에 Primary·Danger·Disabled 세 story를 만든 뒤 Controls로 variant를 바꿔 보세요.</li>
+<li>접근성 애드온을 설치하고, 일부러 글자색을 배경과 비슷하게 바꿔 경고가 뜨는지 확인해 보세요.</li>
+</ol>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li>디자인 시스템은 <b>원칙·토큰·컴포넌트·문서</b>의 묶음이다. 컴포넌트 라이브러리는 그 일부다.</li>
+<li>토큰은 <b>원시 → 의미 → 컴포넌트</b> 순으로 가리킨다. 테마는 의미 토큰만 바꾼다.</li>
+<li>W3C DTCG 토큰 포맷은 2025년 10월 첫 안정 버전(2025.10)이 나왔다.</li>
+<li>컴포넌트 API는 <b>정해진 선택지</b>(variant·size)만 열고, 확장은 합성으로, 접근성은 부품 안에 넣는다.</li>
+<li>headless는 동작만 빌리고, shadcn/ui는 코드를 복사해 소유하고, MUI 등은 완성품을 받아 쓴다.</li>
+<li>Storybook은 컴포넌트를 상태별 story로 전시한다. args·controls로 실험하고, a11y 애드온과 시각 회귀 테스트로 지킨다.</li>
+<li>Figma와 코드는 <b>같은 부품, 같은 토큰 이름</b>으로 말한다. 토큰의 원본은 한 곳에 둔다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://www.designtokens.org/" target="_blank" rel="noopener">Design Tokens Community Group</a> — 토큰 포맷 명세와 안정 버전 안내</li>
+<li><a href="https://www.w3.org/community/design-tokens/" target="_blank" rel="noopener">W3C Design Tokens Community Group</a></li>
+<li><a href="https://storybook.js.org/docs/get-started/install" target="_blank" rel="noopener">Storybook — 설치</a></li>
+<li><a href="https://storybook.js.org/docs/writing-stories" target="_blank" rel="noopener">Storybook — story 작성하기</a></li>
+<li><a href="https://storybook.js.org/docs/writing-tests/accessibility-testing" target="_blank" rel="noopener">Storybook — 접근성 테스트</a></li>
+<li><a href="https://www.radix-ui.com/primitives" target="_blank" rel="noopener">Radix Primitives</a></li>
+<li><a href="https://react-spectrum.adobe.com/react-aria/" target="_blank" rel="noopener">React Aria</a></li>
+<li><a href="https://ui.shadcn.com/docs" target="_blank" rel="noopener">shadcn/ui 문서</a></li>
+<li><a href="https://mui.com/material-ui/" target="_blank" rel="noopener">MUI — Material UI</a></li>
+<li><a href="https://tailwindcss.com/docs/theme" target="_blank" rel="noopener">Tailwind CSS — Theme variables</a></li>
+<li><a href="https://help.figma.com/hc/en-us/articles/15023124644247-Guide-to-Dev-Mode" target="_blank" rel="noopener">Figma — Guide to Dev Mode</a></li>
+</ul>
+
+<script data-quiz>
+FB_QUIZ([
+  {
+    q: "다크 모드를 추가하려 합니다. 토큰을 원시·의미·컴포넌트 세 층으로 나눴다면 어디를 바꾸는 것이 맞을까요?",
+    o: [
+      "의미 토큰이 가리키는 원시 토큰",
+      "원시 토큰의 색 값 자체",
+      "각 컴포넌트 토큰을 하나씩",
+      "컴포넌트 CSS의 색 값"
+    ],
+    a: 0,
+    e: "원시 토큰 <code>--blue-600</code>의 값을 바꾸면 '파랑 600'이 파랑이 아니게 되어 이름이 거짓말을 합니다. 의미 토큰(<code>--color-action</code>)이 가리키는 곳만 바꾸면 컴포넌트 토큰과 컴포넌트는 자동으로 따라옵니다."
+  },
+  {
+    q: "디자인 시스템 Button에 <code>color</code> prop을 열어 아무 색이나 받게 하자는 제안이 나왔습니다. 가장 큰 문제는?",
+    o: [
+      "팀마다 제각각 색을 넣어 일관성이 깨진다",
+      "문자열 prop은 렌더링 성능이 나쁘다",
+      "TypeScript에서 색 문자열을 표현할 수 없다",
+      "CSS 변수와 함께 쓸 수 없게 된다"
+    ],
+    a: 0,
+    e: "디자인 시스템 API는 정해진 선택지(<code>variant</code>, <code>size</code>)만 여는 것이 기본입니다. 임의 값을 허용하면 토큰을 거치지 않은 색이 퍼지고, 다크 모드에서도 따라 바뀌지 않습니다."
+  },
+  {
+    q: "shadcn/ui 방식과 MUI 같은 npm 패키지 라이브러리의 차이로 옳은 것은?",
+    o: [
+      "shadcn/ui는 소스가 내 프로젝트에 복사되어 직접 고치고 관리한다",
+      "shadcn/ui는 스타일이 전혀 없는 headless 라이브러리다",
+      "shadcn/ui는 버전만 올리면 기존 컴포넌트가 자동 갱신된다",
+      "MUI는 Tailwind가 없으면 설치할 수 없다"
+    ],
+    a: 0,
+    e: "shadcn/ui는 headless 라이브러리 위에 Tailwind 스타일을 입힌 코드를 내 폴더로 복사해 줍니다. 자유롭게 고칠 수 있는 대신, 원본이 업데이트되어도 복사한 코드는 자동으로 바뀌지 않아 직접 반영해야 합니다."
+  },
+  {
+    q: "Storybook에서 story의 <code>args</code>가 하는 역할은?",
+    o: [
+      "컴포넌트에 넘길 props를 정하고 Controls 패널의 기준이 된다",
+      "story를 빌드할 때 쓰는 명령줄 옵션이다",
+      "컴포넌트 내부 상태의 초기값만 정한다",
+      "스크린샷을 찍을 화면 크기를 정한다"
+    ],
+    a: 0,
+    e: "args는 story에 넘기는 props입니다. Storybook은 args와 argTypes를 보고 Controls 패널을 만들어, 코드를 고치지 않고 variant·disabled 같은 값을 바꿔 보며 조합을 확인하게 해 줍니다."
+  },
+  {
+    q: "시각 회귀 테스트가 주로 잡아내는 문제는?",
+    o: [
+      "토큰 변경 등으로 화면 모양이 의도치 않게 바뀐 것",
+      "버튼 클릭 시 함수가 호출되지 않는 것",
+      "API 응답 형식이 바뀐 것",
+      "번들 크기가 갑자기 커진 것"
+    ],
+    a: 0,
+    e: "시각 회귀 테스트는 story별 스크린샷을 기준 이미지와 픽셀 단위로 비교합니다. 동작 테스트로는 놓치는 여백 붕괴·색 변경 같은 모양 변화를 잡고, 사람이 의도한 변경인지 승인합니다."
+  }
+]);
+</script>

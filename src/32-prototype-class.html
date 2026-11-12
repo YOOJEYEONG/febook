@@ -310,19 +310,19 @@ FB_QUIZ([
     q: "<code>[1,2,3].map(...)</code> 에서 <code>map</code> 메서드는 실제로 어디에 있나요?",
     o: [
       "배열 인스턴스 자신에게 복사되어 있다",
-      "<code>Array.prototype</code>에 있으며, 프로토타입 체인을 따라 찾아진다",
-      "전역 객체에 있다",
-      "브라우저가 호출 시점에 만들어 준다"
+      "<code>Array.prototype</code>에 있다",
+      "<code>Object.prototype</code>에 있다",
+      "배열을 만들 때 생성자가 붙여 준다"
     ],
     a: 1,
-    e: "배열 인스턴스가 가진 것은 인덱스 속성뿐입니다. <code>map</code>은 <code>Array.prototype</code>에 <b>한 벌만</b> 존재하고, 속성을 찾을 때 프로토타입 체인을 따라 올라가 발견됩니다. 그래서 배열이 백만 개여도 메서드는 하나입니다."
+    e: "<code>map</code>은 <code>Array.prototype</code>에 있고 프로토타입 체인을 따라 찾아집니다. 배열 인스턴스가 가진 것은 인덱스 속성뿐입니다. <code>map</code>은 <code>Array.prototype</code>에 <b>한 벌만</b> 존재하고, 속성을 찾을 때 프로토타입 체인을 따라 올라가 발견됩니다. 그래서 배열이 백만 개여도 메서드는 하나입니다."
   },
   {
     q: "\"<code>class</code>는 문법 설탕이다\"라는 말의 의미는?",
     o: [
       "class는 실제로 동작하지 않는다",
-      "내부 동작은 기존의 프로토타입 기반 그대로이고, class는 그것을 읽기 좋게 쓰는 문법일 뿐이다",
-      "class는 컴파일 시점에 제거된다",
+      "내부는 프로토타입 그대로, 문법만 바뀌었다",
+      "class는 다른 언어처럼 진짜 클래스를 만든다",
       "class는 TypeScript에서만 쓸 수 있다"
     ],
     a: 1,
@@ -332,18 +332,18 @@ FB_QUIZ([
     q: "자식 클래스 생성자에서 <code>super()</code> 호출 전에 <code>this</code>를 사용하면?",
     o: [
       "부모 속성이 undefined가 된다",
-      "ReferenceError가 발생한다. super() 호출로 this가 초기화되기 전이기 때문",
+      "ReferenceError가 발생한다",
       "정상 동작한다",
-      "부모 생성자가 자동으로 호출된다"
+      "부모 생성자가 자동으로 먼저 호출된다"
     ],
     a: 1,
-    e: "파생 클래스에서는 <code>super()</code>가 실행되어야 <code>this</code>가 만들어집니다. 그 전에 <code>this</code>를 참조하면 <code>ReferenceError</code>가 납니다. 그래서 <code>super()</code>는 생성자의 <b>맨 앞</b>에 두는 것이 관례입니다."
+    e: "super() 호출로 this가 초기화되기 전이기 때문입니다. 파생 클래스에서는 <code>super()</code>가 실행되어야 <code>this</code>가 만들어집니다. 그 전에 <code>this</code>를 참조하면 <code>ReferenceError</code>가 납니다. 그래서 <code>super()</code>는 생성자의 <b>맨 앞</b>에 두는 것이 관례입니다."
   },
   {
     q: "클래스에서 <code>#balance</code> 처럼 <code>#</code>를 붙인 필드의 특징은?",
     o: [
       "관례상 비공개일 뿐 밖에서 접근 가능하다",
-      "문법적으로 강제되는 비공개 필드로, 클래스 밖에서는 접근 자체가 불가능하다",
+      "클래스 밖에서는 접근 자체가 불가능하다",
       "정적 속성이 된다",
       "읽기 전용이 된다"
     ],
@@ -353,10 +353,10 @@ FB_QUIZ([
   {
     q: "배열인지 확인할 때 <code>instanceof Array</code>보다 <code>Array.isArray()</code>가 권장되는 이유는?",
     o: [
-      "instanceof가 더 느려서",
-      "iframe 등 다른 실행 환경에서 만들어진 배열은 프로토타입이 달라 instanceof가 false가 될 수 있기 때문",
-      "instanceof는 배열을 지원하지 않아서",
-      "Array.isArray가 더 짧아서"
+      "instanceof는 Object까지 true라 구분 못 해서",
+      "다른 iframe의 배열은 instanceof가 false라서",
+      "instanceof는 원시값에 쓰면 오류를 던져서",
+      "instanceof는 유사 배열도 true로 판정해서"
     ],
     a: 1,
     e: "각 실행 환경(iframe, 워커 등)은 <b>자기만의 <code>Array.prototype</code></b>을 갖습니다. 다른 환경에서 넘어온 배열은 현재 환경의 <code>Array</code>를 상속하지 않아 <code>instanceof</code>가 실패합니다. <code>Array.isArray()</code>는 환경과 무관하게 정확합니다."

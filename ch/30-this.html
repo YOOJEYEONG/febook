@@ -6,6 +6,12 @@
 <title>30장. this와 실행 컨텍스트 — 프엔북</title>
 <meta name="description" content="this는 선언 위치가 아니라 호출 방식으로 결정됩니다. 네 가지 규칙과 this를 잃어버리는 상황, 화살표 함수의 렉시컬 this를 코드로 확인합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="30장. this와 실행 컨텍스트 — 프엔북">
 <meta property="og:description" content="this는 선언 위치가 아니라 호출 방식으로 결정됩니다. 네 가지 규칙과 this를 잃어버리는 상황, 화살표 함수의 렉시컬 this를 코드로 확인합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -32,7 +38,26 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 22분 · <span class="term" data-term="javascript">JavaScript</span>에서 가장 헷갈리는 주제입니다</p>
+<p class="ch-meta">읽는 데 약 26분 · 사전 지식: 27장(함수, 화살표 함수), 28장(객체와 메서드) · <span class="term" data-term="javascript">JavaScript</span>에서 가장 헷갈리는 주제입니다</p>
+
+<h2 id="analogy">this는 "나"라는 말과 같습니다</h2>
+
+<p>"<b>나</b>는 배가 고프다"라는 문장을 떠올려 보세요. 이 문장만 보고는 "나"가 누구인지 알 수 없습니다.
+철수가 말하면 철수, 영희가 말하면 영희입니다. <b>문장이 적힌 곳이 아니라 누가 말했느냐</b>로 정해집니다.</p>
+
+<p><code>this</code>도 똑같습니다. 함수 안의 <code>this</code>는 "이 함수를 부른 주인공"을 가리키는 대명사이고,
+<b>함수를 부르는 그 순간</b>에 정해집니다.</p>
+
+<div class="codeblock">
+<pre><code data-lang="js">function introduce() {
+  console.log("저는 " + this.name + "입니다");   // "나"에 해당하는 this
+}
+const chulsoo = { name: "철수", introduce };
+const younghee = { name: "영희", introduce };
+
+chulsoo.introduce();    // 저는 철수입니다 — 철수가 "말했다"
+younghee.introduce();   // 저는 영희입니다 — 같은 함수, 다른 주인공</code></pre>
+</div>
 
 <h2 id="core">핵심 문장 하나</h2>
 
@@ -56,10 +81,12 @@
 <tr><td><b class="nw">① 그냥 호출</b> <code>fn()</code></td><td><span class="term" data-term="strict-mode">엄격 모드</span>: <code>undefined</code><br>느슨한 모드: 전역 객체(<code>window</code>)</td></tr>
 <tr><td><b>② 메서드 호출</b> <code>obj.fn()</code></td><td><b><code>obj</code></b> — 점 왼쪽의 객체</td></tr>
 <tr><td><b class="nw">③ 명시 호출</b> <code>fn.call(x)</code></td><td><b><code>x</code></b> — 직접 지정한 값</td></tr>
-<tr><td><b>④ <code>new</code> 호출</b> <code>new Fn()</code></td><td><b>새로 만들어진 객체</b></td></tr>
+<tr><td><b>④ <code>new</code> 호출</b> <code>new Fn()</code> (32장)</td><td><b>새로 만들어진 객체</b></td></tr>
 </tbody>
 </table>
 </div>
+
+<p><code>new</code>는 "이 함수를 틀로 써서 새 객체를 찍어 내라"는 키워드로, 32장에서 자세히 배웁니다. 지금은 ①②③만 확실히 알면 충분합니다.</p>
 
 <div class="runner" data-lang="js" data-title="같은 함수, 다른 this" data-note="함수는 하나뿐인데 호출 방식마다 this가 달라지는 것을 확인하세요.">
 <textarea class="rn-src">
@@ -82,7 +109,7 @@ objectB.whoAmI();               // { name: "B", ... }
 console.log("--- ③ 명시 호출 ---");
 whoAmI.call({ name: "직접 지정" });
 
-console.log("--- ④ new 호출 ---");
+console.log("--- ④ new 호출 (32장) ---");
 function Person(name) {
   this.name = name;
   console.log("  new 안의 this =", this);
@@ -126,12 +153,14 @@ console.log("--- ❌ 사고 1: 변수에 담아 호출 ---");
 const fn = counter.increase;   // 함수만 꺼냄. 객체와의 연결이 끊김
 try { fn(); } catch (e) { console.error("  " + e.message); }
 
-console.log("--- ❌ 사고 2: 콜백으로 넘기기 ---");
+console.log("--- ❌ 사고 2: 콜백으로 넘기기 (forEach는 29장) ---");
 try {
   [1].forEach(counter.increase);   // forEach가 그냥 호출합니다
 } catch (e) { console.error("  " + e.message); }
 
-console.log("--- ❌ 사고 3: setTimeout ---");
+console.log("--- ❌ 사고 3: setTimeout (35장) ---");
+// setTimeout(counter.increase, 0) 처럼 넘기면 setTimeout이 "그냥 호출"합니다.
+// 그 상황을 this 없이 부르는 것으로 재현했습니다
 setTimeout(function () {
   try { counter.increase.call(undefined); }
   catch (e) { console.error("  " + e.message); }
@@ -180,11 +209,17 @@ const bad = {
   name: "객체",
   greet: () => {
     // 객체 리터럴은 스코프를 만들지 않습니다.
-    // 그래서 바깥(모듈/전역) this를 가져옵니다.
-    console.log("  this.name =", this && this.name);
+    // 그래서 bad가 아니라 "바깥" this를 가져옵니다.
+    console.log("  this가 bad인가?", this === bad);
   }
 };
-bad.greet();   // undefined
+bad.greet();   // false — 점 왼쪽에 bad가 있어도 소용없습니다
+
+// 바깥 this가 무엇인지는 코드가 놓인 곳에 따라 다릅니다.
+//   ES 모듈 최상위: undefined → this.name은 TypeError
+//   일반 script 최상위: window → window.name(보통 빈 문자열 "")
+// 이 실행기는 코드를 window의 이벤트 콜백 안에서 돌리므로 바깥 this가 window입니다.
+console.log("  바깥 this가 window인가?", this === window);
 
 console.log("--- ✅ 정답: 메서드 축약 문법 ---");
 const good = {
@@ -221,9 +256,11 @@ const timerNew = {
 };
 timerNew.start();
 
-console.log("--- 화살표 함수는 bind로도 바꿀 수 없습니다 ---");
+console.log("--- 화살표 함수의 this는 call·bind로도 바꿀 수 없습니다 ---");
 const arrow = () => this;
-console.log("  bind 시도:", arrow.call({ name: "무시됨" }));
+const forced = arrow.call({ name: "무시됨" });
+console.log("  지정한 객체가 쓰였나?", forced.name === "무시됨");   // false
+console.log("  바깥 this 그대로인가?", forced === this);            // true
 </textarea>
 </div>
 
@@ -297,6 +334,8 @@ button.addEventListener("click", (event) =&gt; {
 
 <h2 id="class">클래스에서의 this</h2>
 
+<p><code>class</code>는 같은 모양의 객체를 여러 개 찍어 내는 틀입니다(32장). 32장을 읽은 뒤 돌아와 보면 더 잘 이해됩니다.</p>
+
 <div class="codeblock">
 <pre><code data-lang="js">class Counter {
   count = 0;
@@ -331,6 +370,7 @@ dec();      // ✅ 정상 동작</code></pre>
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
+<li><code>this</code>는 "나"라는 대명사처럼 <b>누가 불렀느냐</b>로 정해진다.</li>
 <li><b><code>this</code>는 선언 위치가 아니라 호출 방식이 결정한다.</b></li>
 <li>규칙 4가지: 그냥 호출(<code>undefined</code>/전역) · 메서드 호출(점 왼쪽) · <code>call</code>/<code>bind</code>(지정) · <code>new</code>(새 객체).</li>
 <li>메서드를 <b>변수에 담거나 콜백으로 넘기면</b> 점 왼쪽이 사라져 <code>this</code>를 잃는다.</li>
@@ -366,57 +406,57 @@ FB_QUIZ([
   {
     q: "<code>const fn = obj.method; fn();</code> 을 실행하면 <code>this</code>는 무엇인가요? (엄격 모드)",
     o: [
-      "obj",
-      "undefined — 변수에 담는 순간 객체와의 연결이 끊어져 그냥 함수 호출이 되기 때문",
-      "window",
-      "fn 자신"
+      "obj — 원래 obj에 있던 함수라서",
+      "undefined",
+      "fn 자신",
+      "method를 선언한 파일의 전역"
     ],
     a: 1,
-    e: "<code>this</code>는 <b>호출 시점의 형태</b>로 결정됩니다. <code>obj.method()</code>여야 <code>obj</code>가 되고, 변수에 담아 <code>fn()</code>으로 호출하면 \"점 왼쪽\"이 없어 기본 규칙이 적용됩니다. 엄격 모드(모듈 포함)에서는 <code>undefined</code>입니다."
+    e: "<code>this</code>는 <b>호출하는 줄의 모양</b>으로 결정됩니다. <code>obj.method()</code>여야 <code>obj</code>가 되고, 변수에 담아 <code>fn()</code>으로 부르면 \"점 왼쪽\"이 없어 엄격 모드에서는 <code>undefined</code>입니다. 함수는 객체에 소속되지 않습니다."
   },
   {
-    q: "객체 리터럴의 메서드를 화살표 함수로 정의하면 <code>this</code>는?",
+    q: "객체 리터럴의 메서드를 화살표 함수로 정의하고 <code>obj.greet()</code>로 부르면 <code>this</code>는?",
     o: [
-      "그 객체를 가리킨다",
-      "객체 리터럴은 스코프를 만들지 않으므로 바깥 스코프의 this를 그대로 쓴다. 대개 undefined나 전역이 된다",
-      "항상 window다",
-      "문법 오류가 난다"
+      "점 왼쪽인 obj",
+      "obj 바깥 위치의 this",
+      "greet 함수 자신",
+      "호출할 때마다 새로 만든 빈 객체"
     ],
     a: 1,
-    e: "화살표 함수는 <b>자신의 this를 만들지 않고</b> 선언된 위치의 바깥 <code>this</code>를 씁니다. 객체 리터럴 <code>{ }</code>는 스코프가 아니므로 그 바깥(모듈 최상위면 <code>undefined</code>)을 참조합니다. 메서드에는 축약 문법을 쓰세요."
+    e: "화살표 함수는 <b>자기 this를 만들지 않고</b> 선언된 위치의 바깥 <code>this</code>를 씁니다. 객체 리터럴 <code>{ }</code>는 스코프가 아니므로 점 왼쪽에 obj가 있어도 소용없습니다. 모듈 최상위면 <code>undefined</code>, 일반 스크립트면 <code>window</code>입니다."
   },
   {
     q: "<code>bind</code>와 <code>call</code>의 차이는?",
     o: [
-      "둘은 완전히 같다",
-      "call은 즉시 실행하고, bind는 this가 고정된 새 함수를 반환한다(실행하지 않음)",
-      "bind는 인자를 배열로 받는다",
-      "call은 화살표 함수에서만 쓸 수 있다"
+      "call은 인자를 배열로, bind는 하나씩 받는다",
+      "call은 즉시 실행, bind는 새 함수를 반환",
+      "bind는 즉시 실행, call은 새 함수를 반환",
+      "bind는 화살표 함수의 this도 바꿀 수 있다"
     ],
     a: 1,
-    e: "<code>call</code>·<code>apply</code>는 <b>지금 실행</b>합니다. <code>bind</code>는 <b>새 함수를 만들어 반환</b>할 뿐 실행하지 않아서, 이벤트 핸들러처럼 나중에 호출될 함수를 준비할 때 씁니다. 인자를 배열로 받는 것은 <code>apply</code>입니다."
+    e: "<code>call</code>·<code>apply</code>는 <b>지금 실행</b>합니다. <code>bind</code>는 <b>this가 고정된 새 함수</b>를 반환할 뿐이라 나중에 호출될 핸들러를 준비할 때 씁니다. 인자를 배열로 받는 것은 <code>apply</code>이고, 화살표 함수의 this는 셋 다 바꾸지 못합니다."
   },
   {
-    q: "메서드 안의 <code>setTimeout</code> 콜백에서 <code>this</code>를 유지하려면?",
+    q: "메서드 안의 <code>setTimeout</code> 콜백에서 메서드의 <code>this</code>를 그대로 쓰려면?",
     o: [
-      "일반 function 콜백을 쓴다",
-      "화살표 함수를 콜백으로 쓴다. 화살표 함수는 바깥(메서드)의 this를 그대로 쓰기 때문",
+      "콜백을 일반 function으로 쓴다",
+      "콜백을 화살표 함수로 쓴다",
       "setTimeout 대신 setInterval을 쓴다",
-      "this를 쓰지 않으면 된다는 뜻이므로 방법이 없다"
+      "콜백 안에서 \"use strict\"를 선언한다"
     ],
     a: 1,
-    e: "일반 함수 콜백은 <code>setTimeout</code>이 호출하므로 <code>this</code>가 메서드의 것이 아닙니다. 화살표 함수는 자기 <code>this</code>가 없어 <b>선언된 위치인 메서드의 <code>this</code></b>를 그대로 쓰므로 문제가 해결됩니다. 예전에는 <code>const self = this</code> 방식을 썼습니다."
+    e: "일반 function 콜백은 <code>setTimeout</code>이 그냥 호출하므로 this가 메서드의 것이 아닙니다. 화살표 함수는 자기 this가 없어 <b>선언된 위치인 메서드의 this</b>를 그대로 씁니다. 엄격 모드는 this를 undefined로 만들 뿐 해결이 아닙니다."
   },
   {
     q: "버튼 안에 아이콘이 있고 아이콘을 클릭했습니다. 핸들러에서 <b>버튼</b>을 가리키는 것은?",
     o: [
       "<code>event.target</code>",
       "<code>event.currentTarget</code>",
-      "<code>event.source</code>",
-      "둘 다 아이콘을 가리킨다"
+      "화살표 함수 핸들러 안의 <code>this</code>",
+      "<code>event.target.firstChild</code>"
     ],
     a: 1,
-    e: "<code>target</code>은 <b>실제로 이벤트가 시작된 가장 안쪽 요소</b>(아이콘), <code>currentTarget</code>은 <b>핸들러가 등록된 요소</b>(버튼)입니다. 이벤트 위임에서 이 구분이 결정적이며, 화살표 함수 핸들러에서는 <code>this</code> 대신 <code>currentTarget</code>을 씁니다."
+    e: "<code>target</code>은 <b>실제로 이벤트가 시작된 가장 안쪽 요소</b>(아이콘), <code>currentTarget</code>은 <b>핸들러가 등록된 요소</b>(버튼)입니다. 화살표 함수 핸들러의 this는 바깥 this라 버튼이 아닙니다(38장 이벤트 위임에서 다시 다룹니다)."
   }
 ]);
 </script>

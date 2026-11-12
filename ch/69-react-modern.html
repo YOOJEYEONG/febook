@@ -6,6 +6,12 @@
 <title>69장. Suspense, 트랜지션, 서버 컴포넌트 — 프엔북</title>
 <meta name="description" content="Suspense와 에러 경계, useTransition과 useDeferredValue, React 19의 새 훅들, 그리고 서버 컴포넌트가 무엇을 바꾸는지 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="69장. Suspense, 트랜지션, 서버 컴포넌트 — 프엔북">
 <meta property="og:description" content="Suspense와 에러 경계, useTransition과 useDeferredValue, React 19의 새 훅들, 그리고 서버 컴포넌트가 무엇을 바꾸는지 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -108,7 +114,7 @@ import { ErrorBoundary } from "react-error-boundary";
 </ul>
 <p style="margin-bottom:0">즉 <b>렌더링 중에 던져진 오류</b>만 잡습니다.
 그래도 <b>"흰 화면"을 막는 최소한의 안전망</b>이므로 앱 최상단에는 반드시 두세요.
-경계가 없으면 오류 하나에 <b>앱 전체가 언마운트</b>됩니다.</p>
+경계가 없으면 오류 하나에 <b>앱 전체가 언<span class="term" data-term="mount">마운트</span></b>됩니다.</p>
 </div>
 
 <div class="box tip">
@@ -199,17 +205,27 @@ function Item({ showDetails }) {
 
 <div class="codeblock">
 <span class="cb-label">② useOptimistic — 낙관적 UI (67장)</span>
-<pre><code data-lang="jsx">function LikeButton({ post }) {
-  const [optimisticLikes, addOptimisticLike] = useOptimistic(post.likes);
+<pre><code data-lang="jsx">function LikeButton({ postId, initialLikes }) {
+  const [likes, setLikes] = useState(initialLikes);              // 진짜 상태
+  const [optimisticLikes, setOptimisticLikes] = useOptimistic(likes);
 
-  async function handleLike() {
-    addOptimisticLike(optimisticLikes + 1);   // 즉시 화면 반영
-    await likePost(post.id);                   // 실패하면 자동으로 되돌아갑니다
+  function handleLike() {
+    // 낙관적 업데이트는 반드시 Action(startTransition 또는 form action) 안에서
+    startTransition(async () =&gt; {
+      setOptimisticLikes(optimisticLikes + 1);   // 즉시 화면 반영
+      const saved = await likePost(postId);      // 서버가 돌려준 실제 숫자
+      startTransition(() =&gt; setLikes(saved));    // 진짜 상태를 갱신해야 값이 유지됩니다
+    });
   }
 
   return &lt;button onClick={handleLike}&gt;❤️ {optimisticLikes}&lt;/button&gt;;
 }</code></pre>
 </div>
+
+<div class="box warn"><p class="box-title"><span class="box-ico">⚠️</span> 낙관적 값은 "Action이 진행되는 동안"만 보입니다</p>
+<p><code>useOptimistic</code>의 값은 Action이 끝나면 버려지고, 처음 넘긴 값(<code>likes</code>)이 다시 그려집니다.
+그래서 <b>성공했을 때도 진짜 상태(<code>setLikes</code>)를 갱신</b>해야 숫자가 유지됩니다. 실패하면 <code>likes</code>가 그대로이니 자연스럽게 원래 숫자로 돌아가는 것이고요.
+<code>startTransition</code> 밖(일반 <code>onClick</code>)에서 바로 호출하면 React가 경고를 띄우고 값이 즉시 되돌아갑니다. (기준: React 19, react.dev)</p></div>
 
 <div class="codeblock">
 <span class="cb-label">③ useActionState · useFormStatus — 폼 (62장)</span>
@@ -290,8 +306,8 @@ function AddToCartButton({ id }) {
 <p class="box-title"><span class="box-ico">🚧</span> 제약과 오해</p>
 <ul style="margin-bottom:0">
 <li>서버 컴포넌트에서 <b><code>useState</code>·<code>useEffect</code>·이벤트 핸들러를 쓸 수 없습니다.</b></li>
-<li>서버 → 클라이언트로 넘기는 <span class="term" data-term="props">props</span>는 <b>직렬화 가능해야</b> 합니다. <b>함수는 넘길 수 없습니다</b>(<span class="term" data-term="server-action">Server Action</span> 제외).</li>
-<li><b>런타임 <span class="term" data-term="css">CSS</span>-in-JS와 <span class="term" data-term="conflict">충돌</span></b>합니다(22장).</li>
+<li>서버 → 클라이언트로 넘기는 <span class="term" data-term="props">props</span>는 <b><span class="term" data-term="serialization">직렬화</span> 가능해야</b> 합니다. <b>함수는 넘길 수 없습니다</b>(<span class="term" data-term="server-action">Server Action</span> 제외).</li>
+<li><b><span class="term" data-term="runtime">런타임</span> <span class="term" data-term="css">CSS</span>-in-JS와 <span class="term" data-term="conflict">충돌</span></b>합니다(22장).</li>
 <li><b>"서버 컴포넌트 = <span class="term" data-term="ssr">SSR</span>"이 아닙니다.</b> SSR은 컴포넌트를 서버에서 HTML로 만드는 것이고,
 RSC는 <b>애초에 클라이언트로 코드를 보내지 않는</b> 것입니다. 개념이 다릅니다(70장).</li>
 <li>사용하려면 <b>지원하는 프레임워크</b>가 필요합니다. React만으로는 쓸 수 없습니다.</li>
@@ -356,33 +372,33 @@ FB_QUIZ([
     o: [
       "렌더링 중 던져진 오류",
       "자식 컴포넌트의 렌더링 오류",
-      "이벤트 핸들러나 setTimeout 콜백 안에서 발생한 오류",
-      "생명주기 메서드의 오류"
+      "이벤트 핸들러나 setTimeout 콜백 안의 오류",
+      "손자 컴포넌트가 렌더링 중 던진 오류"
     ],
     a: 2,
-    e: "에러 경계는 <b>렌더링 과정에서 던져진 오류</b>만 잡습니다. 이벤트 핸들러와 비동기 콜백은 React의 렌더링 흐름 밖에서 실행되므로 <code>try/catch</code>로 직접 처리해야 합니다(33장)."
+    e: "에러 경계는 <b>렌더링 과정에서 던져진 오류</b>만 잡습니다. 자식·손자 깊이와 상관없이 렌더링 오류는 잡지만, 이벤트 핸들러와 비동기 콜백은 React의 렌더링 흐름 밖에서 실행되므로 <code>try/catch</code>로 직접 처리해야 합니다(33장)."
   },
   {
     q: "<code>useTransition</code>이 해결하는 문제는?",
     o: [
-      "네트워크 요청 횟수를 줄인다",
-      "무거운 렌더링 때문에 입력 같은 급한 반응이 막히는 문제. 급하지 않은 갱신을 중단 가능하게 표시해 우선순위를 조정한다",
-      "메모리 사용량을 줄인다",
-      "번들 크기를 줄인다"
+      "같은 요청이 여러 번 나가는 것을 막는다",
+      "무거운 렌더링이 입력 같은 급한 반응을 막는 문제",
+      "컴포넌트가 불필요하게 다시 렌더링되는 것을 막는다",
+      "느린 데이터 요청 결과를 캐시해 둔다"
     ],
     a: 1,
-    e: "React 렌더링은 기본적으로 중단할 수 없어 무거운 목록을 그리는 동안 타이핑이 막힙니다(35장). <code>startTransition</code>으로 감싼 갱신은 <b>더 급한 갱신이 오면 중단</b>되고 나중에 다시 처리됩니다. 요청 횟수 감소는 디바운스의 역할입니다."
+    e: "React 렌더링은 기본적으로 중단할 수 없어 무거운 목록을 그리는 동안 타이핑이 막힙니다(35장). <code>startTransition</code>으로 감싼 갱신은 <b>더 급한 갱신이 오면 중단</b>되고 나중에 다시 처리됩니다. 요청 횟수 감소는 디바운스, 불필요한 렌더링 방지는 memo(64장)의 역할입니다."
   },
   {
     q: "서버 컴포넌트와 SSR의 차이는?",
     o: [
-      "같은 말이다",
-      "SSR은 컴포넌트를 서버에서 HTML로 만들어 보내지만 JS도 함께 전송한다. 서버 컴포넌트는 애초에 그 코드를 클라이언트로 보내지 않는다",
-      "서버 컴포넌트가 SSR의 옛 이름이다",
-      "SSR은 React 19에서 제거되었다"
+      "둘 다 서버에서 실행되므로 브라우저로 가는 JS 양이 같다",
+      "SSR은 JS도 보내지만 서버 컴포넌트는 코드 자체를 안 보낸다",
+      "서버 컴포넌트는 HTML을 만들지 않고 JSON만 보낸다는 점만 다르다",
+      "SSR은 첫 요청에만, 서버 컴포넌트는 매 클릭마다 실행된다"
     ],
     a: 1,
-    e: "SSR된 컴포넌트도 브라우저에서 하이드레이션되어야 하므로 <b>JS 번들에 포함</b>됩니다. 서버 컴포넌트는 서버에서만 실행되고 결과만 전송되어 <b>번들 크기가 0</b>입니다. 그래서 무거운 라이브러리를 서버에서만 쓰면 사용자는 전혀 내려받지 않습니다."
+    e: "SSR된 컴포넌트도 브라우저에서 하이드레이션되어야 하므로 <b>JS 번들에 포함</b>됩니다. 서버 컴포넌트는 서버에서만 실행되고 결과만 전송되어 <b>그 컴포넌트의 코드는 번들에 들어가지 않습니다</b>. 그래서 무거운 라이브러리를 서버에서만 쓰면 사용자는 내려받지 않습니다."
   },
   {
     q: "서버 컴포넌트에서 <b>할 수 없는</b> 것은?",
@@ -390,21 +406,32 @@ FB_QUIZ([
       "데이터베이스에 직접 접근하기",
       "async/await로 데이터 가져오기",
       "useState와 onClick 이벤트 핸들러 사용하기",
-      "비밀 API 키 사용하기"
+      "환경 변수의 비밀 API 키 읽기"
     ],
     a: 2,
-    e: "서버 컴포넌트는 <b>서버에서 한 번 실행되고 끝</b>이므로 상태·이벤트·훅이 없습니다. 상호작용이 필요한 부분만 <code>\"use client\"</code>로 분리합니다. 반대로 DB 접근·비밀 키 사용은 <b>서버 컴포넌트에서만</b> 안전하게 할 수 있습니다."
+    e: "서버 컴포넌트는 <b>서버에서 실행되고 결과만 보내므로</b> 상태·이벤트·훅이 없습니다. 상호작용이 필요한 부분만 <code>\"use client\"</code>로 분리합니다. 반대로 DB 접근·비밀 키 사용은 <b>서버 컴포넌트에서만</b> 안전하게 할 수 있습니다."
+  },
+  {
+    q: "<code>useOptimistic</code>으로 좋아요 숫자를 먼저 올렸습니다. 서버 요청이 <b>성공</b>한 뒤 숫자가 유지되려면?",
+    o: [
+      "아무것도 안 해도 낙관적 값이 그대로 남는다",
+      "Action 안에서 진짜 상태(예: setLikes)도 갱신한다",
+      "낙관적 값을 localStorage에 저장해 둔다",
+      "onClick에서 startTransition 없이 바로 호출한다"
+    ],
+    a: 1,
+    e: "낙관적 값은 <b>Action이 진행되는 동안만</b> 보이고, 끝나면 <code>useOptimistic</code>에 넘긴 원래 값이 다시 그려집니다. 그래서 성공 시 진짜 상태를 갱신해야 합니다. Action 밖에서 호출하면 경고와 함께 즉시 되돌아갑니다."
   },
   {
     q: "에러 경계를 앱 최상단에 하나만 두면 생기는 문제는?",
     o: [
-      "성능이 나빠진다",
-      "작은 위젯 하나가 실패해도 앱 전체가 대체 화면으로 바뀐다. \"깨져도 나머지는 살아야 하는\" 단위로 나눠 배치해야 한다",
-      "에러가 잡히지 않는다",
-      "Suspense와 충돌한다"
+      "하위 컴포넌트의 오류를 전혀 잡지 못한다",
+      "위젯 하나만 실패해도 앱 전체가 대체 화면으로 바뀐다",
+      "경계가 하나라 오류 메시지가 콘솔에 안 남는다",
+      "Suspense의 로딩 화면이 더 이상 나오지 않는다"
     ],
     a: 1,
-    e: "댓글 목록이 실패했다고 <b>글 본문까지 사라지면</b> 나쁜 경험입니다. 경계를 여러 개 두면 실패 범위가 그 구획 안으로 제한됩니다. 다만 최상단 경계도 <b>흰 화면 방지용으로 반드시</b> 필요합니다."
+    e: "댓글 목록이 실패했다고 <b>글 본문까지 사라지면</b> 나쁜 경험입니다. \"깨져도 나머지는 살아야 하는\" 단위로 경계를 여러 개 두면 실패 범위가 그 구획 안으로 제한됩니다. 다만 최상단 경계도 <b>흰 화면 방지용으로</b> 필요합니다."
   }
 ]);
 </script>

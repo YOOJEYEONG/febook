@@ -292,12 +292,12 @@ FB_QUIZ([
     q: "카드 오른쪽 위에 배지를 붙이려고 배지에 <code>position:absolute; top:8px; right:8px</code>을 줬더니 페이지 오른쪽 맨 위로 날아갔습니다. 원인은?",
     o: [
       "top과 right를 동시에 쓸 수 없어서",
-      "부모 카드에 <code>position: relative</code>가 없어 기준이 될 조상을 찾지 못하고 문서 전체를 기준으로 삼았기 때문",
-      "z-index가 없어서",
-      "absolute는 배지에 쓸 수 없어서"
+      "부모 카드에 <code>position: relative</code>가 없어서",
+      "배지에 z-index가 없어서",
+      "배지가 inline 요소라서 위치가 무시되어서"
     ],
     a: 1,
-    e: "<code>absolute</code>는 조상을 거슬러 올라가며 <code>position</code>이 <code>static</code>이 아닌 첫 요소를 기준으로 삼습니다. 하나도 없으면 문서 전체가 기준이 됩니다. 부모 카드에 <code>position: relative</code>만 추가하면 해결됩니다."
+    e: "기준이 될 조상을 찾지 못해 문서 전체를 기준으로 삼은 것입니다. <code>absolute</code>는 조상을 거슬러 올라가며 <code>position</code>이 <code>static</code>이 아닌 첫 요소를 기준으로 삼습니다. 하나도 없으면 문서 전체가 기준이 됩니다. 부모 카드에 <code>position: relative</code>만 추가하면 해결됩니다."
   },
   {
     q: "<code>position: sticky; </code>를 줬는데 전혀 붙지 않습니다. 가장 흔한 원인은?",
@@ -305,7 +305,7 @@ FB_QUIZ([
       "z-index가 없어서",
       "<code>top</code> 등 임계값을 지정하지 않아서",
       "부모가 flex 컨테이너라서",
-      "sticky는 Chrome에서만 동작해서"
+      "sticky는 position: relative 부모가 필요해서"
     ],
     a: 1,
     e: "<code>sticky</code>는 <b>어느 지점에서 붙을지</b>를 알아야 동작합니다. <code>top</code>·<code>bottom</code>·<code>left</code>·<code>right</code> 중 하나가 반드시 필요합니다. 그다음으로 흔한 원인은 조상의 <code>overflow: hidden/auto</code>와 부모의 여유 높이 부족입니다."
@@ -314,12 +314,12 @@ FB_QUIZ([
     q: "자식 요소에 <code>z-index: 9999</code>를 줬는데도 다른 요소 뒤에 있습니다. 올바른 진단은?",
     o: [
       "z-index를 99999로 더 올려야 한다",
-      "부모가 쌓임 맥락을 만들었기 때문에 자식은 그 맥락 안에서만 경쟁한다. 부모의 z-index나 DOM 위치를 조정해야 한다",
+      "부모의 쌓임 맥락 안에서만 경쟁하는 것이다",
       "z-index는 최대 100까지만 유효하다",
       "position: absolute를 fixed로 바꾸면 해결된다"
     ],
     a: 1,
-    e: "쌓임 맥락은 <b>독립된 층 세계</b>입니다. 부모가 만든 맥락 안에 들어간 자식은 아무리 큰 z-index를 줘도 부모의 순위를 넘어설 수 없습니다. 값을 올리는 것은 해결이 아니며, 조상 중 맥락을 만든 요소를 찾아 DOM 구조나 부모의 z-index를 조정해야 합니다."
+    e: "부모가 쌓임 맥락을 만들었기 때문에 자식은 그 맥락 안에서만 경쟁합니다. 쌓임 맥락은 <b>독립된 층 세계</b>입니다. 부모가 만든 맥락 안에 들어간 자식은 아무리 큰 z-index를 줘도 부모의 순위를 넘어설 수 없습니다. 값을 올리는 것은 해결이 아니며, 조상 중 맥락을 만든 요소를 찾아 DOM 구조나 부모의 z-index를 조정해야 합니다."
   },
   {
     q: "다음 중 <b>z-index 없이도</b> 쌓임 맥락을 만드는 것은?",
@@ -335,13 +335,13 @@ FB_QUIZ([
   {
     q: "부모에 애니메이션용 <code>transform</code>을 추가했더니 자식 모달(<code>position: fixed</code>)이 화면에 고정되지 않고 스크롤을 따라 움직입니다. 이유는?",
     o: [
-      "transform이 fixed를 지원하지 않아서",
-      "transform이 적용된 조상이 fixed의 기준(컨테이닝 블록)이 되어 뷰포트 기준이 사라졌기 때문",
+      "transform과 fixed는 함께 쓸 수 없어서",
+      "transform 조상이 fixed의 기준이 되어서",
       "transform이 z-index를 초기화해서",
-      "브라우저 버그이며 해결 방법이 없다"
+      "transform이 문서 흐름을 다시 계산해서"
     ],
     a: 1,
-    e: "<code>transform</code>·<code>filter</code>·<code>perspective</code>·<code>backdrop-filter</code>·<code>will-change</code>·<code>contain</code>이 적용된 요소는 <b>자손 fixed 요소의 컨테이닝 블록</b>이 됩니다. 그래서 뷰포트가 아니라 그 요소를 기준으로 배치됩니다. 모달은 <code>body</code> 바로 아래로 옮기거나(Portal) <code>&lt;dialog&gt;</code>를 쓰는 것이 안전합니다."
+    e: "transform이 적용된 조상이 fixed의 기준(컨테이닝 블록)이 되어 뷰포트 기준이 사라졌기 때문입니다. <code>transform</code>·<code>filter</code>·<code>perspective</code>·<code>backdrop-filter</code>·<code>will-change</code>·<code>contain</code>이 적용된 요소는 <b>자손 fixed 요소의 컨테이닝 블록</b>이 됩니다. 그래서 뷰포트가 아니라 그 요소를 기준으로 배치됩니다. 모달은 <code>body</code> 바로 아래로 옮기거나(Portal) <code>&lt;dialog&gt;</code>를 쓰는 것이 안전합니다."
   }
 ]);
 </script>

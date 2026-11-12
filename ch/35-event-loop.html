@@ -4,10 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>35장. 이벤트 루프 — 프엔북</title>
-<meta name="description" content="싱글 스레드 JavaScript가 어떻게 동시에 여러 일을 하는지, 콜 스택·태스크 큐·마이크로태스크 큐의 관계와 실행 순서를 코드로 확인합니다.">
+<meta name="description" content="싱글 스레드 JavaScript가 어떻게 동시에 여러 일을 하는지, 콜 스택·태스크 큐·마이크로태스크 큐·렌더링의 관계와 실행 순서를 단계별 그림과 코드로 확인합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="35장. 이벤트 루프 — 프엔북">
-<meta property="og:description" content="싱글 스레드 JavaScript가 어떻게 동시에 여러 일을 하는지, 콜 스택·태스크 큐·마이크로태스크 큐의 관계와 실행 순서를 코드로 확인합니다.">
+<meta property="og:description" content="싱글 스레드 JavaScript가 어떻게 동시에 여러 일을 하는지, 콜 스택·태스크 큐·마이크로태스크 큐·렌더링의 관계와 실행 순서를 단계별 그림과 코드로 확인합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
 <link rel="stylesheet" href="../assets/css/book.css">
 </head>
@@ -27,12 +33,12 @@
   <li><span class="term" data-term="javascript">JavaScript</span>가 <b>한 번에 하나만</b> 실행하는데도 멈추지 않는 이유</li>
   <li>콜 <span class="term" data-term="stack">스택</span> · 태스크 큐 · <b>마이크로태스크 큐</b></li>
   <li><code>setTimeout(fn, 0)</code>이 <b>즉시 실행이 아닌</b> 이유</li>
-  <li><span class="term" data-term="promise">Promise</span>가 <code>setTimeout</code>보다 <b>항상 먼저</b> 실행되는 이유</li>
-  <li><span class="term" data-term="main-thread">메인 스레드</span>를 막으면 어떤 일이 생기는가</li>
+  <li>이미 이행된 <span class="term" data-term="promise">Promise</span>의 <span class="term" data-term="callback">콜백</span>이 대기 중인 타이머보다 먼저 실행되는 이유 — 그리고 <b>항상 그렇지는 않은</b> 경우</li>
+  <li>렌더링은 언제 일어나고, <span class="term" data-term="main-thread">메인 스레드</span>를 막으면 어떤 일이 생기는가</li>
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 20분 · 36장 비동기의 토대입니다</p>
+<p class="ch-meta">읽는 데 약 27분 · 사전 지식: 27장(함수·콜백), 33장(try/catch) · 36장 비동기의 토대입니다</p>
 
 <h2 id="single">JavaScript는 한 번에 하나만 합니다</h2>
 
@@ -44,7 +50,7 @@
 <p style="margin-bottom:0">바리스타는 <b>한 명</b>입니다(싱글 스레드).
 손님이 커피를 주문하면 바리스타는 <b>기계에 넣고 기다리지 않습니다.</b>
 버튼만 누르고 다음 손님을 받습니다(비동기 요청).
-커피가 다 되면 기계가 알려 주고(<span class="term" data-term="callback">콜백</span>), 바리스타는 <b>지금 하던 일을 끝낸 뒤</b> 커피를 내어 줍니다.<br>
+커피가 다 되면 기계가 알려 주고(콜백), 바리스타는 <b>지금 하던 일을 끝낸 뒤</b> 커피를 내어 줍니다.<br>
 <b>핵심: 기다리는 일은 바리스타가 아니라 기계(<span class="term" data-term="browser">브라우저</span>)가 합니다.</b></p>
 </div>
 
@@ -99,11 +105,14 @@ try {
 
 <p>이벤트 루프의 규칙은 단순합니다.</p>
 <ol>
-<li><b>콜 스택의 코드를 끝까지</b> 실행한다.</li>
-<li>스택이 비면 <b>마이크로태스크 큐를 전부</b> 비운다.</li>
-<li>그다음 <b>태스크 큐에서 하나만</b> 꺼내 실행한다.</li>
-<li>다시 2번으로 — 태스크 하나마다 마이크로태스크를 전부 처리한다.</li>
+<li><b>태스크 하나</b>를 실행한다. 처음엔 스크립트 전체(동기 코드)가 첫 태스크입니다. 콜 스택이 빌 때까지 끝까지 실행합니다.</li>
+<li>스택이 비면 <b>마이크로태스크 큐를 전부</b> 비운다. 그 사이 새로 추가된 것까지 전부.</li>
+<li><b>렌더링 기회</b> — 화면을 새로 그릴 때가 됐다면 <code>requestAnimationFrame</code> 콜백 → 스타일 계산 → 레이아웃 → 페인트(5장)를 합니다. 매 바퀴마다가 아니라 보통 <b>화면 주사율에 맞춰</b>(60Hz면 약 16.7ms마다) 일어납니다.</li>
+<li>다시 1번으로 — 태스크 큐에서 <b>다음 태스크 하나</b>를 꺼낸다.</li>
 </ol>
+
+<p>Promise의 <code>.then</code>(36장)은 "Promise가 끝나면 이 함수를 실행해 줘"라는 예약이고, 그 콜백은 <b>마이크로태스크</b>로 들어갑니다.
+<code>setTimeout</code>의 콜백, 클릭 같은 이벤트 핸들러는 <b>태스크</b>로 들어갑니다.</p>
 
 <div class="runner" data-lang="js" data-title="실행 순서 맞혀 보기" data-note="실행 전에 순서를 예측해 보고, 결과와 비교해 보세요.">
 <textarea class="rn-src">
@@ -127,7 +136,7 @@ queueMicrotask(() => {
 
 console.log("2. 동기 코드 끝");
 
-// 즉시 실행되는 부분이 먼저 다 끝납니다
+// 즉시 실행 함수(31장): 만들자마자 그 자리에서 호출하는 함수. 그냥 동기 코드입니다
 (function () {
   console.log("3. 즉시 실행 함수");
 })();
@@ -182,6 +191,59 @@ Promise.resolve()
 </textarea>
 </div>
 
+<p>위 예제를 한 단계씩 큐의 상태로 풀어 보면 이렇습니다. <b>[ ]</b> 안이 대기 중인 것, 왼쪽이 먼저 꺼내집니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">단계별 큐 스냅샷</span>
+<pre><code data-lang="text">단계 ①  스크립트(첫 태스크) 실행
+        출력: A
+        setTimeout 두 개 등록 → 0ms가 지나 태스크 큐로
+        Promise.resolve().then(B) → B가 마이크로태스크 큐로
+        ─────────────────────────────────────────────
+        마이크로태스크 큐: [ B ]
+        태스크 큐:        [ D타이머, F타이머 ]
+
+단계 ②  스택이 비었다 → 마이크로태스크 전부 비우기
+        B 실행 → 출력: B → 다음 .then(C)이 큐에 추가됨
+        마이크로태스크 큐: [ C ]           ← 아직 안 비었으니 계속
+        C 실행 → 출력: C
+        마이크로태스크 큐: [ ]  ✔ 다 비움
+        태스크 큐:        [ D타이머, F타이머 ]
+
+        (여기서 렌더링 기회가 있을 수 있음)
+
+단계 ③  태스크 하나 꺼내기: D타이머
+        출력: D → 안에서 Promise.then(E) → E가 마이크로태스크 큐로
+        마이크로태스크 큐: [ E ]
+        태스크 큐:        [ F타이머 ]       ← F는 아직 기다림
+
+단계 ④  스택이 비었다 → 마이크로태스크 전부 비우기
+        E 실행 → 출력: E
+        마이크로태스크 큐: [ ]
+        태스크 큐:        [ F타이머 ]
+
+단계 ⑤  태스크 하나 꺼내기: F타이머
+        출력: F
+        모든 큐가 비었다 → 새 일이 올 때까지 대기
+
+최종 출력: A → B → C → D → E → F</code></pre>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🚫</span> "Promise는 setTimeout보다 항상 먼저"가 아닙니다</p>
+<span class="mythline"><b class="no">오해</b> — Promise 콜백은 무조건 <code>setTimeout</code> 콜백보다 먼저 실행된다.</span>
+<span class="mythline"><b class="yes">사실</b> — 정확한 규칙은 <b>"이미 이행된(끝난) Promise의 콜백은, 대기 중인 다음 태스크보다 먼저 실행된다"</b>입니다.
+<code>.then</code> 콜백이 마이크로태스크 큐에 들어가는 건 <b>Promise가 끝나는 순간</b>입니다.
+<code>fetch</code>(37장)처럼 서버 응답을 기다리는 Promise는 응답이 와야 끝나므로,
+그 사이 이미 태스크 큐에 들어가 있던 타이머가 <b>먼저</b> 실행됩니다.</span>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">setTimeout(() =&gt; console.log("타이머"), 0);
+fetch("/api/data").then(() =&gt; console.log("fetch 완료"));
+// 출력: 타이머 → fetch 완료
+// 응답이 오기까지 수십~수백 ms가 걸리고, 타이머는 그 전에 이미 태스크 큐에 있습니다</code></pre>
+</div>
+</div>
+
 <h2 id="timer">setTimeout(fn, 0)의 진실</h2>
 
 <div class="box myth">
@@ -197,12 +259,31 @@ Promise.resolve()
 <div class="codeblock">
 <span class="cb-label">그럼 setTimeout(fn, 0)은 언제 쓰나</span>
 <pre><code data-lang="js">// "지금 하던 일을 다 끝내고 나서 실행해 줘"라는 뜻으로 씁니다
-element.style.display = "block";
-setTimeout(() =&gt; {
-  element.classList.add("visible");   // 브라우저가 변화를 인식한 뒤 전환 시작
-}, 0);
+// 예: 무거운 작업을 쪼개 중간중간 브라우저에 차례를 넘겨줄 때
+setTimeout(() =&gt; processNextChunk(), 0);</code></pre>
+</div>
 
-// 무거운 작업을 쪼개 화면이 멈추지 않게 하는 데도 씁니다</code></pre>
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🎬</span> "display를 켠 뒤 setTimeout(0)으로 트랜지션 시작"은 보장되지 않습니다</p>
+<p>흔히 보이는 아래 코드는 <b>될 때도 있고 안 될 때도 있습니다.</b> 타이머 태스크가 렌더링 기회보다 먼저 실행되면,
+브라우저는 <code>display: block</code>과 <code>visible</code>을 <b>한 번에</b> 반영해 시작 상태가 없으니 전환 없이 바로 끝 상태로 나타납니다.</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="js">// ❌ 불안정
+element.style.display = "block";
+setTimeout(() =&gt; element.classList.add("visible"), 0);
+
+// ✅ 방법 1: 강제 리플로우 — 레이아웃 값을 읽으면 브라우저가 그 자리에서 스타일을 계산합니다
+element.style.display = "block";
+element.offsetWidth;                  // 읽기만 해도 시작 상태가 확정됨 (5장 리플로우)
+element.classList.add("visible");
+
+// ✅ 방법 2: requestAnimationFrame 두 번 — 한 프레임이 실제로 그려진 뒤 변경
+element.style.display = "block";
+requestAnimationFrame(() =&gt; {
+  requestAnimationFrame(() =&gt; element.classList.add("visible"));
+});</code></pre>
+</div>
+<p style="margin-bottom:0">rAF 한 번은 "<b>이번</b> 프레임을 그리기 직전"이라 아직 시작 상태가 그려지기 전입니다. 그래서 두 번 감쌉니다.</p>
 </div>
 
 <h2 id="blocking">메인 스레드를 막으면</h2>
@@ -237,9 +318,11 @@ console.log("합계:", sum);
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 무거운 작업 다루기</p>
 <ol style="margin-bottom:0">
-<li><b>작게 쪼개기</b> — 큰 반복을 나눠 중간중간 브라우저에 제어권을 돌려줍니다.</li>
+<li><b>작게 쪼개기</b> — 큰 반복을 나눠 중간중간 브라우저에 제어권을 돌려줍니다. 쪼갠 사이에 클릭 처리와 렌더링이 끼어들 수 있습니다.</li>
+<li><b><code>scheduler.yield()</code></b> — 쪼개기를 위한 전용 도구입니다. <code>await scheduler.yield()</code>(36장)를 만나면 잠시 차례를 양보했다가, <code>setTimeout</code>과 달리 <b>대기 중인 다른 작업보다 앞쪽으로</b> 돌아와 이어서 실행됩니다.
+<span class="term" data-term="mdn">MDN</span> 기준(2026년 11월) Chrome·Edge 129+, Firefox 142+에서 지원하고 <b>Safari는 미지원</b>이라, <code>if ("scheduler" in window &amp;&amp; "yield" in scheduler)</code>로 확인하고 없으면 <code>setTimeout</code>으로 대신합니다.</li>
 <li><b>Web Worker</b>(40장) — <b>진짜 별도 스레드</b>에서 계산합니다. 메인 스레드를 전혀 막지 않습니다.</li>
-<li><b><code>requestIdleCallback</code></b> — 브라우저가 한가할 때 실행합니다. (Safari 미지원이라 대비 필요)</li>
+<li><b><code>requestIdleCallback</code></b> — 브라우저가 한가할 때 실행합니다. MDN 기준(2026년 11월) Chrome 47+, Firefox 55+는 지원하지만 <b>Safari는 정식 버전에서 지원하지 않습니다</b>(Technology Preview에서 설정을 켜야만 동작). 기능 확인 후 <code>setTimeout</code>으로 대비해야 합니다.</li>
 <li><b>알고리즘을 개선</b> — 대개 가장 효과가 큽니다. 3중 반복문을 하나로 줄이는 게 낫습니다.</li>
 </ol>
 </div>
@@ -256,20 +339,20 @@ function animate() {
 }
 requestAnimationFrame(animate);</code></pre>
 </div>
-<p><code>requestAnimationFrame</code>은 <b>화면 주사율에 맞춰</b>(보통 초당 60회) 호출되고,
+<p><code>requestAnimationFrame</code>은 <b>화면 주사율만큼</b>(60Hz 화면이면 초당 60회, 120Hz면 120회) 호출되므로, 고정된 16ms를 가정하지 말고 콜백이 받는 시각 인자로 경과 시간을 계산해야 합니다. 또한
 <b>탭이 백그라운드로 가면 자동으로 멈춰</b> 배터리를 아낍니다.
-5장에서 본 "한 프레임 16.7ms" 예산이 여기서 의미를 갖습니다.</p>
+5장에서 본 "한 프레임 16.7ms"(60Hz 기준) 예산이 여기서 의미를 갖습니다.</p>
 
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
 <li>JavaScript는 <b>싱글 스레드</b>다. 기다리는 일은 <b>브라우저가 대신</b> 한다.</li>
-<li>실행 순서: <b>동기 코드 전부 → 마이크로태스크 전부 → 태스크 하나</b>, 반복.</li>
-<li><b>Promise는 마이크로태스크</b>, <code>setTimeout</code>·이벤트는 <b>태스크</b>. Promise가 항상 먼저다.</li>
+<li>실행 순서: <b>태스크 하나(처음엔 동기 코드 전부) → 마이크로태스크 전부 → (때가 되면) 렌더링</b>, 반복.</li>
+<li><b>Promise 콜백은 마이크로태스크</b>, <code>setTimeout</code>·이벤트는 <b>태스크</b>. <b>이미 이행된</b> Promise의 콜백은 대기 중인 다음 태스크보다 먼저다. 나중에 끝나는 Promise(<span class="term" data-term="fetch">fetch</span> 등)는 그 전에 큐에 있던 타이머보다 늦다.</li>
 <li><code>setTimeout(fn, 0)</code>은 즉시 실행이 아니라 <b>"지금 일을 다 끝낸 뒤"</b>라는 뜻이다.</li>
 <li>마이크로태스크는 <b>전부</b> 비우고, 태스크는 <b>하나씩</b> 처리한다.</li>
 <li><b>메인 스레드를 막으면</b> 클릭·애니메이션·렌더링이 전부 멈춘다.</li>
-<li>애니메이션에는 <b><code>requestAnimationFrame</code></b>.</li>
+<li>애니메이션에는 <b><code>requestAnimationFrame</code></b>. 렌더링 직전, 화면 주사율만큼 호출된다.</li>
 </ul>
 </div>
 
@@ -304,51 +387,73 @@ FB_QUIZ([
     q: "<code>console.log(1); setTimeout(() =&gt; console.log(2), 0); Promise.resolve().then(() =&gt; console.log(3)); console.log(4);</code> 의 출력 순서는?",
     o: ["1 2 3 4", "1 4 3 2", "1 4 2 3", "1 3 4 2"],
     a: 1,
-    e: "동기 코드가 먼저 전부 실행되어 <b>1, 4</b>. 스택이 비면 <b>마이크로태스크</b>인 Promise 콜백 <b>3</b>. 마지막으로 <b>태스크</b>인 setTimeout 콜백 <b>2</b>입니다. 마이크로태스크가 태스크보다 항상 먼저입니다."
+    e: "동기 코드가 먼저 전부 실행되어 <b>1, 4</b>. 스택이 비면 <b>마이크로태스크</b>인 이미 이행된 Promise의 콜백 <b>3</b>. 그다음 <b>태스크</b>인 타이머 콜백 <b>2</b>입니다."
+  },
+  {
+    q: "<code>setTimeout(() =&gt; log(\"타이머\"), 0); fetch(url).then(() =&gt; log(\"응답\"));</code> 의 일반적인 출력 순서는?",
+    o: [
+      "응답 → 타이머 (Promise는 항상 먼저라서)",
+      "타이머 → 응답",
+      "둘이 동시에 출력된다",
+      "fetch가 끝날 때까지 타이머가 멈춘다"
+    ],
+    a: 1,
+    e: "<code>.then</code> 콜백은 Promise가 <b>끝나는 순간</b> 마이크로태스크 큐에 들어갑니다. fetch는 서버 응답이 와야 끝나므로, 그 전에 이미 태스크 큐에 들어간 타이머가 먼저 실행됩니다. \"Promise가 항상 먼저\"는 이미 이행된 Promise에만 맞는 말입니다."
   },
   {
     q: "<code>setTimeout(fn, 0)</code>의 정확한 의미는?",
     o: [
-      "즉시 실행한다",
-      "0ms 뒤 콜백을 태스크 큐에 넣는다는 뜻이며, 실제 실행은 콜 스택이 비고 마이크로태스크가 모두 처리된 뒤다",
-      "다음 줄보다 먼저 실행된다",
-      "브라우저가 무시한다"
+      "다음 줄보다 먼저 즉시 실행한다",
+      "0ms 뒤 태스크 큐에 넣고, 차례가 오면 실행한다",
+      "현재 마이크로태스크들보다 먼저 실행한다",
+      "다음 화면이 그려진 직후에 실행한다"
     ],
     a: 1,
-    e: "타이머의 시간은 <b>큐에 넣는 시점</b>을 정할 뿐입니다. 앞에 무거운 동기 코드가 있으면 몇 초 뒤에 실행될 수도 있습니다. 또 타이머가 5단계 이상 중첩되면 명세상 <b>최소 4ms</b>로 제한됩니다."
+    e: "타이머의 시간은 <b>큐에 넣는 시점</b>을 정할 뿐입니다. 콜 스택이 비고 마이크로태스크가 다 처리된 뒤에야 실행되며, 앞에 무거운 코드가 있으면 몇 초 뒤가 될 수도 있습니다. 렌더링 전후 어느 쪽일지도 보장되지 않습니다."
   },
   {
     q: "마이크로태스크 큐와 태스크 큐 처리 방식의 차이는?",
     o: [
-      "둘 다 하나씩 처리한다",
-      "마이크로태스크는 큐가 빌 때까지 전부 처리하고, 태스크는 한 번에 하나만 처리한다",
-      "태스크가 항상 먼저다",
-      "차이가 없다"
+      "둘 다 한 바퀴에 하나씩 처리한다",
+      "마이크로태스크는 전부, 태스크는 하나씩 처리한다",
+      "태스크는 전부, 마이크로태스크는 하나씩 처리한다",
+      "먼저 등록된 쪽 큐부터 전부 처리한다"
     ],
     a: 1,
-    e: "이 비대칭이 핵심입니다. 태스크 하나를 처리할 때마다 <b>마이크로태스크 큐를 전부 비웁니다</b>. 그래서 마이크로태스크를 무한히 만들면 태스크와 렌더링이 영원히 차례를 얻지 못해 브라우저가 멈춥니다."
+    e: "태스크 하나를 처리할 때마다 <b>마이크로태스크 큐를 새로 추가된 것까지 전부 비웁니다</b>. 그래서 마이크로태스크를 무한히 만들면 태스크와 렌더링이 영원히 차례를 얻지 못해 브라우저가 멈춥니다."
   },
   {
     q: "3천만 번 반복하는 동기 코드를 실행하는 동안 페이지에서 벌어지는 일은?",
     o: [
-      "아무 영향 없다",
-      "클릭·스크롤·애니메이션·화면 다시 그리기가 모두 멈춘다. 콜 스택이 비어야 이벤트 루프가 다음 일을 할 수 있기 때문",
-      "브라우저가 자동으로 다른 스레드로 옮긴다",
-      "다른 탭도 함께 멈춘다"
+      "화면은 계속 그려지고 클릭만 늦게 처리된다",
+      "클릭·스크롤·화면 다시 그리기가 모두 멈춘다",
+      "브라우저가 자동으로 Web Worker로 옮겨 실행한다",
+      "애니메이션은 rAF로 돌기 때문에 영향이 없다"
     ],
     a: 1,
-    e: "싱글 스레드이므로 콜 스택이 차 있는 동안 <b>이벤트 루프는 아무것도 꺼낼 수 없습니다</b>. 렌더링도 이벤트 루프의 일부라 화면조차 갱신되지 않습니다. 해결책은 작업 쪼개기나 Web Worker입니다."
+    e: "콜 스택이 차 있는 동안 이벤트 루프는 다음 단계로 갈 수 없습니다. 렌더링 기회와 rAF 콜백도 그 루프의 일부라 화면조차 갱신되지 않습니다. Worker로 옮기는 것은 개발자가 직접 해야 합니다."
   },
   {
-    q: "부드러운 애니메이션에 <code>setInterval(fn, 16)</code>보다 <code>requestAnimationFrame</code>이 나은 이유는?",
+    q: "<code>el.style.display = \"block\"</code> 직후 트랜지션을 확실히 시작시키는 방법은?",
     o: [
-      "코드가 짧아서",
-      "브라우저가 다음 화면을 그리기 직전에 호출해 주사율과 동기화되고, 백그라운드 탭에서는 자동으로 멈춰 자원을 아끼기 때문",
-      "setInterval은 애니메이션에 쓸 수 없어서",
-      "requestAnimationFrame이 더 자주 호출되기 때문"
+      "setTimeout(() =&gt; el.classList.add(\"visible\"), 0)",
+      "el.offsetWidth를 읽은 뒤 클래스를 추가한다",
+      "Promise.resolve().then으로 클래스를 추가한다",
+      "requestAnimationFrame 한 번 안에서 추가한다"
     ],
     a: 1,
-    e: "<code>setInterval</code>은 이벤트 루프 상황에 따라 호출 간격이 밀려 화면 갱신과 어긋납니다. <code>requestAnimationFrame</code>은 <b>렌더링 직전</b>에 호출되어 프레임과 정확히 맞고, 보이지 않는 탭에서는 호출이 중단되어 배터리를 절약합니다."
+    e: "레이아웃 값을 읽으면 <b>강제 리플로우</b>로 시작 상태가 확정되어 트랜지션이 일어납니다. setTimeout(0)과 마이크로태스크는 렌더링보다 먼저 실행될 수 있고, rAF 한 번은 이번 프레임을 그리기 직전이라 부족합니다. rAF를 <b>두 번</b> 감싸는 방법도 있습니다."
+  },
+  {
+    q: "<code>requestAnimationFrame</code>이 120Hz 모니터에서 호출되는 빈도는?",
+    o: [
+      "항상 초당 60회",
+      "대략 초당 120회",
+      "setInterval처럼 16ms마다 고정",
+      "탭이 백그라운드일 때 더 자주"
+    ],
+    a: 1,
+    e: "rAF는 <b>화면 주사율만큼</b> 호출됩니다. 60Hz면 60회, 120Hz면 120회입니다. 그래서 한 번에 고정 거리만큼 움직이지 말고 경과 시간으로 계산해야 하며, 백그라운드 탭에서는 호출이 멈춥니다."
   }
 ]);
 </script>

@@ -7,8 +7,9 @@
    - data-lang: js | ts | html | css   (html/css는 미리보기, js/ts는 콘솔)
    - data-mode: preview | console      (자동 판정을 덮어쓸 때만)
    - data-autorun="off": 화면에 들어와도 자동 실행하지 않음
-   보안: iframe sandbox 는 allow-scripts 만 준다. allow-same-origin 을 주지 않으므로
-   예제 코드는 부모 문서(DOM, localStorage, 쿠키)에 접근할 수 없다.
+   보안: iframe sandbox 는 allow-scripts · allow-forms · allow-modals 만 준다.
+   allow-same-origin 을 주지 않으므로 예제 코드는 부모 문서(DOM, localStorage, 쿠키)에
+   접근할 수 없다. allow-forms 가 없으면 폼 검증·submit 이벤트 자체가 동작하지 않는다.
    ============================================================ */
 (function () {
   "use strict";
@@ -18,8 +19,16 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   };
-  var seq = 0;
-  var frames = {};   /* runId -> console 출력 엘리먼트 */
+  var SANDBOX = "allow-scripts allow-forms allow-modals";
+  var frames = {};   /* runId -> { out: 콘솔 엘리먼트, win: 해당 iframe 의 window } */
+  function newRunId() {
+    /* 추측하기 어려운 id: 한 예제가 다른 실행기 콘솔에 끼어들지 못하게 */
+    var r = "";
+    try {
+      var a = new Uint32Array(2); crypto.getRandomValues(a); r = a[0].toString(36) + a[1].toString(36);
+    } catch (e) { r = Math.random().toString(36).slice(2) + Date.now().toString(36); }
+    return "r" + r;
+  }
 
   /* ---------- iframe 안에서 실행될 콘솔 브리지 ---------- */
   function bridge(runId) {
@@ -66,7 +75,11 @@
     if (lang === "html" || lang === "css") {
       /* 사용자 코드가 전체 문서를 담고 있으면 그대로, 조각이면 감싼다 */
       var isDoc = /<html[\s>]/i.test(code) || /<!doctype/i.test(code);
-      if (isDoc) return code.replace(/<head[^>]*>/i, function (m) { return m + bridge(runId); });
+      if (isDoc) {
+        if (/<head[\s>]/i.test(code)) return code.replace(/<head[^>]*>/i, function (m) { return m + bridge(runId); });
+        if (/<html[^>]*>/i.test(code)) return code.replace(/<html[^>]*>/i, function (m) { return m + "<head>" + bridge(runId) + "</head>"; });
+        return code.replace(/<!doctype[^>]*>/i, function (m) { return m + bridge(runId); });
+      }
       return base + reset + bridge(runId) + code;
     }
     return base + reset + bridge(runId) +
@@ -80,8 +93,9 @@
   window.addEventListener("message", function (e) {
     var d = e.data;
     if (!d || typeof d !== "object" || !d.__fbrun) return;
-    var out = frames[d.__fbrun];
-    if (!out) return;
+    var entry = frames[d.__fbrun];
+    if (!entry || e.source !== entry.win()) return;
+    var out = entry.out;
     out.hidden = false;
     var ph = out.querySelector(".placeholder");
     if (ph) ph.remove();
@@ -126,9 +140,9 @@
         '<div class="rn-out">' +
           '<div class="rn-out-label">' + (mode === "preview" ? "실행 결과" : "콘솔 출력") + '</div>' +
           (mode === "preview"
-            ? '<iframe class="rn-frame" title="실행 결과" sandbox="allow-scripts"></iframe>'
+            ? '<iframe class="rn-frame" title="실행 결과" sandbox="' + SANDBOX + '"></iframe>'
             : '') +
-          '<div class="rn-console"' + (mode === "preview" ? ' hidden' : "") + '><span class="placeholder">실행 버튼을 누르면 결과가 여기에 표시됩니다.</span></div>' +
+          '<div class="rn-console" role="log" aria-live="polite" aria-label="콘솔 출력"' + (mode === "preview" ? ' hidden' : "") + '><span class="placeholder">실행 버튼을 누르면 결과가 여기에 표시됩니다.</span></div>' +
         '</div>' +
       '</div>' +
       (note ? '<div class="rn-note">' + esc(note) + '</div>' : "");
@@ -148,13 +162,16 @@
     }
 
     function run() {
-      var runId = "r" + (++seq);
+      var runId = newRunId();
+      Object.keys(frames).forEach(function (k) { if (frames[k].out === consoleEl) delete frames[k]; });
       consoleEl.innerHTML = '<span class="placeholder">(출력 없음)</span>';
       /* 미리보기 모드에서는 console.log 나 에러가 실제로 발생했을 때만 패널을 연다 */
       consoleEl.hidden = (mode === "preview");
-      frames[runId] = consoleEl;
+      var curFrame = null;
+      frames[runId] = { out: consoleEl, win: function () { return curFrame && curFrame.contentWindow; } };
       var doc = srcdocFor(runId, lang, ta.value);
       if (mode === "preview") {
+        curFrame = frame;
         frame.srcdoc = doc;
       } else {
         /* 콘솔 모드에도 iframe이 필요하다. 화면에는 보이지 않게 둔다. */
@@ -162,11 +179,12 @@
         if (f) f.remove();
         f = document.createElement("iframe");
         f.className = "rn-hidden-frame";
-        f.setAttribute("sandbox", "allow-scripts");
+        f.setAttribute("sandbox", SANDBOX);
         f.setAttribute("title", "코드 실행 영역");
         f.setAttribute("aria-hidden", "true");
         f.style.cssText = "position:absolute;width:0;height:0;border:0;visibility:hidden";
         f.srcdoc = doc;
+        curFrame = f;
         host.appendChild(f);
       }
       /* 사용자가 실제로 고친 경우에만 저장한다 */
@@ -183,7 +201,7 @@
     resetBtn.addEventListener("click", function () {
       ta.value = original;
       autosize(ta);
-      if (FB && FB.store && FB.store.ok) { try { localStorage.removeItem(storeKey); } catch (e) {} }
+      if (FB && FB.store) { try { localStorage.removeItem(storeKey); } catch (e) {} }
       run();
     });
     ta.addEventListener("input", function () { autosize(ta); });
@@ -199,8 +217,13 @@
       }
     });
 
-    /* 화면에 들어오면 한 번 자동 실행 */
-    if (host.getAttribute("data-autorun") !== "off" && "IntersectionObserver" in window) {
+    /* 화면에 들어오면 한 번 자동 실행.
+       단 독자가 고친 편집본이 복원된 경우는 자동 실행하지 않는다
+       (무한 루프 같은 코드가 저장돼 있으면 챕터를 열 때마다 탭이 멈추기 때문). */
+    if (startCode !== original) {
+      consoleEl.innerHTML = '<span class="placeholder">이전에 고친 코드를 불러왔습니다. ▶ 실행을 눌러 확인하거나 되돌리기를 누르세요.</span>';
+      consoleEl.hidden = false;
+    } else if (host.getAttribute("data-autorun") !== "off" && "IntersectionObserver" in window) {
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
           if (en.isIntersecting) { io.disconnect(); run(); }

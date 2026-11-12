@@ -4,14 +4,15 @@
 <h2>이 챕터에서 배우는 것</h2>
 <ul>
   <li>Git이 무엇을 해결하는지, Git과 GitHub의 차이</li>
+  <li><b>실습</b> — Git 설치부터 GitHub 가입, 첫 저장소 push(인증 포함)까지</li>
   <li><b>작업 폴더 · 스테이징 · 저장소</b> 3단계 모델</li>
   <li>브랜치와 머지, <b>충돌 해결</b></li>
   <li>실무 협업 흐름 — 브랜치 → 커밋 → PR → 리뷰 → 머지</li>
-  <li><b>실수를 되돌리는 법</b></li>
+  <li><code>HEAD</code>·<code>HEAD~1</code>·커밋 해시를 읽고 <b>실수를 되돌리는 법</b></li>
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 26분 · 협업의 기본기입니다</p>
+<p class="ch-meta">읽는 데 약 40분 · 협업의 기본기입니다 · 실습이 필요한 챕터입니다</p>
 
 <h2 id="why">Git이 푸는 문제</h2>
 
@@ -94,6 +95,9 @@ git diff                       # 아직 스테이징 안 한 변경
 git diff --staged              # 스테이징된 변경</code></pre>
 </div>
 
+<p>처음이라면 이 명령들을 읽기만 하고, 실제로 따라 하는 것은 아래 <a href="#first-push">첫 저장소를 GitHub에 올리기</a> 실습에서 하세요.
+Git 설치와 GitHub 계정이 먼저 필요합니다.</p>
+
 <div class="box warn">
 <p class="box-title"><span class="box-ico">👀</span> <code>git status</code>를 습관처럼 치세요</p>
 <p style="margin-bottom:0">Git 초보자의 문제 대부분은 <b>"지금 어떤 상태인지 모르는 것"</b>에서 옵니다.
@@ -134,6 +138,139 @@ chore: 의존성 업데이트</code></pre>
 <li><b>하나의 커밋은 하나의 논리적 변경.</b> 나중에 되돌릴 때 결정적입니다.</li>
 <li>메시지는 <b>"이 커밋을 적용하면 ~하게 된다"</b>는 형태로 쓰면 자연스럽습니다.</li>
 </ul>
+</div>
+
+<h2 id="first-push">실습 — 첫 저장소를 GitHub에 올리기</h2>
+
+<p>6장에서 만든 <code>my-first-site</code> 폴더를 GitHub에 올려 봅시다. 처음부터 끝까지 한 번 해 보면 위의 명령들이 무엇을 하는지 손에 잡힙니다.
+명령은 VS Code의 터미널(<code>Ctrl</code>+<code>`</code>, 44장)에 입력합니다.</p>
+
+<h3 id="install-git">1단계 — Git 설치</h3>
+<ul>
+<li><b>Windows</b> — <a href="https://git-scm.com/downloads/win" target="_blank" rel="noopener">git-scm.com</a>에서 <b>Git for Windows</b>를 받아 설치합니다.
+(또는 PowerShell에서 <code>winget install --id Git.Git -e --source winget</code>.)
+설치 중 질문은 대부분 기본값으로 두되 두 군데만 바꾸면 좋습니다.
+"Choosing the default editor used by Git"에서 <b>Use Visual Studio Code as Git's default editor</b>,
+"Adjusting the name of the initial branch"에서 <b>Override the default branch name</b>을 고르고 <code>main</code>.
+Git Bash(44장)와 로그인 도우미(Git Credential Manager)가 함께 설치됩니다.</li>
+<li><b>macOS</b> — 터미널에 <code>git --version</code>을 입력합니다. Git이 없으면 <b>"명령어 라인 개발자 도구를 설치하겠습니까?"</b> 창이 뜨는데,
+<b>설치</b>를 누르면 Apple의 <b>Xcode Command Line Tools</b>와 함께 Git이 설치됩니다. (창이 안 뜨면 <code>xcode-select --install</code>.)
+몇 분 걸립니다.</li>
+</ul>
+<p><b>✅ 체크포인트</b> — 터미널(Windows는 설치 후 새로 연 터미널)에서 <code>git --version</code>을 입력하면 <code>git version 2.xx.x</code>처럼 버전이 나옵니다.</p>
+
+<h3 id="git-config">2단계 — 최초 1회 설정</h3>
+<div class="codeblock">
+<pre><code data-lang="bash">git config --global user.name "홍길동"
+git config --global user.email "hong@example.com"   # GitHub 가입 메일과 같게
+git config --global init.defaultBranch main          # 새 저장소의 기본 브랜치 이름
+git config --global core.editor "code --wait"        # 커밋 메시지를 VS Code로 쓰기
+
+git config --global --list                           # 확인</code></pre>
+</div>
+<p><code>core.editor</code> 설정은 터미널에서 <code>code</code> 명령이 동작할 때만 의미가 있습니다.
+Windows는 VS Code 설치 때 자동으로 됩니다. macOS는 VS Code에서 <code>Cmd</code>+<code>Shift</code>+<code>P</code> →
+<b>Shell Command: Install 'code' command in PATH</b>를 한 번 실행하세요.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🪤</span> <code>-m</code> 없이 <code>git commit</code>을 쳤더니 이상한 화면이 떴다면</p>
+<p>메시지를 쓰라고 <b>편집기</b>가 열린 것입니다. 편집기를 따로 설정하지 않았다면 대개 <b>Vim</b>이 열리는데,
+글자가 입력되지 않고 빠져나가는 방법도 보이지 않아 많은 사람이 당황합니다.</p>
+<ol style="margin-bottom:.6em">
+<li><code>i</code>를 눌러 입력 모드로 들어가 메시지를 씁니다.</li>
+<li><code>Esc</code>를 누른 뒤 <code>:wq</code>를 치고 Enter — 저장하고 종료(커밋 완료).</li>
+<li>커밋을 취소하고 나가고 싶다면 <code>Esc</code> 후 <code>:q!</code> Enter.</li>
+</ol>
+<p style="margin-bottom:0">위의 <code>core.editor "code --wait"</code>를 설정하면 VS Code 탭이 열리고, 메시지를 쓰고 저장한 뒤 <b>탭을 닫으면</b> 커밋이 완료됩니다.
+충돌 해결 뒤의 <code>git commit</code>(아래)처럼 <code>-m</code> 없이 쓰는 경우가 실무에서 꽤 있습니다.</p>
+</div>
+
+<h3 id="github-signup">3단계 — GitHub 가입과 빈 저장소 만들기</h3>
+<ol>
+<li><a href="https://github.com/signup" target="_blank" rel="noopener">github.com/signup</a>에서 메일·비밀번호·사용자 이름(Username)을 정하고 가입합니다.
+메일로 온 확인 코드를 입력하면 끝입니다. <b>사용자 이름은 저장소 주소에 들어가므로</b> 공개되어도 괜찮은 이름으로 짓습니다.</li>
+<li>오른쪽 위 <b>+</b> → <b>New repository</b>를 누릅니다.</li>
+<li>Repository name에 <code>my-first-site</code>를 적고, Public 또는 Private을 고릅니다.</li>
+<li><b>"Add a README file", .gitignore, license 항목은 모두 체크하지 않은 채로</b> <b>Create repository</b>를 누릅니다.
+빈 저장소여야 내 컴퓨터의 이력을 그대로 올릴 수 있습니다.</li>
+</ol>
+<p><b>✅ 체크포인트</b> — "Quick setup"이라는 안내와 함께 <code>https://github.com/사용자이름/my-first-site.git</code> 형태의 주소가 보입니다. 이 주소를 복사해 둡니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">📧</span> 메일 주소를 공개하고 싶지 않다면</p>
+<p style="margin-bottom:0">커밋에 적은 메일은 공개 저장소에서 누구나 볼 수 있습니다.
+GitHub <b>Settings → Emails</b>에서 "Keep my email addresses private"을 켜면 <code>…@users.noreply.github.com</code> 형태의 대체 주소가 표시됩니다.
+2단계의 <code>user.email</code>에 그 주소를 쓰면 됩니다.</p>
+</div>
+
+<h3 id="first-commit">4단계 — 내 컴퓨터에서 첫 커밋</h3>
+<div class="codeblock">
+<pre><code data-lang="bash">cd ~/Desktop/my-first-site      # 6장에서 만든 폴더로 (PowerShell도 같은 표기가 통합니다)
+git init                         # 이 폴더를 Git 저장소로 만들기
+git status                       # index.html 이 빨간색 "Untracked" 로 보임
+git add .
+git status                       # 이제 초록색 "Changes to be committed"
+git commit -m "첫 페이지 추가"
+git log --oneline                # 방금 만든 커밋 확인</code></pre>
+</div>
+<p>Windows에서 바탕화면이 OneDrive와 동기화되어 있으면 경로가 <code>~/OneDrive/Desktop</code>(또는 <code>~/OneDrive/바탕 화면</code>)일 수 있습니다.
+가장 확실한 방법은 VS Code로 그 폴더를 연 상태에서 터미널을 여는 것입니다. 터미널이 <b>이미 그 폴더에서</b> 시작합니다(<code>pwd</code>로 확인).</p>
+<p><b>✅ 체크포인트</b> — <code>git log --oneline</code>이 <code>a1b2c3d (HEAD -&gt; main) 첫 페이지 추가</code> 같은 한 줄을 보여 줍니다.
+괄호 안이 <code>master</code>라면 2단계의 <code>init.defaultBranch</code> 설정 전에 <code>git init</code>을 한 것이니 <code>git branch -M main</code>으로 이름을 바꿉니다.
+<code>git init</code>을 하면 폴더 안에 숨김 폴더 <code>.git</code>이 생깁니다. <b>이력 전체가 여기 들어 있으니 지우지 마세요.</b></p>
+
+<h3 id="remote-push">5단계 — 원격 저장소 연결하고 push</h3>
+<div class="codeblock">
+<pre><code data-lang="bash"># 3단계에서 복사한 주소를 "origin"이라는 이름으로 등록
+git remote add origin https://github.com/사용자이름/my-first-site.git
+git remote -v                    # 등록 확인
+
+# 처음 한 번은 -u 로 "내 main = origin의 main"을 연결
+git push -u origin main
+# 이후로는 그냥 git push</code></pre>
+</div>
+<p><code>git clone</code>으로 받은 저장소는 <code>origin</code>이 자동으로 등록되어 있지만, <code>git init</code>으로 만든 저장소는 <b>직접 <code>remote add</code>를 해야</b> 어디로 올릴지 압니다.</p>
+
+<h3 id="auth">6단계 — 로그인(인증): 비밀번호로는 안 됩니다</h3>
+<p>첫 push 때 GitHub이 "당신이 누구인지" 확인합니다. 이때 <b>GitHub 계정 비밀번호를 넣으면 거절됩니다.</b>
+GitHub은 2021년부터 Git 명령의 비밀번호 인증을 막았기 때문입니다. 아래 방법 중 하나를 씁니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>방법</th><th>어떻게</th><th>추천 대상</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">브라우저 로그인</b></td><td>Git for Windows에 포함된 Git Credential Manager가 첫 push 때 <b>브라우저 로그인 창</b>을 띄웁니다. 승인하면 끝이고, 다음부터는 묻지 않습니다</td><td>Windows 기본</td></tr>
+<tr><td><b>GitHub CLI</b></td><td>GitHub 공식 터미널 도구 <code>gh</code>를 설치(macOS <code>brew install gh</code>, Windows <code>winget install --id GitHub.cli</code>)한 뒤 <code>gh auth login</code>. 질문에 GitHub.com → HTTPS → "Authenticate Git with your GitHub credentials?"에 Yes → Login with a web browser를 고르고, 화면의 코드를 브라우저에 입력합니다</td><td>macOS에 가장 쉬움</td></tr>
+<tr><td><b>Personal Access Token</b></td><td>GitHub <b>Settings → Developer settings → Personal access tokens</b>에서 토큰을 만들고, push 때 비밀번호 칸에 <b>토큰을 붙여 넣습니다</b>. Fine-grained token이라면 이 저장소에 <b>Contents: Read and write</b> 권한을 줍니다</td><td>도구를 더 설치할 수 없을 때</td></tr>
+<tr><td><b class="nw">SSH 키</b></td><td>내 컴퓨터에서 키 쌍을 만들어 공개 키를 GitHub에 등록합니다. 주소가 <code>git@github.com:…</code> 형태가 됩니다</td><td>익숙해진 뒤 (<a href="https://docs.github.com/ko/authentication/connecting-to-github-with-ssh" target="_blank" rel="noopener">GitHub 안내</a>)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔑</span> 토큰은 비밀번호와 같습니다</p>
+<p style="margin-bottom:0">터미널에서 비밀번호나 토큰을 붙여 넣을 때는 <b>화면에 아무것도 표시되지 않는 것이 정상</b>입니다. 붙여 넣고 Enter를 누르세요.
+토큰은 만들 때 <b>한 번만</b> 보여 주므로 안전한 곳에 보관하고, 코드나 채팅에 붙여 넣지 마세요.
+유출되었다면 즉시 GitHub에서 삭제(revoke)합니다.</p>
+</div>
+
+<p><b>✅ 체크포인트</b> — 터미널에 <code>* [new branch]      main -&gt; main</code>과
+<code>branch 'main' set up to track 'origin/main'</code>이 나오고,
+GitHub 저장소 페이지를 새로고침하면 <code>index.html</code>이 보입니다.
+이제 파일을 고칠 때마다 <code>git add .</code> → <code>git commit -m "…"</code> → <code>git push</code> 세 단계로 GitHub에 반영됩니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>오류 메시지</th><th>원인과 해결</th></tr></thead>
+<tbody>
+<tr><td><code>Author identity unknown</code></td><td>2단계의 <code>user.name</code>·<code>user.email</code>을 설정하지 않았습니다</td></tr>
+<tr><td><code>src refspec main does not match any</code></td><td>커밋이 하나도 없거나 브랜치 이름이 <code>master</code>입니다. <code>git log</code>로 커밋을 확인하고 <code>git branch -M main</code></td></tr>
+<tr><td><code>remote origin already exists</code></td><td>이미 등록했습니다. 주소를 바꾸려면 <code>git remote set-url origin 새주소</code></td></tr>
+<tr><td><code>Support for password authentication was removed</code></td><td>비밀번호를 넣었습니다. 위 6단계의 방법 중 하나로 인증합니다</td></tr>
+<tr><td><code>Updates were rejected … (fetch first)</code></td><td>GitHub 쪽에 내가 없는 커밋(예: README 체크)이 있습니다. <code>git pull --rebase origin main</code> 후 다시 <code>git push</code></td></tr>
+<tr><td><code>Repository not found</code></td><td>주소의 사용자 이름·저장소 이름 오타이거나, 다른 계정으로 로그인되어 있습니다</td></tr>
+</tbody>
+</table>
 </div>
 
 <h2 id="branch">브랜치</h2>
@@ -183,7 +320,7 @@ const title = "환영합니다";          ← 합치려는 브랜치의 내용
 </div>
 
 <div class="codeblock">
-<span class="cb-label">해결 절차</span>
+<span class="cb-label">해결 절차 — 3번의 git commit은 -m 없이 쓰면 편집기가 열립니다(위 Vim 상자)</span>
 <pre><code data-lang="bash"># 1. 파일을 열어 &lt;&lt;&lt;, ===, &gt;&gt;&gt; 표시를 '전부 지우고' 최종 내용만 남깁니다
 #    (둘 중 하나를 고르거나, 둘을 합치거나, 새로 쓰거나)
 # 2. 해결했다고 알립니다
@@ -204,6 +341,24 @@ git merge --abort</code></pre>
 </div>
 
 <h2 id="undo">되돌리기</h2>
+
+<h3 id="head">HEAD와 커밋 해시 읽기</h3>
+
+<p>되돌리기 명령에는 <code>HEAD~1</code>, <code>a1b2c3d</code> 같은 이름이 나옵니다. 먼저 이것부터 읽을 줄 알아야 합니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">git log --oneline 의 출력</span>
+<pre><code data-lang="text">e4f5a6b (HEAD -&gt; main, origin/main) 버튼 색 수정     ← HEAD     (지금)
+c3d4e5f 상품 목록 추가                               ← HEAD~1   (하나 전)
+a1b2c3d 첫 페이지 추가                               ← HEAD~2   (둘 전)</code></pre>
+</div>
+
+<ul>
+<li><b>커밋 해시</b> — 맨 앞의 <code>e4f5a6b</code>는 커밋마다 붙는 <b>고유 번호</b>입니다. 실제로는 40자리지만 앞 7자리 정도만 써도 Git이 알아듣습니다. 복사해서 <code>git show e4f5a6b</code>처럼 씁니다.</li>
+<li><b><code>HEAD</code></b> — "<b>지금 내가 서 있는 커밋</b>"을 가리키는 표시입니다. 보통은 현재 브랜치의 가장 최근 커밋입니다. <code>HEAD -&gt; main</code>은 "지금 main 브랜치에 있고, 그 끝이 이 커밋"이라는 뜻입니다.</li>
+<li><b><code>HEAD~1</code></b> — HEAD에서 <b>한 칸 전</b> 커밋. <code>HEAD~2</code>는 두 칸 전입니다. 해시를 몰라도 상대 위치로 가리킬 수 있습니다.</li>
+<li><b><code>origin/main</code></b> — 마지막으로 확인했을 때 GitHub의 main이 있던 위치입니다. <code>HEAD</code>와 같은 줄에 있으면 push할 것이 없다는 뜻입니다.</li>
+</ul>
 
 <div class="tablewrap">
 <table>
@@ -311,6 +466,9 @@ dist/               # 빌드 결과물
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
 <li>Git은 <b>프로그램</b>, GitHub은 <b>공유 서비스</b>다.</li>
+<li><code>git init</code>으로 만든 저장소는 <b><code>git remote add origin 주소</code></b>로 연결한 뒤 <code>git push -u origin main</code>.</li>
+<li>GitHub push에는 <b>비밀번호가 아니라</b> 브라우저 로그인·<code>gh auth login</code>·토큰·SSH 중 하나로 인증한다.</li>
+<li><code>HEAD</code>는 지금 있는 커밋, <code>HEAD~1</code>은 하나 전, 해시는 커밋의 고유 번호다.</li>
 <li>파일은 <b>작업 폴더 → 스테이징 → 저장소 → 원격</b> 순으로 이동한다.</li>
 <li><b><code>git status</code>를 습관적으로</b> 확인한다.</li>
 <li>커밋은 <b>하나의 논리적 변경</b>, 메시지에는 <b>왜</b>를 쓴다.</li>
@@ -325,6 +483,8 @@ dist/               # 빌드 결과물
 <ul>
 <li><a href="https://git-scm.com/book/ko/v2" target="_blank" rel="noopener">Pro Git (한국어 번역 전문 무료 공개)</a></li>
 <li><a href="https://docs.github.com/ko/get-started" target="_blank" rel="noopener">GitHub 시작하기 (한국어)</a></li>
+<li><a href="https://docs.github.com/ko/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens" target="_blank" rel="noopener">GitHub — Personal Access Token 관리 (한국어)</a></li>
+<li><a href="https://cli.github.com/manual/gh_auth_login" target="_blank" rel="noopener">GitHub CLI — gh auth login</a> (영문)</li>
 <li><a href="https://learngitbranching.js.org/?locale=ko" target="_blank" rel="noopener">Learn Git Branching</a> — 브랜치를 시각적으로 연습하는 사이트</li>
 <li><a href="https://www.conventionalcommits.org/ko/v1.0.0/" target="_blank" rel="noopener">Conventional Commits (한국어)</a></li>
 </ul>
@@ -334,52 +494,96 @@ FB_QUIZ([
   {
     q: "Git의 스테이징 영역(<code>git add</code>)이 존재하는 이유는?",
     o: [
-      "파일을 압축하기 위해",
-      "변경한 것 중 이번 커밋에 포함할 것만 골라 논리적 단위로 커밋을 나누기 위해",
-      "원격 저장소에 미리 업로드하기 위해",
-      "충돌을 방지하기 위해"
+      "변경 내용을 GitHub에 미리 올려 백업하기 위해",
+      "바꾼 것 중 이번 커밋에 넣을 것만 고르기 위해",
+      "커밋하기 전에 Git이 충돌을 미리 검사하기 위해",
+      "저장하지 않은 파일을 Git이 대신 저장하기 위해"
     ],
     a: 1,
-    e: "스테이징이 없다면 \"바꾼 것 전부\"가 한 커밋이 됩니다. 로그인 기능과 오타 수정을 같이 했다면 <b>두 개의 의미 있는 커밋</b>으로 나눌 수 있어야 나중에 이력을 읽고 한쪽만 되돌리기도 쉽습니다."
+    e: "스테이징이 없다면 \"바꾼 것 전부\"가 한 커밋이 됩니다. 로그인 기능과 오타 수정을 같이 했다면 <b>두 개의 의미 있는 커밋</b>으로 나눌 수 있어야 나중에 이력을 읽고 한쪽만 되돌리기도 쉽습니다. <code>git add</code>는 내 컴퓨터 안에서만 일어나며 GitHub과는 무관합니다."
+  },
+  {
+    q: "<code>git init</code>으로 만든 저장소에서 <code>git push</code>를 했더니 어디로 올릴지 모른다는 오류가 납니다. 빠진 단계는?",
+    o: [
+      "<code>git clone</code>으로 저장소를 다시 받는다",
+      "<code>git remote add origin 주소</code>로 원격을 등록한다",
+      "<code>git config user.email</code>을 GitHub 메일로 바꾼다",
+      "<code>git pull</code>을 먼저 실행한다"
+    ],
+    a: 1,
+    e: "<code>clone</code>으로 받은 저장소는 <code>origin</code>이 자동 등록되지만, <code>init</code>으로 만든 저장소는 원격이 없습니다. <code>git remote add origin https://github.com/…</code>로 등록하고 처음 한 번은 <code>git push -u origin main</code>을 합니다. 메일 설정은 커밋 작성자 정보일 뿐 push 대상과 상관없습니다."
+  },
+  {
+    q: "첫 push에서 사용자 이름과 비밀번호를 물어 GitHub 계정 비밀번호를 넣었더니 거절되었습니다. 올바른 대처는?",
+    o: [
+      "비밀번호를 재설정한 뒤 새 비밀번호로 다시 시도한다",
+      "<code>gh auth login</code>이나 토큰 등 비밀번호 외 방식으로 인증한다",
+      "저장소를 Public으로 바꾸면 인증 없이 push할 수 있다",
+      "<code>sudo git push</code>로 관리자 권한으로 실행한다"
+    ],
+    a: 1,
+    e: "GitHub은 Git 명령에서 <b>계정 비밀번호 인증을 막았습니다</b>. 브라우저 로그인(Git Credential Manager), GitHub CLI의 <code>gh auth login</code>, Personal Access Token, SSH 키 중 하나를 씁니다. 공개 저장소도 <b>쓰기</b>에는 인증이 필요하고, 컴퓨터 권한(<code>sudo</code>)과는 무관합니다."
+  },
+  {
+    q: "<code>git commit</code>을 <code>-m</code> 없이 실행했더니 글자도 안 써지는 낯선 화면(Vim)이 열렸습니다. 메시지를 저장하고 커밋을 마치려면?",
+    o: [
+      "<code>Ctrl</code>+<code>C</code>를 눌러 터미널을 닫는다",
+      "<code>i</code>로 입력 후 <code>Esc</code>, <code>:wq</code> Enter",
+      "<code>Ctrl</code>+<code>S</code>로 저장한 뒤 창을 닫는다",
+      "<code>exit</code>를 입력하고 Enter"
+    ],
+    a: 1,
+    e: "Vim은 <code>i</code>로 입력 모드에 들어가 글을 쓰고, <code>Esc</code>로 빠져나온 뒤 <code>:wq</code>(write + quit)로 저장·종료합니다. 취소하려면 <code>:q!</code>입니다. <code>git config --global core.editor \"code --wait\"</code>로 VS Code를 편집기로 지정해 두면 이 상황을 피할 수 있습니다."
+  },
+  {
+    q: "<code>git reset --soft HEAD~1</code>에서 <code>HEAD~1</code>이 가리키는 것은?",
+    o: [
+      "가장 처음 만든 커밋",
+      "지금 커밋의 바로 이전 커밋",
+      "GitHub에 마지막으로 push한 커밋",
+      "아직 커밋하지 않은 변경 내용"
+    ],
+    a: 1,
+    e: "<code>HEAD</code>는 지금 서 있는 커밋, <code>~1</code>은 거기서 <b>한 칸 전</b>입니다. 그래서 이 명령은 마지막 커밋 하나를 취소하고 변경은 남깁니다. GitHub에 마지막으로 올린 위치는 <code>origin/main</code>이라고 따로 표시됩니다."
   },
   {
     q: "이미 <code>push</code>해서 동료들과 공유한 커밋을 되돌려야 합니다. 올바른 방법은?",
     o: [
-      "<code>git reset --hard</code> 후 강제 푸시",
-      "<code>git revert</code> — 되돌리는 새 커밋을 추가해 이력을 보존한다",
-      "브랜치를 삭제한다",
-      "<code>git commit --amend</code>"
+      "<code>git reset --hard HEAD~1</code> 후 강제 푸시",
+      "<code>git revert 커밋해시</code>로 되돌리는 새 커밋 추가",
+      "<code>git commit --amend</code>로 마지막 커밋을 고친다",
+      "GitHub에서 그 브랜치를 지우고 다시 push한다"
     ],
     a: 1,
-    e: "<code>reset</code>은 <b>이력 자체를 다시 씁니다</b>. 공유된 커밋에 하고 강제 푸시하면 같은 브랜치를 받은 동료들의 저장소가 어긋나 큰 혼란이 생깁니다. <code>revert</code>는 \"취소하는 커밋\"을 새로 쌓아 안전합니다."
+    e: "<code>reset</code>과 <code>--amend</code>는 <b>이력 자체를 다시 씁니다</b>. 공유된 커밋에 하고 강제 푸시하면 같은 브랜치를 받은 동료들의 저장소가 어긋납니다. <code>revert</code>는 \"취소하는 커밋\"을 새로 쌓아 이력을 보존하므로 안전합니다."
   },
   {
     q: "머지 충돌이 발생했을 때 올바른 처리 순서는?",
     o: [
-      "파일을 삭제하고 다시 만든다",
-      "충돌 표시(&lt;&lt;&lt;, ===, &gt;&gt;&gt;)를 모두 지우고 최종 내용만 남긴 뒤 <code>git add</code>, <code>git commit</code>",
-      "<code>git push --force</code>로 덮어쓴다",
-      "충돌 표시를 그대로 두고 커밋한다"
+      "충돌 표시는 Git이 자동으로 지우므로 바로 <code>git commit</code>",
+      "충돌 표시를 지우고 최종 내용만 남긴 뒤 <code>add</code>, <code>commit</code>",
+      "<code>git push --force</code>로 내 쪽 내용으로 덮어쓴다",
+      "<code>git stash</code>로 충돌을 치워 두고 계속 작업한다"
     ],
     a: 1,
-    e: "충돌 표시는 <b>Git이 넣어 준 안내선</b>일 뿐 코드가 아닙니다. 반드시 전부 제거하고 올바른 최종 내용만 남겨야 합니다. 그다음 <code>git add</code>로 \"해결했다\"고 알리고 커밋하면 머지가 완료됩니다. 시작을 취소하려면 <code>git merge --abort</code>입니다."
+    e: "충돌 표시(<code>&lt;&lt;&lt;</code>, <code>===</code>, <code>&gt;&gt;&gt;</code>)는 Git이 넣은 안내선일 뿐 자동으로 사라지지 않습니다. 직접 지우고 올바른 내용만 남긴 뒤 <code>git add</code>로 \"해결했다\"고 알리고 커밋합니다. 시작을 취소하려면 <code>git merge --abort</code>입니다."
   },
   {
     q: "실수로 API 키가 담긴 <code>.env</code> 파일을 커밋하고 푸시했습니다. 가장 먼저 해야 할 일은?",
     o: [
-      "다음 커밋에서 파일을 삭제하면 된다",
-      "그 키를 즉시 폐기하고 새로 발급받는다. 이전 커밋에 값이 그대로 남아 누구나 볼 수 있기 때문",
-      ".gitignore에 추가한다",
-      "저장소를 비공개로 전환하면 해결된다"
+      "다음 커밋에서 <code>.env</code>를 지우고 push한다",
+      "그 키를 즉시 폐기하고 새로 발급받는다",
+      "<code>.gitignore</code>에 <code>.env</code>를 추가한다",
+      "저장소를 Private으로 전환한다"
     ],
     a: 1,
-    e: "Git은 <b>모든 이력을 보존</b>하므로 나중에 파일을 지워도 과거 커밋에는 그대로 남습니다. 공개 저장소라면 자동 스캐너가 몇 분 만에 수집합니다. <b>유출된 키는 이미 유출된 것</b>이므로 폐기·재발급이 유일한 대응이고, 이후 이력 정리와 <code>.gitignore</code> 추가를 합니다."
+    e: "Git은 <b>모든 이력을 보존</b>하므로 나중에 지워도 과거 커밋에는 그대로 남고, 공개 저장소라면 자동 스캐너가 몇 분 만에 수집합니다. 비공개로 바꿔도 이미 본 사람은 막을 수 없습니다. <b>유출된 키는 이미 유출된 것</b>이므로 폐기·재발급이 먼저이고, 이력 정리와 <code>.gitignore</code> 추가는 그다음입니다."
   },
   {
     q: "<code>git reset --hard</code>로 커밋을 날렸는데 되살리고 싶습니다. 가장 먼저 시도할 명령은?",
-    o: ["<code>git revert</code>", "<code>git reflog</code>로 이전 위치의 해시를 찾아 되돌아간다", "<code>git pull</code>", "복구 방법이 없다"],
+    o: ["<code>git revert HEAD</code>", "<code>git reflog</code>", "<code>git pull</code>", "<code>git restore .</code>"],
     a: 1,
-    e: "<code>reflog</code>는 브랜치 이동·리셋을 포함한 <b>HEAD의 모든 이동 기록</b>을 남깁니다. 여기서 이전 커밋 해시를 찾아 <code>git switch -c 복구 &lt;해시&gt;</code>로 되살릴 수 있습니다. 단 <b>커밋하지 않은 변경</b>은 reflog에도 없으므로 정말 사라집니다."
+    e: "<code>reflog</code>는 리셋을 포함한 <b>HEAD의 모든 이동 기록</b>을 남깁니다. 여기서 이전 커밋 해시를 찾아 <code>git switch -c 복구 &lt;해시&gt;</code>로 되살립니다. <code>revert HEAD</code>는 지금 커밋을 또 취소할 뿐이고, <code>restore</code>는 작업 폴더 변경만 다룹니다. 단 <b>커밋하지 않은 변경</b>은 reflog에도 없습니다."
   }
 ]);
 </script>

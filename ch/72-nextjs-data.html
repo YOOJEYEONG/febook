@@ -6,6 +6,12 @@
 <title>72장. 데이터 페칭, 캐싱, Server Actions — 프엔북</title>
 <meta name="description" content="Next.js의 데이터 페칭 방식, 캐싱과 재검증 전략, Server Actions로 데이터를 변경하는 법, 스트리밍과 병렬 로딩을 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="72장. 데이터 페칭, 캐싱, Server Actions — 프엔북">
 <meta property="og:description" content="Next.js의 데이터 페칭 방식, 캐싱과 재검증 전략, Server Actions로 데이터를 변경하는 법, 스트리밍과 병렬 로딩을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -36,7 +42,9 @@
 <p class="box-title"><span class="box-ico">📅</span> 캐싱 기본값은 버전마다 다릅니다</p>
 <p style="margin-bottom:0"><span class="term" data-term="nextjs">Next.js</span>의 <b>캐싱 동작은 메이저 버전마다 크게 바뀌어 왔습니다.</b>
 초기 <span class="term" data-term="app-router">App Router</span>는 <code>fetch</code>를 기본으로 캐시했지만 이후 <b>기본을 캐시하지 않는 쪽</b>으로 바뀌었고,
-최신 버전에서는 <code>use cache</code> 같은 <b>명시적 캐시 지시어</b> 방향으로 정리되고 있습니다.<br>
+<b>Next.js 16</b>에서는 <code>next.config</code>에 <code>cacheComponents: true</code>를 켜면 쓸 수 있는 <b>Cache Components</b>가 정식 기능이 되었습니다(최신 <code>create-next-app</code> 권장 설정으로 만든 새 앱에는 이미 켜져 있습니다).
+"기본은 매 요청마다 새로 가져오고, 캐시할 곳에만 <code>"use cache"</code> 지시어와 <code>cacheLife</code>(얼마나 오래)·<code>cacheTag</code>(무효화용 이름표)를 붙인다"는 <b>명시적 캐시</b> 방식입니다.
+이 장의 <code>export const revalidate</code>·<code>dynamic</code> 같은 라우트 설정 예시는 Cache Components를 켜지 않은 기본 모드 기준이며, 켜면 공식 마이그레이션 가이드에 따라 <code>"use cache"</code>로 옮겨 갑니다.<br>
 <b>따라서 "기본값이 무엇인지"를 외우지 마세요.</b>
 <b>개념</b>(무엇을 캐시할 수 있고, 언제 무효화하는가)을 이해하고
 <b>기본값은 여러분이 쓰는 버전의 문서에서 확인</b>하는 것이 옳습니다.</p>
@@ -120,8 +128,17 @@ await fetch(url, { next: { revalidate: 60 } });</code></pre>
 await fetch(url, { next: { tags: ["products"] } });
 
 // 변경이 일어나면 그 태그를 무효화합니다
-revalidateTag("products");
+revalidateTag("products", "max");   // 옛 데이터를 잠시 보여 주며 뒤에서 갱신
 revalidatePath("/products");</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">📅</span> <code>revalidateTag</code>는 Next.js 16에서 인자가 2개입니다</p>
+<p style="margin-bottom:0">옛 자료의 <code>revalidateTag("products")</code>처럼 <b>인자 하나만 쓰는 형태는 deprecated</b>입니다.
+두 번째 인자로 얼마나 오래 옛 데이터를 보여 줘도 되는지(<code>"max"</code> 권장)를 넘깁니다.
+<code>"max"</code>는 "다음 방문자에게는 일단 옛 데이터를 보여 주고 뒤에서 새로 만든다"는 뜻이라 블로그·상품 목록처럼 <b>약간 늦어도 되는 데이터</b>에 맞습니다.<br>
+반대로 <b>사용자가 방금 바꾼 내용을 바로 봐야 한다면</b>(글 작성 직후 목록 등) <b>Server Action 안에서 <code>updateTag("products")</code></b>를 씁니다.
+캐시를 즉시 만료시켜 다음 요청이 새 데이터를 기다립니다. <code>updateTag</code>는 Server Action에서만 쓸 수 있습니다. (기준: Next.js 16, nextjs.org)</p>
 </div>
 
 <div class="box tip">
@@ -146,7 +163,9 @@ export const dynamic = "force-dynamic";</code></pre>
 그래서 <b>페이지 최상단에서 무심코 <code>cookies()</code>를 호출하면</b>
 정적일 수 있었던 페이지가 전부 <span class="term" data-term="ssr">SSR</span>이 됩니다.
 로그인 여부가 필요한 부분만 <b>작은 컴포넌트로 분리</b>하고 <span class="term" data-term="suspense">Suspense</span>로 감싸면
-나<span class="term" data-term="merge">머지</span>는 정적으로 유지됩니다.</p>
+나<span class="term" data-term="merge">머지</span>는 정적으로 유지됩니다.<br>
+Cache Components를 켠 Next.js 16 앱에서는 이 분리가 <b>규칙</b>이 됩니다. <code>cookies()</code>를 읽는 컴포넌트를 Suspense로 감싸지 않으면 개발 중 경고가 뜨고,
+감싸면 그 부분만 요청 때 채워지고 페이지의 나머지는 정적 껍데기로 남습니다.</p>
 </div>
 
 <h2 id="actions">Server Actions</h2>
@@ -160,6 +179,7 @@ API 라우트를 만들지 않고도 데이터를 변경할 수 있습니다.</p
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+// db·getSession은 예시용 가상 모듈입니다 (71장의 설명 참고)
 import { z } from "zod";
 
 const TodoSchema = z.object({ text: z.string().min(1).max(200) });
@@ -191,6 +211,42 @@ export default function TodoForm() {
     &lt;form action={createTodo}&gt;
       &lt;input name="text" required /&gt;
       &lt;button&gt;추가&lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🕳️</span> 이렇게 넘기면 <code>{ error }</code> 반환값은 버려집니다</p>
+<p style="margin-bottom:0"><code>&lt;form action={createTodo}&gt;</code>에 바로 넘긴 함수가 돌려준 값은 <b>아무 데도 전달되지 않습니다.</b>
+위의 <code>return { error: "…" }</code>를 화면에 보여 주려면 <span class="term" data-term="react">React</span> 19의 <code>useActionState</code>(62·69장)로 감쌉니다.
+이때 액션은 첫 인자로 <b>이전 상태</b>를 받는 <code>(prevState, formData)</code> 모양이 되어야 합니다.</p>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">반환값을 화면에 보여 주기 — useActionState</span>
+<pre><code data-lang="tsx">// app/actions.ts
+"use server";
+export async function createTodoAction(prevState: { error?: string } | null, formData: FormData) {
+  const parsed = TodoSchema.safeParse({ text: formData.get("text") });
+  if (!parsed.success) return { error: "내용을 입력해 주세요" };   // ← state로 들어갑니다
+  // … 인증 확인·저장은 위와 같습니다
+  revalidatePath("/todos");
+  return null;
+}
+
+// app/todos/TodoForm.tsx
+"use client";
+import { useActionState } from "react";
+import { createTodoAction } from "../actions";
+
+export default function TodoForm() {
+  const [state, formAction, isPending] = useActionState(createTodoAction, null);
+  return (
+    &lt;form action={formAction}&gt;
+      &lt;input name="text" required /&gt;
+      &lt;button disabled={isPending}&gt;{isPending ? "추가 중…" : "추가"}&lt;/button&gt;
+      {state?.error &amp;&amp; &lt;p role="alert"&gt;{state.error}&lt;/p&gt;}
     &lt;/form&gt;
   );
 }</code></pre>
@@ -297,9 +353,9 @@ async function Child({ userId }) {
 <ul style="margin-bottom:0">
 <li>서버 컴포넌트에서는 <b>그냥 <code>await</code></b>로 데이터를 가져온다. 로딩·오류는 특수 파일이 처리한다.</li>
 <li><b>요청 메모이제이션</b> 덕분에 여러 컴포넌트가 각자 가져와도 요청은 한 번이다.</li>
-<li>재검증은 <b>시간 기반</b>과 <b>온디맨드(태그·경로)</b> 두 가지다.</li>
+<li>재검증은 <b>시간 기반</b>과 <b>온디맨드(태그·경로)</b> 두 가지다. Next.js 16에서 <code>revalidateTag</code>는 <code>(tag, "max")</code>, 즉시 반영은 Server Action의 <code>updateTag</code>다.</li>
 <li><code>cookies()</code>·<code>headers()</code>를 쓰면 <b>정적 생성이 해제</b>된다.</li>
-<li><b>Server Action</b>으로 API 없이 데이터를 변경한다. JS 없이도 폼이 동작한다.</li>
+<li><b>Server Action</b>으로 API 없이 데이터를 변경한다. JS 없이도 폼이 동작한다. 반환값을 보여 주려면 <code>useActionState</code>로 감싼다.</li>
 <li><b>Server Action은 공개 엔드포인트다.</b> 검증·인증·인가가 필수다.</li>
 <li><b>스트리밍</b>으로 느린 부분이 전체를 막지 않게 한다.</li>
 <li>독립적인 데이터는 <b><code>Promise.all</code>이나 형제 Suspense</b>로 병렬 처리한다.</li>
@@ -313,6 +369,8 @@ async function Child({ userId }) {
 <li><a href="https://nextjs.org/docs/app/getting-started/caching-and-revalidating" target="_blank" rel="noopener">Next.js — 캐싱과 재검증</a></li>
 <li><a href="https://nextjs.org/docs/app/getting-started/mutating-data" target="_blank" rel="noopener">Next.js — 데이터 변경(Server Actions)</a></li>
 <li><a href="https://nextjs.org/docs/app/api-reference/file-conventions/loading" target="_blank" rel="noopener">Next.js — 스트리밍과 loading</a></li>
+<li><a href="https://nextjs.org/docs/app/api-reference/functions/revalidateTag" target="_blank" rel="noopener">Next.js — revalidateTag</a> · <a href="https://nextjs.org/docs/app/api-reference/functions/updateTag" target="_blank" rel="noopener">updateTag</a></li>
+<li><a href="https://nextjs.org/docs/app/api-reference/config/next-config-js/cacheComponents" target="_blank" rel="noopener">Next.js — cacheComponents</a></li>
 </ul>
 
     <section class="quiz" id="quiz"></section>
@@ -330,59 +388,70 @@ async function Child({ userId }) {
 <script>
 FB_QUIZ([
   {
-    q: "서버 컴포넌트 세 개가 각각 <code>await getUser()</code> 를 호출하면 실제 요청은 몇 번인가요?",
+    q: "서버 컴포넌트 세 개가 같은 렌더링에서 각각 <code>await getUser()</code>를 호출하면 실제 요청은 몇 번인가요?",
     o: [
-      "세 번",
-      "한 번 — 같은 렌더링 안의 동일한 호출은 요청 메모이제이션으로 중복이 제거된다",
-      "컴포넌트 순서에 따라 다르다",
-      "요청이 전혀 나가지 않는다"
+      "세 번 (컴포넌트마다 따로 나간다)",
+      "한 번",
+      "부모 컴포넌트에서 한 번, 나머지는 props로 받아야만 한 번",
+      "캐시를 켜지 않았다면 세 번, 켰다면 한 번"
     ],
     a: 1,
-    e: "이 덕분에 <b>데이터를 props로 내려보낼 필요가 없습니다</b>. 필요한 컴포넌트가 각자 가져오면 되고, 중복은 프레임워크가 제거합니다. props drilling 문제가 서버 컴포넌트에서는 다른 방식으로 해결됩니다."
+    e: "같은 렌더링 안의 동일한 호출은 <b>요청 메모이제이션</b>으로 중복이 제거됩니다. 그래서 데이터를 props로 내려보낼 필요 없이 필요한 컴포넌트가 각자 가져오면 됩니다. 이것은 여러 요청에 걸친 데이터 캐시와는 다른 층입니다."
   },
   {
     q: "페이지 최상단에서 <code>cookies()</code>를 호출하면 어떤 영향이 있나요?",
     o: [
-      "아무 영향 없다",
-      "요청마다 달라지는 페이지가 되어 정적 생성이 해제되고 전체가 동적 렌더링된다",
-      "빌드가 실패한다",
-      "쿠키가 클라이언트로 전송된다"
+      "쿠키를 읽기만 하므로 정적 생성에는 영향이 없다",
+      "요청마다 달라지는 페이지가 되어 정적 생성이 해제된다",
+      "빌드할 때의 쿠키 값으로 HTML이 고정된다",
+      "쿠키 값이 클라이언트 번들에 포함된다"
     ],
     a: 1,
-    e: "쿠키는 <b>요청마다 다른 값</b>이므로 미리 HTML을 만들어 둘 수 없습니다. 정적일 수 있었던 페이지가 전부 SSR이 됩니다. 로그인 여부가 필요한 부분만 <b>작은 컴포넌트로 분리하고 Suspense로 감싸면</b> 나머지는 정적으로 유지됩니다."
+    e: "쿠키는 <b>요청마다 다른 값</b>이므로 미리 HTML을 만들어 둘 수 없습니다. 빌드 시점에는 사용자의 쿠키가 존재하지도 않습니다. 로그인 여부가 필요한 부분만 <b>작은 컴포넌트로 분리하고 Suspense로 감싸면</b> 나머지는 정적으로 유지됩니다."
   },
   {
     q: "Server Action에서 입력 검증과 권한 확인을 반드시 해야 하는 이유는?",
     o: [
-      "TypeScript가 요구하기 때문",
-      "Server Action은 고유 주소를 가진 HTTP 엔드포인트로 노출되어 누구나 직접 호출을 시도할 수 있기 때문",
-      "성능 때문에",
-      "캐시가 무효화되기 때문"
+      "서버에서 실행되므로 사실 안 해도 되지만 습관상 한다",
+      "공개 HTTP 엔드포인트로 노출되어 누구나 직접 호출할 수 있다",
+      "폼의 <code>required</code> 속성이 서버에는 전달되지 않기 때문만이다",
+      "로그인 버튼을 숨기면 충분하지만 SEO 때문에 검증한다"
     ],
     a: 1,
-    e: "\"서버에서 실행되니 안전하다\"는 착각입니다. Server Action은 사실상 <b>API 엔드포인트</b>이고, UI에서 버튼을 숨기거나 비활성화한 것은 아무 보호도 되지 않습니다. 모든 액션에서 검증·인증·인가를 해야 합니다."
+    e: "\"서버에서 실행되니 안전하다\"는 착각입니다. Server Action은 사실상 <b>API 엔드포인트</b>이고, UI에서 버튼을 숨기거나 <code>required</code>를 붙인 것은 공격자가 직접 요청을 보내면 아무 보호도 되지 않습니다. 모든 액션에서 검증·인증·인가를 해야 합니다."
   },
   {
     q: "상품 정보는 0.2초, 추천 목록은 3초가 걸립니다. 사용자가 상품 정보를 빨리 보게 하려면?",
     o: [
-      "두 요청을 순차적으로 실행한다",
-      "추천 목록을 Suspense로 감싸 스트리밍한다. 준비된 부분부터 먼저 전송되고 느린 부분은 나중에 채워진다",
-      "추천 목록을 제거한다",
-      "클라이언트 렌더링으로 전환한다"
+      "두 요청을 <code>Promise.all</code>로 묶어 둘 다 끝나면 보낸다",
+      "추천 목록을 Suspense로 감싸 스트리밍한다",
+      "페이지 전체를 <code>\"use client\"</code>로 바꾼다",
+      "추천 목록 요청에 <code>cache: \"no-store\"</code>를 붙인다"
     ],
     a: 1,
-    e: "스트리밍이 없으면 <b>가장 느린 데이터가 전체 응답을 막습니다</b>(70장의 SSR 단점). Suspense 경계로 감싸면 그 부분만 대체 화면으로 먼저 보내고, 준비되면 교체되는 조각이 추가로 전송됩니다."
+    e: "<code>Promise.all</code>은 병렬이지만 <b>가장 느린 3초를 기다린 뒤</b> 한꺼번에 보냅니다. Suspense 경계로 감싸면 그 부분만 대체 화면으로 먼저 보내고, 준비되면 교체되는 조각이 추가로 전송됩니다(70장의 SSR 단점 해결)."
   },
   {
-    q: "Next.js의 캐싱 기본값에 대해 올바른 태도는?",
+    q: "<code>&lt;form action={createTodo}&gt;</code>처럼 Server Action을 폼에 바로 넘겼습니다. 액션이 <code>return { error: \"...\" }</code>를 하면?",
     o: [
-      "한 번 외워 두면 계속 적용된다",
-      "메이저 버전마다 바뀌어 왔으므로 개념만 이해하고, 실제 동작은 사용 중인 버전의 문서와 빌드 출력으로 확인한다",
-      "캐싱은 항상 비활성화하는 것이 안전하다",
-      "캐싱은 프로덕션에서만 동작하므로 신경 쓸 필요 없다"
+      "폼 아래에 오류 메시지가 자동으로 표시된다",
+      "반환값은 버려진다. 보여 주려면 <code>useActionState</code>를 쓴다",
+      "브라우저가 alert 창으로 오류를 띄운다",
+      "<code>error.tsx</code>가 그 오류를 잡아 화면을 바꾼다"
     ],
     a: 1,
-    e: "App Router의 캐싱 기본값은 여러 차례 바뀌었습니다. <b>무엇을 캐시할 수 있고 언제 무효화하는가</b>라는 개념은 안정적이지만 기본값은 그렇지 않습니다. <code>npm run build</code> 출력에 라우트별 정적/동적 표시가 나오므로 그것으로 확인하는 것이 확실합니다."
+    e: "폼 <code>action</code>에 직접 넘긴 함수의 반환값은 아무 데도 전달되지 않습니다. <code>useActionState(action, 초기값)</code>를 쓰면 액션 시그니처가 <code>(prevState, formData)</code>가 되고 반환값이 <code>state</code>로 들어와 화면에 그릴 수 있습니다. <code>error.tsx</code>는 <b>던진(throw)</b> 오류만 잡습니다."
+  },
+  {
+    q: "Next.js 16 기준, Server Action에서 글을 추가한 뒤 <b>사용자가 바로 새 글을 보게</b> 하려면 어떤 함수가 맞나요?",
+    o: [
+      "<code>revalidateTag(\"posts\")</code> (인자 하나)",
+      "<code>updateTag(\"posts\")</code>",
+      "<code>revalidateTag(\"posts\", \"max\")</code>",
+      "<code>router.refresh()</code>를 서버에서 호출"
+    ],
+    a: 1,
+    e: "<code>updateTag</code>는 Server Action 전용으로 캐시를 즉시 만료시켜 다음 요청이 새 데이터를 기다리게 합니다(내가 쓴 것을 바로 읽기). <code>revalidateTag(tag, \"max\")</code>는 잠시 옛 데이터를 보여 주며 뒤에서 갱신하는 방식이고, 인자 하나짜리는 deprecated입니다."
   }
 ]);
 </script>

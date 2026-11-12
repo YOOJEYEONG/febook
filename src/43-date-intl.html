@@ -216,7 +216,7 @@ console.log(price.toLocaleString("ko-KR", { style: "currency", currency: "KRW" }
 <b>실무 도입은 지원 현황을 확인한 뒤</b> 판단하세요.</p>
 </div>
 
-<h2 id="practice">실무 패턴</h2>
+<h2 id="patterns">실무 패턴</h2>
 
 <div class="codeblock">
 <span class="cb-label">서버와 주고받기</span>
@@ -239,6 +239,170 @@ const label = new Intl.DateTimeFormat("ko-KR", {
 <pre><code data-lang="html">&lt;!-- 기계용 값과 사람용 표시를 분리합니다 --&gt;
 &lt;time datetime="2026-01-15T14:30:00Z"&gt;2026년 1월 15일 오후 11시 30분&lt;/time&gt;</code></pre>
 </div>
+
+<h2 id="practice">직접 해 보기</h2>
+
+<p>4·5부(JavaScript)를 마쳤습니다. 라이브러리 없이 <b>순수 JavaScript</b>로 할 일 목록을 만들어 봅니다.
+DOM 조작, 이벤트, 저장소, 배열·객체, 날짜 표시가 한 화면에 모두 들어가서, 지금까지 배운 것을 점검하기에 좋습니다.
+React를 배운 뒤 같은 앱을 다시 만들어 비교해 보면 React가 무엇을 대신해 주는지 분명히 보입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 과제 — 순수 JavaScript 할 일 목록</p>
+<ul style="margin-bottom:0">
+<li>☐ 입력 칸에 할 일을 쓰고 Enter나 "추가" 버튼으로 목록에 넣는다(빈 칸·공백만은 무시)</li>
+<li>☐ 체크박스로 완료 표시를 하면 글자에 취소선이 생긴다</li>
+<li>☐ 항목마다 "삭제" 버튼이 있다</li>
+<li>☐ "전체 N개 · 남은 일 M개" 요약이 항상 맞게 표시된다</li>
+<li>☐ 새로고침해도 목록이 남아 있다(<code>localStorage</code>). 저장이 막힌 환경에서도 오류로 멈추지 않는다</li>
+<li>☐ 각 항목에 추가한 시각을 "2026. 11. 11. 오후 3:20"처럼 한국어 형식으로 보여 준다</li>
+<li>☐ 사용자가 입력한 글자는 <code>innerHTML</code>이 아니라 <code>textContent</code>로 넣는다</li>
+<li>☐ 클릭 처리는 항목마다 리스너를 붙이지 않고 목록(<code>ul</code>) 하나에서 처리한다</li>
+</ul>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">💡</span> 힌트</p>
+<ul style="margin-bottom:0">
+<li>설계 요령: 할 일을 <b>객체 배열</b>(<code>{ id, title, done, createdAt }</code>)로 들고 있고, 배열이 바뀔 때마다 <code>render()</code> 함수 하나로 화면을 다시 그리면 꼬이지 않습니다. 배열 메서드는 <b>29장</b>, 객체 복사는 <b>28장</b>.</li>
+<li>폼 제출 시 새로고침을 막는 <code>preventDefault()</code>, 요소 만들기, 이벤트 위임과 <code>closest()</code>는 <b>38장</b>을 보세요.</li>
+<li>저장소에는 문자열만 들어갑니다. <code>JSON.stringify</code>·<code>JSON.parse</code>와 <code>try/catch</code>는 <b>39장</b>.</li>
+<li>날짜는 ISO 문자열로 저장하고, 표시할 때 <code>Intl.DateTimeFormat</code>을 씁니다. 이 챕터 앞부분을 다시 보세요.</li>
+<li>더 해 보고 싶다면: "전체 / 남은 일 / 완료" 필터 버튼, 완료 항목 한꺼번에 지우기를 추가해 보세요.</li>
+</ul>
+</div>
+
+<div class="runner" data-lang="html" data-title="할 일 목록 작업대" data-note="실행기 안에서는 저장소가 막혀 있을 수 있습니다. 그래도 멈추지 않는지가 요구사항 중 하나입니다. 새로고침 유지는 파일로 저장해 브라우저에서 열어 확인하세요.">
+<textarea class="rn-src">
+<form id="add-form">
+  <label for="new-todo">할 일</label>
+  <input id="new-todo" name="title" required>
+  <button type="submit">추가</button>
+</form>
+<p id="summary"></p>
+<ul id="list"></ul>
+
+<script>
+  const form = document.getElementById("add-form");
+  const input = document.getElementById("new-todo");
+  const list = document.getElementById("list");
+  const summary = document.getElementById("summary");
+
+  let todos = [];
+
+  function render() {
+    // todos 배열을 보고 list 안을 다시 그리세요
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    // 입력값을 todos에 추가하고 render()
+  });
+
+  render();
+</script>
+</textarea>
+</div>
+
+<details>
+<summary>예시 답안</summary>
+<p>요구사항을 모두 채운 한 가지 방법입니다. 체크박스를 누를 때마다 목록을 다시 그리므로 포커스가 사라지는데, 이것을 개선해 보는 것도 좋은 연습입니다.</p>
+<pre><code data-lang="html">&lt;form id="add-form"&gt;
+  &lt;label for="new-todo"&gt;할 일&lt;/label&gt;
+  &lt;input id="new-todo" name="title" required maxlength="100"&gt;
+  &lt;button type="submit"&gt;추가&lt;/button&gt;
+&lt;/form&gt;
+&lt;p id="summary" aria-live="polite"&gt;&lt;/p&gt;
+&lt;ul id="list"&gt;&lt;/ul&gt;
+
+&lt;script&gt;
+  const STORAGE_KEY = "todos";
+  const form = document.getElementById("add-form");
+  const input = document.getElementById("new-todo");
+  const list = document.getElementById("list");
+  const summary = document.getElementById("summary");
+  const dateFormat = new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium", timeStyle: "short" });
+
+  // 1. 저장소 읽기·쓰기는 언제든 실패할 수 있으니 감싼다 (39장)
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  }
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    } catch {
+      // 저장이 안 되는 환경이면 화면에서만 동작한다
+    }
+  }
+
+  let todos = load();
+
+  // 2. 데이터(todos)가 바뀌면 화면을 통째로 다시 그린다
+  function render() {
+    list.replaceChildren();
+    for (const todo of todos) {
+      const li = document.createElement("li");
+      li.dataset.id = todo.id;
+
+      const label = document.createElement("label");
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.checked = todo.done;
+      const title = document.createElement("span");
+      title.textContent = todo.title;          // innerHTML 금지 (38장)
+      if (todo.done) title.style.textDecoration = "line-through";
+      label.append(check, " ", title);
+
+      const time = document.createElement("small");
+      time.textContent = " · " + dateFormat.format(new Date(todo.createdAt));
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "delete";
+      del.textContent = "삭제";
+      del.setAttribute("aria-label", todo.title + " 삭제");
+
+      li.append(label, time, " ", del);
+      list.append(li);
+    }
+    const left = todos.filter(t =&gt; !t.done).length;
+    summary.textContent = `전체 ${todos.length}개 · 남은 일 ${left}개`;
+  }
+
+  // 3. 추가
+  form.addEventListener("submit", (event) =&gt; {
+    event.preventDefault();
+    const title = input.value.trim();
+    if (!title) return;
+    todos.push({ id: Date.now(), title, done: false, createdAt: new Date().toISOString() });
+    input.value = "";
+    save();
+    render();
+  });
+
+  // 4. 완료·삭제는 부모 하나에서 이벤트 위임으로 처리한다 (38장)
+  list.addEventListener("click", (event) =&gt; {
+    const li = event.target.closest("li");
+    if (!li) return;
+    const id = Number(li.dataset.id);
+    if (event.target.matches(".delete")) {
+      todos = todos.filter(t =&gt; t.id !== id);
+    } else if (event.target.matches("input[type=checkbox]")) {
+      todos = todos.map(t =&gt; (t.id === id ? { ...t, done: !t.done } : t));
+    } else {
+      return;
+    }
+    save();
+    render();
+  });
+
+  render();
+&lt;/script&gt;</code></pre>
+</details>
 
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
@@ -267,39 +431,44 @@ const label = new Intl.DateTimeFormat("ko-KR", {
 FB_QUIZ([
   {
     q: "<code>new Date(2026, 0, 15)</code> 가 나타내는 날짜는?",
-    o: ["2026년 0월 15일(오류)", "2026년 1월 15일 — 월은 0부터 시작하기 때문", "2026년 2월 15일", "2025년 12월 15일"],
+    o: [
+      "2026년 0월 15일(오류)",
+      "2026년 1월 15일",
+      "2026년 2월 15일",
+      "2025년 12월 15일"
+    ],
     a: 1,
-    e: "<code>Date</code>의 월 인자는 <b>0(1월)~11(12월)</b>입니다. 반면 일(day)은 1부터 시작해 일관성이 없습니다. <code>getMonth()</code>도 마찬가지라 화면에 표시할 때는 <code>+1</code>이 필요합니다."
+    e: "월은 0부터 시작하므로 1월 15일입니다. <code>Date</code>의 월 인자는 <b>0(1월)~11(12월)</b>입니다. 반면 일(day)은 1부터 시작해 일관성이 없습니다. <code>getMonth()</code>도 마찬가지라 화면에 표시할 때는 <code>+1</code>이 필요합니다."
   },
   {
     q: "서버가 <code>\"2026-01-15\"</code>를 보냈는데 미국 사용자 화면에는 1월 14일로 표시됩니다. 원인은?",
     o: [
       "서버가 잘못된 값을 보냈다",
-      "하이픈 형식의 날짜 문자열은 UTC 자정으로 해석되고, 그것을 UTC-8 지역 시간으로 변환하면 전날 오후가 되기 때문",
-      "브라우저 버그다",
+      "UTC 자정으로 해석된 뒤 현지 시간으로 바뀌어서",
+      "미국은 월/일 순서라 날짜를 거꾸로 읽어서",
       "Intl을 쓰지 않아서"
     ],
     a: 1,
-    e: "<code>Date</code>는 내부적으로 <b>UTC 기준 숫자</b>를 갖고, 표시할 때 <b>사용자 시간대</b>로 변환합니다. UTC 자정은 UTC-8 지역에서 전날 오후 4시입니다. 날짜만 중요한 값은 <code>Date</code>로 변환하지 말고 <b>문자열 그대로</b> 다루는 편이 안전합니다."
+    e: "하이픈 형식의 날짜만 있는 문자열은 UTC 자정으로 해석되고, 그것을 UTC-8 지역 시간으로 변환하면 전날 오후가 됩니다. <code>Date</code>는 내부적으로 <b>UTC 기준 숫자</b>를 갖고, 표시할 때 <b>사용자 시간대</b>로 변환합니다. UTC 자정은 UTC-8 지역에서 전날 오후 4시입니다. 날짜만 중요한 값은 <code>Date</code>로 변환하지 말고 <b>문자열 그대로</b> 다루는 편이 안전합니다."
   },
   {
     q: "금액 1234567을 \"1,234,567원\"처럼 표시하는 가장 좋은 방법은?",
     o: [
       "정규식으로 세 자리마다 콤마를 삽입한다",
-      "<code>Intl.NumberFormat(\"ko-KR\", { style: \"currency\", currency: \"KRW\" })</code>를 쓴다",
-      "문자열을 뒤집어 3글자씩 자른다",
-      "moment.js를 설치한다"
+      "<code>Intl.NumberFormat</code>을 쓴다",
+      "<code>toFixed(0)</code>로 바꾼 뒤 \"원\"을 붙인다",
+      "날짜·숫자 라이브러리를 설치한다"
     ],
     a: 1,
-    e: "<code>Intl</code>은 브라우저에 <b>이미 내장</b>되어 있어 용량이 0이고, 나라마다 다른 구분자·통화 기호 위치·소수 자릿수를 전부 알고 있습니다. 직접 만든 정규식은 다른 지역에서 틀린 결과를 냅니다."
+    e: "<code>Intl.NumberFormat(\"ko-KR\", { style: \"currency\", currency: \"KRW\" })</code>처럼 씁니다. <code>toFixed</code>는 소수 자릿수만 정할 뿐 콤마를 넣지 않습니다. <code>Intl</code>은 브라우저에 <b>이미 내장</b>되어 있어 용량이 0이고, 나라마다 다른 구분자·통화 기호 위치·소수 자릿수를 전부 알고 있습니다. 직접 만든 정규식은 다른 지역에서 틀린 결과를 냅니다."
   },
   {
     q: "<code>new Date(\"아무 말\")</code> 의 결과와 올바른 검사 방법은?",
     o: [
       "예외를 던진다 — try/catch로 잡는다",
-      "Invalid Date를 반환한다 — <code>Number.isNaN(d.getTime())</code>으로 검사한다",
+      "Invalid Date — <code>getTime()</code>이 NaN인지 본다",
       "null을 반환한다 — null 체크",
-      "현재 시각을 반환한다"
+      "현재 시각을 반환한다 — 비교해 본다"
     ],
     a: 1,
     e: "잘못된 입력에도 <b>예외를 던지지 않고</b> Invalid Date 객체를 반환합니다. 이 객체의 <code>getTime()</code>은 <code>NaN</code>이므로 <code>Number.isNaN()</code>으로 확인합니다. 검사하지 않으면 이후 계산이 조용히 <code>NaN</code>으로 번집니다."
@@ -308,12 +477,12 @@ FB_QUIZ([
     q: "<code>const copy = originalDate; copy.setDate(20);</code> 이후 <code>originalDate</code>는?",
     o: [
       "변하지 않는다",
-      "함께 변한다. Date는 객체라 참조가 복사되고 setDate는 원본을 직접 수정하기 때문",
+      "함께 변한다",
       "Invalid Date가 된다",
-      "오류가 발생한다"
+      "오류 — const라 바꿀 수 없다"
     ],
     a: 1,
-    e: "<code>Date</code>는 <b>변경 가능한 객체</b>이고 대입은 <b>참조 복사</b>입니다(25장). <code>setDate</code>·<code>setMonth</code>는 새 객체를 만들지 않고 원본을 바꿉니다. 복사하려면 <code>new Date(original.getTime())</code>을 써야 합니다."
+    e: "Date는 객체라 참조가 복사되고 setDate는 원본을 직접 수정합니다. <code>Date</code>는 <b>변경 가능한 객체</b>이고 대입은 <b>참조 복사</b>입니다(25장). <code>setDate</code>·<code>setMonth</code>는 새 객체를 만들지 않고 원본을 바꿉니다. 복사하려면 <code>new Date(original.getTime())</code>을 써야 합니다."
   }
 ]);
 </script>

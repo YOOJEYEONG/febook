@@ -43,6 +43,7 @@ DOM은 <b>HTML 파일 그 자체가 아니라, 브라우저가 해석해서 메�
 <p class="box-title"><span class="box-ico">⚠️</span> DOM ≠ HTML 파일</p>
 <p style="margin-bottom:0">닫는 태그를 빠뜨린 잘못된 HTML을 줘도 브라우저는 <b>알아서 고쳐서</b> DOM을 만듭니다.
 그래서 "소스 보기"에 보이는 HTML과 개발자 도구 <b>Elements 탭</b>에 보이는 구조가 다를 수 있습니다.
+(개발자 도구는 F12, mac은 Cmd+Option+I로 엽니다. 맨 위 탭 중 Elements를 누르면 DOM 구조가 보입니다.)
 JavaScript로 요소를 추가하면 DOM에는 있지만 원본 HTML 파일에는 없습니다.
 <b>개발자 도구가 보여주는 것은 항상 DOM입니다.</b></p>
 </div>
@@ -210,9 +211,9 @@ FB_QUIZ([
   {
     q: "HTML 파일에 <code>&lt;div id=\"box\"&gt;</code>가 분명히 있는데, <code>&lt;head&gt;</code>에 둔 스크립트의 <code>document.getElementById(\"box\")</code>가 <code>null</code>을 반환합니다. 원인은?",
     o: [
-      "id에 오타가 있어서",
-      "스크립트가 실행되는 시점에는 아직 그 요소가 DOM에 만들어지지 않아서",
-      "getElementById가 div를 지원하지 않아서",
+      "id 값에 대소문자 실수가 있어서",
+      "스크립트 실행 시점에 요소가 아직 없어서",
+      "getElementById는 body 안을 찾지 못해서",
       "CSS가 아직 로드되지 않아서"
     ],
     a: 1,
@@ -228,9 +229,9 @@ FB_QUIZ([
     q: "요소를 부드럽게 이동시키는 애니메이션에서 <code>left</code>보다 <code>transform: translateX()</code>가 권장되는 이유는?",
     o: [
       "transform이 코드가 더 짧아서",
-      "left는 레이아웃 재계산을 유발하지만, transform은 대개 합성 단계만으로 처리되어 프레임당 비용이 훨씬 작아서",
-      "left는 구형 브라우저에서 동작하지 않아서",
-      "transform은 GPU를 끄기 때문에 배터리를 아껴서"
+      "transform은 레이아웃 재계산을 건너뛰어서",
+      "left는 position 없이는 동작하지 않아서",
+      "transform은 GPU를 꺼서 배터리를 아껴서"
     ],
     a: 1,
     e: "<code>left</code>를 바꾸면 요소의 위치가 문서 흐름에서 바뀌므로 <b>레이아웃 → 페인트 → 합성</b>을 모두 다시 해야 합니다. <code>transform</code>은 이미 그려진 레이어를 옮기는 것에 가까워 <b>합성</b>만으로 끝날 수 있습니다. 한 프레임 예산이 약 16.7ms이므로 이 차이가 버벅임을 만듭니다."
@@ -239,9 +240,9 @@ FB_QUIZ([
     q: "<code>display: none</code>과 <code>visibility: hidden</code>의 차이로 옳은 것은?",
     o: [
       "둘은 완전히 같고 표기만 다르다",
-      "display:none은 렌더 트리에서 빠져 공간도 차지하지 않고, visibility:hidden은 공간은 차지한 채 보이지만 않는다",
-      "display:none은 DOM에서도 요소가 삭제된다",
-      "visibility:hidden은 자식 요소를 모두 삭제한다"
+      "none은 자리도 사라지고, hidden은 자리는 남는다",
+      "display:none은 DOM에서 요소가 삭제된다",
+      "visibility:hidden은 자리까지 함께 사라진다"
     ],
     a: 1,
     e: "<code>display:none</code>은 렌더 트리에 포함되지 않아 자리도 사라집니다. <code>visibility:hidden</code>은 렌더 트리에 남아 <b>자리를 그대로 차지</b>합니다. 다만 <code>display:none</code>이어도 <b>DOM에서는 삭제되지 않는다</b>는 점이 중요합니다."
@@ -250,7 +251,7 @@ FB_QUIZ([
     q: "\"CSS 파일이 클수록 첫 화면이 늦게 뜬다\"는 말이 맞는 이유는?",
     o: [
       "CSS가 JavaScript보다 무겁기 때문",
-      "브라우저는 CSSOM이 완성되기 전에 그리면 스타일 없는 화면이 깜빡이므로, CSS를 다 받을 때까지 첫 페인트를 미루기 때문",
+      "CSS를 다 받을 때까지 첫 페인트를 미뤄서",
       "CSS는 항상 마지막에 다운로드되기 때문",
       "CSS 파일 개수만큼 DNS 조회가 반복되기 때문"
     ],

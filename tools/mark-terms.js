@@ -18,7 +18,11 @@ const GLOSSARY = global.window.BOOK_GLOSSARY;
 const FLAT = global.window.BOOK_FLAT;
 
 /* 표시 후보: 한글 이름이 2자 이상이고, 너무 흔한 단어가 아닌 것 */
-const TOO_COMMON = new Set(["웹", "서버", "태그", "속성", "요소", "캐시", "포트", "상속", "합성", "렌더링", "모듈", "함수", "라이브러리"]);
+const TOO_COMMON = new Set(["웹", "서버", "태그", "속성", "요소", "캐시", "포트", "상속", "합성", "렌더링", "모듈", "함수", "라이브러리",
+  /* 기초 용어: 사전에는 있지만 거의 모든 챕터에 나와 밑줄이 소음이 된다 */
+  "변수", "객체", "배열", "문자열", "메서드", "경로", "빌드", "인자", "반복문", "의존성",
+  /* 다른 낱말 안에 흔히 들어 있어 오탐이 나는 이름: "무엇인가", "스토리지" */
+  "인가", "스토리"]);
 const candidates = [];
 for (const [key, entry] of Object.entries(GLOSSARY)) {
   const names = [];

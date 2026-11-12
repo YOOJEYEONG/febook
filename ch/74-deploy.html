@@ -6,6 +6,12 @@
 <title>74장. 배포와 환경 변수 — 프엔북</title>
 <meta name="description" content="빌드와 배포의 개념, 환경 변수 관리, Vercel 등 호스팅 선택, 미리보기 배포와 CI/CD, 배포 후 확인 항목을 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="74장. 배포와 환경 변수 — 프엔북">
 <meta property="og:description" content="빌드와 배포의 개념, 환경 변수 관리, Vercel 등 호스팅 선택, 미리보기 배포와 CI/CD, 배포 후 확인 항목을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -168,31 +174,61 @@ npx vercel</code></pre>
 
 <h2 id="cicd">CI/CD</h2>
 
+<p><b>CI(지속적 통합)</b>는 코드를 올릴 때마다 린트·타입 검사·테스트·빌드를 자동으로 돌려 문제를 <span class="term" data-term="merge">머지</span> 전에 잡는 것이고,
+<b>CD(지속적 배포)</b>는 검사를 통과한 코드를 자동으로 배포하는 것입니다.
+Vercel 같은 호스팅은 Git 연동만으로 CD를 해 주므로, 프론트엔드 팀이 직접 챙길 것은 대개 <b>CI 쪽</b>입니다.
+GitHub에서는 저장소의 <code>.github/workflows/</code> 폴더에 YAML 파일 하나를 두면 <b>GitHub Actions</b>가 이를 실행합니다.</p>
+
 <div class="codeblock">
 <span class="cb-label">.github/workflows/ci.yml</span>
 <pre><code data-lang="yaml">name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main]     # main에 올라온 커밋
+  pull_request:          # 모든 PR
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest   # 리눅스 — 파일명 대소문자 문제도 여기서 잡힌다
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7        # 저장소 코드 내려받기
+      - uses: actions/setup-node@v7      # Node.js 설치
         with:
-          node-version: 20
-          cache: npm
-      - run: npm ci               # lock 파일 그대로 설치 (46장)
-      - run: npm run lint         # 48장
-      - run: npx tsc --noEmit     # 50장 — 타입 검사
-      - run: npm test             # 75장
-      - run: npm run build        # 빌드가 되는지 확인</code></pre>
+          node-version: 24               # LTS 버전
+          cache: npm                     # 의존성 캐시로 설치 시간 단축
+      - run: npm ci                      # lock 파일 그대로 설치 (46장)
+      - run: npm run lint                # ESLint (48장)
+      - run: npm run typecheck           # tsc --noEmit — 타입 검사 (50장)
+      - run: npm test                    # 테스트 (75장)
+      - run: npm run build               # 빌드가 되는지 확인</code></pre>
 </div>
+
+<p>여기서 부르는 명령은 <code>package.json</code>의 <code>scripts</code>에 정의해 둡니다.
+로컬에서 쓰는 명령과 CI가 쓰는 명령이 <b>같아야</b> "내 컴퓨터에선 되는데"가 줄어듭니다.</p>
+
+<div class="codeblock">
+<span class="cb-label"><span class="term" data-term="package-json">package.json</span> (일부)</span>
+<pre><code data-lang="json">{
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "next build"
+  }
+}</code></pre>
+</div>
+
+<p>각 단계는 위에서부터 차례로 실행되고, <b>하나라도 실패하면 거기서 멈추고 PR에 빨간 X가 표시</b>됩니다.
+저장소 설정의 브랜치 보호 규칙(Branch protection)에서 이 검사를 "필수"로 지정하면 실패한 PR은 머지할 수 없습니다.
+<code>actions/checkout@v7</code>의 <code>@v7</code>은 액션의 메이저 버전이며, 이 예시는 2026년 11월 기준입니다.
+버전은 각 액션의 GitHub 저장소 릴리스 페이지에서 확인하세요.
+<code>test</code>는 감시 모드가 아니라 한 번 실행하고 끝나는 명령이어야 CI가 멈추지 않습니다(Vitest라면 <code>vitest run</code>).</p>
 
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🚦</span> CI가 최종 방어선입니다</p>
 <p style="margin-bottom:0">48장에서 말했듯 <span class="term" data-term="git-hook">Git 훅</span>은 <b>우회할 수 있습니다.</b>
-CI는 <b>모든 PR에서 반드시 실행</b>되고, 실패하면 <span class="term" data-term="merge">머지</span>를 막을 수 있습니다.<br>
+CI는 <b>모든 PR에서 반드시 실행</b>되고, 실패하면 머지를 막을 수 있습니다.<br>
 <b>검사 순서도 중요합니다.</b> 빠른 것(린트·타입)을 먼저 돌려
 <b>몇 초 만에 실패</b>하게 하면 피드백이 빨라집니다.</p>
 </div>
@@ -270,6 +306,7 @@ CI는 <b>모든 PR에서 반드시 실행</b>되고, 실패하면 <span class="t
 <li><a href="https://nextjs.org/docs/app/getting-started/deploying" target="_blank" rel="noopener">Next.js — 배포하기</a></li>
 <li><a href="https://vercel.com/docs" target="_blank" rel="noopener">Vercel 문서</a></li>
 <li><a href="https://docs.github.com/ko/actions" target="_blank" rel="noopener">GitHub Actions (한국어)</a></li>
+<li><a href="https://docs.github.com/en/actions/tutorials/build-and-test-code/nodejs" target="_blank" rel="noopener">GitHub Actions — Node.js 빌드와 테스트 (영문)</a></li>
 <li><a href="https://nextjs.org/docs/app/guides/environment-variables" target="_blank" rel="noopener">Next.js — 환경 변수</a></li>
 </ul>
 
@@ -290,20 +327,20 @@ FB_QUIZ([
   {
     q: "로컬(macOS)에서는 잘 되는데 배포 후 \"모듈을 찾을 수 없다\"는 오류가 납니다. 흔한 원인은?",
     o: [
-      "네트워크 문제",
-      "import 경로의 대소문자 불일치. macOS는 파일명 대소문자를 구분하지 않지만 리눅스 서버는 구분한다",
-      "node_modules를 커밋하지 않아서",
-      "TypeScript 버전 차이"
+      "서버의 Node.js 버전이 로컬과 달라서",
+      "import 경로의 대소문자가 실제 파일명과 달라서",
+      "<code>node_modules</code>를 커밋하지 않아서",
+      "<code>.env</code> 파일이 배포 서버에 없어서"
     ],
     a: 1,
-    e: "<code>./Button</code>과 <code>./button</code>이 macOS에서는 같은 파일이지만 리눅스에서는 다릅니다. 배포 서버는 대부분 리눅스이므로 <b>로컬 빌드에서는 통과하고 배포에서만 실패</b>합니다. CI에서 리눅스로 빌드를 돌리면 미리 잡을 수 있습니다."
+    e: "<code>./Button</code>과 <code>./button</code>이 macOS에서는 같은 파일이지만 리눅스에서는 다릅니다. 배포 서버는 대부분 리눅스이므로 <b>로컬 빌드에서는 통과하고 배포에서만 실패</b>합니다. CI에서 리눅스로 빌드를 돌리면 미리 잡을 수 있습니다. macOS는 파일명 대소문자를 구분하지 않지만 리눅스 서버는 구분합니다."
   },
   {
     q: "<code>NEXT_PUBLIC_</code> 접두사가 붙은 환경 변수의 특징은?",
     o: [
-      "서버에서만 접근 가능하다",
-      "빌드 시 클라이언트 번들에 문자열로 포함되어 브라우저에서 누구나 볼 수 있다",
-      "자동으로 암호화된다",
+      "서버 컴포넌트에서만 읽을 수 있다",
+      "빌드 때 클라이언트 번들에 박혀 누구나 볼 수 있다",
+      "빌드 시 자동으로 암호화되어 들어간다",
       "개발 환경에서만 동작한다"
     ],
     a: 1,
@@ -313,9 +350,9 @@ FB_QUIZ([
     q: "미리보기 배포(Preview Deployment)의 가장 큰 이점은?",
     o: [
       "빌드 속도가 빨라진다",
-      "PR마다 실제 동작하는 URL이 생겨 리뷰어·기획자·디자이너가 코드를 읽지 않고도 결과를 확인하고 실기기 테스트도 가능하다",
-      "테스트를 자동으로 작성해 준다",
-      "환경 변수가 필요 없어진다"
+      "PR마다 동작하는 URL이 생겨 누구나 결과를 확인한다",
+      "프로덕션과 같은 데이터베이스로 안전하게 실험한다",
+      "머지 전에 코드 리뷰를 대신해 준다"
     ],
     a: 1,
     e: "코드 리뷰에서 <b>\"실제로 어떻게 보이는지\"</b>를 확인하는 것은 매우 어렵습니다. 브랜치마다 실제 URL이 생기면 개발 환경 설정 없이 누구나 확인할 수 있고, 모바일 실기기 테스트도 링크 하나로 끝납니다."
@@ -323,21 +360,21 @@ FB_QUIZ([
   {
     q: "환경 변수를 앱 시작 시점에 스키마로 검증하는 이유는?",
     o: [
-      "타입스크립트 문법 때문에",
-      "누락되거나 형식이 틀린 변수를 즉시 명확한 오류로 알 수 있어, 배포 후 사용자가 특정 기능을 쓸 때 undefined로 터지는 상황을 막기 때문",
-      "환경 변수를 암호화하기 위해",
-      "빌드 속도를 높이기 위해"
+      "TypeScript가 환경 변수의 타입을 몰라서",
+      "누락·형식 오류를 시작하자마자 명확한 오류로 알기 위해",
+      "값을 검증해야 클라이언트에 노출되지 않아서",
+      "검증하면 빌드 결과가 캐시되어서"
     ],
     a: 1,
-    e: "검증이 없으면 <b>그 변수를 실제로 쓰는 코드가 실행될 때까지</b> 문제를 모릅니다. 결제 기능처럼 드물게 실행되는 경로라면 며칠 뒤에 발견될 수도 있습니다. 시작 시점 검증은 문제를 <b>가장 이른 시점</b>으로 당깁니다."
+    e: "검증이 없으면 <b>그 변수를 실제로 쓰는 코드가 실행될 때까지</b> 문제를 모릅니다. 결제 기능처럼 드물게 실행되는 경로라면 며칠 뒤에 발견될 수도 있습니다. 시작 시점 검증은 문제를 <b>가장 이른 시점</b>으로 당깁니다. 검증 없이는 배포 후 사용자가 그 기능을 쓸 때 <code>undefined</code>로 터지고 나서야 알게 됩니다."
   },
   {
     q: "배포 직후 심각한 오류가 발견되었습니다. 가장 먼저 할 일은?",
     o: [
       "원인을 분석하고 코드를 수정해 다시 배포한다",
-      "이전 버전으로 롤백해 사용자 영향을 끊고, 그다음 침착하게 원인을 찾는다",
-      "서버를 재시작한다",
-      "사용자에게 공지만 올린다"
+      "이전 버전으로 롤백한 뒤 원인을 찾는다",
+      "핫픽스 브랜치를 만들어 바로 수정본을 배포한다",
+      "오류 추적 도구의 알림을 잠시 끈다"
     ],
     a: 1,
     e: "장애 상황에서 급하게 수정한 코드는 <b>또 다른 문제를 만들기 쉽습니다</b>. 현대 호스팅 플랫폼은 이전 배포를 보관하므로 버튼 하나로 되돌릴 수 있습니다. <b>먼저 피해를 멈추고</b> 원인 분석은 안정된 상태에서 하는 것이 원칙입니다."

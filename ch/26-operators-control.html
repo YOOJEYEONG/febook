@@ -6,6 +6,12 @@
 <title>26장. 연산자와 제어문 — 프엔북</title>
 <meta name="description" content="산술·비교·논리 연산자, 단축 평가, 삼항 연산자, if와 switch, for·while·for...of 반복문, 옵셔널 체이닝을 실행 가능한 예제로 배웁니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="26장. 연산자와 제어문 — 프엔북">
 <meta property="og:description" content="산술·비교·논리 연산자, 단축 평가, 삼항 연산자, if와 switch, for·while·for...of 반복문, 옵셔널 체이닝을 실행 가능한 예제로 배웁니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -333,7 +339,7 @@ function process(user) {
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
 <li><code>+</code>는 한쪽이 문자열이면 <b>연결</b>이 된다. 입력값은 <code>Number()</code>로 변환.</li>
-<li><code>&amp;&amp;</code>·<code>||</code>는 <b>불리언이 아니라 피연산자 중 하나</b>를 반환한다.</li>
+<li><code>&amp;&amp;</code>·<code>||</code>는 <b><span class="term" data-term="boolean">불리언</span>이 아니라 피연산자 중 하나</b>를 반환한다.</li>
 <li><code>?.</code>은 <b>없을 수 있음을 알 때만</b> 쓴다. 남발하면 버그가 숨는다.</li>
 <li>값 선택은 <b>삼항</b>, 동작 분기는 <b><code>if</code></b>. 삼항 중첩 금지.</li>
 <li><code>switch</code>의 <code>break</code>를 빠뜨리면 아래로 흘러간다.</li>
@@ -373,21 +379,21 @@ FB_QUIZ([
   {
     q: "배열을 순회할 때 <code>for...in</code>을 쓰면 안 되는 이유는?",
     o: [
-      "속도가 느려서",
-      "인덱스가 문자열로 나오고, 배열에 추가된 다른 속성이나 상속된 속성까지 순회하기 때문",
-      "구형 브라우저에서 지원되지 않아서",
+      "배열에는 for...in 문법 자체가 없어서",
+      "인덱스가 문자열로 나오고 다른 속성도 돈다",
+      "값이 아니라 길이(length)만 돌려줘서",
       "break를 쓸 수 없어서"
     ],
     a: 1,
-    e: "<code>for...in</code>은 <b>객체의 열거 가능한 키</b>를 도는 문법입니다. 배열에 쓰면 인덱스가 문자열(<code>\"0\"</code>)로 나오고, 배열 객체에 붙은 다른 속성까지 포함됩니다. 배열에는 <code>for...of</code>가 정답입니다."
+    e: "<code>for...in</code>은 <b>객체의 열거 가능한 키</b>를 도는 문법이라 배열에도 동작은 하고, <code>break</code>도 쓸 수 있습니다. 하지만 인덱스가 문자열(<code>\"0\"</code>)로 나오고, 배열 객체에 붙은 다른 속성이나 상속된 속성까지 포함됩니다. 배열에는 <code>for...of</code>가 정답입니다."
   },
   {
     q: "<code>const value = count || 10;</code> 에서 <code>count</code>가 <code>0</code>일 때 결과는?",
     o: [
       "0 — 유효한 값이므로 그대로 쓰인다",
-      "10 — 0은 falsy라서 오른쪽 값이 선택된다",
-      "undefined",
-      "오류가 발생한다"
+      "10 — 0은 falsy라서",
+      "<code>false</code> — 비교 결과가 담긴다",
+      "<code>true</code> — 오른쪽이 참이므로"
     ],
     a: 1,
     e: "<code>||</code>는 왼쪽이 <b>falsy면</b> 오른쪽을 반환하는데, <code>0</code>은 falsy입니다. 유효한 0이 기본값으로 덮여 쓰이는 <b>조용한 버그</b>가 생깁니다. \"값이 없을 때만\"이 목적이면 <code>??</code>를 써야 합니다."
@@ -396,18 +402,18 @@ FB_QUIZ([
     q: "<code>switch</code> 문에서 <code>break</code>를 빠뜨리면?",
     o: [
       "그 case가 실행되지 않는다",
-      "일치한 case 이후의 모든 case 본문이 이어서 실행된다(fall-through)",
+      "다음 case 본문까지 이어서 실행된다",
       "문법 오류가 발생한다",
-      "default로 이동한다"
+      "곧바로 default로 이동한다"
     ],
     a: 1,
-    e: "<code>switch</code>는 일치하는 <code>case</code>에서 <b>진입</b>한 뒤 <code>break</code>나 <code>return</code>을 만날 때까지 <b>계속 아래로 흘러갑니다</b>. 의도적으로 여러 case를 묶을 때는 유용하지만, 실수로 빠뜨리면 찾기 어려운 버그가 됩니다."
+    e: "일치한 case 이후의 case 본문이 이어서 실행되는 현상을 fall-through라고 합니다. <code>switch</code>는 일치하는 <code>case</code>에서 <b>진입</b>한 뒤 <code>break</code>나 <code>return</code>을 만날 때까지 <b>계속 아래로 흘러갑니다</b>. 의도적으로 여러 case를 묶을 때는 유용하지만, 실수로 빠뜨리면 찾기 어려운 버그가 됩니다."
   },
   {
     q: "<code>user?.profile?.nickname</code> 에서 <code>user.profile</code>이 <code>null</code>이면?",
     o: [
       "TypeError가 발생한다",
-      "<code>undefined</code>를 반환하고 오류는 나지 않는다",
+      "<code>undefined</code>를 반환한다",
       "<code>null</code>을 반환한다",
       "빈 문자열을 반환한다"
     ],

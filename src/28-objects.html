@@ -377,20 +377,20 @@ FB_QUIZ([
     q: "<code>const key = \"age\"; console.log(user.key)</code> 가 <code>undefined</code>인 이유는?",
     o: [
       "user에 age 속성이 없어서",
-      "점 표기법은 변수를 해석하지 않고 <code>\"key\"</code>라는 이름의 속성을 찾기 때문. 변수를 키로 쓰려면 <code>user[key]</code>여야 한다",
+      "점 표기법은 <code>\"key\"</code>라는 속성을 찾아서",
       "key가 예약어라서",
-      "const로 선언해서"
+      "const 변수는 속성 이름으로 쓸 수 없어서"
     ],
     a: 1,
-    e: "점 표기법 뒤의 이름은 <b>문자 그대로</b>의 속성 이름입니다. 변수에 담긴 이름으로 접근하려면 <b>대괄호 표기법</b> <code>user[key]</code>를 써야 합니다. 이 차이가 동적 속성 접근의 기본입니다."
+    e: "변수를 키로 쓰려면 <code>user[key]</code>여야 합니다. 점 표기법 뒤의 이름은 <b>문자 그대로</b>의 속성 이름입니다. 변수에 담긴 이름으로 접근하려면 <b>대괄호 표기법</b> <code>user[key]</code>를 써야 합니다. 이 차이가 동적 속성 접근의 기본입니다."
   },
   {
     q: "<code>const merged = { ...defaults, ...options }</code> 에서 두 객체에 같은 키가 있으면?",
     o: [
       "defaults의 값이 유지된다",
-      "options의 값이 이긴다. 뒤에 전개된 것이 앞의 값을 덮어쓰기 때문",
+      "options의 값이 이긴다",
       "오류가 발생한다",
-      "두 값이 배열로 합쳐진다"
+      "두 객체가 깊게 병합된다"
     ],
     a: 1,
     e: "전개 구문은 <b>왼쪽에서 오른쪽으로</b> 속성을 채워 넣으므로 <b>뒤에 온 값이 이깁니다</b>. 그래서 \"기본값을 먼저 펼치고 사용자 옵션을 나중에 펼치는\" 순서가 관용구입니다."
@@ -416,12 +416,12 @@ FB_QUIZ([
     q: "객체의 값들을 모두 두 배로 만든 <b>새 객체</b>를 만드는 올바른 방법은?",
     o: [
       "<code>obj.map(v =&gt; v * 2)</code>",
-      "<code>Object.fromEntries(Object.entries(obj).map(([k, v]) =&gt; [k, v * 2]))</code>",
+      "<code>entries</code> → <code>map</code> → <code>fromEntries</code>",
       "<code>[...obj].map(v =&gt; v * 2)</code>",
-      "<code>obj.forEach(v =&gt; v * 2)</code>"
+      "<code>Object.values(obj).map(v =&gt; v * 2)</code>"
     ],
     a: 1,
-    e: "객체에는 <code>map</code>이 없습니다. <code>Object.entries()</code>로 <code>[키, 값]</code> 배열을 만들고, 배열 <code>map</code>으로 가공한 뒤, <code>Object.fromEntries()</code>로 다시 객체로 돌리는 것이 표준 패턴입니다."
+    e: "객체에는 <code>map</code>이 없습니다. <code>Object.fromEntries(Object.entries(obj).map(([k, v]) =&gt; [k, v * 2]))</code>처럼 <code>Object.entries()</code>로 <code>[키, 값]</code> 배열을 만들고, 배열 <code>map</code>으로 가공한 뒤, <code>Object.fromEntries()</code>로 다시 객체로 돌리는 것이 표준 패턴입니다. <code>Object.values()</code>를 쓰면 키를 잃어 객체가 아니라 배열이 나옵니다."
   }
 ]);
 </script>

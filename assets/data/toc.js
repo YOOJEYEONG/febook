@@ -176,6 +176,15 @@ window.BOOK_TOC = {
         { n: 93, id: "93-interview", title: "면접 대비 핵심 질문" },
         { n: 94, id: "94-keep-learning", title: "계속 학습하기" }
       ]
+    },
+    {
+      n: 13, title: "실무 확장",
+      desc: "현업에서 바로 마주치는 세 가지 주제",
+      chapters: [
+        { n: 95, id: "95-auth-flow", title: "로그인과 인증 흐름 구현" },
+        { n: 96, id: "96-design-system", title: "디자인 시스템과 Storybook" },
+        { n: 97, id: "97-ai-coding-tools", title: "AI 코딩 도구와 일하기" }
+      ]
     }
   ]
 };

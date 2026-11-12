@@ -6,6 +6,12 @@
 <title>71장. Next.js App Router — 프엔북</title>
 <meta name="description" content="Next.js App Router의 파일 기반 라우팅, 서버 컴포넌트와 클라이언트 컴포넌트의 경계, 레이아웃과 로딩·에러 파일, 라우트 핸들러를 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="71장. Next.js App Router — 프엔북">
 <meta property="og:description" content="Next.js App Router의 파일 기반 라우팅, 서버 컴포넌트와 클라이언트 컴포넌트의 경계, 레이아웃과 로딩·에러 파일, 라우트 핸들러를 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -170,7 +176,7 @@ export default function Loading() {
 
 <div class="codeblock">
 <pre><code data-lang="tsx">// app/products/page.tsx — 서버 컴포넌트 (기본)
-import { db } from "@/lib/db";
+import { db } from "@/lib/db";   // 예시용 가상 모듈 (아래 설명 참고)
 import AddToCartButton from "./AddToCartButton";
 
 export default async function ProductsPage() {
@@ -187,6 +193,18 @@ export default async function ProductsPage() {
     &lt;/ul&gt;
   );
 }</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔎</span> <code>@/lib/db</code>와 <code>db.product.findMany()</code>는 어디서 왔나요?</p>
+<p style="margin-bottom:0"><b><code>@/</code>는 경로 별칭</b>입니다. <code>tsconfig.json</code>에 설정해 두면 <code>"../../lib/db"</code> 같은 긴 상대 경로 대신 "프로젝트 루트부터"라는 뜻으로 <code>@/</code>를 씁니다(<code>create-next-app</code>이 기본으로 만들어 줍니다).<br>
+<code>db</code>는 이 책에서 <b>예시용으로 가정한 가상 모듈</b>입니다. 실제 프로젝트에서는 Prisma·Drizzle 같은 <b>ORM</b>(데이터베이스 표를 <span class="term" data-term="javascript">JavaScript</span> 객체처럼 다루게 해 주는 라이브러리)이 이 자리에 옵니다.
+<code>findMany()</code>는 "여러 행을 가져와라", <code>create()</code>는 "새 행을 넣어라"라는 뜻으로만 읽으면 됩니다. 연습할 때는 아래처럼 가짜 함수로 바꿔도 똑같이 동작합니다.</p>
+<pre><code data-lang="ts">// lib/db.ts — 연습용 가짜 DB
+const products = [{ id: 1, name: "키보드" }, { id: 2, name: "마우스" }];
+export const db = {
+  product: { findMany: async () =&gt; products },
+};</code></pre>
 </div>
 
 <div class="codeblock">
@@ -211,7 +229,7 @@ export default function AddToCartButton({ productId }) {
 </div>
 
 <div class="box warn">
-<p class="box-title"><span class="box-ico">📦</span> 서버 → 클라이언트로 넘기는 <span class="term" data-term="props">props</span>는 직렬화 가능해야</p>
+<p class="box-title"><span class="box-ico">📦</span> 서버 → 클라이언트로 넘기는 <span class="term" data-term="props">props</span>는 <span class="term" data-term="serialization">직렬화</span> 가능해야</p>
 <div class="codeblock" style="margin:.6em 0 0">
 <pre><code data-lang="tsx">// ❌ 함수는 넘길 수 없습니다
 &lt;ClientButton onClick={() =&gt; console.log("x")} /&gt;
@@ -268,13 +286,13 @@ import { NextResponse } from "next/server";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);       // 3장의 URL API
   const category = searchParams.get("category");
-  const products = await db.product.findMany({ where: { category } });
+  const products = await db.product.findMany({ where: { category } });  // db는 위의 예시용 모듈
   return NextResponse.json(products);
 }
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const parsed = ProductSchema.safeParse(body);        // 54장 런타임 검증
+  const parsed = ProductSchema.safeParse(body);        // 54장 런타임 검증(Zod 스키마)
   if (!parsed.success) {
     return NextResponse.json({ error: "잘못된 요청" }, { status: 400 });
   }
@@ -296,12 +314,13 @@ DB를 직접 조회하면 됩니다. API 계층이 <b>불필요</b>합니다.<br
 </ul>
 </div>
 
-<h2 id="middleware">미들웨어</h2>
+<h2 id="middleware">프록시(옛 이름: 미들웨어)</h2>
 <div class="codeblock">
-<pre><code data-lang="ts">// middleware.ts — 요청이 페이지에 도달하기 전에 실행됩니다
+<pre><code data-lang="ts">// proxy.ts (프로젝트 루트) — 요청이 페이지에 도달하기 전에 실행됩니다
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export function middleware(request) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get("session");
   if (!token &amp;&amp; request.nextUrl.pathname.startsWith("/admin")) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -310,6 +329,12 @@ export function middleware(request) {
 }
 
 export const config = { matcher: ["/admin/:path*"] };</code></pre>
+</div>
+<div class="box myth">
+<p class="box-title"><span class="box-ico">📛</span> <code>middleware.ts</code>로 된 자료가 많은데요?</p>
+<p style="margin-bottom:0"><b>Next.js 16부터 <code>middleware</code> 파일 규칙은 deprecated(사용 중단 예정)되고 <code>proxy</code>로 이름이 바뀌었습니다.</b>
+하는 일은 같고, 파일 이름(<code>middleware.ts</code> → <code>proxy.ts</code>)과 함수 이름(<code>middleware</code> → <code>proxy</code>)만 바꾸면 됩니다.
+Express의 "미들웨어"와 헷갈린다는 이유였습니다. 옛 코드는 <code>npx @next/codemod@canary middleware-to-proxy .</code>로 자동 변환할 수 있습니다. (기준: Next.js 16, nextjs.org)</p>
 </div>
 <p>인증 확인, 리다이렉트, 국가별 분기 등에 씁니다.
 <b>모든 요청을 거치므로</b> 무거운 작업은 넣지 마세요.
@@ -346,6 +371,7 @@ export const config = { matcher: ["/admin/:path*"] };</code></pre>
 <li><a href="https://nextjs.org/docs/app/getting-started/server-and-client-components" target="_blank" rel="noopener">Next.js — 서버 컴포넌트와 클라이언트 컴포넌트</a></li>
 <li><a href="https://nextjs.org/docs/app/api-reference/file-conventions" target="_blank" rel="noopener">Next.js — 파일 규칙 전체</a></li>
 <li><a href="https://nextjs.org/learn" target="_blank" rel="noopener">Next.js 공식 학습 코스</a></li>
+<li><a href="https://nextjs.org/docs/app/api-reference/file-conventions/proxy" target="_blank" rel="noopener">Next.js — proxy.js (middleware에서 이름 변경)</a></li>
 </ul>
 
     <section class="quiz" id="quiz"></section>
@@ -365,24 +391,24 @@ FB_QUIZ([
   {
     q: "App Router에서 컴포넌트의 기본값은?",
     o: [
-      "클라이언트 컴포넌트",
-      "서버 컴포넌트. 훅이나 이벤트 핸들러가 필요할 때만 <code>\"use client\"</code>를 붙인다",
-      "정적 컴포넌트",
-      "파일 위치에 따라 자동으로 결정된다"
+      "클라이언트 컴포넌트 (기존 React 앱과 같다)",
+      "서버 컴포넌트",
+      "<code>page</code> 파일만 서버, 나머지는 클라이언트",
+      "<code>async</code>를 붙인 것만 서버 컴포넌트"
     ],
     a: 1,
-    e: "App Router는 <b>서버 우선</b>입니다. 서버 컴포넌트는 번들에 포함되지 않아 용량이 0이고 DB에 직접 접근할 수 있습니다(69장). 상호작용이 필요한 부분만 클라이언트로 분리합니다."
+    e: "App Router는 <b>서버 우선</b>입니다. 훅이나 이벤트 핸들러가 필요할 때만 <code>\"use client\"</code>를 붙입니다. 서버 컴포넌트의 코드는 번들에 포함되지 않고 DB에 직접 접근할 수 있습니다(69장). <code>async</code> 여부와는 상관이 없습니다."
   },
   {
     q: "페이지 최상단 파일에 <code>\"use client\"</code>를 붙이면?",
     o: [
-      "성능이 좋아진다",
-      "그 파일과 import하는 모든 하위 컴포넌트가 클라이언트 번들에 포함되어 서버 컴포넌트의 이점이 사라진다",
-      "서버 컴포넌트로 동작한다",
-      "아무 차이가 없다"
+      "그 파일만 클라이언트가 되고 import한 하위는 서버로 남는다",
+      "그 파일과 import하는 하위가 모두 클라이언트 번들에 들어간다",
+      "서버에서 미리 렌더링(SSR)하는 과정이 완전히 꺼진다",
+      "서버 데이터 조회 코드가 자동으로 API 호출로 바뀐다"
     ],
     a: 1,
-    e: "<code>\"use client\"</code>는 <b>경계 선언</b>입니다. 그 아래 전체가 클라이언트가 되므로, 상호작용이 필요한 <b>말단 컴포넌트</b>에만 붙이고 데이터 조회와 정적 마크업은 서버에 남겨야 합니다."
+    e: "<code>\"use client\"</code>는 <b>경계 선언</b>입니다. 그 아래에서 import한 것 전체가 클라이언트가 되므로, 상호작용이 필요한 <b>말단 컴포넌트</b>에만 붙여야 합니다. 클라이언트 컴포넌트도 첫 HTML은 서버에서 렌더링된다는 점은 흔한 오해 포인트입니다."
   },
   {
     q: "서버 컴포넌트에서 클라이언트 컴포넌트로 <b>넘길 수 없는</b> props는?",
@@ -390,32 +416,43 @@ FB_QUIZ([
       "문자열과 숫자",
       "배열과 평범한 객체",
       "함수(이벤트 핸들러 등)",
-      "불리언"
+      "서버 컴포넌트를 담은 children"
     ],
     a: 2,
-    e: "서버 컴포넌트의 결과는 <b>네트워크로 전송</b>되므로 직렬화 가능해야 합니다. 함수는 직렬화할 수 없습니다. 서버 로직을 호출해야 한다면 <b>Server Action</b>을 씁니다(72장)."
+    e: "서버 컴포넌트의 결과는 <b>네트워크로 전송</b>되므로 직렬화 가능해야 하고, 함수는 직렬화할 수 없습니다. 반대로 <code>children</code>으로 서버 컴포넌트를 넣는 것은 권장되는 패턴입니다. 서버 로직을 호출해야 한다면 <b>Server Action</b>을 씁니다(72장)."
   },
   {
     q: "<code>app/blog/loading.tsx</code> 파일을 만들면?",
     o: [
-      "수동으로 Suspense를 감싸야 한다",
-      "해당 라우트가 자동으로 Suspense로 감싸져, 데이터를 기다리는 동안 그 컴포넌트가 표시된다",
-      "로딩 스피너 라이브러리가 설치된다",
-      "빌드 시점에만 사용된다"
+      "<code>page.tsx</code>에서 직접 import해야 화면에 나온다",
+      "그 라우트가 자동으로 Suspense로 감싸져 대기 중에 표시된다",
+      "앱 전체의 모든 페이지에 같은 로딩 화면이 적용된다",
+      "클라이언트에서 fetch할 때만 표시된다"
     ],
     a: 1,
-    e: "Next.js의 특수 파일 규칙입니다. <code>loading</code>은 Suspense 경계를, <code>error</code>는 에러 경계를 <b>자동으로</b> 만들어 줍니다(69장). 파일을 만드는 것만으로 선언적 로딩·에러 처리가 완성됩니다."
+    e: "Next.js의 특수 파일 규칙입니다. <code>loading</code>은 그 폴더와 하위 라우트의 Suspense 경계를, <code>error</code>는 에러 경계를 <b>자동으로</b> 만들어 줍니다(69장). import할 필요가 없고 범위는 그 폴더 아래로 한정됩니다."
+  },
+  {
+    q: "Next.js 16에서 \"요청이 페이지에 닿기 전에\" 로그인 쿠키를 보고 리다이렉트하는 파일은?",
+    o: [
+      "<code>middleware.ts</code>만 쓸 수 있다",
+      "<code>proxy.ts</code>",
+      "<code>app/layout.tsx</code> 안의 <code>useEffect</code>",
+      "<code>app/api/route.ts</code>"
+    ],
+    a: 1,
+    e: "Next.js 16부터 <code>middleware</code> 파일 규칙은 deprecated되고 <code>proxy</code>로 이름이 바뀌었습니다. 함수도 <code>proxy</code>라는 이름으로 내보냅니다. <code>useEffect</code>는 브라우저에서 화면이 그려진 뒤 실행되므로 \"닿기 전\" 검사가 아니고, 라우트 핸들러는 그 주소로 온 요청만 처리합니다."
   },
   {
     q: "서버 컴포넌트에서 DB를 직접 조회할 수 있는데도 <b>라우트 핸들러(API)</b>가 필요한 경우는?",
     o: [
-      "페이지에 데이터를 표시할 때",
-      "모바일 앱 등 외부에서 호출할 API, 웹훅 수신, 클라이언트 컴포넌트에서의 호출, 비밀 키를 감춘 외부 API 프록시",
-      "레이아웃을 만들 때",
-      "라우트 핸들러는 항상 필요하다"
+      "내 페이지에 상품 목록을 표시할 때",
+      "모바일 앱이 호출할 API나 결제사 웹훅을 받을 때",
+      "여러 페이지가 같은 레이아웃을 공유할 때",
+      "서버 컴포넌트의 DB 조회 결과를 캐시하고 싶을 때"
     ],
     a: 1,
-    e: "내 화면에 데이터를 보여주는 것만이 목적이라면 서버 컴포넌트에서 직접 조회하는 편이 간단하고 빠릅니다. API 계층은 <b>다른 소비자가 있거나 외부와 통신해야 할 때</b> 의미가 있습니다."
+    e: "내 화면에 데이터를 보여주는 것만이 목적이라면 서버 컴포넌트에서 직접 조회하는 편이 간단합니다. API 계층은 모바일 앱·외부 서비스·웹훅처럼 <b>다른 소비자가 있거나 외부와 통신해야 할 때</b>, 그리고 클라이언트 컴포넌트에서 호출해야 할 때 의미가 있습니다."
   }
 ]);
 </script>

@@ -6,6 +6,12 @@
 <title>49장. 브라우저 개발자 도구 — 프엔북</title>
 <meta name="description" content="브라우저 개발자 도구의 Elements·Console·Network·Sources·Application·Performance·Lighthouse 패널을 실무 기준으로 활용하는 법을 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="49장. 브라우저 개발자 도구 — 프엔북">
 <meta property="og:description" content="브라우저 개발자 도구의 Elements·Console·Network·Sources·Application·Performance·Lighthouse 패널을 실무 기준으로 활용하는 법을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -279,7 +285,7 @@ FB_QUIZ([
     q: "\"API 데이터가 화면에 안 나와요\"라는 문제에서 가장 먼저 확인할 패널은?",
     o: [
       "Elements",
-      "Network — 요청이 실제로 나갔는지, 상태 코드가 무엇인지, 응답 본문이 어떤지 확인한다",
+      "Network",
       "Performance",
       "Application"
     ],
@@ -289,41 +295,41 @@ FB_QUIZ([
   {
     q: "Elements의 Styles 패널에서 어떤 CSS 선언에 <b>취소선</b>이 그어져 있습니다. 무슨 뜻인가요?",
     o: [
-      "문법 오류가 있다",
-      "다른 규칙에 밀려 적용되지 않았다는 뜻이며, 어느 규칙이 이겼는지도 함께 확인할 수 있다",
-      "브라우저가 지원하지 않는다",
+      "<code>!important</code>가 붙어 있다",
+      "다른 규칙에 밀려 적용되지 않았다",
+      "현재 화면 너비에서만 적용되는 규칙이다",
       "주석 처리되어 있다"
     ],
     a: 1,
-    e: "취소선은 <b>캐시케이드에서 밀렸다</b>는 표시입니다(12장). 명시도가 더 높은 규칙이 있거나 나중에 선언된 같은 명시도의 규칙이 이긴 경우입니다. \"스타일이 안 먹어요\" 문제를 가장 빠르게 진단하는 단서입니다."
+    e: "취소선은 <b>캐시케이드에서 밀렸다</b>는 표시입니다(12장). 명시도가 더 높은 규칙이 있거나 나중에 선언된 같은 명시도의 규칙이 이긴 경우입니다. \"스타일이 안 먹어요\" 문제를 가장 빠르게 진단하는 단서입니다. 어느 규칙이 이겼는지도 바로 아래에서 확인할 수 있습니다."
   },
   {
     q: "반복문이 1000번 도는데 특정 조건에서만 멈춰서 확인하고 싶습니다. 무엇을 쓰나요?",
     o: [
       "console.log를 1000번 출력한다",
-      "조건부 중단점 — 줄 번호를 우클릭해 <code>id === 42</code> 같은 조건을 걸면 그때만 멈춘다",
-      "코드를 주석 처리한다",
+      "조건부 중단점",
+      "<code>debugger</code> 문을 반복문 첫 줄에 넣는다",
       "Performance 녹화"
     ],
     a: 1,
-    e: "<b>조건부 중단점</b>은 반복문·리스트 렌더링 디버깅의 핵심 기능입니다. 멈추지 않고 값만 보고 싶다면 <b>로그포인트</b>를 쓰면 코드를 수정하지 않고도 <code>console.log</code> 효과를 얻습니다."
+    e: "<b>조건부 중단점</b>은 반복문·리스트 렌더링 디버깅의 핵심 기능입니다. 멈추지 않고 값만 보고 싶다면 <b>로그포인트</b>를 쓰면 코드를 수정하지 않고도 <code>console.log</code> 효과를 얻습니다. 줄 번호를 우클릭해 <code>id === 42</code> 같은 조건을 걸면 그때만 멈춥니다."
   },
   {
     q: "개발 중 네트워크 속도를 Slow 4G로 제한해 테스트해야 하는 이유는?",
     o: [
       "서버 부하를 줄이기 위해",
-      "개발자 환경은 빠르고 캐시가 따뜻해서, 로딩 상태 누락·레이아웃 깜빡임·중복 클릭 같은 실제 문제가 드러나지 않기 때문",
+      "빠른 환경에선 로딩 관련 문제가 드러나지 않아서",
       "브라우저 캐시를 비우기 위해",
       "Lighthouse 점수를 올리기 위해"
     ],
     a: 1,
-    e: "빠른 환경에서는 로딩이 순식간이라 <b>로딩 UI가 없어도 티가 나지 않습니다</b>. 실제 사용자는 느린 네트워크와 저사양 기기를 씁니다. 속도를 제한하면 이런 문제가 즉시 보입니다."
+    e: "빠른 환경에서는 로딩이 순식간이라 <b>로딩 UI가 없어도 티가 나지 않습니다</b>. 실제 사용자는 느린 네트워크와 저사양 기기를 씁니다. 속도를 제한하면 이런 문제가 즉시 보입니다. 로딩 상태 누락·레이아웃 깜빡임·중복 클릭 같은 문제가 이때 드러납니다."
   },
   {
     q: "Lighthouse 접근성 점수가 100점입니다. 올바른 해석은?",
     o: [
       "접근성이 완벽하다",
-      "자동으로 검사 가능한 항목만 통과했다는 뜻이며, alt 텍스트의 적절성이나 키보드 흐름 같은 것은 사람이 확인해야 한다",
+      "자동 검사 가능한 항목만 통과했다는 뜻이다",
       "스크린 리더 테스트가 완료되었다",
       "WCAG AA를 완전히 만족한다"
     ],

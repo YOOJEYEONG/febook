@@ -6,6 +6,12 @@
 <title>42장. 정규표현식 — 프엔북</title>
 <meta name="description" content="정규표현식의 기본 문법과 메타 문자, 플래그, 그룹과 캡처, JavaScript 메서드 사용법, 그리고 실무에서 쓰는 패턴과 주의점을 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="42장. 정규표현식 — 프엔북">
 <meta property="og:description" content="정규표현식의 기본 문법과 메타 문자, 플래그, 그룹과 캡처, JavaScript 메서드 사용법, 그리고 실무에서 쓰는 패턴과 주의점을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -298,31 +304,31 @@ FB_QUIZ([
   {
     q: "<code>/[a-zA-Z]+/</code> 로 한글 이름을 검사하면?",
     o: [
-      "정상적으로 매칭된다",
-      "매칭되지 않는다. 한글은 이 범위에 없으며 <code>[가-힣]</code>이나 유니코드 속성을 써야 한다",
-      "브라우저에 따라 다르다",
+      "정상적으로 매칭된다. +가 모든 글자를 받는다",
+      "매칭되지 않는다. 한글은 범위 밖이다",
+      "<code>i</code> 플래그를 붙이면 매칭된다",
       "오류가 발생한다"
     ],
     a: 1,
-    e: "<code>[a-zA-Z]</code>와 <code>\\w</code>는 <b>영문 기준</b>입니다. 한글은 <code>[가-힣]</code>(완성형) 범위나 <code>\\p{Script=Hangul}</code>(<code>u</code> 플래그 필요)로 다뤄야 합니다. 이것을 모르고 만든 검증이 한국어 사용자를 막는 경우가 흔합니다."
+    e: "한글은 <code>[a-zA-Z]</code> 범위에 없으므로 <code>[가-힣]</code>이나 유니코드 속성을 써야 합니다. <code>[a-zA-Z]</code>와 <code>\\w</code>는 <b>영문 기준</b>입니다. 한글은 <code>[가-힣]</code>(완성형) 범위나 <code>\\p{Script=Hangul}</code>(<code>u</code> 플래그 필요)로 다뤄야 합니다. 이것을 모르고 만든 검증이 한국어 사용자를 막는 경우가 흔합니다."
   },
   {
     q: "<code>const re = /a/g;</code> 로 같은 문자열에 <code>test()</code>를 세 번 호출하면 결과가 true, true, false로 나옵니다. 이유는?",
     o: [
-      "정규식 버그다",
-      "g 플래그가 붙은 정규식 객체는 lastIndex 상태를 유지해 다음 호출이 이전 위치부터 검색하기 때문",
-      "test는 두 번까지만 동작해서",
-      "문자열이 변경되어서"
+      "test()가 문자열을 소비해 줄여 나가서",
+      "g 플래그 정규식이 lastIndex를 기억해서",
+      "같은 정규식은 두 번까지만 캐시되어서",
+      "세 번째부터는 대소문자를 구분해서"
     ],
     a: 1,
-    e: "<code>g</code> 플래그는 <b>연속 검색</b>을 위한 것이라 정규식 객체가 <code>lastIndex</code>를 기억합니다. 단순 \"포함 여부\" 검사에는 <code>g</code>를 붙이지 말고, 필요하면 매번 새 객체를 만들거나 <code>lastIndex = 0</code>으로 초기화하세요."
+    e: "g 플래그가 붙은 정규식 객체는 lastIndex 상태를 유지해 다음 호출이 이전 위치부터 검색합니다. <code>g</code> 플래그는 <b>연속 검색</b>을 위한 것이라 정규식 객체가 <code>lastIndex</code>를 기억합니다. 단순 \"포함 여부\" 검사에는 <code>g</code>를 붙이지 말고, 필요하면 매번 새 객체를 만들거나 <code>lastIndex = 0</code>으로 초기화하세요."
   },
   {
     q: "이메일 검증에 대해 실무적으로 옳은 접근은?",
     o: [
-      "RFC를 완전히 만족하는 긴 정규식을 찾아 사용한다",
-      "형식은 느슨하게 검사하고, 실제 유효성은 인증 메일 발송으로 확인한다",
-      "정규식 없이 아무 값이나 받는다",
+      "RFC를 완전히 만족하는 긴 정규식을 쓴다",
+      "형식은 느슨히, 실제 확인은 인증 메일로",
+      "@가 있는지만 <code>includes</code>로 검사한다",
       "도메인 목록을 만들어 화이트리스트로 검사한다"
     ],
     a: 1,
@@ -332,23 +338,23 @@ FB_QUIZ([
     q: "<code>\"&lt;b&gt;굵게&lt;/b&gt; 그리고 &lt;i&gt;기울임&lt;/i&gt;\".match(/&lt;.*&gt;/)[0]</code> 의 결과는?",
     o: [
       "\"&lt;b&gt;\"",
-      "문자열의 첫 &lt; 부터 마지막 &gt; 까지 전체 — <code>.*</code>는 탐욕적이라 최대한 길게 매칭하기 때문",
-      "빈 문자열",
-      "오류"
+      "첫 &lt; 부터 마지막 &gt; 까지 전체",
+      "\"&lt;b&gt;굵게&lt;/b&gt;\"",
+      "[\"&lt;b&gt;\", \"&lt;/b&gt;\", \"&lt;i&gt;\", \"&lt;/i&gt;\"]"
     ],
     a: 1,
-    e: "<code>*</code>·<code>+</code>는 기본적으로 <b>탐욕적(greedy)</b>이라 가능한 한 길게 먹습니다. 태그 하나만 잡으려면 <code>&lt;.*?&gt;</code>처럼 <b>게으른</b> 수량자를 쓰거나 <code>&lt;[^&gt;]*&gt;</code>처럼 명시적으로 제한해야 합니다."
+    e: "<code>.*</code>는 탐욕적이라 최대한 길게 매칭합니다. g 플래그가 없으니 배열 전체가 아니라 첫 매칭 하나가 나옵니다. <code>*</code>·<code>+</code>는 기본적으로 <b>탐욕적(greedy)</b>이라 가능한 한 길게 먹습니다. 태그 하나만 잡으려면 <code>&lt;.*?&gt;</code>처럼 <b>게으른</b> 수량자를 쓰거나 <code>&lt;[^&gt;]*&gt;</code>처럼 명시적으로 제한해야 합니다."
   },
   {
     q: "<code>/^(a+)+$/</code> 같은 정규식이 위험한 이유는?",
     o: [
       "문법 오류라서",
-      "중첩 반복 때문에 매칭 실패 시 경우의 수가 지수적으로 폭발해 메인 스레드를 몇 분간 멈출 수 있다(ReDoS)",
-      "메모리를 무한히 사용해서",
-      "브라우저가 지원하지 않아서"
+      "실패 시 경우의 수가 폭발해 멈출 수 있어서",
+      "a가 아닌 글자에서 무한 루프에 빠져서",
+      "괄호 그룹이 메모리에 영원히 남아서"
     ],
     a: 1,
-    e: "중첩된 반복은 실패할 때 <b>백트래킹</b> 경우의 수가 지수적으로 늘어납니다. 짧은 입력으로도 브라우저가 멈추며, 공격자가 이를 노리는 것을 <b>ReDoS</b>라고 합니다. 중첩 반복을 피하고, 복잡하면 정규식 대신 코드로 푸는 것이 안전합니다."
+    e: "중첩 반복 때문에 매칭 실패 시 경우의 수가 지수적으로 폭발해 메인 스레드를 오래 멈출 수 있습니다(ReDoS). 중첩된 반복은 실패할 때 <b>백트래킹</b> 경우의 수가 지수적으로 늘어납니다. 짧은 입력으로도 브라우저가 멈추며, 공격자가 이를 노리는 것을 <b>ReDoS</b>라고 합니다. 중첩 반복을 피하고, 복잡하면 정규식 대신 코드로 푸는 것이 안전합니다."
   }
 ]);
 </script>

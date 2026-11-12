@@ -260,21 +260,21 @@ FB_QUIZ([
   {
     q: "<code>&lt;span&gt;</code>에 <code>width: 200px; height: 100px;</code> 을 줬는데 아무 변화가 없습니다. 이유는?",
     o: [
-      "span은 CSS를 지원하지 않아서",
-      "인라인 요소는 너비·높이가 적용되지 않기 때문. <code>display: inline-block</code> 등으로 바꿔야 한다",
-      "px 단위를 쓰면 안 되기 때문",
+      "span에는 px 대신 em만 쓸 수 있어서",
+      "인라인 요소는 너비·높이가 적용되지 않아서",
+      "height는 내용이 있어야만 적용되어서",
       "부모에 position이 없기 때문"
     ],
     a: 1,
-    e: "인라인 요소는 <b>내용 크기만큼만</b> 차지하도록 설계되어 <code>width</code>·<code>height</code>와 상하 <code>margin</code>이 적용되지 않습니다. 크기를 지정하려면 <code>inline-block</code>이나 <code>block</code>, 또는 flex·grid 아이템으로 만들어야 합니다."
+    e: "<code>display: inline-block</code> 등으로 바꿔야 합니다. 인라인 요소는 <b>내용 크기만큼만</b> 차지하도록 설계되어 <code>width</code>·<code>height</code>와 상하 <code>margin</code>이 적용되지 않습니다. 크기를 지정하려면 <code>inline-block</code>이나 <code>block</code>, 또는 flex·grid 아이템으로 만들어야 합니다."
   },
   {
     q: "위 요소에 <code>margin-bottom: 30px</code>, 아래 요소에 <code>margin-top: 20px</code>을 줬는데 간격이 30px입니다. 이 현상의 이름과 성격은?",
     o: [
-      "브라우저 버그이며 <code>!important</code>로 해결한다",
-      "마진 상쇄. 명세에 정의된 정상 동작이며 인접한 수직 마진은 큰 값 하나만 적용된다",
-      "box-sizing 설정 오류",
-      "margin은 px 단위를 지원하지 않아 생기는 문제"
+      "box-sizing이 content-box라서 생기는 계산 오류",
+      "마진 상쇄. 큰 값 하나만 남는 정상 동작",
+      "부모의 padding이 마진을 흡수한 것",
+      "margin-top은 첫 요소에만 적용되는 규칙"
     ],
     a: 1,
     e: "<b>마진 상쇄</b>는 명세에 정의된 동작입니다. 수직으로 인접한 마진은 합쳐져 <b>큰 값 하나</b>만 남습니다. 부모를 <code>display: flex</code>로 만들거나 <code>gap</code>을 쓰면 상쇄가 일어나지 않아 실무에서는 이 방식을 선호합니다."
@@ -293,13 +293,13 @@ FB_QUIZ([
   {
     q: "레이아웃이 삐져나올 때 <code>overflow: hidden</code>을 습관적으로 붙이는 것의 위험은?",
     o: [
-      "페이지 로딩이 느려진다",
-      "넘친 내용이 잘려 사용자가 볼 수 없게 되며, 글자 크기를 키우는 사용자나 긴 번역문에서 정보 손실이 생긴다",
-      "해당 요소의 배경색이 사라진다",
-      "자식 요소가 삭제된다"
+      "요소의 높이가 0으로 줄어든다",
+      "넘친 내용이 잘려 정보가 사라진다",
+      "그 요소 안에서 스크롤이 생긴다",
+      "자식 요소가 DOM에서 삭제된다"
     ],
     a: 1,
-    e: "<code>hidden</code>은 넘친 부분을 <b>잘라내고 스크롤도 허용하지 않습니다</b>. 화면이 깔끔해 보여도 정보가 사라진 것입니다. 대개 <code>auto</code>가 낫고, 근본 원인인 고정 높이나 과도한 너비를 먼저 확인해야 합니다."
+    e: "글자 크기를 키우는 사용자나 긴 번역문에서 특히 정보 손실이 생깁니다. <code>hidden</code>은 넘친 부분을 <b>잘라내고 스크롤도 허용하지 않습니다</b>. 화면이 깔끔해 보여도 정보가 사라진 것입니다. 대개 <code>auto</code>가 낫고, 근본 원인인 고정 높이나 과도한 너비를 먼저 확인해야 합니다."
   }
 ]);
 </script>

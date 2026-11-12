@@ -17,6 +17,18 @@
 
   window.FB_QUIZ = function (items) { DATA = items; };
 
+  /* 보기 순서를 섞는다(Fisher-Yates). 원본 인덱스는 data-oi 에 남기므로 채점은 그대로다.
+     원본 데이터에서 정답이 특정 위치에 몰려 있어도 화면에서는 드러나지 않는다. */
+  function shuffled(n) {
+    var idx = [];
+    for (var i = 0; i < n; i++) idx.push(i);
+    for (var j = n - 1; j > 0; j--) {
+      var k = Math.floor(Math.random() * (j + 1));
+      var t = idx[j]; idx[j] = idx[k]; idx[k] = t;
+    }
+    return idx;
+  }
+
   function render() {
     var host = document.getElementById("quiz");
     if (!host || !DATA || !DATA.length) return;
@@ -28,13 +40,16 @@
       '<h2>이해도 점검</h2>' +
       '<p class="quiz-sub">답을 고른 뒤 채점하세요. 맞아도 해설을 읽으면 남는 게 다릅니다.</p>' +
       DATA.map(function (item, qi) {
+        var qid = "q-" + qi + "-text";
         return '<div class="q" data-qi="' + qi + '">' +
-          '<p class="q-text"><span class="qn">Q' + (qi + 1) + '.</span>' + item.q + '</p>' +
-          '<ul class="q-opts">' + item.o.map(function (opt, oi) {
+          '<p class="q-text" id="' + qid + '"><span class="qn">Q' + (qi + 1) + '.</span>' + item.q + '</p>' +
+          '<ul class="q-opts" role="radiogroup" aria-labelledby="' + qid + '">' + shuffled(item.o.length).map(function (oi) {
+            var opt = item.o[oi];
             return '<li><label class="q-opt" data-oi="' + oi + '">' +
               '<input type="radio" name="q' + chapter + '-' + qi + '" value="' + oi + '">' +
               '<span class="mark" aria-hidden="true"></span>' +
               '<span class="q-opt-text">' + opt + '</span>' +
+              '<span class="sr-only q-verdict"></span>' +
             '</label></li>';
           }).join("") + '</ul>' +
           '<div class="q-exp" hidden><b>해설</b> · ' + item.e + '</div>' +
@@ -66,9 +81,10 @@
           var oi = Number(l.getAttribute("data-oi"));
           l.classList.remove("picked", "correct", "wrong");
           var mark = l.querySelector(".mark");
-          mark.textContent = "";
-          if (oi === item.a) { l.classList.add("correct"); mark.textContent = "✓"; }
-          else if (oi === pickedIdx) { l.classList.add("wrong"); mark.textContent = "✗"; }
+          var verdict = l.querySelector(".q-verdict");
+          mark.textContent = ""; verdict.textContent = "";
+          if (oi === item.a) { l.classList.add("correct"); mark.textContent = "✓"; verdict.textContent = oi === pickedIdx ? " (정답, 내가 고른 답)" : " (정답)"; }
+          else if (oi === pickedIdx) { l.classList.add("wrong"); mark.textContent = "✗"; verdict.textContent = " (오답, 내가 고른 답)"; }
         });
         q.querySelector(".q-exp").hidden = false;
       });
@@ -78,6 +94,16 @@
       out.textContent = total + "문제 중 " + score + "문제 정답" + (unanswered ? " (미응답 " + unanswered + ")" : "");
       out.className = "quiz-score " + (score === total ? "pass" : "fail");
       if (FB && FB.saveQuiz) FB.saveQuiz(chapter, score, total);
+      /* 만점이면 읽음 표시를 제안한다 (자동으로 바꾸지는 않는다) */
+      var old = document.getElementById("quiz-markread");
+      if (old) old.remove();
+      if (score === total && FB && FB.isRead && FB.setRead && FB.CHAPTER && !FB.isRead(FB.CHAPTER)) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "btn ghost"; b.id = "quiz-markread";
+        b.textContent = "만점! 이 챕터를 읽음으로 표시";
+        b.addEventListener("click", function () { FB.setRead(FB.CHAPTER, true); b.remove(); });
+        out.insertAdjacentElement("afterend", b);
+      }
     }
 
     function reset() {
@@ -85,7 +111,10 @@
       Array.prototype.forEach.call(host.querySelectorAll(".q-opt"), function (l) {
         l.classList.remove("picked", "correct", "wrong");
         l.querySelector(".mark").textContent = "";
+        l.querySelector(".q-verdict").textContent = "";
       });
+      var mr = document.getElementById("quiz-markread");
+      if (mr) mr.remove();
       Array.prototype.forEach.call(host.querySelectorAll(".q-exp"), function (d) { d.hidden = true; });
       var out = document.getElementById("quiz-score");
       out.textContent = ""; out.className = "quiz-score";

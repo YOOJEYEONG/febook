@@ -10,9 +10,16 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 20분</p>
+<p class="ch-meta">읽는 데 약 32분 · 사전 지식: interface와 type(52장), 제네릭과 keyof(53장)</p>
 
 <h2 id="derive">핵심 원칙: 복사하지 말고 파생시키세요</h2>
+
+<p>실제 서비스에서는 같은 "회원" 데이터가 화면마다 조금씩 다른 모양으로 쓰입니다.
+가입할 때는 아직 <code>id</code>가 없고, 프로필 화면에서는 비밀번호를 빼야 하고, 정보 수정 화면에서는 일부 항목만 보냅니다.
+이 모양들을 하나하나 새로 적으면 처음에는 편하지만, 원본 <code>User</code>에 속성이 추가되거나 이름이 바뀔 때마다 여러 곳을 찾아 고쳐야 합니다.</p>
+
+<p>스프레드시트로 비유하면 이해가 쉽습니다. 다른 시트의 값을 <b>복사해서 붙여 넣으면</b> 원본이 바뀌어도 그대로 남지만,
+<b><code>=A1</code>처럼 수식으로 참조하면</b> 원본을 따라 자동으로 바뀝니다. 유틸리티 타입은 타입 세계의 수식입니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">interface User {
@@ -24,7 +31,7 @@
 }
 
 // ❌ 손으로 다시 씁니다 — User가 바뀌면 여기도 고쳐야 합니다
-interface UserProfile {
+interface UserProfileCopy {
   id: number;
   name: string;
   email: string;
@@ -36,6 +43,10 @@ type UserSummary = Pick&lt;User, "id" | "name"&gt;;
 type UserDraft = Partial&lt;User&gt;;</code></pre>
 </div>
 
+<p>▶ Playground에 붙여 보세요. <code>UserProfile</code>에 마우스를 올리면 <code>password</code>가 빠진 결과가 펼쳐져 보입니다.
+이제 <code>User</code>에 <code>phone: string</code>을 추가하고 다시 마우스를 올려 보세요. <code>UserProfile</code>에는 자동으로 들어가고, 손으로 쓴 <code>UserProfileCopy</code>에는 들어가지 않습니다.
+꺾쇠 안에 원본 타입과 조건을 넣는 모양은 53장의 제네릭 그대로입니다. 유틸리티 타입은 TypeScript가 미리 만들어 둔 제네릭 타입입니다.</p>
+
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🔗</span> 이것이 유틸리티 타입의 존재 이유입니다</p>
 <p style="margin-bottom:0">타입을 손으로 복사하면 <b>원본이 바뀔 때 조용히 어긋납니다.</b>
@@ -44,6 +55,9 @@ type UserDraft = Partial&lt;User&gt;;</code></pre>
 </div>
 
 <h2 id="builtin">내장 유틸리티 타입</h2>
+
+<p>TypeScript에는 이런 "수식"이 여러 개 내장되어 있습니다. 전부 외울 필요는 없고, 표의 위쪽 여섯 개(<code>Partial</code>~<code>Record</code>)가 실무 사용의 대부분을 차지합니다.
+나머지는 필요할 때 이 표로 돌아와 찾아보면 됩니다. 이름이 하는 일을 그대로 말해 주기 때문에 처음 보는 코드에서도 대개 뜻을 짐작할 수 있습니다.</p>
 
 <div class="tablewrap">
 <table>
@@ -100,6 +114,19 @@ async function fetchUsers(): Promise&lt;User[]&gt; { return []; }
 type Users = Awaited&lt;ReturnType&lt;typeof fetchUsers&gt;&gt;;    // User[]</code></pre>
 </div>
 
+<p>▶ Playground에 붙여 보세요. 각 타입 이름에 마우스를 올리며 결과를 확인하는 것이 가장 빠른 공부법입니다.
+<code>Partial&lt;Omit&lt;…&gt;&gt;</code>처럼 <b>안쪽부터 바깥으로</b> 읽으면 됩니다. "id와 createdAt을 빼고(<code>Omit</code>), 남은 것을 모두 선택적으로(<code>Partial</code>)".
+<code>labels</code> 객체에서 한 줄을 지우면 "속성이 빠졌다"는 오류가 나는데, <code>Record&lt;Status, string&gt;</code>이 <b>모든 상태에 라벨이 있어야 한다</b>고 요구하기 때문입니다.
+마지막 두 예제의 <code>typeof createUser</code>는 "함수 값의 타입"을 뜻하며 바로 아래 절에서 설명합니다.</p>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🤔</span> 자주 하는 오해 — <code>Omit</code>이 객체에서 속성을 지워 준다</p>
+<span class="mythline"><b class="no">오해</b> — <code>PublicUser = Omit&lt;User, "password"&gt;</code> 타입의 변수에 넣으면 비밀번호가 빠진 객체가 된다.</span>
+<span class="mythline"><b class="yes">사실</b> — 유틸리티 타입도 타입이라 <b>빌드 후 사라집니다</b>(50장). 값에는 아무 영향이 없습니다.
+<code>password</code>가 들어 있는 객체를 변수에 담아 넘기면 구조적 타이핑(52장)상 통과하고, 화면이나 서버로 그대로 나갑니다.
+실제로 빼려면 <code>const { password, ...publicUser } = user;</code>처럼 JavaScript 코드로 지워야 합니다(28장의 구조 분해).</span>
+</div>
+
 <div class="box warn">
 <p class="box-title"><span class="box-ico">⚠️</span> <code>Omit</code>은 오타를 잡아 주지 않습니다</p>
 <div class="codeblock" style="margin:.6em 0 0">
@@ -108,12 +135,19 @@ type Users = Awaited&lt;ReturnType&lt;typeof fetchUsers&gt;&gt;;    // User[]</c
 
 type B = Pick&lt;User, "passwrod"&gt;;   // ❌ Pick은 오타를 잡습니다</code></pre>
 </div>
-<p style="margin-bottom:0"><code>Omit</code>은 키가 존재하지 않아도 허용하도록 정의되어 있습니다.
-안전하게 하려면 <code>Omit&lt;User, keyof User &amp; "password"&gt;</code>처럼 제약을 걸거나,
-직접 만든 엄격한 버전을 쓰기도 합니다.</p>
+<p><code>Omit</code>은 키가 존재하지 않아도 허용하도록 정의되어 있습니다.
+오타를 잡고 싶다면 키를 <code>keyof T</code>로 제한한 엄격한 버전을 한 줄로 만들어 쓰기도 합니다.</p>
+<div class="codeblock" style="margin:.6em 0 0">
+<pre><code data-lang="ts">type StrictOmit&lt;T, K extends keyof T&gt; = Omit&lt;T, K&gt;;
+type C = StrictOmit&lt;User, "passwrod"&gt;;   // ❌ 이제 오타가 잡힙니다</code></pre>
+</div>
 </div>
 
 <h2 id="keyof-typeof">keyof와 typeof</h2>
+
+<p>유틸리티 타입이 원본에서 타입을 만들어 내려면 원본을 "읽는" 도구가 필요합니다. 그 기본 도구가 <code>keyof</code>와 <code>typeof</code>입니다.
+<code>keyof</code>는 객체 타입의 <b>키 이름 목록</b>을 유니온으로, <code>typeof</code>는 이미 있는 <b>값의 타입</b>을 꺼냅니다.
+51장과 53장에서 "나중에 설명한다"고 미뤄 두었던 <code>keyof typeof</code>, <code>typeof X[number]</code>가 바로 이 둘의 조합입니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">interface User { id: number; name: string; }
@@ -139,6 +173,12 @@ type Role = typeof ROLES[number];    // "admin" | "editor" | "viewer"
 ROLES.forEach(role =&gt; { /* role: "admin" | "editor" | "viewer" */ });</code></pre>
 </div>
 
+<p>▶ Playground에 붙여 보세요. <code>User["id"]</code>처럼 대괄호로 속성 타입을 꺼내는 것을 <b>인덱스 접근 타입</b>이라고 합니다.
+JavaScript에서 <code>user["id"]</code>로 값을 꺼내는 것과 같은 모양을 타입 자리에서 쓰는 것입니다.
+이제 51장의 <code>typeof STATUS[keyof typeof STATUS]</code>를 풀어 읽을 수 있습니다.
+<code>typeof STATUS</code>(객체의 타입) → <code>keyof</code> 그것(키들: <code>"IDLE" | "LOADING" | …</code>) → 그 키들로 인덱스 접근(값들: <code>"idle" | "loading" | …</code>)입니다.
+<code>typeof defaultConfig</code>처럼 설정 객체에서 타입을 뽑으면, 기본값 객체가 곧 타입의 원본이 되어 두 곳을 따로 관리할 필요가 없습니다.</p>
+
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🔄</span> <code>typeof</code>가 두 가지 뜻인 이유</p>
 <p style="margin-bottom:0">JavaScript의 <code>typeof</code>는 <b>값의 타입 이름을 문자열로</b> 돌려주는 <b>연산자</b>입니다(25장).
@@ -148,6 +188,11 @@ TypeScript의 <code>typeof</code>는 <b>타입을 쓰는 자리에서</b>만 쓰
 </div>
 
 <h2 id="mapped">매핑드 타입 — 유틸리티는 이렇게 만들어졌습니다</h2>
+
+<p>내장 유틸리티는 마법이 아니라 누구나 쓸 수 있는 문법으로 만들어져 있습니다. 그 문법이 <b>매핑드 타입</b>입니다.
+배열의 <code>map</code>(29장)이 요소를 하나씩 돌며 새 배열을 만들듯이, 매핑드 타입은 <b>키를 하나씩 돌며</b> 새 객체 타입을 만듭니다.
+<code>[K in keyof T]</code>는 "T의 키 각각을 K라고 부르며"라는 반복문이라고 읽으면 됩니다.
+직접 만들 일은 드물지만, 라이브러리 타입 정의를 읽을 때 자주 만납니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">// Partial의 실제 정의
@@ -178,7 +223,17 @@ type UserGetters = Getters&lt;{ name: string; age: number }&gt;;
 // { getName: () =&gt; string; getAge: () =&gt; number }</code></pre>
 </div>
 
+<p>첫 번째 <code>MyPartial</code>을 소리 내어 읽어 보면 이렇습니다. "<code>T</code>의 키 각각(<code>K in keyof T</code>)에 대해,
+그 키를 선택적(<code>?</code>)으로 만들고, 값 타입은 원래 것(<code>T[K]</code>) 그대로 둔다."
+<code>readonly</code>와 <code>?</code> 앞에 붙은 마이너스(<code>-</code>)는 반대로 그 표시를 <b>떼어 낸다</b>는 뜻입니다.
+마지막 <code>Getters</code>는 키 이름까지 바꾸는 고급 예시로, 백틱(<code>`</code>) 안에 문자열을 조립하는 템플릿 리터럴(25장) 문법이 타입에서도 쓰입니다.
+▶ Playground에 붙여 <code>UserGetters</code>에 마우스를 올리면 결과를 확인할 수 있습니다.</p>
+
 <h2 id="conditional">조건부 타입</h2>
+
+<p>조건부 타입은 타입 세계의 삼항 연산자(26장)입니다. <code>A extends B ? X : Y</code>는 "A가 B에 들어맞으면 X, 아니면 Y"입니다.
+<code>extends</code>는 53장의 제약에서처럼 "~에 들어맞는"으로 읽습니다. <code>infer</code>는 "이 자리에 무엇이 있는지 알아내서 이름을 붙여라"라는 뜻으로,
+<code>ReturnType</code>이 함수에서 반환 타입을 꺼낼 수 있는 비밀이 여기에 있습니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">// T가 U에 할당 가능하면 X, 아니면 Y
@@ -199,6 +254,10 @@ type ToArray&lt;T&gt; = T extends any ? T[] : never;
 type D = ToArray&lt;string | number&gt;;   // string[] | number[]</code></pre>
 </div>
 
+<p><code>ElementOf</code>는 "<code>T</code>가 어떤 것의 배열 모양이라면, 그 어떤 것(<code>E</code>)을 꺼내라. 아니면 <code>never</code>"라고 읽습니다.
+<code>infer E</code>는 "여기 있는 타입을 <code>E</code>라는 이름으로 잡아 두라"는 표시입니다. 마치 패턴 맞추기 퍼즐에서 빈 조각 자리에 들어간 조각을 집어 드는 것과 같습니다.
+마지막 예는 유니온을 넣으면 <b>각 멤버에 따로</b> 적용된다는 특이한 성질을 보여 줍니다. <code>(string | number)[]</code>가 아니라 <code>string[] | number[]</code>가 되는 것에 주의하세요.</p>
+
 <div class="box warn">
 <p class="box-title"><span class="box-ico">🧩</span> 여기부터는 몰라도 됩니다</p>
 <p style="margin-bottom:0">매핑드·조건부 타입은 <b>주로 라이브러리를 만드는 사람의 도구</b>입니다.
@@ -209,6 +268,10 @@ type D = ToArray&lt;string | number&gt;;   // string[] | number[]</code></pre>
 </div>
 
 <h2 id="practice">실무에서 자주 쓰는 조합</h2>
+
+<p>앞의 도구들을 조합하면 실무에서 반복되는 문제를 타입 한 줄로 해결할 수 있습니다.
+아래 네 가지 중 ①과 ④는 직접 쓸 일이 많고, ②와 ③은 "이런 것도 된다"는 예시로 읽기만 하면 됩니다.
+특히 ④는 API 주소와 응답 타입을 한 표로 묶어, 주소만 넘기면 응답 타입이 자동으로 정해지게 만드는 패턴입니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">// ① 폼 상태 — 각 필드의 에러 메시지
@@ -256,7 +319,8 @@ Playground에서 실험하는 것이 가장 빠릅니다.</li>
 <li><b>타입을 복사하지 말고 파생</b>시킨다. 원본이 바뀌면 자동으로 따라온다.</li>
 <li>자주 쓰는 것: <b><code>Partial</code>·<code>Pick</code>·<code>Omit</code>·<code>Record</code>·<code>ReturnType</code></b>.</li>
 <li><code>Record&lt;유니온, T&gt;</code>는 <b>모든 경우를 처리했는지</b> 검사해 준다.</li>
-<li><b><code>Omit</code>은 오타를 잡아 주지 않는다.</b> <code>Pick</code>은 잡는다.</li>
+<li><b><code>Omit</code>은 오타를 잡아 주지 않는다.</b> <code>Pick</code>은 잡는다. 필요하면 <code>StrictOmit</code>을 만든다.</li>
+<li>유틸리티 타입은 <b>값을 바꾸지 않는다.</b> 실제로 속성을 빼려면 JavaScript 코드로 뺀다.</li>
 <li><code>keyof</code>는 키를, <b><code>typeof</code>는 값에서 타입</b>을 뽑는다.</li>
 <li><code>as const</code> + <code>typeof X[number]</code>로 <b>값과 타입을 한 곳에서</b> 관리한다.</li>
 <li>매핑드·조건부 타입은 <b>읽을 수만 있으면 충분</b>하다.</li>
@@ -278,54 +342,65 @@ FB_QUIZ([
   {
     q: "<code>User</code> 인터페이스에서 <code>password</code>만 제외한 타입이 필요합니다. 가장 좋은 방법은?",
     o: [
-      "속성을 손으로 다시 나열해 새 인터페이스를 만든다",
-      "<code>type PublicUser = Omit&lt;User, \"password\"&gt;</code> 로 파생시킨다",
-      "User에서 password를 지운다",
-      "any를 쓴다"
+      "속성을 손으로 다시 나열해 새 interface를 만든다",
+      "<code>Omit&lt;User, \"password\"&gt;</code>로 파생시킨다",
+      "User의 password를 선택적 속성(<code>?</code>)으로 바꾼다",
+      "<code>Partial&lt;User&gt;</code>를 쓰고 password는 넣지 않는다"
     ],
     a: 1,
-    e: "손으로 복사하면 <code>User</code>에 속성이 추가될 때 <b>조용히 어긋납니다</b>. <code>Omit</code>으로 파생시키면 원본 변경이 자동으로 반영되고, 맞지 않는 코드는 즉시 오류로 드러납니다."
+    e: "손으로 복사하면 <code>User</code>에 속성이 추가될 때 <b>조용히 어긋납니다</b>. <code>Omit</code>으로 파생시키면 원본 변경이 자동으로 반영됩니다. password를 선택적으로 바꾸거나 Partial을 쓰면 다른 필수 속성까지 느슨해져 의도가 흐려집니다."
   },
   {
     q: "<code>const labels: Record&lt;Status, string&gt;</code> 로 상태별 라벨을 정의했을 때의 이점은?",
     o: [
-      "런타임 검증이 된다",
-      "Status에 새 값을 추가하면 라벨 객체에서 누락된 키가 컴파일 오류로 잡힌다",
-      "객체가 자동 생성된다",
-      "번들 크기가 줄어든다"
+      "실행 중에 없는 상태의 라벨을 읽으면 기본값을 돌려준다",
+      "Status에 값을 추가하면 빠진 라벨이 컴파일 오류로 잡힌다",
+      "Status의 값 목록이 라벨 객체에서 자동으로 만들어진다",
+      "라벨 문자열의 오타를 검사해 준다"
     ],
     a: 1,
-    e: "<code>Record</code>는 <b>유니온의 모든 멤버를 키로 요구</b>합니다. 상태를 하나 추가하면 라벨을 안 만든 것을 컴파일러가 알려 주므로 \"새 상태인데 화면에 아무것도 안 나오는\" 버그가 사라집니다."
+    e: "<code>Record</code>는 <b>유니온의 모든 멤버를 키로 요구</b>합니다. 상태를 하나 추가하면 라벨을 안 만든 것을 컴파일러가 알려 주므로 \"새 상태인데 화면에 아무것도 안 나오는\" 버그가 사라집니다. 값(라벨 문자열)의 내용은 검사하지 않습니다."
   },
   {
     q: "<code>Omit&lt;User, \"passwrod\"&gt;</code> 처럼 키 이름에 오타가 있으면?",
     o: [
-      "컴파일 오류가 난다",
-      "오류 없이 통과하며 결과적으로 아무것도 제외되지 않는다. Pick은 반대로 오타를 잡아 준다",
-      "any가 된다",
-      "User가 삭제된다"
+      "존재하지 않는 키라는 컴파일 오류가 난다",
+      "오류 없이 통과하고 아무것도 제외되지 않는다",
+      "결과 타입이 never가 된다",
+      "가장 비슷한 키인 password가 대신 제외된다"
     ],
     a: 1,
-    e: "<code>Omit</code>은 두 번째 인자를 <code>keyof T</code>로 제한하지 않도록 정의되어 있어 <b>존재하지 않는 키도 허용</b>합니다. 그래서 오타가 조용히 지나갑니다. <code>Pick</code>은 <code>K extends keyof T</code>라 즉시 오류가 납니다."
+    e: "<code>Omit</code>은 두 번째 인자를 <code>keyof T</code>로 제한하지 않도록 정의되어 있어 <b>존재하지 않는 키도 허용</b>합니다. 그래서 오타가 조용히 지나가고 User와 같은 타입이 됩니다. <code>Pick</code>은 <code>K extends keyof T</code>라 즉시 오류가 나며, 같은 제약을 건 <code>StrictOmit</code>을 만들어 쓸 수도 있습니다."
   },
   {
     q: "<code>const ROLES = [\"admin\", \"editor\"] as const; type Role = typeof ROLES[number]</code> 의 결과는?",
     o: [
-      "string[]",
-      "\"admin\" | \"editor\" — 값 배열 하나로 값과 타입을 함께 관리할 수 있다",
-      "number",
-      "readonly string[]"
+      "<code>string[]</code>",
+      "<code>\"admin\" | \"editor\"</code>",
+      "<code>number</code>",
+      "<code>readonly [\"admin\", \"editor\"]</code>"
     ],
     a: 1,
-    e: "<code>as const</code>가 리터럴 타입을 고정하고, <code>typeof ROLES</code>가 값에서 타입을 얻고, <code>[number]</code>가 <b>배열 요소들의 유니온</b>을 뽑습니다. 목록을 한 곳에서 관리하면서 반복 순회와 타입 제약을 동시에 얻는 실용적인 패턴입니다."
+    e: "<code>as const</code>가 리터럴 타입을 고정하고, <code>typeof ROLES</code>가 값에서 타입(<code>readonly [\"admin\", \"editor\"]</code>)을 얻고, <code>[number]</code>가 <b>아무 칸의 요소 타입</b>, 즉 요소들의 유니온을 뽑습니다. 목록을 한 곳에서 관리하면서 순회와 타입 제약을 동시에 얻는 패턴입니다."
+  },
+  {
+    q: "<code>type PublicUser = Omit&lt;User, \"password\"&gt;</code> 타입을 API 응답 함수의 반환 타입으로 지정했습니다. 맞는 설명은?",
+    o: [
+      "반환되는 객체에서 password가 실행 중에 자동으로 제거된다",
+      "password가 든 객체를 변수로 넘기면 그대로 응답에 섞일 수 있다",
+      "password가 든 객체를 반환하면 항상 컴파일 오류가 난다",
+      "Omit을 쓰면 JSON 직렬화 시 password가 빠진다"
+    ],
+    a: 1,
+    e: "유틸리티 타입도 빌드 후 사라지므로 값을 바꾸지 않습니다. 구조적 타이핑상 속성이 더 많은 객체는 통과하고, 객체 리터럴을 직접 반환할 때만 초과 속성 검사가 걸립니다. 실제로 빼려면 <code>const { password, ...rest } = user</code>처럼 코드로 제거해야 합니다."
   },
   {
     q: "타입이 지나치게 복잡해질 때 가장 먼저 고려해야 할 것은?",
     o: [
-      "any로 전환한다",
-      "조건부 타입으로 더 정교하게 만든다",
-      "타입 곡예로 맞추기 전에 데이터 구조 자체를 단순하게 바꿀 수 있는지 검토한다",
-      "타입 검사를 끈다"
+      "조건부 타입과 infer로 더 정교하게 만든다",
+      "복잡한 부분만 any로 바꿔 진행한다",
+      "데이터 구조 자체를 단순하게 바꿀 수 있는지 검토한다",
+      "tsconfig에서 strict를 꺼서 오류를 줄인다"
     ],
     a: 2,
     e: "복잡한 타입은 <b>대개 설계 문제의 증상</b>입니다. 판별 유니온으로 상태를 나누거나 객체 구조를 평평하게 만들면 타입이 저절로 단순해지는 경우가 많습니다. 목표는 화려한 타입이 아니라 <b>동료가 즉시 읽을 수 있는 타입</b>입니다."

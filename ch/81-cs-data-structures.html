@@ -6,6 +6,12 @@
 <title>81장. 자료구조 1: 배열, 객체, 해시 테이블 — 프엔북</title>
 <meta name="description" content="배열이 메모리에 어떻게 놓이는지, 해시 테이블이 왜 즉시 찾아내는지, 객체와 Map의 실제 차이, 그리고 반복문 안의 배열 탐색이 서비스를 느리게 만드는 이유를 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="81장. 자료구조 1: 배열, 객체, 해시 테이블 — 프엔북">
 <meta property="og:description" content="배열이 메모리에 어떻게 놓이는지, 해시 테이블이 왜 즉시 찾아내는지, 객체와 Map의 실제 차이, 그리고 반복문 안의 배열 탐색이 서비스를 느리게 만드는 이유를 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -31,7 +37,7 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 24분 · 성능 문제의 절반이 여기서 나온다</p>
+<p class="ch-meta">읽는 데 약 24분 · 성능 문제의 절반이 여기서 나옵니다</p>
 
 <h2 id="why">왜 자료구조를 여러 개 배우나</h2>
 
@@ -306,7 +312,7 @@ console.log(s.size);   // 2 ← 참조가 다르기 때문 (25장)
 <li><b>키가 동적으로 계속 늘고 줄어드는 사전</b>(id → 항목 조회표, 캐시) → <b><code>Map</code></b>.</li>
 <li><b>"있냐 없냐"만 묻는 것</b>(선택된 ID 목록, 방문한 <span class="term" data-term="url">URL</span>) → <b><code>Set</code></b>.</li>
 <li><b>순서와 인덱스가 의미 있는 목록</b>(화면에 그릴 리스트) → <b>배열</b>. React 렌더링에는 결국 배열이 필요합니다.</li>
-<li>React <span class="term" data-term="state">state</span>에 <code>Map</code>·<code>Set</code>을 담을 땐 <b>새 인스턴스를 만들어</b> 교체해야 리렌더링됩니다
+<li>React <span class="term" data-term="state">state</span>에 <code>Map</code>·<code>Set</code>을 담을 땐 <b>새 <span class="term" data-term="instance">인스턴스</span>를 만들어</b> 교체해야 리렌더링됩니다
 (<code>setSel(new Set(sel).add(id))</code>). 기존 것을 <code>add</code>만 하면 <span class="term" data-term="reference">참조</span>가 같아 화면이 안 바뀝니다.</li>
 </ol>
 </div>
@@ -349,21 +355,21 @@ FB_QUIZ([
   {
     q: "10만 개짜리 배열의 <b>맨 앞</b>에 계속 값을 넣어야 합니다. 왜 <code>unshift</code>가 느린가?",
     o: [
-      "unshift가 내부적으로 배열을 복사해 새로 만들기 때문",
-      "배열은 요소가 메모리에 이어져 있어, 앞에 넣으면 기존 요소를 전부 한 칸씩 뒤로 밀어야 하기 때문",
-      "unshift는 비동기로 동작하기 때문",
-      "unshift가 반환값을 계산하느라 느린 것이며 실제 삽입은 빠르다"
+      "unshift가 내부적으로 배열을 통째로 새로 만들기 때문",
+      "앞에 넣으면 기존 요소를 전부 한 칸씩 밀어야 하기 때문",
+      "unshift는 매번 배열을 다시 정렬하기 때문",
+      "앞쪽 인덱스는 해시로 다시 계산해야 하기 때문"
     ],
     a: 1,
-    e: "배열의 인덱스 접근이 즉시인 이유는 <b>요소가 연속된 자리에 놓여 있기 때문</b>입니다. 그 대가로 앞쪽에 삽입하면 <b>뒤의 모든 요소가 이동</b>해야 합니다. 요소 수에 비례해 느려집니다. 앞쪽 삽입이 많다면 <code>push</code>로 모은 뒤 <code>reverse</code>하거나, 다른 자료구조를 고려하세요."
+    e: "배열의 인덱스 접근이 즉시인 이유는 <b>요소가 연속된 자리에 놓여 있기 때문</b>입니다. 그 대가로 앞쪽에 삽입하면 <b>뒤의 모든 요소가 이동</b>해야 합니다. 요소 수에 비례해 느려집니다. 앞쪽 삽입이 많다면 <code>push</code>로 모은 뒤 <code>reverse</code>하거나, 다른 자료구조를 고려하세요. 배열은 요소가 메모리에 이어져 있다는 점을 떠올려 보세요."
   },
   {
     q: "배열에서 요소 하나를 지울 때 <code>delete arr[1]</code> 을 쓰면 안 되는 이유는?",
     o: [
-      "문법 오류가 발생한다",
-      "length가 줄지 않고 그 자리에 '구멍'이 남으며, 엔진의 배열 최적화가 풀려 느려질 수 있다",
+      "strict mode에서는 오류가 발생한다",
+      "length가 그대로이고 그 자리에 '구멍'이 남는다",
       "원본이 아니라 복사본이 수정된다",
-      "첫 번째 요소만 지워진다"
+      "뒤 요소들이 당겨지지만 length만 그대로다"
     ],
     a: 1,
     e: "<code>delete</code>는 값만 지우고 <b>자리는 남깁니다</b>. <code>length</code>가 그대로라 <code>[10, &lt;empty&gt;, 30]</code>이 되고, 순회 메서드마다 구멍을 다루는 방식이 달라 버그를 부릅니다. 게다가 구멍이 생기면 엔진이 <b>연속 메모리 최적화를 포기</b>합니다. <code>splice</code>(원본 수정) 또는 <code>filter</code>(새 배열)를 쓰세요."
@@ -372,18 +378,18 @@ FB_QUIZ([
     q: "사용자 5000명 배열과 주문 5000건 배열을 합치려고 <code>orders.map(o =&gt; users.find(u =&gt; u.id === o.userId))</code> 를 썼습니다. 문제는?",
     o: [
       "find는 첫 번째 값만 찾으므로 결과가 틀린다",
-      "주문마다 사용자 배열 전체를 훑어 대략 2500만 번 비교가 일어난다. Map으로 조회표를 먼저 만들면 1만 번으로 줄어든다",
-      "map과 find를 함께 쓸 수 없다",
-      "비동기 처리가 빠져 있다"
+      "주문마다 사용자 배열 전체를 훑어 비교가 수천만 번 일어난다",
+      "map 안에서 find를 쓰면 매번 새 배열이 복사된다",
+      "find는 내부적으로 정렬을 먼저 해서 느리다"
     ],
     a: 1,
-    e: "결과는 맞지만 <b>비용이 데이터 수의 곱</b>으로 커집니다(5000 × 5000). <code>new Map(users.map(u =&gt; [u.id, u]))</code>로 조회표를 한 번 만들면 이후 <code>get</code>은 평균 즉시라, 전체가 <b>두 배열을 한 번씩 훑는 수준</b>으로 떨어집니다. 실무 목록 화면 성능 문제의 단골 원인입니다."
+    e: "결과는 맞지만 <b>비용이 데이터 수의 곱</b>으로 커집니다(5000 × 5000). <code>new Map(users.map(u =&gt; [u.id, u]))</code>로 조회표를 한 번 만들면 이후 <code>get</code>은 평균 즉시라, 전체가 <b>두 배열을 한 번씩 훑는 수준</b>으로 떨어집니다. 실무 목록 화면 성능 문제의 단골 원인입니다. 주문 5000건 × 사용자 5000명이면 약 2500만 번 비교이고, Map 조회표를 먼저 만들면 약 1만 번으로 줄어듭니다."
   },
   {
     q: "<code>const o = {}; o.b=1; o[2]=2; o.a=3; o[1]=4;</code> 일 때 <code>Object.keys(o)</code> 의 결과는?",
     o: [
       "[\"b\", \"2\", \"a\", \"1\"] — 넣은 순서 그대로",
-      "[\"1\", \"2\", \"b\", \"a\"] — 정수형 키가 오름차순으로 먼저 오고, 나머지 문자열 키가 넣은 순서로 뒤따른다",
+      "[\"1\", \"2\", \"b\", \"a\"] — 정수형 키가 먼저, 나머지는 넣은 순서",
       "순서는 명세에 정해져 있지 않아 예측할 수 없다",
       "[\"a\", \"b\", \"1\", \"2\"] — 알파벳 순"
     ],
@@ -394,9 +400,9 @@ FB_QUIZ([
     q: "외부에서 받은 문자열을 키로 쓰는 캐시를 만들 때 일반 객체 대신 <code>Map</code>이나 <code>Object.create(null)</code>을 권하는 이유는?",
     o: [
       "일반 객체는 키 개수 제한이 있기 때문",
-      "일반 객체는 프로토타입에서 toString·constructor 같은 이름이 딸려 와, 넣은 적 없는 키가 있는 것처럼 보이거나 프로토타입 오염 공격에 노출될 수 있기 때문",
-      "Map이 메모리를 더 적게 쓰기 때문",
-      "일반 객체는 문자열 키를 지원하지 않기 때문"
+      "프로토타입의 <code>toString</code> 같은 키가 딸려 오고 오염 공격에 노출되어서",
+      "Map은 문자열 키를 자동으로 해시해 더 안전해서",
+      "일반 객체는 한글 키를 지원하지 않기 때문"
     ],
     a: 1,
     e: "<code>({}).toString</code>은 값이 있습니다. 그래서 <code>cache[\"toString\"]</code> 같은 조회가 <b>엉뚱하게 성공</b>합니다. 더 위험한 건 사용자가 <code>__proto__</code>를 키로 보내는 <b>프로토타입 오염</b>입니다(78장). <code>Map</code>은 프로토타입 체인과 무관하고, <code>Object.create(null)</code>은 프로토타입이 아예 없습니다."
@@ -405,9 +411,9 @@ FB_QUIZ([
     q: "React에서 <code>const [sel, setSel] = useState(new Set())</code> 로 선택 목록을 관리합니다. <code>sel.add(id); setSel(sel);</code> 를 했는데 화면이 안 바뀝니다. 이유는?",
     o: [
       "Set은 React state에 담을 수 없다",
-      "같은 객체를 그대로 넘겼기 때문이다. React는 참조가 바뀌었는지로 변경을 판단하므로 new Set(sel)처럼 새 인스턴스를 만들어 넘겨야 한다",
+      "같은 Set 객체를 넘겨 참조가 그대로이기 때문",
       "add는 비동기 메서드라 즉시 반영되지 않는다",
-      "Set의 크기가 바뀌어도 size는 갱신되지 않는다"
+      "React는 Set의 내용을 깊게 비교하느라 갱신을 건너뛴다"
     ],
     a: 1,
     e: "<code>Set</code>·<code>Map</code>·배열·객체는 모두 <b>참조값</b>입니다(25장). 내용을 바꿔도 <b>참조는 그대로</b>라 React는 \"변한 게 없다\"고 판단합니다. <code>setSel(new Set(sel).add(id))</code>처럼 <b>새 인스턴스</b>를 만들어 넘기세요. 같은 이유로 배열은 <code>push</code> 대신 <code>[...arr, x]</code>를 씁니다."

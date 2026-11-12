@@ -6,6 +6,12 @@
 <title>88장. 캐시: CPU부터 CDN까지 — 프엔북</title>
 <meta name="description" content="캐시의 기본 원리와 계층, CPU 캐시부터 브라우저 캐시와 CDN까지, Cache-Control 지시어의 정확한 의미, no-cache와 no-store의 차이, 파일명 해싱을 통한 캐시 무효화 전략을 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="88장. 캐시: CPU부터 CDN까지 — 프엔북">
 <meta property="og:description" content="캐시의 기본 원리와 계층, CPU 캐시부터 브라우저 캐시와 CDN까지, Cache-Control 지시어의 정확한 의미, no-cache와 no-store의 차이, 파일명 해싱을 통한 캐시 무효화 전략을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -31,7 +37,7 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 22분 · 4·76장과 이어짐</p>
+<p class="ch-meta">읽는 데 약 22분 · 4·76장과 이어집니다</p>
 
 <h2 id="idea">캐시라는 하나의 아이디어</h2>
 
@@ -57,7 +63,7 @@ CPU 캐시부터 <span class="term" data-term="cd">CD</span>N까지 <b>전부 �
 </table>
 </div>
 
-<p class="ch-meta" style="margin-top:-.4em">대략적인 자릿수 감각용 수치입니다. 기기마다 다릅니다.</p>
+<p class="fig-caption">대략적인 자릿수 감각용 수치입니다. 기기마다 다릅니다.</p>
 
 <p>이 표에서 읽어야 할 건 정확한 숫자가 아니라 <b>자릿수 차이</b>입니다.
 <b>네트워크는 메모리보다 백만 배 느립니다.</b>
@@ -91,7 +97,7 @@ CPU 캐시부터 <span class="term" data-term="cd">CD</span>N까지 <b>전부 �
 </table>
 </div>
 
-<p class="ch-meta" style="margin-top:-.4em">위에서 찾으면(캐시 히트) 아래로 가지 않습니다.
+<p class="fig-caption">위에서 찾으면(캐시 히트) 아래로 가지 않습니다.
 ①에서 끝나면 0ms, ⑥까지 가면 수백 ms입니다.</p>
 
 <h2 id="http-cache">HTTP 캐시 — 헤더가 전부다</h2>
@@ -244,7 +250,7 @@ Vercel·Netlify·Cloudflare Pages는 <b>위 캐시 헤더를 알아서 설정</b
 </table>
 </div>
 
-<p class="ch-meta" style="margin-top:-.4em"><b>주의</b> — Service Worker는 한 번 등록되면 계속 살아 있습니다.
+<p class="fig-caption"><b>주의</b> — Service Worker는 한 번 등록되면 계속 살아 있습니다.
 잘못 등록하면 사용자가 옛 버전에 갇힐 수 있어 <b>업데이트·해제 경로를 반드시 함께 설계</b>해야 합니다.</p>
 
 <div class="box field">
@@ -302,7 +308,7 @@ FB_QUIZ([
     q: "<code>Cache-Control: no-cache</code> 의 정확한 의미는?",
     o: [
       "캐시에 저장하지 않는다",
-      "캐시에 저장은 하되, 사용하기 전에 매번 서버에 변경 여부를 확인한다. 안 바뀌었으면 304를 받아 저장분을 쓴다",
+      "저장은 하되, 쓰기 전에 매번 서버에 재검증한다",
       "캐시를 1초만 유지한다",
       "CDN에만 캐시하고 브라우저에는 캐시하지 않는다"
     ],
@@ -312,29 +318,29 @@ FB_QUIZ([
   {
     q: "빌드 산출물 <code>main-4f2a9c1b.js</code> 처럼 파일명에 내용 해시를 넣는 이유는?",
     o: [
-      "파일 이름 충돌을 막기 위해",
-      "같은 이름이면 내용이 같음이 보장되므로 아주 긴 캐시(1년, immutable)를 안전하게 걸 수 있고, 내용이 바뀌면 이름이 바뀌어 즉시 새로 받게 되기 때문",
-      "보안을 위해 파일명을 숨기기 위해",
-      "번들 크기를 줄이기 위해"
+      "다른 파일과 이름이 충돌하지 않게 하려고",
+      "내용이 바뀌면 이름도 바뀌어 긴 캐시를 안전하게 걸 수 있어서",
+      "파일명을 알아보기 어렵게 해 보안을 높이려고",
+      "해시 덕분에 gzip 압축률이 높아져서"
     ],
     a: 1,
-    e: "캐시의 근본 딜레마는 <b>\"오래 캐시하고 싶다\"</b>와 <b>\"바뀌면 바로 반영하고 싶다\"</b>가 충돌한다는 것입니다. 내용 해시를 이름에 넣으면 두 요구가 동시에 충족됩니다. 바뀐 파일은 <b>다른 URL</b>이 되므로 캐시를 무효화할 필요조차 없습니다."
+    e: "캐시의 근본 딜레마는 <b>\"오래 캐시하고 싶다\"</b>와 <b>\"바뀌면 바로 반영하고 싶다\"</b>가 충돌한다는 것입니다. 내용 해시를 이름에 넣으면 두 요구가 동시에 충족됩니다. 바뀐 파일은 <b>다른 URL</b>이 되므로 캐시를 무효화할 필요조차 없습니다. 이름이 같으면 내용도 같음이 보장되므로 1년·immutable 캐시를 걸고, 바뀌면 새 이름이라 즉시 새로 받습니다."
   },
   {
     q: "<code>index.html</code> 에 <code>Cache-Control: max-age=31536000</code>(1년)을 걸면 어떻게 되나?",
     o: [
       "페이지 로딩이 빨라지므로 권장되는 설정이다",
-      "새 배포를 해도 브라우저가 서버에 묻지 않아 사용자가 계속 옛 버전을 본다. index.html은 새 파일명을 알려주는 진입점이므로 no-cache여야 한다",
+      "새 배포를 해도 사용자가 계속 옛 버전을 본다",
       "HTML은 캐시되지 않으므로 아무 영향이 없다",
-      "CDN이 자동으로 무시한다"
+      "새로고침하면 바로 새 버전을 받으므로 문제없다"
     ],
     a: 1,
-    e: "해시가 붙은 에셋은 1년 캐시가 안전하지만, <b>그 새 파일명을 알려주는 <code>index.html</code></b>까지 오래 캐시하면 <b>배포가 사용자에게 도달하지 않습니다.</b> 더 나쁜 건 <b>사후 복구가 사실상 불가능</b>하다는 점입니다. 브라우저가 서버에 묻지 않으므로 CDN 퍼지도 소용이 없습니다."
+    e: "해시가 붙은 에셋은 1년 캐시가 안전하지만, <b>그 새 파일명을 알려주는 <code>index.html</code></b>까지 오래 캐시하면 <b>배포가 사용자에게 도달하지 않습니다.</b> 더 나쁜 건 <b>사후 복구가 사실상 불가능</b>하다는 점입니다. 브라우저가 서버에 묻지 않으므로 CDN 퍼지도 소용이 없습니다. 그래서 <code>index.html</code>은 <code>no-cache</code>여야 합니다."
   },
   {
     q: "ETag를 이용한 재검증에서 서버가 <code>304 Not Modified</code>를 보낼 때의 이점은?",
     o: [
-      "응답 본문을 보내지 않으므로 전송량이 헤더 수준으로 줄어든다",
+      "본문 없이 헤더만 오가 전송량이 크게 준다",
       "서버 처리가 완전히 생략된다",
       "브라우저가 캐시를 지우고 새로 받는다",
       "HTTPS 핸드셰이크를 건너뛴다"
@@ -345,21 +351,21 @@ FB_QUIZ([
   {
     q: "CDN에 로그인 사용자 이름이 포함된 HTML을 캐시하면 어떤 문제가 생기나?",
     o: [
-      "페이지가 느려진다",
-      "다음 방문자가 앞 사용자의 개인정보가 담긴 페이지를 그대로 받을 수 있다. 개인화된 응답에는 private이나 no-store를 써야 한다",
-      "CDN이 자동으로 사용자별로 구분해 주므로 문제없다",
+      "CDN 캐시 적중률이 낮아져 페이지가 느려진다",
+      "다음 방문자가 앞 사용자의 개인정보 페이지를 받을 수 있다",
+      "CDN이 쿠키를 보고 사용자별로 구분해 주므로 문제없다",
       "HTML은 CDN이 캐시하지 않는다"
     ],
     a: 1,
-    e: "CDN은 <b>URL을 기준</b>으로 캐시합니다. 같은 URL이면 누가 요청하든 같은 응답을 돌려줍니다. 개인화된 내용이 섞이면 <b>실제 정보 유출 사고</b>가 됩니다. 개인화 응답에는 <code>Cache-Control: private</code>(브라우저만 저장) 또는 <code>no-store</code>를 명시하세요."
+    e: "CDN은 <b>URL을 기준</b>으로 캐시합니다. 같은 URL이면 누가 요청하든 같은 응답을 돌려줍니다. 개인화된 내용이 섞이면 <b>실제 정보 유출 사고</b>가 됩니다. 개인화 응답에는 <code>Cache-Control: private</code>(브라우저만 저장) 또는 <code>no-store</code>를 명시하세요. 개인화된 응답에는 <code>private</code>이나 <code>no-store</code>를 써야 합니다."
   },
   {
     q: "TanStack Query에서 화면에 들어올 때마다 계속 요청이 나갑니다. 먼저 확인할 설정은?",
     o: [
       "gcTime — 캐시를 너무 빨리 버리고 있다",
-      "staleTime — 기본값이 0이라 데이터가 즉시 '오래된 것'으로 취급되어 재요청된다. 적절한 값을 주면 그 기간 동안 요청하지 않는다",
-      "retry 횟수",
-      "queryKey의 이름"
+      "staleTime — 기본값 0이라 매번 낡은 것으로 본다",
+      "retry — 실패 재시도가 반복되고 있다",
+      "queryKey — 키 이름이 너무 길다"
     ],
     a: 1,
     e: "<code>staleTime</code>은 <b>\"이 데이터를 언제까지 믿을 것인가\"</b>이고 기본값은 <code>0</code>입니다. 즉 받자마자 오래된 것으로 간주되어 화면 재진입·창 포커스마다 다시 요청합니다. <code>gcTime</code>은 <b>안 쓰는 데이터를 언제 메모리에서 버릴지</b>(84장)로 역할이 다릅니다."

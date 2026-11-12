@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>95장. 로그인과 인증 흐름 구현 — 프엔북</title>
+<meta name="description" content="로그인이 실제로 무슨 일인지부터 세션·토큰 방식 비교, React 로그인 폼, Next.js 보호 라우트, 토큰 만료와 리프레시, 소셜 로그인(OAuth)까지 과제 전형에 바로 쓰는 인증 흐름을 실습합니다.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<meta property="og:title" content="95장. 로그인과 인증 흐름 구현 — 프엔북">
+<meta property="og:description" content="로그인이 실제로 무슨 일인지부터 세션·토큰 방식 비교, React 로그인 폼, Next.js 보호 라우트, 토큰 만료와 리프레시, 소셜 로그인(OAuth)까지 과제 전형에 바로 쓰는 인증 흐름을 실습합니다.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
+<link rel="stylesheet" href="../assets/css/book.css">
+</head>
+<body data-base="../" data-chapter="95-auth-flow">
+<div id="app-header"></div>
+
+<div class="layout">
+  <nav class="sidebar" id="sidebar" aria-label="전체 목차"></nav>
+
+  <main class="page">
+    <p class="ch-eyebrow">13부 · 실무 확장</p>
+    <h1>95장. 로그인과 인증 흐름 구현</h1>
+
+<div class="ch-goals">
+<h2>이 챕터에서 배우는 것</h2>
+<ul>
+  <li><b>인증</b>과 <b>인가</b>의 차이, 로그인이 실제로 하는 일</li>
+  <li>세션 <span class="term" data-term="cookie">쿠키</span> 방식과 토큰(<span class="term" data-term="jwt">JWT</span>) 방식을 <b>상황에 맞게 고르는 법</b></li>
+  <li>에러·로딩·<span class="term" data-term="a11y">접근성</span>을 갖춘 <b>로그인 폼</b>과 로그인 상태 전역 관리</li>
+  <li><span class="term" data-term="nextjs">Next.js</span> <span class="term" data-term="app-router">App Router</span>에서 <b>보호 라우트</b> 만들기 (<code>proxy.ts</code> + <span class="term" data-term="rsc">서버 컴포넌트</span>)</li>
+  <li>액세스 토큰 만료 → <b>리프레시 한 번만</b> → 재요청 흐름과 로그아웃</li>
+  <li><b>OAuth 2.0 / 소셜 로그인</b> 흐름과 PKCE, 인증 라이브러리를 쓸지 판단하는 기준</li>
+</ul>
+</div>
+
+<p class="ch-meta">읽는 데 약 30분 · 사전 지식: 4장(<span class="term" data-term="http">HTTP</span>·쿠키), 39장(<span class="term" data-term="browser">브라우저</span> 저장소), 62장(<span class="term" data-term="react">React</span>의 폼), 65장(<span class="term" data-term="context">Context</span>), 71장(Next.js App Router), 78장(<span class="term" data-term="frontend">프론트엔드</span> 보안)</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 이 챕터의 위치</p>
+<p style="margin-bottom:0">78장과 89장에서 <b>세션 쿠키와 JWT의 차이</b>, <b>토큰을 <code>localStorage</code>에 두면 안 되는 이유</b>를 이미 배웠습니다.
+이 챕터는 그 결론을 <b>실제 코드로 옮기는 실습</b>입니다.
+"로그인 페이지와 로그인한 사람만 보이는 페이지를 만드세요"는 주니어 과제 전형에서 가장 자주 나오는 요구사항 중 하나입니다.</p>
+</div>
+
+<h2 id="authn-authz">인증과 인가 — 신분 확인과 출입 권한</h2>
+
+<p>둘은 이름이 비슷해서 자주 섞이지만, 하는 일이 다릅니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>인증 (Authentication)</th><th>인가 (Authorization)</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">질문</b></td><td>"당신은 <b>누구</b>입니까?"</td><td>"당신은 이것을 <b>해도 됩니까</b>?"</td></tr>
+<tr><td><b class="nw">비유</b></td><td>건물 1층에서 신분증을 보여 주고 <b>출입증</b>을 받는 것</td><td>출입증으로 <b>몇 층까지</b> 들어갈 수 있는지</td></tr>
+<tr><td><b class="nw">실패 시</b></td><td><code>401 Unauthorized</code> (이름과 달리 "인증 안 됨")</td><td><code>403 Forbidden</code> (누군지는 알지만 권한 없음)</td></tr>
+<tr><td><b class="nw">예</b></td><td>아이디·비밀번호 확인, 소셜 로그인</td><td>관리자만 회원 삭제 가능, 내 글만 수정 가능</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="what-login-does">로그인은 실제로 무슨 일을 하나</h3>
+
+<p>HTTP는 <b>상태가 없습니다</b>(4장). 서버는 방금 요청을 보낸 사람이 1초 전에 로그인한 그 사람인지 기억하지 못합니다.
+그래서 로그인의 본질은 <b>"비밀번호를 한 번 확인하고, 그 뒤로는 비밀번호 대신 쓸 출입증을 발급하는 것"</b>입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">로그인 한 번과 그 이후</span>
+<pre><code data-lang="text">[브라우저]                                  [서버]
+  │ ① POST /login  {email, password}        │
+  │ ──────────────────────────────────────▶ │ 비밀번호 해시 비교
+  │                                         │ 맞으면 출입증 발급
+  │ ② 200 OK + Set-Cookie: session=…        │
+  │ ◀────────────────────────────────────── │
+  │                                         │
+  │ ③ GET /api/me   (쿠키 자동 첨부)         │
+  │ ──────────────────────────────────────▶ │ 출입증 검사 → 누구인지 앎
+  │ ④ 200 OK {name: "민지"}                 │
+  │ ◀────────────────────────────────────── │</code></pre>
+</div>
+
+<p>비밀번호는 ①에서 <b>딱 한 번</b>만 오갑니다. 이후 모든 요청은 출입증(세션 ID 또는 토큰)으로 신원을 증명합니다.
+그래서 <b>출입증을 도둑맞는 것 = 계정을 도둑맞는 것</b>이고, 이 챕터의 보안 이야기는 대부분 "출입증을 어떻게 지키나"로 모입니다.</p>
+
+<h2 id="session-vs-token">세션 쿠키 방식 vs 토큰 방식 — 실무에서 고르기</h2>
+
+<p>원리 비교는 89장에 있으니, 여기서는 <b>구현할 때 무엇이 달라지는지</b>에 집중합니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>세션 쿠키</th><th>토큰(JWT) + 리프레시</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">출입증</b></td><td>의미 없는 긴 난수(세션 ID). 정보는 서버 DB에</td><td>서명된 토큰. 사용자 ID·만료 시각이 안에 들어 있음</td></tr>
+<tr><td><b class="nw">프론트 코드</b></td><td>거의 없음. 쿠키가 <b>자동 전송</b></td><td>만료 처리·갱신 로직이 필요 (아래 <a href="#refresh">리프레시</a>)</td></tr>
+<tr><td><b class="nw">강제 로그아웃</b></td><td>서버에서 세션 삭제 → <b>즉시</b></td><td>액세스 토큰은 만료까지 유효 → 짧게(수 분~수십 분) 잡음</td></tr>
+<tr><td><b class="nw">잘 맞는 곳</b></td><td>웹 하나, 같은 <span class="term" data-term="domain">도메인</span>의 서버</td><td>모바일 앱·여러 서비스가 같은 인증을 공유</td></tr>
+<tr><td><b class="nw"><span class="term" data-term="csrf">CSRF</span></b></td><td>대비 필요 (<code>SameSite</code>, <span class="term" data-term="csr">CSR</span>F 토큰)</td><td>쿠키에 담으면 똑같이 필요, 헤더로 보내면 불필요</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🤔</span> "JWT를 쓰면 쿠키를 안 쓴다"는 오해</p>
+<p style="margin-bottom:0"><b>JWT는 출입증의 형식</b>이고, <b>쿠키는 출입증을 담는 봉투</b>입니다. 둘은 경쟁 관계가 아닙니다.
+웹에서 가장 흔한 안전한 조합은 <b>"JWT를 <code>HttpOnly</code> 쿠키에 담기"</b>입니다.
+반대로 "JWT를 <code>localStorage</code>에 넣고 <code>Authorization</code> 헤더로 보내기"는 튜토리얼에 많지만,
+<span class="term" data-term="xss">XSS</span> 한 번에 토큰이 통째로 유출되는 구조입니다(78장, 89장).</p>
+</div>
+
+<h3 id="where-to-store">그래서 어디에 두나 — 결론만</h3>
+
+<ul>
+<li><b>리프레시 토큰·세션 ID</b>: 반드시 <code>HttpOnly; Secure; SameSite=Lax</code> 쿠키. <span class="term" data-term="javascript">JavaScript</span>가 읽을 수 없어야 합니다.</li>
+<li><b>액세스 토큰</b>을 굳이 JavaScript로 다뤄야 한다면 <b>메모리(변수)</b>에만 둡니다. 새로고침하면 사라지지만 리프레시 쿠키로 다시 받으면 됩니다.</li>
+<li><b>사용자 표시용 정보</b>(이름, 프로필 사진)는 <code>/api/me</code> 같은 <span class="term" data-term="api">API</span>로 받아 상태에 둡니다. 이건 비밀이 아닙니다.</li>
+</ul>
+
+<p>쿠키는 <b>서버가 <code>Set-Cookie</code>로 설정</b>합니다. 프론트엔드가 <code>document.cookie</code>로 만든 쿠키에는 <code>HttpOnly</code>를 붙일 수 없습니다.
+그래서 이 결정은 늘 <span class="term" data-term="backend">백엔드</span>와 함께 내립니다.</p>
+
+<h2 id="login-form">로그인 폼 만들기</h2>
+
+<p>62장의 폼 기술을 그대로 씁니다. 로그인 폼에서 특히 챙길 것은 <b>로딩 중 중복 제출 막기</b>, <b>에러를 화면과 <span class="term" data-term="screen-reader">스크린 리더</span>에 모두 알리기</b>, <b>브라우저 비밀번호 관리자가 알아보게 하기</b>입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">LoginForm.jsx — <span class="term" data-term="client">클라이언트</span>에서 API를 부르는 방식</span>
+<pre><code data-lang="jsx">function LoginForm({ onSuccess }) {
+  const [status, setStatus] = useState("idle");   // idle | loading | error
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (status === "loading") return;               // 중복 제출 방지
+    const { email, password } = Object.fromEntries(new FormData(e.currentTarget));
+
+    setStatus("loading");
+    setError("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",                       // 쿠키를 주고받기 (37장)
+        body: JSON.stringify({ email, password }),
+      });
+      if (res.status === 401) throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+      if (!res.ok) throw new Error("잠시 후 다시 시도해 주세요.");
+      onSuccess(await res.json());                    // { user: { id, name } }
+    } catch (err) {
+      setError(err.message);
+      setStatus("error");
+    }
+  }
+
+  const loading = status === "loading";
+  return (
+    &lt;form onSubmit={handleSubmit}&gt;
+      &lt;label htmlFor="email"&gt;이메일&lt;/label&gt;
+      &lt;input id="email" name="email" type="email" required
+             autoComplete="username"
+             aria-invalid={status === "error"}
+             aria-describedby={error ? "login-error" : undefined} /&gt;
+
+      &lt;label htmlFor="password"&gt;비밀번호&lt;/label&gt;
+      &lt;input id="password" name="password" type="password" required
+             autoComplete="current-password"
+             aria-invalid={status === "error"}
+             aria-describedby={error ? "login-error" : undefined} /&gt;
+
+      {error &amp;&amp; &lt;p id="login-error" role="alert"&gt;{error}&lt;/p&gt;}
+
+      &lt;button type="submit" disabled={loading} aria-busy={loading}&gt;
+        {loading ? "로그인 중…" : "로그인"}
+      &lt;/button&gt;
+    &lt;/form&gt;
+  );
+}</code></pre>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>코드</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td><code>autoComplete="username"</code>, <code>"current-password"</code></td><td>비밀번호 관리자가 칸을 정확히 채웁니다. 회원가입 폼이면 <code>"new-password"</code></td></tr>
+<tr><td><code>role="alert"</code></td><td>에러가 나타나는 순간 스크린 리더가 읽어 줍니다(77장)</td></tr>
+<tr><td><code>aria-describedby</code></td><td>입력 칸에 초점이 가면 어떤 에러인지 함께 읽힙니다</td></tr>
+<tr><td><code>disabled</code> + 문구 변경</td><td>더블 클릭으로 요청이 두 번 가는 것을 막고, 진행 중임을 보여 줍니다</td></tr>
+<tr><td>401과 그 외 에러를 나눔</td><td>"비밀번호가 틀렸다"와 "서버가 아프다"는 사용자가 할 일이 다릅니다</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🕵️</span> "이메일이 없습니다" vs "비밀번호가 틀렸습니다"</p>
+<p style="margin-bottom:0">둘을 구분해서 알려 주면 친절해 보이지만, 공격자에게 <b>"이 이메일은 가입되어 있다"</b>는 정보를 줍니다.
+로그인 실패 메시지는 <b>"이메일 또는 비밀번호가 올바르지 않습니다"</b>처럼 하나로 묶는 것이 OWASP 권장입니다.
+또 비밀번호 칸에 <code>onPaste</code>를 막지 마세요. 비밀번호 관리자 사용을 방해해 오히려 약한 비밀번호를 부추깁니다.</p>
+</div>
+
+<p>Next.js를 쓴다면 같은 폼을 <b><span class="term" data-term="server-action">Server Action</span> + <code>useActionState</code></b>로 만들 수도 있습니다(72장).
+이때는 쿠키 설정까지 서버 코드 안에서 끝나서, 브라우저 JavaScript는 토큰을 한 번도 만지지 않습니다.</p>
+
+<h3 id="auth-context">로그인 상태를 앱 전체에 알리기</h3>
+
+<p>헤더의 "로그인/로그아웃" 버튼, 마이페이지, 장바구니가 모두 "지금 누가 로그인했나"를 알아야 합니다. 65장의 Context가 딱 맞는 자리입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">AuthProvider.jsx — 토큰이 아니라 "사용자 정보"를 공유합니다</span>
+<pre><code data-lang="jsx">const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);   // 첫 확인 전에는 "모름"
+
+  useEffect(() =&gt; {
+    // 새로고침 직후: 쿠키가 살아 있는지 서버에 물어봅니다
+    fetch("/api/me", { credentials: "include" })
+      .then(res =&gt; (res.ok ? res.json() : null))
+      .then(data =&gt; setUser(data?.user ?? null))
+      .finally(() =&gt; setChecking(false));
+  }, []);
+
+  const value = { user, checking, setUser };
+  return &lt;AuthContext value={value}&gt;{children}&lt;/AuthContext&gt;;
+}
+
+export const useAuth = () =&gt; use(AuthContext);</code></pre>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">⏳</span> 상태는 셋입니다: 로그인됨 · 안 됨 · <b>아직 모름</b></p>
+<p style="margin-bottom:0"><code>checking</code> 없이 <code>user === null</code>만 보면, 새로고침 직후 0.2초 동안 "로그인하세요" 화면이 번쩍였다가 사라집니다.
+<b>확인 중에는 <span class="term" data-term="skeleton">스켈레톤</span>이나 빈 자리</b>를 보여 주세요. 과제 리뷰에서 자주 지적되는 부분입니다.</p>
+</div>
+
+<h2 id="protected-routes">보호 라우트 — Next.js 16 App Router</h2>
+
+<p>"로그인한 사람만 <code>/dashboard</code>에 들어올 수 있게"를 구현합니다.
+아래 코드는 <b>Next.js 16 기준, nextjs.org 공식 인증 가이드(2026년 9월 갱신본)</b>의 구조를 따릅니다.
+Next.js 16부터 예전 <code>middleware.ts</code>는 <b><code>proxy.ts</code></b>로 이름이 바뀌었고, 내보내는 함수 이름도 <code>proxy</code>입니다.</p>
+
+<p>공식 가이드는 검사를 <b>두 겹</b>으로 나눕니다.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th></th><th>낙관적 검사 (proxy.ts)</th><th>확실한 검사 (데이터 접근 계층)</th></tr></thead>
+<tbody>
+<tr><td><b class="nw">하는 일</b></td><td>쿠키만 읽고 없으면 <code>/login</code>으로 돌려보냄</td><td>세션을 검증하고, 필요하면 DB까지 확인한 뒤 데이터를 줌</td></tr>
+<tr><td><b class="nw">언제</b></td><td>모든 요청(프리페치 포함) 앞에서</td><td>데이터를 읽거나 바꾸기 직전</td></tr>
+<tr><td><b class="nw">주의</b></td><td><b>DB 조회 금지</b> — 너무 자주 실행됨</td><td>여기가 <b>진짜 방어선</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">proxy.ts — 프로젝트 루트(또는 src/)에 둡니다</span>
+<pre><code data-lang="ts">import { NextRequest, NextResponse } from "next/server";
+import { decrypt } from "@/app/lib/session";
+
+const protectedRoutes = ["/dashboard"];
+const publicRoutes = ["/login", "/signup", "/"];
+
+export default async function proxy(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+  const isProtected = protectedRoutes.some(p =&gt; path.startsWith(p));
+  const isPublic = publicRoutes.includes(path);
+
+  // 쿠키에서 세션을 꺼내 서명만 확인 (DB는 보지 않습니다)
+  const session = await decrypt(req.cookies.get("session")?.value);
+
+  if (isProtected &amp;&amp; !session?.userId) {
+    const url = new URL("/login", req.nextUrl);
+    url.searchParams.set("next", path);            // 로그인 후 돌아올 곳
+    return NextResponse.redirect(url);
+  }
+  if (isPublic &amp;&amp; session?.userId &amp;&amp; path !== "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+  }
+  return NextResponse.next();
+}
+
+// 정적 파일과 API에는 실행하지 않습니다
+export const config = {
+  matcher: ["/((?!api|_next/static|_next/image|.*\\.png$).*)"],
+};</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">app/lib/dal.ts — 데이터 접근 계층(DAL)</span>
+<pre><code data-lang="ts">import "server-only";                       // 클라이언트 번들에 섞이면 빌드 에러
+import { cache } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { decrypt } from "@/app/lib/session";
+
+export const verifySession = cache(async () =&gt; {
+  const cookie = (await cookies()).get("session")?.value;   // cookies()는 비동기
+  const session = await decrypt(cookie);
+  if (!session?.userId) redirect("/login");
+  return { userId: session.userId, role: session.role };
+});</code></pre>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">app/dashboard/page.tsx — 서버 <span class="term" data-term="component">컴포넌트</span>에서 확인</span>
+<pre><code data-lang="tsx">import { verifySession } from "@/app/lib/dal";
+
+export default async function DashboardPage() {
+  const { userId } = await verifySession();     // 로그인 안 했으면 여기서 redirect
+  const orders = await getOrders(userId);       // 내 데이터만 조회
+  return &lt;OrderList orders={orders} /&gt;;
+}</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧱</span> 레이아웃에서만 검사하면 뚫립니다</p>
+<ul style="margin-bottom:0">
+<li>공식 가이드는 <b>레이아웃(<code>layout.tsx</code>)에서 인증을 검사하지 말라</b>고 경고합니다. 레이아웃은 페이지 이동 때 <b>다시 렌더링되지 않고</b>, 레이아웃이 자식을 숨겨도 하위 세그먼트는 그대로 실행되기 때문입니다.</li>
+<li><code>proxy.ts</code>만 믿어도 안 됩니다. <b>Server Action과 Route Handler는 공개 API와 같습니다</b>(72장). 각각 안에서 <code>verifySession()</code>을 다시 불러야 합니다.</li>
+<li>원칙: <b>검사는 데이터에 가장 가까운 곳에서</b>. DAL 함수를 거치지 않고는 데이터를 못 읽게 만들면, 누가 검사를 깜빡해도 안전합니다.</li>
+</ul>
+</div>
+
+<p>React만 쓰는 <span class="term" data-term="spa">SPA</span>(68장의 React Router)라면 "로그인 안 했으면 <code>&lt;Navigate to="/login" /&gt;</code>"로 감싸는 컴포넌트를 만듭니다.
+이건 <b>사용자 경험을 위한 안내</b>일 뿐이고, 실제 보호는 API 서버가 401·403을 돌려주는 것으로 이루어집니다.</p>
+
+<h2 id="refresh">액세스 토큰 만료와 리프레시</h2>
+
+<p>토큰 방식에서는 보통 <b>두 개의 토큰</b>을 씁니다.</p>
+
+<ul>
+<li><b>액세스 토큰</b> — API를 부를 때 쓰는 출입증. 도둑맞아도 피해가 짧도록 <b>수 분~수십 분</b>만 유효합니다.</li>
+<li><b>리프레시 토큰</b> — 새 액세스 토큰을 받는 데만 쓰는 열쇠. 며칠~몇 주 유효하고, <code>HttpOnly</code> 쿠키에 담아 <b>갱신 API에만</b> 보냅니다.</li>
+</ul>
+
+<div class="codeblock">
+<span class="cb-label">만료 → 갱신 → 재요청</span>
+<pre><code data-lang="text">GET /api/orders  (액세스 토큰 A, 만료됨)
+   ◀── 401 Unauthorized
+POST /api/refresh (리프레시 쿠키 자동 첨부)
+   ◀── 200 { accessToken: B }         ← 새 토큰
+GET /api/orders  (액세스 토큰 B)       ← 원래 요청을 다시
+   ◀── 200 [ … ]
+
+리프레시도 401이면 → 진짜 로그아웃 상태 → /login 으로</code></pre>
+</div>
+
+<h3 id="single-flight">동시 요청이 함께 401을 받으면</h3>
+
+<p>대시보드는 보통 주문·알림·프로필을 <b>동시에</b> 요청합니다. 토큰이 만료된 순간이라면 셋 다 401을 받고,
+순진하게 짜면 <b>갱신 요청도 세 번</b> 나갑니다. 서버가 <b>리프레시 토큰 회전</b>(한 번 쓴 리프레시 토큰은 폐기하고 새로 발급)을 쓰면
+두 번째, 세 번째 갱신은 이미 폐기된 토큰을 내밀게 되어 <b>사용자가 강제로 로그아웃</b>됩니다.</p>
+
+<p>해법은 <b>진행 중인 갱신 <span class="term" data-term="promise">Promise</span>를 하나만 두고 모두가 그것을 기다리게</b> 하는 것입니다(36장의 Promise 공유).
+아래 실행기에서 직접 확인해 보세요. 네트워크는 쓰지 않고, 가짜 서버 함수와 가짜 시계로 흉내 냅니다.</p>
+
+<div class="runner" data-lang="js" data-title="로그인 → 토큰 만료 → 갱신은 한 번만" data-note="SINGLE_FLIGHT를 false로 바꿔 다시 실행해 보세요. 갱신 요청이 몇 번 나가고 무슨 일이 생기는지 비교해 보세요.">
+<textarea class="rn-src">
+const SINGLE_FLIGHT = true;   // false로 바꿔 보세요
+
+// ===== 가짜 서버 (실제로는 백엔드) =====
+let now = 0;                         // 가짜 시계(초)
+const ACCESS_TTL = 60;               // 액세스 토큰 60초
+const server = {
+  validRefresh: null,                // 지금 유효한 리프레시 토큰 하나
+  refreshCalls: 0,
+  issue(user) {
+    this.validRefresh = "R-" + Math.random().toString(36).slice(2, 7);
+    return { access: { user, exp: now + ACCESS_TTL }, refreshCookie: this.validRefresh };
+  },
+  async login(email, pw) {
+    await tick();
+    if (pw !== "1234") return { status: 401 };
+    return { status: 200, ...this.issue(email) };
+  },
+  async api(path, access) {
+    await tick();
+    if (!access || access.exp <= now) return { status: 401 };
+    return { status: 200, body: path + " 데이터 (" + access.user + ")" };
+  },
+  async refresh(cookie) {
+    this.refreshCalls++;
+    await tick();
+    if (cookie !== this.validRefresh) {     // 회전: 이미 쓴 토큰은 거절
+      this.validRefresh = null;              // 도난 의심 → 전부 폐기
+      return { status: 401 };
+    }
+    const user = "minji@example.com";
+    return { status: 200, ...this.issue(user) };
+  },
+};
+const tick = () => new Promise(r => setTimeout(r, 10));
+
+// ===== 브라우저 쪽 =====
+let accessToken = null;      // 메모리에만 보관
+let refreshCookie = null;    // 실제로는 HttpOnly 쿠키 (JS가 못 읽음)
+let refreshing = null;       // 진행 중인 갱신 Promise
+
+async function doRefresh() {
+  const res = await server.refresh(refreshCookie);
+  if (res.status !== 200) throw new Error("세션 만료 → 로그인 화면으로");
+  accessToken = res.access;
+  refreshCookie = res.refreshCookie;
+}
+
+function refreshOnce() {
+  if (!SINGLE_FLIGHT) return doRefresh();
+  if (!refreshing) {
+    refreshing = doRefresh().finally(() => { refreshing = null; });
+  }
+  return refreshing;          // 모두 같은 Promise를 기다림
+}
+
+async function apiFetch(path) {
+  let res = await server.api(path, accessToken);
+  if (res.status === 401) {
+    console.log("  " + path + " → 401, 갱신 시도");
+    await refreshOnce();
+    res = await server.api(path, accessToken);   // 딱 한 번만 재시도
+  }
+  return res.body;
+}
+
+// ===== 시나리오 =====
+(async () => {
+  const bad = await server.login("minji@example.com", "0000");
+  console.log("1) 틀린 비밀번호:", bad.status);
+
+  const ok = await server.login("minji@example.com", "1234");
+  accessToken = ok.access; refreshCookie = ok.refreshCookie;
+  console.log("2) 로그인 성공, 액세스 토큰 만료 시각:", accessToken.exp + "초");
+  console.log("   ", await apiFetch("/orders"));
+
+  now += 90;   // 90초가 흐름 → 액세스 토큰 만료
+  console.log("3) 90초 후, 요청 3개를 동시에 보냄");
+  try {
+    const results = await Promise.all(
+      ["/orders", "/alerts", "/profile"].map(apiFetch)
+    );
+    results.forEach(r => console.log("   ✅", r));
+  } catch (e) {
+    console.log("   ❌", e.message);
+  }
+  console.log("4) 서버가 받은 갱신 요청 수:", server.refreshCalls);
+})();
+</textarea>
+</div>
+
+<p><code>SINGLE_FLIGHT = true</code>면 갱신은 <b>1번</b>이고 세 요청 모두 성공합니다.
+<code>false</code>로 바꾸면 갱신이 3번 나가고, 두 번째부터는 이미 회전된 토큰이라 거절되어 <b>로그아웃</b>됩니다.
+실무에서는 이 로직을 <span class="term" data-term="fetch">fetch</span> 래퍼나 axios 인터셉터 한 곳에 넣어 두고, 컴포넌트는 <code>apiFetch</code>만 부릅니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 갱신 로직에서 자주 나는 버그</p>
+<ul style="margin-bottom:0">
+<li><b>무한 루프</b>: 갱신 API 자체가 401을 받았는데 또 갱신을 시도. 갱신 요청은 래퍼를 거치지 않게 하거나 <b>재시도는 한 번만</b>.</li>
+<li><b>401과 403 혼동</b>: 403은 "로그인은 됐지만 권한 없음"입니다. 갱신해도 결과가 같으니 갱신하지 말고 "권한이 없습니다"를 보여 주세요.</li>
+<li><b>탭이 여러 개</b>: 다른 탭에서 로그아웃했는데 이 탭은 모름. <code>BroadcastChannel</code>이나 <code>storage</code> 이벤트(39장)로 "로그아웃됨" 신호만 공유하는 방법이 있습니다.</li>
+</ul>
+</div>
+
+<h3 id="logout">로그아웃은 세 군데를 지웁니다</h3>
+
+<ol>
+<li><b>서버</b>: 세션을 삭제하거나 리프레시 토큰을 폐기합니다. <code>POST /api/logout</code> (상태를 바꾸므로 GET이 아닙니다).</li>
+<li><b>쿠키</b>: 서버가 <code>Set-Cookie</code>로 만료시킵니다. Next.js라면 Server Action 안에서 <code>(await cookies()).delete("session")</code> 후 <code>redirect("/login")</code>.</li>
+<li><b>클라이언트 상태</b>: 메모리의 액세스 토큰, Context의 <code>user</code>, 그리고 <b><span class="term" data-term="server-state">서버 상태</span> 캐시</b>(67장의 <span class="term" data-term="tanstack-query">TanStack Query</span> 등)를 비웁니다. 캐시를 안 비우면 다음에 로그인한 사람에게 <b>이전 사람의 데이터</b>가 잠깐 보일 수 있습니다.</li>
+</ol>
+
+<h2 id="oauth">OAuth 2.0과 소셜 로그인</h2>
+
+<p>"구글로 로그인"은 우리 서비스가 비밀번호를 받지 않고, <b>구글에게 "이 사람이 맞는지 확인해 줘"라고 맡기는</b> 방식입니다.
+엄밀히 OAuth 2.0은 <b>권한 위임</b>(내 구글 캘린더를 이 앱이 읽어도 됨) 규격이고, 그 위에 <b>로그인(신원 확인)</b>을 얹은 것이 <b>OpenID Connect(OIDC)</b>입니다.
+소셜 로그인은 대부분 OIDC입니다.</p>
+
+<div class="codeblock">
+<span class="cb-label">인가 코드 + PKCE 흐름 (가장 권장되는 방식)</span>
+<pre><code data-lang="text">사용자        우리 앱(브라우저)          우리 서버            구글(인가 서버)
+  │ "구글로 로그인" 클릭 │                      │                     │
+  │ ───────────────────▶│ ① code_verifier 생성 │                     │
+  │                     │   challenge = 해시(verifier)                │
+  │                     │ ② 구글 로그인 페이지로 이동 ───────────────▶│
+  │                     │   ?client_id&amp;redirect_uri&amp;state&amp;code_challenge
+  │ ◀──────────────────────────── ③ 구글 화면에서 로그인·동의 ─────────│
+  │                     │ ④ redirect_uri?code=XYZ&amp;state=… ◀──────────│
+  │                     │ ⑤ state 확인 후 code 전달 ▶│                 │
+  │                     │                      │ ⑥ code + verifier ─▶│
+  │                     │                      │ ◀─ ⑦ 토큰(ID 토큰 등)│
+  │                     │ ◀─ ⑧ 우리 세션 쿠키 발급 │                     │</code></pre>
+</div>
+
+<ul>
+<li><b><code>state</code></b>: 출발할 때 만든 난수를 돌아왔을 때 비교합니다. 공격자가 자기 계정의 code를 우리 사용자에게 밀어 넣는 <b>CSRF를 막습니다</b>.</li>
+<li><b><code>code</code></b>: <span class="term" data-term="url">URL</span>로 돌아오는 것은 토큰이 아니라 <b>한 번 쓰고 버리는 교환권</b>입니다. 진짜 토큰은 ⑥⑦에서 서버끼리 주고받습니다.</li>
+<li>⑧이 핵심입니다. 구글 토큰을 브라우저에 그대로 두지 말고, <b>우리 서비스의 세션</b>으로 바꿔서 앞에서 배운 방식대로 관리합니다.</li>
+</ul>
+
+<h3 id="pkce">PKCE — 교환권을 가로채도 못 쓰게</h3>
+
+<p>PKCE(Proof Key for Code Exchange, "픽시")는 ①에서 <b>비밀 문자열(code_verifier)</b>을 만들고, 그 <b>해시값(code_challenge)만</b> 구글에 먼저 보내 두는 장치입니다.
+나중에 code를 토큰으로 바꿀 때 원래 비밀 문자열을 내밀어야 하므로, 중간에 누군가 code를 가로채도 <b>비밀 문자열이 없어 토큰을 받을 수 없습니다</b>.
+원래는 비밀 키를 안전하게 숨길 수 없는 모바일 앱·SPA를 위해 만들어졌지만(RFC 7636), 현재 OAuth 보안 권고(RFC 9700)는 <b>모든 클라이언트에 PKCE를 쓰라</b>고 합니다.
+예전 SPA에서 쓰던 <b>암시적 흐름(Implicit, URL에 토큰을 바로 받음)은 더 이상 권장되지 않습니다.</b></p>
+
+<h3 id="library">직접 만들까, 라이브러리를 쓸까</h3>
+
+<p>Next.js 공식 가이드도 직접 구현 예제는 <b>교육용</b>이라고 밝히고, 실서비스에는 인증 라이브러리를 권합니다.
+선택지는 크게 <b>오픈소스 라이브러리</b>(Auth.js, Better Auth 등 — 내 서버·DB에서 동작)와 <b><span class="term" data-term="hosting">호스팅</span>형 인증 서비스</b>(Clerk, Auth0, Supabase Auth 등 — 사용자 데이터를 외부가 보관)로 나뉩니다. 특정 제품보다 아래 질문으로 고르세요.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>질문</th><th>"예"라면</th></tr></thead>
+<tbody>
+<tr><td>이메일 인증, 비밀번호 재설정, 소셜 로그인 여러 개, 2단계 인증이 필요한가?</td><td>직접 만들 양이 매우 많습니다 → 라이브러리·서비스</td></tr>
+<tr><td>사용자 개인정보를 외부 회사에 맡기기 어려운가(규제, 사내 정책)?</td><td>오픈소스 라이브러리나 사내 인증 서버</td></tr>
+<tr><td>사용자 수에 따라 요금이 오르는 것이 부담인가?</td><td>호스팅형은 가격 정책을 미리 확인</td></tr>
+<tr><td>회사에 이미 인증 서버(백엔드)가 있는가?</td><td>프론트는 그 API에 맞춰 <b>폼·보호 라우트·갱신만</b> 구현</td></tr>
+<tr><td>과제 전형인가?</td><td>보통 "직접 구현"을 보려는 것. 요구사항을 먼저 확인</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="mistakes">흔한 보안 실수</h2>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🙈</span> "관리자 버튼을 숨겼으니 안전하다"</p>
+<p style="margin-bottom:0">프론트에서 <code>{user.role === "admin" &amp;&amp; &lt;DeleteButton /&gt;}</code>로 버튼을 숨기는 것은 <b>화면 정리</b>일 뿐입니다.
+누구나 <span class="term" data-term="devtools">개발자 도구</span>나 curl로 <code>DELETE /api/users/42</code>를 직접 보낼 수 있습니다(78장의 첫 번째 원칙).
+<b>서버가 요청마다 "이 사람이 이걸 해도 되나"를 확인</b>해야 하고, 남의 글 ID를 넣어 보는 공격(IDOR)까지 막아야 합니다.
+프론트의 권한 검사는 사용자 경험, 서버의 권한 검사는 보안입니다.</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🔗</span> 토큰을 URL에 넣지 마세요</p>
+<p style="margin-bottom:0"><code>/reset?token=…</code>, <code>/dashboard?access_token=…</code>처럼 URL에 들어간 값은
+<b>브라우저 기록, 서버 접속 로그, 분석 도구, 다른 사이트로 가는 <code>Referer</code> 헤더, 공유한 스크린샷</b>에 그대로 남습니다.
+액세스 토큰은 쿠키나 헤더로만 보냅니다. 비밀번호 재설정 링크처럼 URL이 불가피하면 <b>한 번만 쓰고 짧게 만료</b>되게 하고,
+페이지에 <code>Referrer-Policy: no-referrer</code>를 둡니다(78장).</p>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🍪</span> 쿠키로 바꿨다면 CSRF도 같이</p>
+<p style="margin-bottom:0"><code>HttpOnly</code> 쿠키로 XSS 위험을 줄이면, 대신 쿠키가 <b>자동 전송</b>되어 CSRF 문이 열립니다(78장).
+<code>SameSite=Lax</code>, 상태 변경은 GET 금지, 필요하면 CSRF 토큰. 로그인·로그아웃 요청도 예외가 아닙니다.
+Next.js Server Action은 요청의 <code>Origin</code>과 호스트를 비교하는 기본 방어가 있지만, 직접 만든 Route Handler는 스스로 챙겨야 합니다.</p>
+</div>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🔍</span> "JWT 안에 있으니 프론트에서 만료를 믿고 판단해도 된다"</p>
+<p style="margin-bottom:0">프론트에서 JWT를 열어 <code>exp</code>를 보고 미리 갱신하는 것은 괜찮은 <b>최적화</b>입니다.
+하지만 그 내용으로 <b>권한을 결정</b>하면 안 됩니다. 서명 검증은 비밀 키를 가진 서버만 할 수 있고,
+사용자 컴퓨터의 시계는 틀릴 수 있습니다. 최종 판단은 늘 서버의 401·403입니다.</p>
+</div>
+
+<h2 id="practice">직접 해 보기</h2>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧪</span> 과제 1 — 로그인 후 "원래 가려던 곳"으로 돌아가기</p>
+<p>위 <code>proxy.ts</code>는 <code>/login?next=/dashboard/orders</code>처럼 돌아올 주소를 붙입니다. 로그인 성공 후 이 <code>next</code>로 이동하도록 로그인 폼을 고쳐 보세요.</p>
+<p style="margin-bottom:0"><b>함정</b>: <code>next=https://evil.example</code>을 그대로 따라가면 <b>오픈 리다이렉트</b> 취약점입니다.
+<code>next</code>가 <code>/</code>로 시작하고 <code>//</code>로 시작하지 않을 때만 허용하고, 아니면 <code>/dashboard</code>로 보내세요.</p>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧪</span> 과제 2 — 실행기 확장</p>
+<ul style="margin-bottom:0">
+<li><code>now += 90</code> 대신 <code>now += 60 * 60 * 24 * 30</code>(30일)으로 바꾸고, 서버에 리프레시 토큰 만료(예: 14일)를 추가해 보세요. 이때 사용자에게 어떤 메시지를 보여 줘야 할까요?</li>
+<li><code>apiFetch</code>에 403 응답을 처리하는 분기를 추가해, 갱신을 시도하지 않고 "권한 없음"을 출력하게 해 보세요.</li>
+</ul>
+</div>
+
+<div class="box recap">
+<p class="box-title"><span class="box-ico">📌</span> 요약</p>
+<ul style="margin-bottom:0">
+<li><b>인증</b>은 누구인지(401), <b>인가</b>는 해도 되는지(403). 로그인은 비밀번호를 한 번 확인하고 <b>출입증</b>을 발급하는 일이다.</li>
+<li>JWT는 출입증의 <b>형식</b>, 쿠키는 <b>봉투</b>다. 웹에서는 <b><code>HttpOnly; Secure; SameSite</code> 쿠키</b>에 담는 것이 기본이다.</li>
+<li>로그인 폼은 <b>중복 제출 방지, <code>role="alert"</code> 에러, <code>autoComplete</code></b>를 챙긴다. 전역 상태에는 토큰이 아니라 <b>사용자 정보</b>를, 그리고 "아직 모름" 상태를 둔다.</li>
+<li>Next.js 16은 <b><code>proxy.ts</code>로 낙관적 검사</b>, <b>DAL의 <code>verifySession()</code>으로 확실한 검사</b>를 한다. 레이아웃만으로 보호하지 않는다.</li>
+<li>401이면 <b>갱신은 한 번만</b>(진행 중 Promise 공유), 재시도도 한 번만. 갱신까지 실패하면 로그인 화면으로.</li>
+<li>로그아웃은 <b>서버 세션 · 쿠키 · 클라이언트 캐시</b> 세 곳을 지운다.</li>
+<li>소셜 로그인은 <b>인가 코드 + PKCE</b>, <code>state</code>로 CSRF 방지. 받은 토큰은 <b>우리 세션</b>으로 바꿔 관리한다.</li>
+<li>프론트의 권한 검사는 UX일 뿐, <b>보안은 서버</b>. 토큰을 URL에 넣지 않는다.</li>
+</ul>
+</div>
+
+<h2 id="refs">참고 자료</h2>
+<ul>
+<li><a href="https://nextjs.org/docs/app/guides/authentication" target="_blank" rel="noopener">Next.js 공식 — Authentication 가이드 (영문)</a></li>
+<li><a href="https://nextjs.org/docs/app/api-reference/file-conventions/proxy" target="_blank" rel="noopener">Next.js 공식 — proxy.js 파일 규칙 (영문)</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Guides/Authentication" target="_blank" rel="noopener">MDN — HTTP 인증</a></li>
+<li><a href="https://developer.mozilla.org/ko/docs/Web/HTTP/Reference/Headers/Set-Cookie" target="_blank" rel="noopener">MDN — Set-Cookie (HttpOnly, SameSite)</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete" target="_blank" rel="noopener">MDN — autocomplete 속성 (영문)</a></li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — Authentication 치트시트 (영문)</a></li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — Session Management 치트시트 (영문)</a></li>
+<li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP — CSRF 방어 치트시트 (영문)</a></li>
+<li><a href="https://datatracker.ietf.org/doc/html/rfc6749" target="_blank" rel="noopener">RFC 6749 — OAuth 2.0 (영문)</a></li>
+<li><a href="https://datatracker.ietf.org/doc/html/rfc7636" target="_blank" rel="noopener">RFC 7636 — PKCE (영문)</a></li>
+<li><a href="https://datatracker.ietf.org/doc/html/rfc9700" target="_blank" rel="noopener">RFC 9700 — OAuth 2.0 보안 모범 사례 (영문)</a></li>
+<li><a href="https://openid.net/specs/openid-connect-core-1_0.html" target="_blank" rel="noopener">OpenID Connect Core 1.0 (영문)</a></li>
+</ul>
+
+    <section class="quiz" id="quiz"></section>
+  </main>
+
+  <aside class="pagetoc" id="pagetoc" aria-label="이 챕터의 목차"></aside>
+</div>
+
+<script src="../assets/data/toc.js"></script>
+<script src="../assets/data/glossary-data.js"></script>
+<script src="../assets/js/app.js"></script>
+<script src="../assets/js/glossary.js"></script>
+<script src="../assets/js/runner.js"></script>
+<script src="../assets/js/quiz.js"></script>
+<script>
+FB_QUIZ([
+  {
+    q: "로그인한 일반 사용자가 관리자 전용 API를 호출했다. 서버가 돌려줄 가장 알맞은 상태 코드는?",
+    o: [
+      "401 — 이름이 Unauthorized이므로 권한 없음에 쓴다",
+      "403 — 누구인지는 알지만 권한이 없다",
+      "404 — 존재를 숨기기 위해 항상 404만 쓴다",
+      "400 — 잘못된 요청이므로"
+    ],
+    a: 1,
+    e: "401은 이름과 달리 <b>인증이 안 됨</b>(로그인 필요·토큰 만료)을 뜻합니다. 이미 로그인해 신원은 확인됐지만 <b>권한이 없으면 403</b>입니다. 이 구분이 중요한 이유는, 프론트가 <b>401일 때만 토큰 갱신</b>을 시도해야 하기 때문입니다. 403에 갱신을 시도해도 결과는 같습니다."
+  },
+  {
+    q: "\"JWT 방식을 쓰기로 했으니 토큰은 localStorage에 두고 헤더로 보내자\"는 제안에 대한 가장 적절한 반응은?",
+    o: [
+      "JWT는 서명돼 있으니 어디에 둬도 안전하다",
+      "JWT도 HttpOnly 쿠키에 담을 수 있고, 그쪽이 XSS에 더 안전하다",
+      "JWT는 쿠키에 담을 수 없으니 그 방법뿐이다",
+      "sessionStorage로 바꾸면 XSS 문제가 해결된다"
+    ],
+    a: 1,
+    e: "JWT는 출입증의 <b>형식</b>이고 쿠키는 <b>담는 곳</b>이라 함께 쓸 수 있습니다. <code>localStorage</code>와 <code>sessionStorage</code>는 둘 다 <b>같은 출처의 스크립트가 읽을 수 있어</b> XSS에 똑같이 취약합니다. 서명은 위조를 막을 뿐 탈취를 막지 못합니다."
+  },
+  {
+    q: "Next.js 16 App Router에서 대시보드를 보호하려 한다. 공식 가이드의 권장과 가장 가까운 구성은?",
+    o: [
+      "dashboard/layout.tsx에서 세션을 확인하고 없으면 null을 반환한다",
+      "proxy.ts에서 쿠키로 빠르게 거르고, 데이터 접근 직전에 verifySession()으로 다시 확인한다",
+      "proxy.ts에서 매 요청 DB를 조회해 세션을 검증하면 다른 검사는 필요 없다",
+      "클라이언트 컴포넌트에서 useEffect로 확인 후 router.push로 보낸다"
+    ],
+    a: 1,
+    e: "공식 가이드는 <b>proxy.ts는 쿠키만 읽는 낙관적 검사</b>(프리페치까지 모든 요청에서 실행되므로 DB 조회 금지), <b>진짜 검사는 데이터에 가까운 DAL</b>에서 하라고 권합니다. 레이아웃은 이동 시 다시 렌더링되지 않고 하위 세그먼트를 막지 못하며, Server Action은 별도 진입점이라 각자 검사해야 합니다."
+  },
+  {
+    q: "토큰이 만료된 순간 세 개의 API 요청이 동시에 401을 받았다. 서버는 리프레시 토큰 회전을 쓴다. 올바른 처리는?",
+    o: [
+      "각 요청이 각자 갱신을 요청하고 각자 재시도한다",
+      "진행 중인 갱신 Promise 하나를 공유해 갱신은 한 번만 하고, 세 요청이 그 결과로 재시도한다",
+      "401이 오면 바로 로그아웃시키는 것이 가장 안전하다",
+      "갱신 성공할 때까지 무한히 재시도한다"
+    ],
+    a: 1,
+    e: "회전 방식에서는 한 번 쓴 리프레시 토큰이 폐기되므로, 갱신이 세 번 나가면 두 번째부터 <b>이미 폐기된 토큰</b>이라 거절되고 사용자가 로그아웃됩니다. <b>갱신 Promise를 하나만 두고 공유</b>하면 갱신은 1번, 재시도는 요청마다 1번으로 끝납니다. 갱신 자체가 실패하면 그때 로그인 화면으로 보냅니다."
+  },
+  {
+    q: "소셜 로그인의 인가 코드 흐름에서 PKCE가 막아 주는 공격은?",
+    o: [
+      "사용자가 약한 비밀번호를 쓰는 것",
+      "리다이렉트로 돌아온 인가 코드를 가로챈 공격자가 토큰으로 바꾸는 것",
+      "서버의 데이터베이스가 유출되는 것",
+      "XSS로 페이지에 스크립트가 삽입되는 것"
+    ],
+    a: 1,
+    e: "PKCE는 출발할 때 만든 <b>code_verifier</b>의 해시만 먼저 보내 두고, 코드를 토큰으로 바꿀 때 원본을 요구합니다. 그래서 코드를 가로채도 <b>원본 비밀 문자열이 없으면 토큰을 받을 수 없습니다.</b> RFC 9700은 모든 클라이언트에 PKCE를 권장합니다. CSRF는 <code>state</code>가, XSS는 별도 방어(78장)가 담당합니다."
+  }
+]);
+</script>
+</body>
+</html>

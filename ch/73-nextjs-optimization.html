@@ -6,6 +6,12 @@
 <title>73장. 메타데이터, 이미지, 폰트 최적화 — 프엔북</title>
 <meta name="description" content="Next.js의 메타데이터 API, next/image로 이미지 최적화, next/font로 폰트 최적화, 스크립트 로딩 전략을 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="73장. 메타데이터, 이미지, 폰트 최적화 — 프엔북">
 <meta property="og:description" content="Next.js의 메타데이터 API, next/image로 이미지 최적화, next/font로 폰트 최적화, 스크립트 로딩 전략을 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -85,7 +91,8 @@ export async function generateMetadata({ params }) {
 import { ImageResponse } from "next/og";
 
 export default async function Image({ params }) {
-  const post = await getPost(params.slug);
+  const { slug } = await params;          // Next.js 16: params는 Promise입니다
+  const post = await getPost(slug);
   return new ImageResponse(
     (
       &lt;div style={{ display: "flex", fontSize: 60, background: "white", padding: 60 }}&gt;
@@ -133,7 +140,7 @@ export default function robots() {
   alt="바다가 보이는 창가"      // 8장 — 필수입니다
   width={1200}
   height={630}
-  priority                        // 첫 화면 이미지에만
+  preload                         // 첫 화면 대표 이미지에만 (Next.js 16)
 /&gt;</code></pre>
 </div>
 
@@ -151,12 +158,14 @@ export default function robots() {
 </div>
 
 <div class="box warn">
-<p class="box-title"><span class="box-ico">⭐</span> <code>priority</code>를 정확히 쓰세요</p>
+<p class="box-title"><span class="box-ico">⭐</span> 첫 화면 대표 이미지는 우선 로드하세요</p>
 <p style="margin-bottom:0"><code>next/image</code>는 <b>기본이 지연 로딩</b>입니다.
-그래서 <b>첫 화면의 큰 대표 이미지에 <code>priority</code>를 안 붙이면</b>
-그 이미지가 늦게 로드되어 <b><span class="term" data-term="lcp">LCP</span> 점수가 나빠집니다</b>(8·76장).<br>
+그래서 <b>첫 화면의 큰 대표 이미지(<span class="term" data-term="lcp">LCP</span> 요소)에 아무것도 안 붙이면</b>
+그 이미지가 늦게 로드되어 <b>LCP 점수가 나빠집니다</b>(8·76장).<br>
+<b><span class="term" data-term="nextjs">Next.js</span> 16부터 예전의 <code>priority</code>는 deprecated</b>되고 <code>preload</code>로 이름이 바뀌었습니다(<code>&lt;head&gt;</code>에 프리로드 링크를 넣습니다).
+공식 문서는 <b>대부분의 경우 <code>loading="eager"</code>나 <code>fetchPriority="high"</code>를 권장</b>하고, <code>preload</code>는 그 이미지가 확실한 LCP 요소일 때 씁니다. 셋을 함께 쓰지는 않습니다.<br>
 반대로 <b>모든 이미지에 붙이면</b> 우선순위 개념이 사라져 아무 의미가 없어집니다.
-<b>화면에 처음부터 보이는 큰 이미지 한두 개</b>에만 붙이세요.</p>
+<b>화면에 처음부터 보이는 큰 이미지 한두 개</b>에만 붙이세요. 옛 자료의 <code>priority</code>는 이 자리에 있던 것입니다. (기준: Next.js 16, nextjs.org)</p>
 </div>
 
 <div class="codeblock">
@@ -272,7 +281,7 @@ const Editor = dynamic(() =&gt; import("./Editor"), {
 <ol style="margin-bottom:0">
 <li><b>모든 페이지에 고유한 <code>title</code>·<code>description</code></b>이 있는가(10장)</li>
 <li><b>OG 이미지</b>가 절대 주소이고 실제로 표시되는가</li>
-<li>첫 화면 큰 이미지에 <b><code>priority</code></b>가 붙어 있는가</li>
+<li>첫 화면 큰 이미지에 <b><code>preload</code></b>(또는 <code>loading="eager"</code>·<code>fetchPriority="high"</code>)가 붙어 있는가</li>
 <li>모든 이미지에 <b><code>alt</code></b>가 있는가(8장)</li>
 <li><b>폰트 용량</b>을 확인했는가 (한글은 특히)</li>
 <li>서드파티 스크립트를 <b>꼭 필요한 것만</b> 남겼는가</li>
@@ -286,7 +295,7 @@ const Editor = dynamic(() =&gt; import("./Editor"), {
 <li><code>metadata</code>와 <code>generateMetadata</code>로 <b>페이지별 SEO·공유 미리보기</b>를 만든다.</li>
 <li><code>sitemap.ts</code>·<code>robots.ts</code>로 크롤러에게 구조를 알린다.</li>
 <li><code>next/image</code>가 <b>포맷 변환·크기별 생성·지연 로딩·CLS 방지</b>를 자동으로 한다.</li>
-<li><b>첫 화면 큰 이미지에만 <code>priority</code></b>. 전부에 붙이면 의미가 없다.</li>
+<li><b>첫 화면 큰 이미지에만 우선 로드</b>(<code>preload</code>·<code>loading="eager"</code>·<code>fetchPriority="high"</code>). Next.js 16에서 <code>priority</code>는 deprecated다. 전부에 붙이면 의미가 없다.</li>
 <li>외부 이미지는 <b>도메인 허용</b>이 필요하다 (악용 방지).</li>
 <li><code>next/font</code>는 자체 호스팅·프리로드·대체 폰트 조정을 해 주지만 <b>한글 서브셋은 직접</b> 해야 한다.</li>
 <li>외부 스크립트는 <b>가능한 한 늦게</b>. 성능의 최대 적이다.</li>
@@ -317,23 +326,23 @@ const Editor = dynamic(() =&gt; import("./Editor"), {
 <script>
 FB_QUIZ([
   {
-    q: "<code>next/image</code>에서 <code>priority</code> 속성을 첫 화면 대표 이미지에 붙여야 하는 이유는?",
+    q: "Next.js 16에서 첫 화면의 큰 대표 이미지(LCP)를 빨리 띄우려면 <code>next/image</code>에 무엇을 붙이나요?",
     o: [
-      "이미지 품질이 좋아져서",
-      "next/image는 기본이 지연 로딩이라, 처음부터 보이는 큰 이미지에 붙이지 않으면 로드가 늦어져 LCP가 나빠지기 때문",
-      "alt 속성을 대체하기 위해",
-      "CDN을 사용하기 위해"
+      "<code>priority</code> (16에서도 권장되는 방식)",
+      "<code>preload</code> 또는 <code>loading=\"eager\"</code>·<code>fetchPriority=\"high\"</code>",
+      "<code>loading=\"lazy\"</code>",
+      "<code>quality={100}</code>"
     ],
     a: 1,
-    e: "8장에서 배운 원칙 그대로입니다. \"처음부터 보이는 것은 즉시, 스크롤해야 보이는 것만 lazy\". <code>priority</code>는 프리로드를 추가하고 지연 로딩을 해제합니다. 다만 <b>모든 이미지에 붙이면</b> 우선순위 개념이 사라져 무의미해집니다."
+    e: "<code>next/image</code>는 기본이 지연 로딩이라 첫 화면 큰 이미지에 아무것도 안 붙이면 LCP가 나빠집니다. Next.js 16부터 <code>priority</code>는 deprecated되고 <code>preload</code>로 바뀌었으며, 공식 문서는 대부분의 경우 <code>loading=\"eager\"</code>나 <code>fetchPriority=\"high\"</code>를 권합니다. 화질을 올리는 것은 오히려 용량만 늘립니다."
   },
   {
     q: "<code>next/font</code>가 한글 프로젝트에서 <b>자동으로 해 주지 않는</b> 것은?",
     o: [
-      "폰트 자체 호스팅",
-      "preload 태그 생성",
-      "한글 글자 수가 많아 생기는 용량 문제 해결(서브셋)",
-      "대체 폰트 크기 자동 조정"
+      "폰트 파일을 우리 도메인에서 자체 호스팅",
+      "폰트 preload 태그 생성",
+      "한글 글자 수 때문에 커지는 용량 줄이기(서브셋)",
+      "대체 폰트 크기를 맞춰 레이아웃 이동 줄이기"
     ],
     a: 2,
     e: "<code>next/font</code>는 호스팅·프리로드·레이아웃 이동 방지를 자동화하지만 <b>글자 수 자체를 줄여 주지는 않습니다</b>. 완성형 한글 11,172자를 담은 폰트는 여전히 무겁습니다(19장). 가변 폰트, <code>unicode-range</code> 분할, 서브셋 파일 준비가 필요합니다."
@@ -341,35 +350,46 @@ FB_QUIZ([
   {
     q: "블로그 글마다 다른 제목과 OG 이미지를 설정하려면?",
     o: [
-      "layout.tsx의 metadata를 수정한다",
-      "page.tsx에서 <code>generateMetadata</code> 함수를 export 해 데이터에 따라 메타데이터를 만든다",
-      "클라이언트 컴포넌트에서 document.title을 바꾼다",
-      "middleware에서 처리한다"
+      "<code>layout.tsx</code>의 정적 <code>metadata</code>에 모든 글 제목을 넣는다",
+      "<code>page.tsx</code>에서 <code>generateMetadata</code>를 export한다",
+      "클라이언트 컴포넌트의 <code>useEffect</code>에서 <code>document.title</code>을 바꾼다",
+      "<code>proxy.ts</code>에서 응답 HTML의 title을 고친다"
     ],
     a: 1,
-    e: "정적 <code>metadata</code> 객체는 고정값에만 쓸 수 있습니다. 데이터에 따라 달라져야 하면 <code>generateMetadata</code>를 씁니다. 클라이언트에서 <code>document.title</code>을 바꾸는 방식은 <b>크롤러가 보는 초기 HTML에 반영되지 않아</b> SEO·공유 미리보기에 소용없습니다(70장)."
+    e: "정적 <code>metadata</code> 객체는 고정값에만 쓸 수 있고, 데이터에 따라 달라져야 하면 <code>generateMetadata</code>를 씁니다. 클라이언트에서 <code>document.title</code>을 바꾸는 방식은 <b>크롤러가 보는 초기 HTML에 반영되지 않아</b> 공유 미리보기에 소용없습니다(70장)."
   },
   {
-    q: "외부 이미지 도메인을 <code>next.config.js</code>에 명시적으로 허용해야 하는 이유는?",
+    q: "외부 이미지 도메인을 <code>next.config</code>에 명시적으로 허용해야 하는 이유는?",
     o: [
-      "CORS 때문에",
-      "아무 주소나 허용하면 제3자가 우리 서버를 이미지 변환 서버로 악용해 비용을 유발할 수 있기 때문",
-      "이미지 포맷을 판별하기 위해",
-      "alt 텍스트를 생성하기 위해"
+      "브라우저의 CORS 정책이 외부 이미지 표시를 막기 때문",
+      "아무 주소나 허용하면 남이 우리 서버를 이미지 변환에 악용할 수 있다",
+      "허용하지 않은 도메인의 이미지는 WebP로 변환할 수 없는 포맷이라서",
+      "검색엔진이 허용 목록에 없는 이미지를 색인하지 않아서"
     ],
     a: 1,
-    e: "이미지 최적화는 <b>서버 자원을 소모</b>합니다. 임의의 URL을 허용하면 누구나 우리 최적화 엔드포인트로 아무 이미지나 변환시킬 수 있고 비용은 우리가 냅니다. 허용 목록은 그 남용을 막는 장치입니다."
+    e: "이미지 최적화는 <b>서버 자원을 소모</b>합니다. 임의의 URL을 허용하면 누구나 우리 최적화 엔드포인트로 아무 이미지나 변환시킬 수 있고 비용은 우리가 냅니다. 일반 <code>&lt;img&gt;</code>는 CORS와 상관없이 외부 이미지를 표시할 수 있다는 점도 기억하세요."
   },
   {
     q: "성능 문제를 조사할 때 서드파티 스크립트를 먼저 확인하라는 이유는?",
     o: [
-      "서드파티 스크립트는 항상 버그가 있어서",
-      "우리 코드를 아무리 최적화해도 통제할 수 없는 외부 스크립트 하나가 수백 KB와 실행 시간을 차지해 전체를 망칠 수 있기 때문",
-      "브라우저가 외부 스크립트를 차단해서",
-      "CDN이 느려서"
+      "외부 스크립트는 HTTPS가 아니어서 브라우저가 매번 차단을 시도하기 때문",
+      "통제할 수 없는 외부 스크립트 하나가 큰 용량과 실행 시간을 차지할 수 있다",
+      "서드파티 스크립트는 항상 우리 코드보다 먼저 실행되도록 강제되기 때문",
+      "<code>next/script</code>를 쓰면 자동으로 제거되므로 확인만 하면 되기 때문"
     ],
     a: 1,
-    e: "채팅 위젯·광고·분석 도구는 <b>우리가 최적화할 수 없는</b> 코드입니다. 필요성을 재검토하고, 꼭 필요하면 <code>lazyOnload</code> 같은 전략으로 <b>가능한 한 늦게</b> 로드해야 합니다."
+    e: "채팅 위젯·광고·분석 도구는 <b>우리가 최적화할 수 없는</b> 코드인데 수백 KB와 메인 스레드 시간을 차지하기도 합니다. 필요성을 재검토하고, 꼭 필요하면 <code>lazyOnload</code> 같은 전략으로 <b>가능한 한 늦게</b> 로드해야 합니다."
+  },
+  {
+    q: "Next.js 16의 <code>opengraph-image.tsx</code>에서 동적 경로의 <code>slug</code>를 꺼내는 올바른 코드는?",
+    o: [
+      "<code>const slug = params.slug</code>",
+      "<code>const { slug } = await params</code>",
+      "<code>const slug = useParams().slug</code>",
+      "<code>const slug = window.location.pathname</code>"
+    ],
+    a: 1,
+    e: "Next.js 16부터 <code>opengraph-image</code>가 받는 <code>params</code>는 <b>Promise</b>이므로 <code>await</code>해야 값이 나옵니다(<code>generateMetadata</code>·<code>page</code>와 같음). <code>useParams</code>는 클라이언트 훅이고, 이미지는 서버에서 만들어지므로 <code>window</code>도 없습니다."
   }
 ]);
 </script>

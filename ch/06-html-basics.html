@@ -6,6 +6,12 @@
 <title>6장. HTML 기초 문법 — 프엔북</title>
 <meta name="description" content="HTML 문서의 기본 골격, 태그와 요소와 속성, 빈 요소, 중첩 규칙, 문자 엔티티까지 HTML의 문법 전체를 처음부터 설명합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="6장. HTML 기초 문법 — 프엔북">
 <meta property="og:description" content="HTML 문서의 기본 골격, 태그와 요소와 속성, 빈 요소, 중첩 규칙, 문자 엔티티까지 HTML의 문법 전체를 처음부터 설명합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -24,19 +30,116 @@
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
 <ul>
+  <li><b>VS Code로 HTML 파일을 만들고 저장해 <span class="term" data-term="browser">브라우저</span>로 여는 법</b> (작업 환경 만들기)</li>
   <li>HTML 문서의 기본 골격과 각 줄이 왜 필요한지</li>
   <li><span class="term" data-term="tag">태그</span>·<span class="term" data-term="element">요소</span>·<span class="term" data-term="attribute">속성</span>의 정확한 구분</li>
   <li>닫는 태그가 없는 요소들</li>
-  <li>중첩 규칙과 <span class="term" data-term="browser">브라우저</span>의 자동 교정</li>
+  <li>중첩 규칙과 브라우저의 자동 교정</li>
   <li><code>&amp;lt;</code> 같은 문자 엔티티가 필요한 이유</li>
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 18분 · 여기서부터 직접 코드를 씁니다</p>
+<p class="ch-meta">읽는 데 약 30분 · 여기서부터 직접 코드를 씁니다 · 실습 환경 준비 포함</p>
+
+<h2 id="setup">작업 환경 만들기</h2>
+
+<p>코드는 <b>글자만 적힌 파일</b>입니다. 특별한 프로그램 없이도 만들 수 있지만,
+처음부터 <b>코드 편집기</b>를 쓰는 편이 실수가 훨씬 적습니다.
+이 책은 무료 편집기 <b>VS Code</b>(Visual Studio Code)를 기준으로 설명합니다.
+아래 다섯 단계를 한 번만 해 두면 이 책의 모든 실습을 같은 방식으로 할 수 있습니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧪</span> 본문의 실행기만으로도 충분할 때</p>
+<p style="margin-bottom:0">이 책의 회색 실행기 상자는 <b>브라우저 안에서 바로</b> 코드를 고쳐 실행해 볼 수 있습니다.
+짧은 실험은 실행기로 하고, <b>파일로 남기고 싶은 연습</b>은 아래처럼 내 컴퓨터에 만드세요.
+실무는 언제나 후자입니다.</p>
+</div>
+
+<h3 id="setup-install">1단계 — VS Code 설치</h3>
+<ol>
+<li><a href="https://code.visualstudio.com/" target="_blank" rel="noopener">code.visualstudio.com</a>에 접속해 <b>Download</b> 버튼을 누릅니다. 운영체제에 맞는 파일이 자동으로 골라집니다.</li>
+<li><b>Windows</b> — 받은 설치 파일(<code>VSCodeUserSetup-….exe</code>)을 실행하고 <b>다음</b>을 누릅니다.
+"추가 작업 선택" 화면에서 <b>"<span class="term" data-term="path">PATH</span>에 추가"</b>(기본으로 켜져 있음)와
+탐색기의 오른쪽 클릭 메뉴에 <b>"Code(으)로 열기"</b>를 추가하는 항목 두 개를 켜 두면 편합니다.</li>
+<li><b>macOS</b> — 받은 <span class="term" data-term="minify">압축</span> 파일을 열면 나오는 <b>Visual Studio Code</b> 앱을 <b>응용 프로그램(Applications) 폴더로 끌어다 놓습니다.</b>
+다운로드 폴더에서 바로 실행하면 업데이트가 제대로 되지 않습니다.</li>
+<li>메뉴를 한국어로 보고 싶다면 VS Code 왼쪽의 확장(Extensions, 블록 4개 모양) 아이콘을 눌러
+<b>Korean Language Pack</b>을 설치하고 VS Code를 다시 시작합니다. 영어 그대로 써도 무방합니다.</li>
+</ol>
+<p><b>✅ 체크포인트</b> — VS Code를 실행하면 "시작(Welcome)" 탭이 있는 창이 열립니다.</p>
+
+<h3 id="setup-folder">2단계 — 작업 폴더 만들고 열기</h3>
+<ol>
+<li>바탕화면(또는 문서 폴더)에 <code>my-first-site</code>라는 새 폴더를 만듭니다.
+<b>폴더 이름은 영문 소문자와 하이픈(-)으로</b> 짓는 습관을 들이세요. 한글·공백이 든 경로는 나중에 터미널(44장)과 도구에서 자주 말썽을 일으킵니다.</li>
+<li>VS Code 메뉴에서 <b>파일 → 폴더 열기</b>(File → Open Folder…)를 누르고 방금 만든 폴더를 고릅니다.</li>
+<li>"이 폴더에 있는 파일의 작성자를 신뢰합니까?"라는 창이 뜨면, 내가 만든 폴더이므로 <b>"예, 작성자를 신뢰합니다"</b>를 누릅니다.</li>
+</ol>
+<p><b>✅ 체크포인트</b> — 왼쪽 탐색기(Explorer) 패널 맨 위에 <code>MY-FIRST-SITE</code>라는 폴더 이름이 대문자로 보입니다. 안 보이면 왼쪽 맨 위 문서 두 장 모양 아이콘을 누르세요.</p>
+
+<h3 id="setup-file">3단계 — 새 파일 만들고 저장하기</h3>
+<ol>
+<li>탐색기 패널의 폴더 이름 옆에 마우스를 올리면 나타나는 <b>새 파일</b> 아이콘(종이에 + 표시)을 누릅니다.</li>
+<li>이름을 <b><code>index.html</code></b>로 입력하고 Enter를 누릅니다. 오른쪽에 빈 편집 화면이 열립니다.</li>
+<li>아래 <a href="#skeleton">기본 골격</a> 코드를 그대로 입력하거나 복사해 붙여 넣습니다.</li>
+<li><b>저장</b>합니다. Windows는 <code>Ctrl</code>+<code>S</code>, macOS는 <code>Cmd</code>+<code>S</code>.</li>
+</ol>
+<p><b>✅ 체크포인트</b> — 편집 탭의 파일 이름 옆에 있던 <b>동그라미(●)가 사라지면</b> 저장된 것입니다.
+동그라미가 남아 있으면 아직 저장 안 된 변경이 있다는 뜻입니다. 코드 글자가 태그·속성별로 <b>색깔이 다르게</b> 보이면 VS Code가 HTML 파일로 제대로 인식한 것입니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🪤</span> <code>index.html.txt</code> 함정 — 파일 이름 끝을 확인하세요</p>
+<p>Windows 메모장으로 저장하면 이름을 <code>index.html</code>로 적어도 실제로는
+<b><code>index.html.txt</code></b>로 저장되는 일이 흔합니다. 이 파일은 브라우저에서 웹 페이지가 아니라 <b>글자 그대로</b> 보입니다.
+(메모장을 꼭 써야 한다면 저장 창의 "파일 형식"을 <b>모든 파일</b>로 바꾸세요.
+macOS 텍스트 편집기는 기본이 서식 있는 문서(.rtf)라서 <b>포맷 → 일반 텍스트로 만들기</b>를 먼저 해야 합니다.)
+VS Code로 만들면 이 문제가 없습니다.</p>
+<p style="margin-bottom:0">문제는 Windows와 macOS 모두 <b>확장자를 기본으로 숨긴다</b>는 점입니다. 지금 바로 켜 두세요.<br>
+· <b>Windows 11</b> — 파일 탐색기 위쪽 <b>보기 → 표시 → 파일 확장명</b> 체크<br>
+· <b>Windows 10</b> — 파일 탐색기 <b>보기</b> 탭 → <b>파일 확장명</b> 체크<br>
+· <b>macOS</b> — Finder 메뉴 <b>설정(환경설정) → 고급 → 모든 파일 확장자 보기</b> 체크</p>
+</div>
+
+<h3 id="setup-open">4단계 — 브라우저로 열고 새로고침하기</h3>
+<ol>
+<li>파일 탐색기(또는 Finder)에서 <code>index.html</code>을 <b>더블클릭</b>합니다. 기본 브라우저로 열립니다.
+열리지 않거나 다른 프로그램이 뜨면 파일을 Chrome 창 위로 <b>끌어다 놓아도</b> 됩니다.</li>
+<li>VS Code로 돌아와 <code>&lt;h1&gt;</code> 안의 글자를 바꾸고 <b>저장</b>합니다.</li>
+<li>브라우저로 돌아와 <b>새로고침</b>합니다. Windows는 <code>F5</code>(또는 <code>Ctrl</code>+<code>R</code>), macOS는 <code>Cmd</code>+<code>R</code>.</li>
+</ol>
+<p><b>✅ 체크포인트</b> — 화면에 큰 글씨 "안녕하세요"가 보이고, 브라우저 탭 제목이 "내 첫 페이지"입니다.
+주소창은 <code>file:///C:/Users/…/index.html</code>(Windows) 또는 <code>file:///Users/…/index.html</code>(macOS)처럼 <b><code>file://</code></b>로 시작합니다.
+글자를 바꿨는데 화면이 그대로라면 <b>① 저장했는지(●) ② 새로고침했는지</b> 두 가지를 먼저 확인하세요. 초보자가 막히는 원인의 대부분이 이것입니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🔁</span> 수정 → 저장 → 새로고침</p>
+<p style="margin-bottom:0">앞으로 HTML·<span class="term" data-term="css">CSS</span>를 배우는 동안 이 세 동작을 수천 번 반복하게 됩니다.
+브라우저는 파일이 바뀌어도 <b>스스로 다시 읽지 않습니다.</b> 저장할 때마다 자동으로 새로고침되기를 원하면
+나중에 VS Code 확장 <b>Live Server</b>나 로컬 서버(44장)를 쓰면 됩니다. 지금은 손으로 새로고침하는 것으로 충분합니다.</p>
+</div>
+
+<h3 id="setup-devtools">5단계 — 개발자 도구 열어 보기</h3>
+<p>브라우저에는 페이지의 속을 들여다보는 <b><span class="term" data-term="devtools">개발자 도구</span></b>가 들어 있습니다. 열어 보기만 해 두세요.</p>
+<ul>
+<li><b>Windows</b> — <code>F12</code> 또는 <code>Ctrl</code>+<code>Shift</code>+<code>I</code></li>
+<li><b>macOS</b> — <code>Cmd</code>+<code>Option</code>+<code>I</code></li>
+<li>또는 페이지의 아무 곳이나 마우스 오른쪽 클릭 → <b>검사</b>(Inspect)</li>
+</ul>
+<p><b>✅ 체크포인트</b> — 화면 옆이나 아래에 패널이 열리고, <b>El<span class="term" data-term="em">em</span>ents</b>(요소) 탭에 내가 쓴 <code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, <code>&lt;body&gt;</code>가 접었다 폈다 할 수 있는 형태로 보입니다.
+지금은 "여기서 실제 구조를 볼 수 있다"는 것만 알면 됩니다. 자세한 사용법은 49장에서 다룹니다.</p>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 골격을 빠르게 만드는 단축 입력</p>
+<p style="margin-bottom:0">VS Code에서 빈 <code>.html</code> 파일에 <code>!</code> 한 글자를 치고 <code>Tab</code>(또는 Enter)을 누르면
+아래 골격이 자동으로 채워집니다(Emmet 기능). 실무자는 거의 이렇게 시작합니다.
+다만 자동 생성된 골격은 <code>lang="en"</code>이므로 <b><code>lang="ko"</code>로 바꾸는 것</b>을 잊지 마세요.
+처음 몇 번은 <b>손으로 직접 쳐 보는 것</b>을 권합니다. 각 줄의 의미가 손에 남습니다.</p>
+</div>
 
 <h2 id="skeleton">문서의 기본 골격</h2>
 
-<p>모든 HTML 문서는 이 뼈대에서 시작합니다. 지금은 외우지 말고 <b>각 줄이 왜 있는지</b>만 이해하세요.</p>
+<p>모든 HTML 문서는 이 뼈대에서 시작합니다. 위에서 만든 <code>index.html</code>에 이 코드를 넣고 저장한 뒤 브라우저로 열어 보세요.
+지금은 외우지 말고 <b>각 줄이 왜 있는지</b>만 이해하세요.</p>
 
 <div class="codeblock">
 <span class="cb-label">index.html</span>
@@ -58,7 +161,7 @@
 <table>
 <thead><tr><th>줄</th><th>없으면 무슨 일이</th></tr></thead>
 <tbody>
-<tr><td><code>&lt;!doctype html&gt;</code></td><td>브라우저가 <b>호환 모드(quirks mode)</b>로 전환됩니다. 1990년대 낡은 규칙으로 화면을 그려서 <span class="term" data-term="css">CSS</span>가 예상과 다르게 동작합니다. <b>반드시 첫 줄에</b> 있어야 합니다</td></tr>
+<tr><td><code>&lt;!doctype html&gt;</code></td><td>브라우저가 <b>호환 모드(quirks mode)</b>로 전환됩니다. 1990년대 낡은 규칙으로 화면을 그려서 CSS가 예상과 다르게 동작합니다. <b>반드시 첫 줄에</b> 있어야 합니다</td></tr>
 <tr><td><code>lang="ko"</code></td><td><span class="term" data-term="screen-reader">스크린 리더</span>가 <b>어느 언어로 읽을지</b> 모릅니다. 한글을 영어 발음으로 읽는 사고가 납니다. 검색엔진과 브라우저 번역 기능도 이 값을 봅니다</td></tr>
 <tr><td><code>&lt;meta charset="utf-8"&gt;</code></td><td>한글이 <b>깨집니다.</b> 문자를 어떤 방식으로 해석할지 알려주는 선언입니다. <code>&lt;head&gt;</code> 안에서 <b>가능한 한 앞쪽</b>에 둡니다</td></tr>
 <tr><td><code>viewport</code> meta</td><td>휴대폰에서 <b>PC 화면을 축소한 것처럼</b> 보입니다. 글자가 개미만 해집니다. 반응형의 출발점입니다(18장)</td></tr>
@@ -111,7 +214,7 @@
 <li>속성은 <b>여는 태그에만</b> 씁니다. 닫는 태그에는 쓰지 않습니다.</li>
 <li>값은 <b>따옴표로 감싸는 것을 권장</b>합니다. 문법상 생략 가능한 경우도 있지만, 값에 공백이 들어가면 즉시 깨집니다.</li>
 <li>태그 이름과 속성 이름은 <b>대소문자를 구분하지 않지만</b>, 관행적으로 <b>소문자</b>로 씁니다.</li>
-<li>값이 필요 없는 속성도 있습니다. <code>&lt;input required&gt;</code>처럼 <b>있으면 참, 없으면 거짓</b>인 <b>불리언 속성</b>입니다. <code>required="false"</code>라고 써도 <b>참</b>이 되니 주의하세요. 끄려면 속성 자체를 지워야 합니다.</li>
+<li>값이 필요 없는 속성도 있습니다. <code>&lt;input required&gt;</code>처럼 <b>있으면 참, 없으면 거짓</b>인 <b><span class="term" data-term="boolean">불리언</span> 속성</b>입니다. <code>required="false"</code>라고 써도 <b>참</b>이 되니 주의하세요. 끄려면 속성 자체를 지워야 합니다.</li>
 </ul>
 
 <div class="box warn">
@@ -123,7 +226,7 @@
 
 <h2 id="void">닫는 태그가 없는 요소</h2>
 
-<p>내용을 담을 수 없는 요소는 닫는 태그가 없습니다. <b>빈 요소(void el<span class="term" data-term="em">em</span>ent)</b>라고 부릅니다.</p>
+<p>내용을 담을 수 없는 요소는 닫는 태그가 없습니다. <b>빈 요소(void element)</b>라고 부릅니다.</p>
 
 <div class="codeblock">
 <span class="cb-label">대표적인 빈 요소</span>
@@ -162,7 +265,7 @@ HTML에서는 <b>있어도 없어도 똑같이 동작</b>합니다. XHTML이라�
 에러 화면을 띄우지 않습니다. 이게 장점이자 함정입니다.</p>
 <p style="margin-bottom:0"><b>화면이 멀쩡해 보여도 구조는 엉망일 수 있습니다.</b>
 그러면 CSS 선택자가 예상과 다르게 걸리고, <span class="term" data-term="javascript">JavaScript</span>가 엉뚱한 요소를 잡습니다.
-<span class="term" data-term="devtools">개발자 도구</span> <b>Elements 탭</b>에서 실제 DOM을 확인하는 습관이 필요합니다(5장).</p>
+개발자 도구 <b>Elements 탭</b>에서 실제 DOM을 확인하는 습관이 필요합니다(5장).</p>
 </div>
 
 <p>또 아무 요소나 아무 데나 넣을 수는 없습니다. 대표적인 규칙 두 가지만 기억하세요.</p>
@@ -295,49 +398,60 @@ HTML에서는 <b>있어도 없어도 똑같이 동작</b>합니다. XHTML이라�
 <script>
 FB_QUIZ([
   {
+    q: "메모장에 HTML을 쓰고 <code>index.html</code>로 저장했는데, 브라우저에서 열면 태그까지 글자 그대로 보입니다. 가장 가능성 높은 원인은?",
+    o: [
+      "실제로는 <code>index.html.txt</code>로 저장되었다",
+      "<code>&lt;!doctype html&gt;</code>을 빠뜨렸다",
+      "<code>&lt;meta charset=\"utf-8\"&gt;</code>가 없다",
+      "브라우저 캐시에 옛 파일이 남아 있다"
+    ],
+    a: 0,
+    e: "메모장은 파일 형식을 \"텍스트 문서\"로 두면 <b>.txt를 덧붙여</b> 저장합니다. 확장자가 숨겨져 있으면 이름이 <code>index.html</code>처럼 보여도 실제로는 텍스트 파일이라 브라우저가 글자 그대로 보여 줍니다. doctype이 없으면 호환 모드가 될 뿐 태그는 해석되고, charset 누락은 한글이 깨지는 문제입니다."
+  },
+  {
     q: "<code>&lt;!doctype html&gt;</code>을 빠뜨리면 어떤 일이 생기나요?",
     o: [
-      "페이지가 아예 열리지 않는다",
-      "브라우저가 호환 모드로 전환되어 옛 규칙으로 화면을 그리고, CSS가 예상과 다르게 동작한다",
+      "브라우저가 HTML로 인식하지 못해 태그가 글자로 보인다",
+      "호환 모드로 전환되어 CSS가 예상과 다르게 동작할 수 있다",
       "한글이 깨진다",
-      "아무 차이도 없다"
+      "스크린 리더가 언어를 잘못 판단한다"
     ],
     a: 1,
-    e: "doctype은 \"이 문서를 표준 모드로 해석하라\"는 신호입니다. 없으면 <b>호환 모드(quirks mode)</b>가 켜져 박스 크기 계산 같은 기본 규칙이 1990년대 방식으로 바뀝니다. 한글 깨짐은 <code>&lt;meta charset&gt;</code>의 영역입니다."
+    e: "doctype은 \"이 문서를 표준 모드로 해석하라\"는 신호입니다. 없으면 <b>호환 모드(quirks mode)</b>가 켜져 박스 크기 계산 같은 규칙이 옛 방식으로 바뀝니다. 태그는 여전히 해석됩니다. 한글 깨짐은 <code>charset</code>, 읽기 언어는 <code>lang</code> 속성의 영역입니다."
   },
   {
     q: "<code>&lt;input type=\"text\" required=\"false\"&gt;</code> 의 실제 동작은?",
     o: [
       "필수 입력이 해제된다",
-      "필수 입력이 그대로 적용된다. 불리언 속성은 값이 아니라 존재 여부만 보기 때문",
-      "문법 오류로 input이 렌더링되지 않는다",
-      "브라우저마다 다르다"
+      "필수 입력이 그대로 적용된다",
+      "값이 문자열이라 무시되고 기본값(필수 아님)이 된다",
+      "<code>required</code>에 쓸 수 없는 값이라 input이 그려지지 않는다"
     ],
     a: 1,
-    e: "<code>required</code>, <code>disabled</code>, <code>checked</code> 같은 <b>불리언 속성</b>은 속성이 <b>있으면 참</b>입니다. 값은 무시되므로 <code>\"false\"</code>, <code>\"no\"</code>를 넣어도 켜진 상태입니다. 끄려면 속성 자체를 제거해야 합니다."
+    e: "<code>required</code>, <code>disabled</code>, <code>checked</code> 같은 <b>불리언 속성</b>은 속성이 <b>있기만 하면 참</b>입니다. 값은 보지 않으므로 <code>\"false\"</code>, <code>\"no\"</code>를 넣어도 켜진 상태입니다. 끄려면 속성 자체를 지워야 합니다."
   },
   {
     q: "화면에 <code>a &lt; b</code> 라는 글자를 그대로 보이게 하려면 HTML에 어떻게 써야 하나요?",
-    o: ["<code>a &lt; b</code>", "<code>a &amp;lt; b</code>", "<code>a \\&lt; b</code>", "<code>a [lt] b</code>"],
+    o: ["<code>a &lt; b</code>", "<code>a &amp;lt; b</code>", "<code>a \\&lt; b</code>", "<code>a &lt;pre&gt;&lt;&lt;/pre&gt; b</code>"],
     a: 1,
-    e: "<code>&lt;</code>는 태그의 시작을 뜻하는 예약 문자라 그대로 쓰면 브라우저가 태그로 해석하려 합니다. <b>문자 엔티티</b> <code>&amp;lt;</code>로 써야 화면에 <code>&lt;</code>가 표시됩니다. 이 이스케이프 처리는 XSS 방어의 기본이기도 합니다."
+    e: "<code>&lt;</code>는 태그의 시작을 뜻하는 예약 문자라 그대로 쓰면 브라우저가 태그로 해석하려 합니다. <code>pre</code>는 공백만 보존할 뿐 태그 해석을 막지 않고, HTML에는 역슬래시 이스케이프가 없습니다. <b>문자 엔티티</b> <code>&amp;lt;</code>를 써야 하며, 이는 XSS 방어의 기본이기도 합니다."
   },
   {
-    q: "HTML을 잘못 작성했는데도 화면이 정상으로 보입니다. 어떻게 확인해야 할까요?",
+    q: "HTML을 잘못 작성했는데도 화면이 정상으로 보입니다. 구조가 맞는지 확인하는 방법으로 알맞은 것은?",
     o: [
-      "화면이 정상이면 문제없으므로 확인할 필요 없다",
-      "브라우저가 자동 교정하므로 개발자 도구 Elements 탭에서 실제 DOM 구조를 확인하고, 검사기로 검증한다",
-      "JavaScript 콘솔에 HTML 오류가 출력되므로 그것을 본다",
-      "새로고침하면 오류 화면이 뜬다"
+      "개발자 도구 Console 탭에 HTML 문법 오류가 표시되는지 본다",
+      "Elements 탭에서 실제 DOM을 보고, W3C 검사기로 검증한다",
+      "새로고침해서 화면이 계속 정상이면 구조도 맞는 것이다",
+      "VS Code에서 글자 색이 정상으로 칠해지는지 본다"
     ],
     a: 1,
-    e: "HTML은 오류를 던지지 않고 브라우저가 <b>임의로 고쳐서</b> DOM을 만듭니다. 화면은 멀쩡해도 구조가 의도와 다르면 CSS 선택자와 JavaScript가 어긋납니다. Elements 탭에서 실제 DOM을 보고, W3C 검사기로 검증하는 것이 정석입니다. 콘솔에는 HTML 구조 오류가 나오지 않습니다."
+    e: "HTML은 오류를 띄우지 않고 브라우저가 <b>임의로 고쳐서</b> DOM을 만듭니다. 콘솔에는 대개 HTML 구조 오류가 나오지 않고, 편집기 색칠은 문법 강조일 뿐 중첩 규칙을 검사하지 않습니다. Elements 탭에서 실제 DOM을 보고 검사기로 확인하는 것이 정석입니다."
   },
   {
     q: "다음 중 <b>빈 요소(void element)</b>가 아닌 것은?",
-    o: ["<code>&lt;img&gt;</code>", "<code>&lt;br&gt;</code>", "<code>&lt;span&gt;</code>", "<code>&lt;input&gt;</code>"],
+    o: ["<code>&lt;img&gt;</code>", "<code>&lt;br&gt;</code>", "<code>&lt;span&gt;</code>", "<code>&lt;meta&gt;</code>"],
     a: 2,
-    e: "<code>&lt;span&gt;</code>은 내용을 담을 수 있으므로 <code>&lt;/span&gt;</code>으로 닫아야 합니다. <code>img</code>·<code>br</code>·<code>input</code>은 내용을 가질 수 없는 빈 요소라 닫는 태그가 없습니다."
+    e: "<code>&lt;span&gt;</code>은 내용을 담을 수 있으므로 <code>&lt;/span&gt;</code>으로 닫아야 합니다. <code>img</code>·<code>br</code>·<code>meta</code>는 내용을 가질 수 없는 빈 요소라 닫는 태그가 없습니다. 짧게 쓴다고 빈 요소가 되는 것은 아닙니다."
   }
 ]);
 </script>

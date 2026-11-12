@@ -6,6 +6,12 @@
 <title>11장. 웹 접근성 기초 — 프엔북</title>
 <meta name="description" content="웹 접근성이 무엇이고 왜 필요한지, 스크린 리더의 동작, 키보드 접근성, 명도 대비, ARIA의 첫 번째 규칙까지 실무에서 바로 쓰는 기초를 정리합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="11장. 웹 접근성 기초 — 프엔북">
 <meta property="og:description" content="웹 접근성이 무엇이고 왜 필요한지, 스크린 리더의 동작, 키보드 접근성, 명도 대비, ARIA의 첫 번째 규칙까지 실무에서 바로 쓰는 기초를 정리합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -273,12 +279,139 @@
 다만 자동 도구가 잡아내는 것은 전체 문제의 <b>일부</b>일 뿐입니다.
 "<code>alt</code>가 있는가"는 검사할 수 있지만 "<code>alt</code>의 내용이 적절한가"는 사람만 판단할 수 있습니다.</p>
 
+<h2 id="practice">직접 해 보기</h2>
+
+<p>2부(HTML)를 마쳤습니다. 이제 <b>CSS 없이 HTML만으로</b> 자기소개 페이지를 하나 만들어 봅니다.
+꾸미지 않아도 됩니다. 목표는 "보기 좋은 페이지"가 아니라 <b>구조가 정확한 문서</b>입니다.
+CSS를 입히는 것은 3부에서 이 페이지로 이어서 해 볼 수 있습니다.</p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🎯</span> 과제 — HTML만으로 자기소개 페이지</p>
+<p>컴퓨터에 <code>index.html</code> 파일을 만들어 브라우저로 열거나, 아래 실행기에서 바로 작성해도 됩니다. 다음 요구사항을 모두 채워 보세요.</p>
+<ul style="margin-bottom:0">
+<li>☐ <code>&lt;!doctype html&gt;</code>, <code>&lt;html lang="ko"&gt;</code>, <code>charset</code>·<code>viewport</code> 메타, 내용을 설명하는 <code>&lt;title&gt;</code>이 있다</li>
+<li>☐ <code>&lt;header&gt;</code>·<code>&lt;nav&gt;</code>·<code>&lt;main&gt;</code>·<code>&lt;footer&gt;</code>로 큰 구역을 나눈다</li>
+<li>☐ <code>&lt;h1&gt;</code>은 하나, 그 아래 <code>&lt;h2&gt;</code> 소제목이 세 개 이상이고 단계를 건너뛰지 않는다</li>
+<li>☐ 사진(아무 이미지나 괜찮습니다)에 내용을 설명하는 <code>alt</code>와 <code>width</code>·<code>height</code>가 있다</li>
+<li>☐ 링크 텍스트만 읽어도 목적지를 알 수 있다("여기", "클릭" 금지)</li>
+<li>☐ 표 하나(관심사·공부 계획 등)에 <code>&lt;caption&gt;</code>과 <code>&lt;th scope&gt;</code>가 있다</li>
+<li>☐ 연락 폼: 모든 입력에 연결된 <code>&lt;label&gt;</code>, 이메일 칸은 <code>type="email"</code>, 필수 칸은 <code>required</code>, 버튼은 <code>type="submit"</code></li>
+<li>☐ 마우스를 쓰지 않고 <b>Tab·Enter 키만으로</b> 모든 링크와 폼을 쓸 수 있다</li>
+</ul>
+</div>
+
+<div class="box field">
+<p class="box-title"><span class="box-ico">💡</span> 힌트</p>
+<ul style="margin-bottom:0">
+<li>문서 뼈대와 <code>head</code>에 들어갈 것이 기억나지 않으면 <b>6장</b>과 <b>10장</b>을 보세요.</li>
+<li>어느 구역에 어떤 태그를 써야 할지 헷갈리면 <b>7장</b>. 배치용 상자는 <code>div</code>여도 괜찮습니다.</li>
+<li>이미지 <code>alt</code>와 링크 텍스트는 <b>8장</b>, 폼의 <code>name</code>·<code>label</code>·입력 타입은 <b>9장</b>을 보세요.</li>
+<li>다 만들었으면 이 챕터의 "오늘부터 지킬 8가지"로 스스로 점검하고, 개발자 도구(F12, mac은 Cmd+Option+I)의 Lighthouse로 접근성 점수도 확인해 보세요.</li>
+</ul>
+</div>
+
+<div class="runner" data-lang="html" data-title="자기소개 페이지 작업대" data-note="body 안을 채워 보세요. 실행기 안에서는 head 설정이 보이지 않으니, 완성본은 파일로 저장해 브라우저에서 열어 보세요.">
+<textarea class="rn-src">
+<header>
+  <!-- 사이트 이름과 nav -->
+</header>
+
+<main>
+  <h1>안녕하세요, ○○○입니다</h1>
+
+  <section>
+    <h2>소개</h2>
+    <!-- 사진과 소개 문단 -->
+  </section>
+
+  <!-- 표가 들어간 section, 폼이 들어간 section -->
+</main>
+
+<footer>
+  <!-- 저작권 표시 -->
+</footer>
+</textarea>
+</div>
+
+<details>
+<summary>예시 답안</summary>
+<p>정답은 하나가 아닙니다. 요구사항을 모두 채웠다면 태그 선택이 조금 달라도 괜찮습니다.</p>
+<pre><code data-lang="html">&lt;!doctype html&gt;
+&lt;html lang="ko"&gt;
+&lt;head&gt;
+  &lt;meta charset="utf-8"&gt;
+  &lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;
+  &lt;title&gt;김하늘 — 자기소개&lt;/title&gt;
+  &lt;meta name="description" content="프론트엔드를 공부하는 김하늘의 자기소개 페이지입니다."&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;a href="#main"&gt;본문으로 건너뛰기&lt;/a&gt;
+
+  &lt;header&gt;
+    &lt;p&gt;김하늘의 작은 홈페이지&lt;/p&gt;
+    &lt;nav aria-label="페이지 안 이동"&gt;
+      &lt;ul&gt;
+        &lt;li&gt;&lt;a href="#about"&gt;소개&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="#skills"&gt;배우는 것&lt;/a&gt;&lt;/li&gt;
+        &lt;li&gt;&lt;a href="#contact"&gt;연락하기&lt;/a&gt;&lt;/li&gt;
+      &lt;/ul&gt;
+    &lt;/nav&gt;
+  &lt;/header&gt;
+
+  &lt;main id="main"&gt;
+    &lt;h1&gt;안녕하세요, 김하늘입니다&lt;/h1&gt;
+
+    &lt;section id="about"&gt;
+      &lt;h2&gt;소개&lt;/h2&gt;
+      &lt;img src="profile.jpg" alt="웃으며 노트북 앞에 앉아 있는 김하늘" width="240" height="240"&gt;
+      &lt;p&gt;회계 일을 하다가 &lt;strong&gt;웹을 직접 만들고 싶어서&lt;/strong&gt; 프론트엔드 공부를 시작했습니다.&lt;/p&gt;
+    &lt;/section&gt;
+
+    &lt;section id="skills"&gt;
+      &lt;h2&gt;배우는 것&lt;/h2&gt;
+      &lt;table&gt;
+        &lt;caption&gt;이번 달 공부 계획&lt;/caption&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;&lt;th scope="col"&gt;주제&lt;/th&gt;&lt;th scope="col"&gt;진도&lt;/th&gt;&lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;tr&gt;&lt;th scope="row"&gt;HTML&lt;/th&gt;&lt;td&gt;완료&lt;/td&gt;&lt;/tr&gt;
+          &lt;tr&gt;&lt;th scope="row"&gt;CSS&lt;/th&gt;&lt;td&gt;진행 중&lt;/td&gt;&lt;/tr&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+      &lt;p&gt;&lt;a href="https://developer.mozilla.org/ko/"&gt;MDN 웹 문서&lt;/a&gt;를 자주 찾아봅니다.&lt;/p&gt;
+    &lt;/section&gt;
+
+    &lt;section id="contact"&gt;
+      &lt;h2&gt;연락하기&lt;/h2&gt;
+      &lt;form action="#" method="post"&gt;
+        &lt;label for="name"&gt;이름&lt;/label&gt;
+        &lt;input id="name" name="name" autocomplete="name" required&gt;
+
+        &lt;label for="email"&gt;이메일&lt;/label&gt;
+        &lt;input id="email" name="email" type="email" autocomplete="email" required&gt;
+
+        &lt;label for="msg"&gt;하고 싶은 말&lt;/label&gt;
+        &lt;textarea id="msg" name="message" rows="4"&gt;&lt;/textarea&gt;
+
+        &lt;button type="submit"&gt;보내기&lt;/button&gt;
+      &lt;/form&gt;
+    &lt;/section&gt;
+  &lt;/main&gt;
+
+  &lt;footer&gt;
+    &lt;p&gt;&lt;small&gt;© 2026 김하늘&lt;/small&gt;&lt;/p&gt;
+  &lt;/footer&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</details>
+
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
 <li>접근성 대상은 장애인만이 아니다. <b>일시적·상황적 제약</b>까지 포함한다.</li>
 <li>한국에서는 <b>법적 의무</b>이며 공공 프로젝트에서는 계약 조건인 경우가 많다.</li>
-<li>스크린 리더는 <b>역할·이름·상태</b>를 읽는다. <span class="term" data-term="semantic">시맨틱</span> 태그가 이 셋을 공짜로 준다.</li>
+<li>스크린 리더는 <b>역할·이름·상태</b>를 읽는다. 시맨틱 태그가 이 셋을 공짜로 준다.</li>
 <li><b>Tab 키만으로 써 보기</b>가 가장 효율적인 자체 점검이다.</li>
 <li><code>outline: none</code>은 금지. <code>:focus-visible</code>로 대체한다.</li>
 <li>명도 대비 <b>4.5:1</b>(일반 텍스트), 색만으로 정보를 전달하지 않는다.</li>
@@ -313,8 +446,8 @@ FB_QUIZ([
     q: "CSS에 <code>*:focus { outline: none; }</code>를 넣으면 어떤 문제가 생기나요?",
     o: [
       "마우스 클릭이 동작하지 않는다",
-      "키보드 사용자가 현재 어느 요소에 있는지 알 수 없게 되어 사이트를 사용할 수 없게 된다",
-      "페이지 로딩이 느려진다",
+      "키보드 사용자가 현재 위치를 볼 수 없다",
+      "Tab 키 이동 순서가 뒤섞인다",
       "스크린 리더가 페이지를 읽지 못한다"
     ],
     a: 1,
@@ -323,9 +456,9 @@ FB_QUIZ([
   {
     q: "\"필수 입력 항목은 라벨을 빨간색으로 표시한다\"는 설계의 문제점은?",
     o: [
-      "빨간색은 로딩 속도를 늦춘다",
-      "색만으로 정보를 전달하므로 색각 이상 사용자와 스크린 리더 사용자는 그 정보를 얻을 수 없다",
-      "빨간색은 CSS에서 지원되지 않는다",
+      "빨간색은 경고 전용이라 쓰면 안 된다",
+      "색만으로는 구분 못 하는 사용자가 있다",
+      "빨간 글씨는 브라우저가 자동으로 지운다",
       "문제없다. 시각적으로 충분히 구분된다"
     ],
     a: 1,
@@ -335,7 +468,7 @@ FB_QUIZ([
     q: "ARIA의 첫 번째 규칙은 무엇인가요?",
     o: [
       "모든 요소에 role 속성을 붙여라",
-      "쓰지 않을 수 있으면 쓰지 마라 — 같은 역할의 HTML 요소가 있으면 그것을 써라",
+      "같은 역할의 HTML 요소가 있으면 그것을 써라",
       "aria-label을 항상 붙여라",
       "div에는 반드시 role을 지정하라"
     ],
@@ -351,13 +484,13 @@ FB_QUIZ([
   {
     q: "아이콘만 있고 글자가 없는 닫기 버튼(✕)의 접근성을 확보하는 올바른 방법은?",
     o: [
-      "<code>&lt;div&gt;✕&lt;/div&gt;</code> 로 만들고 title 속성을 붙인다",
-      "<code>&lt;button aria-label=\"닫기\"&gt;&lt;span aria-hidden=\"true\"&gt;✕&lt;/span&gt;&lt;/button&gt;</code>",
+      "<code>&lt;div title=\"닫기\"&gt;✕&lt;/div&gt;</code>",
+      "<code>&lt;button aria-label=\"닫기\"&gt;✕&lt;/button&gt;</code>",
       "<code>&lt;button aria-hidden=\"true\"&gt;✕&lt;/button&gt;</code>",
-      "아이콘 버튼은 접근성 처리가 불가능하므로 텍스트 버튼으로만 만든다"
+      "<code>&lt;span role=\"button\"&gt;✕&lt;/span&gt;</code>"
     ],
     a: 1,
-    e: "<code>button</code>으로 만들어 키보드 조작과 역할을 확보하고, 보이는 글자가 없으므로 <code>aria-label</code>로 <b>이름</b>을 줍니다. 장식용 기호는 <code>aria-hidden=\"true\"</code>로 중복 낭독을 막습니다. 버튼 자체에 <code>aria-hidden</code>을 붙이면 포커스는 가는데 읽히지 않는 최악의 상태가 됩니다."
+    e: "<code>button</code>으로 만들어 키보드 조작과 역할을 확보하고, 보이는 글자가 없으므로 <code>aria-label</code>로 <b>이름</b>을 줍니다. 더 나아가 기호 ✕를 <code>&lt;span aria-hidden=\"true\"&gt;</code>로 감싸면 중복 낭독도 막을 수 있습니다. <code>div</code>·<code>span role=\"button\"</code>은 키보드 조작을 직접 구현해야 하고 이름도 없으며, 버튼 자체에 <code>aria-hidden</code>을 붙이면 포커스는 가는데 읽히지 않는 최악의 상태가 됩니다."
   }
 ]);
 </script>

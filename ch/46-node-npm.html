@@ -6,6 +6,12 @@
 <title>46장. Node.js와 패키지 매니저 — 프엔북</title>
 <meta name="description" content="Node.js가 무엇인지, npm·yarn·pnpm의 차이, package.json 읽는 법, semver 버전 규칙, lock 파일의 역할과 의존성 보안까지 다룹니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="46장. Node.js와 패키지 매니저 — 프엔북">
 <meta property="og:description" content="Node.js가 무엇인지, npm·yarn·pnpm의 차이, package.json 읽는 법, semver 버전 규칙, lock 파일의 역할과 의존성 보안까지 다룹니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -24,7 +30,7 @@
 <div class="ch-goals">
 <h2>이 챕터에서 배우는 것</h2>
 <ul>
-  <li><span class="term" data-term="nodejs">Node.js</span>와 npm의 관계, 버전 관리 도구로 설치하기</li>
+  <li><span class="term" data-term="nodejs">Node.js</span>와 npm의 관계, <b>macOS·Windows에서 fnm으로 설치하기</b></li>
   <li><code>package.json</code>의 모든 항목</li>
   <li><b>s<span class="term" data-term="em">em</span>ver</b> — <code>^</code>와 <code>~</code>가 무슨 뜻인지</li>
   <li><b>lock 파일</b>이 왜 중요한지</li>
@@ -32,7 +38,7 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 22분</p>
+<p class="ch-meta">읽는 데 약 32분 · 실습이 필요한 챕터입니다</p>
 
 <h2 id="node">Node.js 설치</h2>
 
@@ -42,24 +48,108 @@
 
 <div class="box tip">
 <p class="box-title"><span class="box-ico">📥</span> 공식 설치 파일보다 <b>버전 관리 도구</b>를 권합니다</p>
-<p>프로젝트마다 요구하는 Node 버전이 다릅니다.
-버전 관리 도구를 쓰면 <b>폴더를 옮기는 것만으로 버전이 바뀝니다.</b></p>
-<div class="codeblock" style="margin-bottom:0">
-<pre><code data-lang="bash"># fnm (빠르고 가볍습니다) 또는 nvm 을 설치한 뒤
-fnm install --lts        # 최신 LTS 설치
-fnm use 24               # 특정 버전 사용 (2026년 기준 최신 LTS)
+<p style="margin-bottom:0">프로젝트마다 요구하는 Node 버전이 다릅니다.
+<b>버전 관리 도구</b>를 쓰면 여러 버전을 함께 설치해 두고 명령 한 줄로 바꿀 수 있고,
+<code>sudo</code> 없이 전역 패키지를 설치할 수 있습니다(44장).
+이 책은 macOS·Windows 모두에서 같은 명령으로 쓰는 <b>fnm</b>을 기준으로 설명합니다.
+(<b>nvm</b>도 널리 쓰이지만 macOS·리눅스 전용이고, Windows에는 이름만 비슷한 별개 프로그램 nvm-windows가 있습니다.)</p>
+</div>
+
+<h3 id="install-mac">macOS에 설치하기</h3>
+<p>둘 중 하나만 하면 됩니다.</p>
+<div class="codeblock">
+<span class="cb-label">방법 A — Homebrew가 있다면</span>
+<pre><code data-lang="bash">brew install fnm
+
+# 설치 후, 셸이 fnm을 쓰도록 설정 파일에 한 줄 추가
+echo 'eval "$(fnm env --use-on-cd --shell zsh)"' &gt;&gt; ~/.zshrc</code></pre>
+</div>
+<div class="codeblock">
+<span class="cb-label">방법 B — 공식 설치 스크립트 (Homebrew가 없을 때)</span>
+<pre><code data-lang="bash">curl -fsSL https://fnm.vercel.app/install | bash
+# 스크립트가 셸 설정 파일에 필요한 줄을 자동으로 추가합니다</code></pre>
+</div>
+<p><b>Homebrew</b>는 macOS용 프로그램 설치 도구입니다. <code>brew --version</code>을 입력했을 때 버전이 나오면 설치되어 있는 것이고,
+<code>command not found</code>면 방법 B를 쓰세요.</p>
+
+<h3 id="install-win">Windows에 설치하기</h3>
+<div class="codeblock">
+<span class="cb-label"><span class="term" data-term="powershell">PowerShell</span></span>
+<pre><code data-lang="bash">winget install Schniz.fnm
+
+# PowerShell 설정 파일 열기 (없으면 새로 만들어집니다)
+if (!(Test-Path $PROFILE)) { New-Item $PROFILE -Force }
+notepad $PROFILE
+# 열린 메모장 맨 끝에 아래 한 줄을 붙여 넣고 저장
+fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression</code></pre>
+</div>
+<p><code>winget</code>은 Windows 10·11에 들어 있는 프로그램 설치 도구입니다.
+<span class="term" data-term="git">Git</span> Bash를 쓴다면 <code>~/.bashrc</code>에 <code>eval "$(fnm env --use-on-cd --shell bash)"</code>를 추가합니다.</p>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">🧱</span> PowerShell: "running scripts is disabled on <span class="term" data-term="this">this</span> system"</p>
+<p style="margin-bottom:0">Windows는 기본적으로 PowerShell 스크립트 실행을 막아 둡니다. 그래서 설정 파일(<code>$PROFILE</code>)이나
+<code>npm</code> 명령이 이 오류로 멈출 수 있습니다. PowerShell에서 아래를 한 번 실행하면
+<b>내 계정에 한해</b> 내 컴퓨터에서 만든 스크립트 실행이 허용됩니다.<br>
+<code>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code></p>
+</div>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🚪</span> fnm 설치 후 기능 확인 전에 <b>터미널을 완전히 닫았다가 다시 여세요</b></p>
+<p style="margin-bottom:0">이미 열려 있던 터미널은 설치 전 설정을 그대로 들고 있습니다.
+VS Code 안의 터미널이라면 <b>VS Code를 완전히 종료</b>했다가 다시 실행하세요. 그다음 <code>fnm --version</code>으로 확인합니다.</p>
+</div>
+
+<h3 id="install-node">Node.js 설치하고 확인하기</h3>
+<div class="codeblock">
+<span class="cb-label">macOS · Windows 공통</span>
+<pre><code data-lang="bash">fnm install --lts        # 현재 최신 LTS 설치
+fnm default 26           # 새 터미널에서도 이 버전을 기본으로
+                         # (26은 2026년 11월 기준 최신 LTS. fnm list 로 설치된 번호 확인)
 node --version
 npm --version</code></pre>
 </div>
+<div class="codeblock">
+<span class="cb-label">✅ 이렇게 보이면 성공 (숫자는 설치 시점마다 다릅니다)</span>
+<pre><code data-lang="text">$ node --version
+v26.x.x
+$ npm --version
+11.x.x</code></pre>
+</div>
+<p>특정 버전이 필요한 프로젝트라면 <code>fnm install 24</code>, <code>fnm use 24</code>처럼 번호를 지정합니다.
+프로젝트 폴더에 <code>.nvmrc</code> 파일(내용: <code>26</code>)이 있으면, 위에서 넣은 <code>--use-on-cd</code> 설정 덕분에
+<b>그 폴더로 <code>cd</code>하는 순간 버전이 자동으로 바뀝니다.</b></p>
+
+<div class="box tip">
+<p class="box-title"><span class="box-ico">🧰</span> 도구 설치가 계속 막힌다면 — 공식 설치 프로그램</p>
+<p style="margin-bottom:0"><a href="https://nodejs.org/ko/download" target="_blank" rel="noopener">nodejs.org 다운로드 페이지</a>에서
+<b>LTS</b> 버전의 설치 프로그램(Windows <code>.msi</code>, macOS <code>.pkg</code>)을 받아 "다음"만 눌러도 됩니다.
+한 버전만 쓰는 학습 단계에서는 충분합니다. 나중에 여러 버전이 필요해지면 이 Node를 제거하고 fnm으로 옮기세요.
+<b>두 방식을 동시에 쓰면</b> 어느 <code>node</code>가 실행되는지 헷갈리니 하나만 남깁니다.</p>
+</div>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>증상</th><th>해결</th></tr></thead>
+<tbody>
+<tr><td><code>fnm: command not found</code><br>(PowerShell: <code>fnm is not recognized…</code>)</td><td>터미널(또는 VS Code 전체)을 닫고 다시 엽니다. 그래도 안 되면 설치 명령이 오류 없이 끝났는지 확인하고 다시 실행합니다</td></tr>
+<tr><td><code>fnm --version</code>은 되는데 <code>node: command not found</code></td><td>셸 설정 줄(<code>fnm env …</code>)이 빠졌거나 저장되지 않았습니다. <code>~/.zshrc</code> 또는 <code>$PROFILE</code>을 열어 확인하고, <code>fnm install --lts</code>를 했는지도 봅니다</td></tr>
+<tr><td>새 터미널을 열 때마다 Node가 사라짐</td><td><code>fnm list</code>로 설치된 버전을 보고 <code>fnm default 26</code>처럼 기본 버전을 지정합니다</td></tr>
+<tr><td><code>running scripts is disabled</code></td><td>위 경고 상자의 <code>Set-ExecutionPolicy</code> 명령을 실행합니다</td></tr>
+<tr><td>버전이 예상과 다름</td><td><code>which node</code>(PowerShell: <code>Get-Command node</code>)로 어느 위치의 <code>node</code>가 실행되는지 봅니다. 공식 설치 프로그램으로 깐 Node가 남아 있는 경우가 많습니다</td></tr>
+</tbody>
+</table>
 </div>
 
 <div class="box warn">
 <p class="box-title"><span class="box-ico">🏷️</span> LTS 버전을 쓰세요</p>
-<p><b>LTS</b>(Long Term Support)는 <b>장기 지원 버전</b>입니다.
-Node.js는 <b>짝수 번호 버전만</b> 나중에 LTS가 되고, 홀수 번호는 새 기능을 먼저 시험해 보는 단기 버전이라 실무에 적합하지 않습니다.</p>
-<p style="margin-bottom:0"><b>버전 번호는 계속 바뀝니다.</b> 위 예시의 <code>24</code>는 2026년 기준이고,
-지금 무엇이 LTS인지는 <a href="https://nodejs.org/en/about/previous-releases" target="_blank" rel="noopener">Node.js 릴리스 일정</a>에서
-확인하세요. <code>fnm install --lts</code>를 쓰면 항상 최신 LTS가 설치됩니다.
+<p><b>LTS</b>(Long Term Support)는 <b>장기 지원 버전</b>입니다. 운영 서비스에는 LTS만 씁니다.
+2026년 11월 기준으로 <b>Node 26이 최신 LTS</b>이고, 24와 22도 아직 LTS로 보안 수정을 받습니다. 20 이하는 지원이 끝났습니다.</p>
+<p>Node.js는 <b>26까지는 짝수 번호만</b> LTS가 되고 홀수 번호는 6개월만 지원하는 단기 버전이었습니다.
+<b>27부터는 1년에 한 번</b> 새 메이저가 나오고, 알파·Current 기간을 거쳐 <b>모든 메이저가 LTS</b>가 되는 방식으로 바뀝니다.
+그래서 "짝수 = LTS"라는 공식은 26까지만 맞습니다.</p>
+<p style="margin-bottom:0"><b>버전 번호는 계속 바뀝니다.</b> 지금 무엇이 LTS인지는 <a href="https://nodejs.org/en/about/previous-releases" target="_blank" rel="noopener">Node.js 릴리스 일정</a>에서
+확인하세요. <code>fnm install --lts</code>를 쓰면 항상 그 시점의 최신 LTS가 설치됩니다.
 프로젝트에는 <code>.nvmrc</code>나 <code>package.json</code>의 <code>engines</code> 필드로
 <b>팀이 쓸 버전을 명시</b>해 두는 것이 좋습니다.</p>
 </div>
@@ -111,11 +201,11 @@ npx create-vite          pnpm dlx create-vite yarn dlx create-vite</code></pre>
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "vite": "^6.0.0",
+    "vite": "^8.0.0",
     "eslint": "^9.0.0"
   },
   "engines": {
-    "node": "&gt;=20"
+    "node": "&gt;=22"
   }
 }</code></pre>
 </div>
@@ -199,10 +289,31 @@ npm ci            # lock 파일 그대로 정확히 설치. 빠르고 결정적
 <tbody>
 <tr><td><b>커밋하지 않습니다</b></td><td><code>.gitignore</code>에 반드시 넣습니다. 수만 개 파일에 수백 MB입니다</td></tr>
 <tr><td><b>언제든 다시 만들 수 있습니다</b></td><td><code>package.json</code> + lock 파일만 있으면 됩니다</td></tr>
-<tr><td><b>이상하면 지우고 다시</b></td><td><code>rm -rf node_modules package-lock.json &amp;&amp; npm install</code>이 의외로 많은 문제를 해결합니다</td></tr>
+<tr><td><b>이상하면 지우고 다시</b></td><td><code>node_modules</code>와 lock 파일을 지우고 <code>npm install</code>을 다시 하면 의외로 많은 문제가 해결됩니다. 명령은 아래 상자를 보세요</td></tr>
 <tr><td><b>직접 수정하지 않습니다</b></td><td>다시 설치하면 사라집니다. 고쳐야 한다면 <code>patch-package</code> 같은 도구를 씁니다</td></tr>
 </tbody>
 </table>
+</div>
+
+<div class="codeblock">
+<span class="cb-label">지우고 다시 설치 — 반드시 프로젝트 폴더 안에서</span>
+<pre><code data-lang="bash"># macOS · 리눅스 · Git Bash
+rm -rf node_modules package-lock.json
+npm install
+
+# Windows PowerShell
+Remove-Item -Recurse -Force node_modules, package-lock.json
+npm install</code></pre>
+</div>
+
+<div class="box warn">
+<p class="box-title"><span class="box-ico">💀</span> 44장에서 <code>rm -rf</code>를 조심하라더니?</p>
+<p style="margin-bottom:0">44장의 경고는 <b>"무엇을 지우는지 모르는 <code>rm -rf</code>"</b>에 대한 것입니다.
+이 명령은 지우는 대상이 <b>현재 폴더 안의 <code>node_modules</code>와 lock 파일</b>로 정확히 정해져 있고,
+둘 다 <code>npm install</code>로 다시 만들 수 있어 안전합니다.
+다만 실행 전에 <code>pwd</code>로 <b>지금 프로젝트 폴더 안에 있는지</b>를 꼭 확인하세요.
+이름 앞에 <code>/</code>나 <code>~</code>가 붙으면 전혀 다른 곳을 가리키게 됩니다.
+또 lock 파일을 지우면 버전이 새로 정해지므로, 팀 프로젝트에서는 먼저 <code>node_modules</code>만 지워 보고 그래도 안 될 때 lock 파일까지 지웁니다.</p>
 </div>
 
 <h2 id="security">의존성과 보안</h2>
@@ -250,7 +361,9 @@ npx eslint .                   # 프로젝트에 설치된 eslint 실행</code><
 <div class="box recap">
 <p class="box-title"><span class="box-ico">📌</span> 요약</p>
 <ul style="margin-bottom:0">
-<li>Node.js는 <b>버전 관리 도구</b>(fnm·nvm)로 설치하고 <b>LTS</b>를 쓴다.</li>
+<li>Node.js는 <b>버전 관리 도구</b>(fnm)로 설치하고 <b>LTS</b>를 쓴다. 2026년 11월 기준 최신 LTS는 <b>26</b>.</li>
+<li>설치 후에는 <b>터미널을 새로 열고</b> <code>node --version</code>으로 확인한다. 안 되면 셸 설정 줄과 <code>PATH</code>를 본다.</li>
+<li><code>node_modules</code> 삭제는 <code>rm -rf</code>(PowerShell은 <code>Remove-Item -Recurse -Force</code>)로, <b>프로젝트 폴더 안에서</b>만.</li>
 <li>한 프로젝트에서 패키지 매니저는 <b>하나만</b> 쓴다.</li>
 <li><code>dependencies</code>는 실행에, <code>devDependencies</code>는 개발에만 필요한 것.</li>
 <li><code>^19.2.3</code>은 <b>MAJOR 고정</b>, <code>~</code>는 PATCH만. <code>*</code>는 쓰지 않는다.</li>
@@ -264,6 +377,8 @@ npx eslint .                   # 프로젝트에 설치된 eslint 실행</code><
 <h2 id="refs">참고 자료</h2>
 <ul>
 <li><a href="https://nodejs.org/ko" target="_blank" rel="noopener">Node.js 공식 사이트</a></li>
+<li><a href="https://github.com/Schniz/fnm" target="_blank" rel="noopener">fnm 공식 저장소</a> — 운영체제별 설치와 셸 설정 (영문)</li>
+<li><a href="https://nodejs.org/en/about/previous-releases" target="_blank" rel="noopener">Node.js 릴리스 일정</a> — 어떤 버전이 LTS인지 (영문)</li>
 <li><a href="https://docs.npmjs.com/cli/v10/configuring-npm/package-json" target="_blank" rel="noopener">npm — package.json 전체 명세</a></li>
 <li><a href="https://semver.org/lang/ko/" target="_blank" rel="noopener">유의적 버전(semver) 한국어 명세</a></li>
 <li><a href="https://bundlephobia.com/" target="_blank" rel="noopener">Bundlephobia</a> — 패키지 용량 확인</li>
@@ -287,46 +402,57 @@ FB_QUIZ([
   {
     q: "<code>package-lock.json</code>을 <code>.gitignore</code>에 넣으면 안 되는 이유는?",
     o: [
-      "파일 크기가 작아서",
-      "팀원과 CI가 각자 다른 버전을 설치하게 되어 \"제 컴퓨터에서는 되는데요\" 문제가 생기기 때문",
-      "npm이 동작하지 않기 때문",
-      "보안 취약점이 생기기 때문"
+      "lock 파일이 없으면 <code>npm install</code>이 실패하기 때문",
+      "팀원과 CI가 설치 시점마다 다른 버전을 받게 되기 때문",
+      "lock 파일에 패키지 소스 코드가 들어 있기 때문",
+      "<code>package.json</code>이 lock 파일을 참조해 동작하기 때문"
     ],
     a: 1,
-    e: "<code>package.json</code>의 <code>^19.2.3</code>은 <b>범위</b>라서 설치 시점에 따라 다른 버전이 깔립니다. lock 파일은 <b>실제 설치된 모든 패키지의 정확한 버전</b>을 기록해 재현 가능한 빌드를 보장합니다. CI에서는 <code>npm ci</code>로 lock 파일 그대로 설치합니다."
+    e: "<code>package.json</code>의 <code>^19.2.3</code>은 <b>범위</b>라서 설치 시점에 따라 다른 버전이 깔립니다. lock 파일은 <b>실제 설치된 모든 패키지의 정확한 버전</b>을 기록해 재현 가능한 빌드를 보장합니다. lock 파일이 없어도 설치는 되지만 결과가 사람마다 달라집니다."
   },
   {
     q: "<code>\"react\": \"^19.2.3\"</code> 이 허용하는 버전 범위는?",
     o: [
-      "정확히 19.2.3만",
-      "19.2.3 이상 20.0.0 미만 — MAJOR는 고정하고 MINOR·PATCH 업데이트는 허용",
       "19.2.3 이상 19.3.0 미만",
-      "모든 버전"
+      "19.2.3 이상 20.0.0 미만",
+      "19.2.3 이상의 모든 버전",
+      "19.0.0 이상 19.2.3 이하"
     ],
     a: 1,
-    e: "<code>^</code>(캐럿)은 <b>MAJOR를 고정</b>합니다. MAJOR가 바뀌면 하위 호환이 깨질 수 있기 때문입니다. <code>~</code>(틸드)는 더 보수적이어서 PATCH만 허용합니다(19.2.x)."
+    e: "<code>^</code>(캐럿)은 <b>MAJOR를 고정</b>하고 MINOR·PATCH 업데이트를 허용합니다. MAJOR가 바뀌면 하위 호환이 깨질 수 있기 때문입니다. 19.2.x만 허용하는 것은 더 보수적인 <code>~</code>(틸드)입니다."
   },
   {
-    q: "빌드 도구인 Vite는 <code>dependencies</code>와 <code>devDependencies</code> 중 어디에 들어가야 하나요?",
+    q: "빌드 도구인 Vite는 어디에 넣어야 하나요?",
     o: [
-      "dependencies — 프로젝트에 필요하므로",
-      "devDependencies — 개발·빌드 시점에만 필요하고 사용자에게 전달되는 코드에는 포함되지 않으므로",
-      "둘 다",
-      "어느 쪽이든 상관없다"
+      "<code>dependencies</code> — 빌드하려면 꼭 있어야 하므로",
+      "<code>devDependencies</code> — 개발·빌드 시점에만 쓰이므로",
+      "전역 설치(<code>npm install -g</code>) — 모든 프로젝트가 같이 쓰므로",
+      "<code>engines</code> — 실행 환경에 해당하므로"
     ],
     a: 1,
-    e: "<code>dependencies</code>는 <b>앱이 실행될 때 필요한 것</b>, <code>devDependencies</code>는 <b>개발할 때만 필요한 것</b>입니다. 빌드 도구·린터·테스트 도구가 후자입니다. 배포 환경에서 <code>--production</code>으로 설치하면 devDependencies는 제외됩니다."
+    e: "<code>dependencies</code>는 <b>사용자에게 전달되는 코드가 실행될 때 필요한 것</b>, <code>devDependencies</code>는 <b>개발할 때만 필요한 것</b>입니다. 빌드 도구는 결과물에 포함되지 않으므로 후자입니다. 전역 설치하면 프로젝트마다 버전을 맞출 수 없고, <code>engines</code>는 Node 버전을 적는 곳입니다."
   },
   {
-    q: "npm과 yarn을 한 프로젝트에서 섞어 쓰면 생기는 문제는?",
+    q: "Node.js를 처음 설치할 때 fnm 같은 버전 관리 도구를 권하는 가장 큰 이유는?",
     o: [
-      "설치 속도가 느려진다",
-      "lock 파일이 두 개가 되어 사람마다 다른 버전이 설치될 수 있다",
-      "package.json이 삭제된다",
-      "아무 문제 없다"
+      "공식 설치 프로그램으로 깐 Node는 npm이 포함되지 않아서",
+      "프로젝트마다 다른 Node 버전을 쉽게 바꿔 쓰고 sudo 없이 쓰기 위해",
+      "버전 관리 도구로 깐 Node가 실행 속도가 더 빨라서",
+      "공식 설치 프로그램은 LTS가 아닌 버전만 제공해서"
     ],
     a: 1,
-    e: "각 매니저는 <b>자기만의 lock 파일</b>을 만듭니다. 둘이 공존하면 어느 것이 진실인지 알 수 없고 환경마다 다른 트리가 설치됩니다. 저장소에 있는 lock 파일 종류를 보고 <b>하나로 통일</b>해야 합니다."
+    e: "공식 설치 프로그램에도 npm이 들어 있고 LTS도 제공하며, 속도도 같습니다. 차이는 <b>여러 버전을 함께 두고 전환</b>할 수 있다는 점과, 사용자 폴더에 설치되어 <b>전역 설치에 sudo가 필요 없다</b>는 점입니다. 학습 단계에서는 공식 설치 프로그램 하나로도 충분합니다."
+  },
+  {
+    q: "Windows PowerShell에서 fnm을 설치했는데 <code>fnm</code>이 \"is not recognized\"라고 나옵니다. 가장 먼저 할 일은?",
+    o: [
+      "터미널(또는 VS Code 전체)을 닫았다가 다시 연다",
+      "관리자 권한 PowerShell에서 같은 명령을 다시 실행한다",
+      "<code>npm install -g fnm</code>으로 다시 설치한다",
+      "명령 앞에 <code>sudo</code>를 붙인다"
+    ],
+    a: 0,
+    e: "설치 직후의 \"인식할 수 없음\"은 대개 <b>이미 열린 터미널이 옛 PATH를 쓰고 있어서</b>입니다. 새로 열면 해결되는 경우가 대부분입니다. 관리자 권한은 이 문제와 무관하고, fnm은 npm 패키지가 아니며, Windows에는 <code>sudo</code>를 쓰는 습관을 들일 이유가 없습니다."
   },
   {
     q: "새 패키지를 설치하기 전에 확인해야 할 것으로 <b>가장 거리가 먼</b> 것은?",
@@ -334,10 +460,10 @@ FB_QUIZ([
       "표준 브라우저 API로 해결할 수 있는지",
       "번들 용량과 의존성 개수",
       "최근 유지보수 상태와 다운로드 수",
-      "패키지 이름이 짧고 외우기 쉬운지"
+      "GitHub 저장소의 별(star)이 오늘 몇 개 늘었는지"
     ],
     a: 3,
-    e: "설치한 패키지는 <b>영원히 관리 대상</b>이 되고 공급망 위험도 함께 들어옵니다. 필요성·용량·의존성 개수·유지보수 상태가 판단 기준이며, 이름의 길이는 아무 상관이 없습니다."
+    e: "설치한 패키지는 <b>영원히 관리 대상</b>이 되고 공급망 위험도 함께 들어옵니다. 필요성·용량·의존성 개수·유지보수 상태가 판단 기준입니다. 하루 사이 별 증가량은 유행을 보여 줄 뿐 품질이나 관리 상태를 말해 주지 않습니다."
   }
 ]);
 </script>

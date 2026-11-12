@@ -6,6 +6,12 @@
 <title>9장. 폼과 사용자 입력 — 프엔북</title>
 <meta name="description" content="form과 input의 모든 것 — 입력 타입, label 연결, 내장 유효성 검사, select와 textarea, button의 함정, 폼 접근성까지 정리합니다.">
 <meta name="color-scheme" content="light dark">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="프엔북">
+<meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161a" media="(prefers-color-scheme: dark)">
+<script>try{var t=JSON.parse(localStorage.getItem("fenbook:theme"));if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta property="og:title" content="9장. 폼과 사용자 입력 — 프엔북">
 <meta property="og:description" content="form과 input의 모든 것 — 입력 타입, label 연결, 내장 유효성 검사, select와 textarea, button의 함정, 폼 접근성까지 정리합니다.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
@@ -372,7 +378,7 @@ FB_QUIZ([
     q: "<code>&lt;form&gt;</code> 안에 <code>&lt;button&gt;미리보기&lt;/button&gt;</code>를 넣었더니 누를 때마다 페이지가 새로고침됩니다. 해결책은?",
     o: [
       "버튼을 <code>&lt;div&gt;</code>로 바꾼다",
-      "<code>type=\"button\"</code>을 명시한다. 폼 안의 button은 기본값이 submit이기 때문",
+      "버튼에 <code>type=\"button\"</code>을 명시한다",
       "<code>&lt;form&gt;</code>을 제거한다",
       "<code>novalidate</code>를 추가한다"
     ],
@@ -382,13 +388,13 @@ FB_QUIZ([
   {
     q: "휴대폰 번호 입력 칸에 <code>type=\"number\"</code>를 쓰면 생기는 문제로 옳은 것은?",
     o: [
-      "숫자 키패드가 뜨지 않는다",
-      "맨 앞의 0이 사라질 수 있고, 증감 화살표가 나타나며, 하이픈을 넣을 수 없다",
-      "모든 브라우저에서 입력이 차단된다",
+      "모바일에서 숫자 키패드가 뜨지 않는다",
+      "맨 앞의 0이 사라지고 하이픈을 넣을 수 없다",
+      "값이 문자열이 아니라 숫자로 서버에 간다",
       "값이 서버로 전송되지 않는다"
     ],
     a: 1,
-    e: "<code>number</code>는 <b>계산할 수 있는 수</b>를 위한 타입이라 <code>010…</code>의 앞자리 0이 손실될 수 있고 스피너가 붙습니다. 전화번호·우편번호·카드번호에는 <code>type=\"tel\"</code>이 적절하며, 이 타입도 모바일에서 숫자 키패드를 띄웁니다."
+    e: "<code>number</code>는 <b>계산할 수 있는 수</b>를 위한 타입이라 <code>010…</code>의 앞자리 0이 손실될 수 있고, 하이픈을 넣을 수 없으며 증감 화살표(스피너)가 붙습니다. 폼으로 전송되는 값은 타입과 상관없이 모두 문자열입니다. 전화번호·우편번호·카드번호에는 <code>type=\"tel\"</code>이 적절하며, 이 타입도 모바일에서 숫자 키패드를 띄웁니다."
   },
   {
     q: "<code>placeholder</code>로 이름표를 대신하면 안 되는 이유로 옳지 <b>않은</b> 것은?",
@@ -405,12 +411,12 @@ FB_QUIZ([
     q: "\"<code>required</code>와 <code>pattern</code>으로 검사했으니 서버 검증은 생략해도 된다\"는 주장의 문제는?",
     o: [
       "문제없다. 브라우저 검사로 충분하다",
-      "사용자가 개발자 도구로 속성을 지우거나 브라우저를 거치지 않고 서버에 직접 요청할 수 있으므로, 브라우저 검사는 보안이 될 수 없다",
-      "pattern은 한글을 지원하지 않아서",
-      "required는 구형 브라우저에서 동작하지 않아서"
+      "브라우저를 거치지 않는 요청은 검사를 피한다",
+      "pattern은 한글을 검사하지 못해서",
+      "문제없다. HTTPS가 값을 검증해 준다"
     ],
     a: 1,
-    e: "프론트엔드 검사는 <b>사용자를 돕는 편의 기능</b>입니다. 클라이언트 코드는 사용자가 전부 통제할 수 있으므로 신뢰의 근거가 될 수 없습니다. <b>프론트엔드는 친절, 백엔드는 안전</b>이며 둘 다 필요합니다."
+    e: "사용자는 개발자 도구로 속성을 지우거나, 브라우저를 거치지 않고 서버에 직접 요청을 보낼 수 있습니다. 프론트엔드 검사는 <b>사용자를 돕는 편의 기능</b>입니다. 클라이언트 코드는 사용자가 전부 통제할 수 있으므로 신뢰의 근거가 될 수 없습니다. <b>프론트엔드는 친절, 백엔드는 안전</b>이며 둘 다 필요합니다."
   },
   {
     q: "라디오 버튼 세 개가 모두 동시에 선택됩니다. 원인은?",

@@ -10,9 +10,13 @@
 </ul>
 </div>
 
-<p class="ch-meta">읽는 데 약 20분 · 처음엔 어렵지만 익히면 코드가 크게 달라집니다</p>
+<p class="ch-meta">읽는 데 약 30분 · 사전 지식: 기본 타입·함수 타입(51장), interface와 type(52장)</p>
 
 <h2 id="problem">문제 상황</h2>
+
+<p>지금까지는 타입을 정확히 하나로 정해 적었습니다. 그런데 어떤 함수는 <b>무엇을 넣어도 같은 일을 합니다.</b>
+"배열의 첫 요소를 꺼낸다"는 문자열 배열이든 숫자 배열이든 똑같이 동작합니다.
+이런 함수에 타입을 붙이려 하면 곤란해집니다. 타입마다 함수를 따로 만들자니 끝이 없고, <code>any</code>로 퉁치자니 타입 정보가 사라집니다.</p>
 
 <div class="codeblock">
 <span class="cb-label">배열의 첫 요소를 반환하는 함수</span>
@@ -22,9 +26,9 @@ function firstNumber(arr: number[]): number { return arr[0]; }
 function firstUser(arr: User[]): User { return arr[0]; }
 
 // 시도 2: any — 타입 정보가 사라집니다
-function first(arr: any[]): any { return arr[0]; }
-const name = first(["a", "b"]);
-name.toFixed(2);      // 오류가 안 납니다. 실행하면 터집니다
+function firstAny(arr: any[]): any { return arr[0]; }
+const item = firstAny(["a", "b"]);
+item.toFixed(2);      // 오류가 안 납니다. 실행하면 터집니다
 
 // ✅ 제네릭
 function first&lt;T&gt;(arr: T[]): T {
@@ -35,6 +39,11 @@ const num = first([1, 2, 3]);         // number 로 추론
 // name2.toFixed(2);                  ❌ 즉시 오류</code></pre>
 </div>
 
+<p>▶ Playground에 붙여 보세요. 맨 위에 <code>type User = { name: string };</code>을 추가하면 됩니다. <code>item</code>에 마우스를 올리면 <code>any</code>,
+<code>name2</code>에 올리면 <code>string</code>이 보입니다. 같은 일을 하는 함수인데 결과에 대해 아는 정보가 완전히 다릅니다.
+함수 이름 뒤의 <code>&lt;T&gt;</code>가 이 차이를 만듭니다. <code>T</code>는 "지금은 정하지 않은 어떤 타입"을 가리키는 이름이고,
+<code>first(["a", "b"])</code>처럼 호출하는 순간 TypeScript가 인자를 보고 <code>T</code>를 <code>string</code>으로 채워 넣습니다.</p>
+
 <div class="box tip">
 <p class="box-title"><span class="box-ico">📦</span> 제네릭은 <b>타입의 매개변수</b>입니다</p>
 <p style="margin-bottom:0">함수가 <b>값</b>을 나중에 받듯이, 제네릭은 <b>타입</b>을 나중에 받습니다.
@@ -43,7 +52,22 @@ const num = first([1, 2, 3]);         // number 로 추론
 "들어온 배열의 요소 타입 = 나가는 값의 타입"이라는 관계를 표현하는 것이 제네릭의 본질입니다.</p>
 </div>
 
+<p>비유하자면 제네릭 함수는 <b>빈칸이 있는 서식</b>입니다. 택배 송장의 "내용물: ______" 칸처럼,
+서식을 만들 때는 비워 두고 실제로 보낼 때 채웁니다. 한 번 "책"이라고 적으면 그 송장의 다른 칸(파손 주의 여부, 보험 품목)도 모두 "책"을 기준으로 맞춰집니다.
+<code>T</code>를 한 번 정하면 매개변수와 반환값에 쓰인 모든 <code>T</code>가 같은 타입으로 채워지는 것도 이와 같습니다.</p>
+
+<div class="box myth">
+<p class="box-title"><span class="box-ico">🤔</span> 자주 하는 오해 — 제네릭은 any의 다른 이름이다</p>
+<span class="mythline"><b class="no">오해</b> — <code>&lt;T&gt;</code>는 무엇이든 받을 수 있으니 결국 <code>any</code>와 같다.</span>
+<span class="mythline"><b class="yes">사실</b> — 받는 범위는 비슷해 보여도 <b>결과가 다릅니다.</b> <code>any</code>는 들어온 타입을 잊어버리고,
+제네릭은 <b>기억했다가 반환값에 그대로 전달</b>합니다. 그래서 <code>first([1, 2])</code>의 결과에 문자열 메서드를 쓰면 즉시 오류가 납니다.
+또 제네릭은 실행 중에 무언가를 하는 기능이 아니라, 50장의 다른 타입처럼 빌드 후 사라집니다.</span>
+</div>
+
 <h2 id="basic">기본 문법</h2>
+
+<p>꺾쇠(<code>&lt;&gt;</code>)는 <b>타입 매개변수를 선언하는 자리</b>입니다. 함수 이름 뒤, <code>interface</code>·<code>type</code>·<code>class</code> 이름 뒤에 올 수 있습니다.
+51장의 <code>Array&lt;number&gt;</code>도 이미 만들어진 제네릭 타입 <code>Array</code>에 <code>number</code>를 채워 넣은 것이었습니다.</p>
 
 <div class="codeblock">
 <pre><code data-lang="ts">// 함수
@@ -77,6 +101,11 @@ class Stack&lt;T&gt; {
 const stack = new Stack&lt;number&gt;();</code></pre>
 </div>
 
+<p>호출할 때 <code>identity&lt;string&gt;("hello")</code>처럼 직접 채울 수도 있지만, 대개는 인자에서 <b>추론에 맡깁니다.</b>
+직접 채워야 하는 경우는 <code>new Stack&lt;number&gt;()</code>처럼 인자가 없어 단서가 없을 때입니다.
+<code>Box&lt;string&gt;</code>은 "내용물이 문자열인 상자", <code>Nullable&lt;User&gt;</code>는 "<code>User</code>이거나 <code>null</code>"입니다.
+같은 틀(<code>Box</code>)을 내용물만 바꿔 여러 번 쓸 수 있다는 것이 핵심입니다.</p>
+
 <div class="box tip">
 <p class="box-title"><span class="box-ico">🔤</span> 이름 관례</p>
 <ul style="margin-bottom:0">
@@ -91,9 +120,13 @@ const stack = new Stack&lt;number&gt;();</code></pre>
 
 <h2 id="constraint">제약 — extends</h2>
 
+<p>아무 타입이나 받을 수 있다는 것은 반대로 말하면 <b>그 타입에 대해 아무것도 모른다</b>는 뜻입니다.
+<code>T</code>가 숫자일 수도 있으니 <code>.length</code>를 쓸 수 없습니다. 이럴 때 <code>extends</code>로 "<b>이런 모양을 가진 타입만 받겠다</b>"고 조건을 겁니다.
+놀이기구 입구의 "키 120cm 이상"과 같습니다. 누가 탈지는 모르지만 최소 조건은 보장됩니다.</p>
+
 <div class="codeblock">
 <pre><code data-lang="ts">// ❌ T가 무엇이든 될 수 있어 length를 쓸 수 없습니다
-function logLength&lt;T&gt;(value: T) {
+function logLengthBad&lt;T&gt;(value: T) {
   console.log(value.length);   // ❌ Property 'length' does not exist on type 'T'
 }
 
@@ -106,6 +139,13 @@ logLength([1, 2, 3]);      // ✅
 logLength(42);             // ❌ 숫자에는 length가 없습니다</code></pre>
 </div>
 
+<p>▶ Playground에 붙여 보세요. 첫 함수 안쪽과 마지막 줄 두 곳에서만 오류가 납니다.
+여기서 <code>extends</code>는 클래스 상속(32장)과 같은 단어지만 뜻이 조금 다릅니다. "<b>~에 들어맞는</b>"으로 읽으면 됩니다.
+52장의 구조적 타이핑 덕분에 <code>length</code> 속성만 있으면 문자열이든 배열이든 직접 만든 객체든 통과합니다.</p>
+
+<p>다음 예제의 <code>keyof T</code>는 "<code>T</code>의 키 이름들의 유니온"입니다. <code>{ id, name, isAdmin }</code>이라면 <code>"id" | "name" | "isAdmin"</code>이 됩니다(55장에서 자세히).
+<code>T[K]</code>는 "<code>T</code>에서 <code>K</code> 키의 값 타입"입니다. 처음 보면 어렵지만, 한 줄씩 마우스를 올려 결과를 확인하면 금방 익숙해집니다.</p>
+
 <div class="codeblock">
 <span class="cb-label">keyof 와 함께 — 매우 자주 쓰는 패턴</span>
 <pre><code data-lang="ts">function getProperty&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K] {
@@ -115,7 +155,7 @@ logLength(42);             // ❌ 숫자에는 length가 없습니다</code></pr
 const user = { id: 1, name: "홍길동", isAdmin: true };
 
 const id = getProperty(user, "id");         // number
-const name = getProperty(user, "name");     // string
+const userName = getProperty(user, "name"); // string
 const admin = getProperty(user, "isAdmin"); // boolean
 // getProperty(user, "age");                ❌ 없는 키는 자동 완성에도 안 나옵니다</code></pre>
 </div>
@@ -128,6 +168,9 @@ const admin = getProperty(user, "isAdmin"); // boolean
 </div>
 
 <h2 id="default">기본값</h2>
+
+<p>함수 매개변수에 기본값을 줄 수 있듯이 타입 매개변수에도 기본값을 줄 수 있습니다.
+<code>&lt;T = unknown&gt;</code>은 "아무것도 안 채우면 <code>unknown</code>으로 하라"는 뜻입니다. 쓰는 쪽이 매번 꺾쇠를 채우지 않아도 되어 편합니다.</p>
 <div class="codeblock">
 <pre><code data-lang="ts">interface ApiResponse&lt;T = unknown&gt; {
   data: T;
@@ -138,7 +181,13 @@ const a: ApiResponse = { data: "아무거나", message: "ok" };        // T = un
 const b: ApiResponse&lt;User[]&gt; = { data: [], message: "ok" };        // T = User[]</code></pre>
 </div>
 
+<p>기본값으로 <code>any</code>가 아니라 <code>unknown</code>을 쓴 것에 주목하세요. 내용물 타입을 지정하지 않고 쓰면 <code>data</code>는 확인 전에는 쓸 수 없는 값이 되어,
+"타입을 깜빡 안 채운" 실수가 조용히 검사를 끄는 일을 막습니다(50장의 <code>any</code> vs <code>unknown</code>).</p>
+
 <h2 id="patterns">실전 패턴</h2>
+
+<p>실무에서 직접 제네릭을 만드는 곳은 대체로 세 군데입니다. 서버 통신 함수, 배열을 가공하는 유틸리티, 그리고 여러 데이터에 재사용하는 React 컴포넌트입니다.
+세 예제 모두 "<b>쓰는 쪽이 넘긴 타입이 결과에 그대로 전달된다</b>"는 같은 구조를 갖고 있습니다.</p>
 
 <div class="codeblock">
 <span class="cb-label">① API 클라이언트</span>
@@ -154,7 +203,7 @@ const post = await apiGet&lt;Post&gt;("/api/posts/1");</code></pre>
 
 <div class="box warn">
 <p class="box-title"><span class="box-ico">⚠️</span> 위 코드는 <b>거짓말할 수 있습니다</b></p>
-<p style="margin-bottom:0"><code>as Promise&lt;T&gt;</code>는 <b>"내가 보증한다"는 선언</b>일 뿐
+<p style="margin-bottom:0"><code>as Promise&lt;T&gt;</code>는 <b>타입 단언</b>(54장)으로, <b>"내가 보증한다"는 선언</b>일 뿐
 실제로 검사하지 않습니다. 서버가 다른 형태를 보내도 통과합니다.
 50장에서 말한 <b>"타입은 런타임에 사라진다"</b>는 원칙 그대로입니다.<br>
 안전하게 하려면 Zod 같은 라이브러리로 <b>실제 값을 검증</b>해야 합니다.</p>
@@ -178,8 +227,12 @@ const byCategory = groupBy(products, p =&gt; p.category);
 //    ↑ 반환 타입이 자동으로 맞춰집니다</code></pre>
 </div>
 
+<p><code>groupBy</code>는 타입 매개변수가 두 개입니다. <code>T</code>는 배열 요소, <code>K</code>는 묶는 기준 값이고, <code>K</code>에는 "문자열이나 숫자만"이라는 제약이 걸려 있습니다.
+반환 타입 <code>Record&lt;K, T[]&gt;</code>는 "키가 <code>K</code>, 값이 <code>T</code>의 배열인 객체"로 55장의 유틸리티 타입입니다.
+<code>??=</code>는 "값이 없으면 오른쪽 값을 넣는다"는 논리 할당 연산자입니다(26장). 이런 함수를 한 번 제네릭으로 만들어 두면 상품이든 회원이든 같은 함수로 묶을 수 있습니다.</p>
+
 <div class="codeblock">
-<span class="cb-label">③ React에서 (56장에서 자세히)</span>
+<span class="cb-label">③ React에서 (56장에서 자세히 — 지금은 훑어만 보세요)</span>
 <pre><code data-lang="tsx">interface ListProps&lt;T&gt; {
   items: T[];
   renderItem: (item: T) =&gt; React.ReactNode;
@@ -200,7 +253,14 @@ function List&lt;T&gt;({ items, renderItem, keyExtractor }: ListProps&lt;T&gt;) 
 /&gt;</code></pre>
 </div>
 
+<p>React 문법은 8부에서 배우므로 지금은 흐름만 보세요. <code>items</code>에 회원 배열을 넘기면 <code>T</code>가 회원 타입으로 정해지고,
+그 정보가 <code>renderItem</code>과 <code>keyExtractor</code>의 매개변수 <code>u</code>까지 전달됩니다. 그래서 <code>u.</code>를 입력하면 회원의 속성이 자동 완성됩니다.
+같은 <code>List</code>에 상품 배열을 넘기면 이번에는 <code>u</code>가 상품이 됩니다. 컴포넌트 하나를 여러 데이터에 재사용하면서도 타입 안전성을 잃지 않는 것, 이것이 제네릭이 주는 이득입니다.</p>
+
 <h2 id="avoid">제네릭을 쓰지 말아야 할 때</h2>
+
+<p>제네릭을 막 배우면 모든 함수에 <code>&lt;T&gt;</code>를 붙이고 싶어집니다. 하지만 제네릭은 코드를 읽는 사람에게 "<b>여기 두 곳이 서로 연결되어 있다</b>"는 신호입니다.
+연결이 없는데 붙이면 읽는 사람만 헷갈립니다. 판단 기준은 간단합니다. <code>T</code>가 <b>두 번 이상</b> 등장하는지 세어 보세요.</p>
 
 <div class="box warn">
 <p class="box-title"><span class="box-ico">🚫</span> 타입 매개변수가 한 번만 쓰이면 필요 없습니다</p>
@@ -219,6 +279,10 @@ function log(value: unknown): void {
 매개변수와 반환값, 또는 여러 매개변수 사이의 <b>관계</b>를 표현할 때만 의미가 있습니다.
 연결하는 것이 없으면 복잡도만 늘어납니다.</p>
 </div>
+
+<p>앞의 <code>log</code>와 달리 <code>first&lt;T&gt;(arr: T[]): T</code>는 <code>T</code>가 매개변수와 반환값에 <b>두 번</b> 나옵니다. 그래서 의미가 있습니다.
+<code>pair&lt;K, V&gt;(key: K, value: V): [K, V]</code>도 <code>K</code>와 <code>V</code>가 각각 두 번씩 나옵니다.
+코드 리뷰에서 "이 제네릭이 꼭 필요한가요?"라는 질문을 받는다면, 이렇게 <code>T</code>가 등장하는 횟수를 세어 답하면 됩니다.</p>
 
 <div class="box field">
 <p class="box-title"><span class="box-ico">🛠️</span> 현장 노트 — 제네릭과 친해지는 법</p>
@@ -257,59 +321,70 @@ function log(value: unknown): void {
 <script data-quiz>
 FB_QUIZ([
   {
-    q: "<code>function first(arr: any[]): any</code> 대신 제네릭 <code>function first&lt;T&gt;(arr: T[]): T</code> 를 쓰는 이유는?",
+    q: "<code>function first(arr: any[]): any</code> 대신 <code>function first&lt;T&gt;(arr: T[]): T</code> 를 쓰는 이유는?",
     o: [
-      "실행 속도가 빨라져서",
-      "any는 타입 정보를 버리지만 제네릭은 입력 타입과 반환 타입의 관계를 유지해, 결과에 대해서도 타입 검사와 자동 완성이 동작하기 때문",
-      "any는 문법 오류라서",
-      "제네릭이 번들 크기를 줄여서"
+      "제네릭 함수는 실행 중에 요소 타입을 검사해 주기 때문",
+      "입력과 반환의 타입 관계가 유지되어 결과도 검사되기 때문",
+      "any 배열은 strict 모드에서 매개변수로 쓸 수 없기 때문",
+      "제네릭을 쓰면 빈 배열을 넘겨도 undefined가 나오지 않기 때문"
     ],
     a: 1,
-    e: "<code>any</code>를 반환하면 그 뒤의 모든 검사가 사라집니다. 제네릭은 <b>\"들어온 배열의 요소 타입 = 나가는 값의 타입\"</b>이라는 관계를 표현하므로, <code>first([\"a\"])</code>의 결과가 <code>string</code>임을 컴파일러가 압니다."
+    e: "<code>any</code>를 반환하면 그 뒤의 모든 검사가 사라집니다. 제네릭은 <b>\"들어온 배열의 요소 타입 = 나가는 값의 타입\"</b>이라는 관계를 표현하므로, <code>first([\"a\"])</code>의 결과가 <code>string</code>임을 컴파일러가 압니다. 다만 타입은 빌드 후 사라지므로 실행 중 검사나 빈 배열 처리와는 관계가 없습니다."
   },
   {
     q: "<code>function logLength&lt;T&gt;(value: T) { console.log(value.length) }</code> 가 오류인 이유와 해결책은?",
     o: [
-      "T는 무엇이든 될 수 있어 length가 있다고 보장할 수 없다. <code>&lt;T extends { length: number }&gt;</code>로 제약을 건다",
-      "length는 예약어라서",
-      "제네릭에서는 console.log를 쓸 수 없어서",
-      "T를 any로 바꾸면 해결된다"
+      "T가 length를 가진다는 보장이 없다. <code>T extends { length: number }</code>로 제약한다",
+      "T는 호출 전까지 unknown이다. <code>value as any</code>로 단언한다",
+      "제네릭 함수에서는 속성 접근이 금지된다. 매개변수를 배열로 바꾼다",
+      "length는 배열 전용이다. <code>T[]</code>로 바꿔야만 해결된다"
     ],
     a: 0,
-    e: "제약이 없는 <code>T</code>는 <b>모든 타입</b>이 될 수 있으므로 특정 속성의 존재를 가정할 수 없습니다. <code>extends</code>로 \"이런 모양을 가진 타입만\"이라고 좁히면 그 안에서 안전하게 속성을 쓸 수 있습니다."
+    e: "제약이 없는 <code>T</code>는 <b>모든 타입</b>이 될 수 있으므로 특정 속성의 존재를 가정할 수 없습니다. <code>extends</code>로 \"이런 모양을 가진 타입만\"이라고 좁히면 문자열·배열·직접 만든 객체 모두 받으면서 안전하게 <code>length</code>를 쓸 수 있습니다. <code>as any</code>는 검사를 꺼 버리는 회피일 뿐입니다."
   },
   {
     q: "<code>function getProperty&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K]</code> 의 이점은?",
     o: [
-      "코드가 짧아진다",
-      "키에 따라 반환 타입이 달라지는 관계를 표현해, <code>getProperty(user, \"id\")</code>가 number임을 컴파일러가 알고 없는 키는 오류로 잡는다",
-      "런타임에 키 존재를 검사한다",
-      "객체를 복사한다"
+      "실행 중에 키가 객체에 있는지 확인해 준다",
+      "키에 따라 반환 타입이 정확해지고 없는 키는 오류가 된다",
+      "모든 키의 값을 string으로 통일해 돌려준다",
+      "객체를 복사해 원본이 바뀌지 않게 한다"
     ],
     a: 1,
-    e: "<code>keyof T</code>가 키를 실제 존재하는 것으로 제한하고, <code>T[K]</code>가 <b>그 키에 해당하는 타입</b>을 반환합니다. 결과적으로 자동 완성에 실제 키만 나오고 반환 타입도 정확해집니다. 제네릭의 가치를 가장 잘 보여 주는 예입니다."
+    e: "<code>keyof T</code>가 키를 실제 존재하는 것으로 제한하고, <code>T[K]</code>가 <b>그 키에 해당하는 타입</b>을 반환합니다. 결과적으로 자동 완성에 실제 키만 나오고 <code>getProperty(user, \"id\")</code>는 number가 됩니다. 실행 중 확인은 하지 않습니다."
   },
   {
     q: "<code>function log&lt;T&gt;(value: T): void { console.log(value) }</code> 의 문제는?",
     o: [
-      "문법 오류다",
-      "T가 매개변수에서만 쓰이고 반환이나 다른 매개변수와 연결되지 않아 제네릭이 아무 역할을 하지 못한다. <code>value: unknown</code>이면 충분하다",
-      "console.log를 쓸 수 없다",
-      "void를 반환하면 안 된다"
+      "void를 반환하는 함수는 제네릭이 될 수 없다",
+      "T가 한 곳에서만 쓰여 연결할 대상이 없다",
+      "호출할 때마다 log&lt;string&gt;처럼 타입을 직접 적어야 한다",
+      "console.log가 T 타입을 출력하지 못한다"
     ],
     a: 1,
-    e: "제네릭의 목적은 <b>두 곳 이상을 연결</b>하는 것입니다. 타입 매개변수가 한 곳에서만 쓰이면 연결할 대상이 없어 복잡도만 늘어납니다. 이럴 때는 <code>unknown</code>이나 구체 타입이 낫습니다."
+    e: "제네릭의 목적은 <b>두 곳 이상을 연결</b>하는 것입니다. 타입 매개변수가 매개변수 한 곳에서만 쓰이면 연결할 대상이 없어 복잡도만 늘어납니다. 이럴 때는 <code>value: unknown</code>이면 충분합니다. 문법 오류는 아니며 호출 시 추론도 됩니다."
   },
   {
     q: "<code>return response.json() as Promise&lt;T&gt;</code> 처럼 <code>as</code>로 타입을 지정하면?",
     o: [
-      "런타임에 실제 데이터 형태를 검증한다",
-      "검증 없이 \"이 타입이라고 믿으라\"고 선언할 뿐이라, 서버가 다른 형태를 보내도 통과하고 나중에 런타임 오류가 난다",
-      "컴파일 오류가 발생한다",
-      "자동으로 형변환이 일어난다"
+      "런타임에 응답 형태를 T와 비교해 검증한다",
+      "검증 없이 T라고 믿게 할 뿐이라 서버가 달라도 통과한다",
+      "응답이 T와 다르면 자동으로 T 모양으로 변환된다",
+      "T에 없는 속성은 응답에서 자동으로 제거된다"
     ],
     a: 1,
-    e: "타입 단언(<code>as</code>)은 <b>컴파일러에게 의심하지 말라고 하는 것</b>입니다. 실제 값은 확인하지 않습니다. 외부에서 들어오는 데이터는 Zod 같은 도구로 <b>런타임 검증</b>을 해야 타입 선언이 진실이 됩니다."
+    e: "타입 단언(<code>as</code>)은 <b>컴파일러에게 의심하지 말라고 하는 것</b>입니다. 실제 값은 확인하지도, 바꾸지도 않습니다. 외부에서 들어오는 데이터는 Zod 같은 도구로 <b>런타임 검증</b>을 해야 타입 선언이 진실이 됩니다(54장)."
+  },
+  {
+    q: "<code>interface ApiResponse&lt;T = unknown&gt;</code> 에서 기본값을 any가 아니라 unknown으로 둔 이유는?",
+    o: [
+      "타입을 안 채웠을 때 data를 확인 없이 쓰는 실수를 막으려고",
+      "unknown이 any보다 빌드가 빠르기 때문에",
+      "제네릭 기본값에는 any를 쓸 수 없기 때문에",
+      "unknown으로 두면 서버 응답이 자동 검증되기 때문에"
+    ],
+    a: 0,
+    e: "타입 인자를 생략하면 기본값이 쓰입니다. <code>any</code>라면 <code>data</code>에 대한 검사가 조용히 꺼지지만, <code>unknown</code>이면 확인하기 전에는 쓸 수 없어 실수를 드러냅니다. 기본값에 <code>any</code>를 쓰는 것도 문법상 가능하며, 어느 쪽도 런타임 검증은 하지 않습니다."
   }
 ]);
 </script>
